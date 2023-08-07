@@ -2,6 +2,8 @@ const std = @import("std");
 const main = @import("main.zig");
 const builtin = @import("builtin");
 
+pub var rng = std.rand.DefaultPrng.init(0x99999999);
+
 pub const PacketWriter = struct {
     index: u16 = 0,
     buffer: [65535]u8 = undefined,
