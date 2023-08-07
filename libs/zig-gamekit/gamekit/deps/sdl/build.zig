@@ -21,7 +21,7 @@ pub fn linkArtifact(b: *Builder, exe: *std.build.LibExeObjStep, target: std.zig.
         exe.addLibraryPath(.{ .path = "c:\\SDL2\\lib\\x64" });
 
         std.fs.cwd().makePath("zig-cache\\bin") catch unreachable;
-        std.fs.cwd().makePath("bin") catch unreachable;
+        std.fs.cwd().makePath("zig-out\\bin") catch unreachable;
         const src_dir = std.fs.cwd().openDir("c:\\SDL2\\lib\\x64", .{}) catch unreachable;
         src_dir.copyFile("SDL2.dll", std.fs.cwd(), "zig-cache\\bin\\SDL2.dll", .{}) catch unreachable;
         src_dir.copyFile("SDL2.dll", std.fs.cwd(), "zig-out\\bin\\SDL2.dll", .{}) catch unreachable;
