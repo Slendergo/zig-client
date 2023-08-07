@@ -94,8 +94,8 @@ pub fn main() !void {
         .ReleaseFast, .ReleaseSmall => std.heap.raw_c_allocator,
     };
 
-    assets.init();
-    defer assets.deinit();
+    try assets.init(allocator);
+    defer assets.deinit(allocator);
 
     settings.init();
     defer settings.save();
@@ -119,9 +119,11 @@ pub fn main() !void {
 
 fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) void {
     const response = try requests.sendAccountVerify(email, password);
+
     const verify_doc = try xml.Doc.fromMemory(response);
     defer verify_doc.deinit();
     const verify_root = try verify_doc.getRootElement();
+    
     current_account.name = allocator.dupe(u8, verify_root.getValue("Name") orelse "Guest") catch |e| {
         std.debug.print("Could not dupe current account name: {any}", .{e});
         return;
@@ -142,21 +144,25 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
         const list_root = try list_doc.getRootElement();
         next_char_id = list_root.getAttributeInt("nextCharId", u8, 0);
         max_chars = list_root.getAttributeInt("maxNumChars", u8, 0);
-        var char_iter = list_root.iterate(&.{}, "Char");
 
         var char_list = std.ArrayList(CharacterData).init(allocator);
         defer char_list.deinit();
+
+        var char_iter = list_root.iterate(&.{}, "Char");
         while (char_iter.next()) |node|
             try char_list.append(try CharacterData.parse(allocator, node, node.getAttributeInt("id", i32, 0)));
+
         character_list = try allocator.dupe(CharacterData, char_list.items);
 
         const server_root = list_root.findChild("Servers");
         if (server_root != null) {
             var server_data_list = std.ArrayList(ServerData).init(allocator);
             defer server_data_list.deinit();
+
             var server_iter = server_root.?.iterate(&.{}, "Server");
             while (server_iter.next()) |server_node|
                 try server_data_list.append(try ServerData.parse(server_node, allocator));
+
             server_list = try allocator.dupe(ServerData, server_data_list.items);
         }
     }
@@ -165,7 +171,7 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
 fn init() !void {}
 
 fn update() !void {
-    if (@mod(gk.time.frames(), 10000) == 0) 
+    if (@mod(gk.time.frames(), 10000) == 0)
         std.log.debug("FPS: {d}\n", .{gk.time.fps()});
 }
 
