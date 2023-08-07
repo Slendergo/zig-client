@@ -6,6 +6,9 @@ const requests = @import("requests.zig");
 const networking = @import("networking.zig");
 const builtin = @import("builtin");
 
+pub var fba: std.heap.FixedBufferAllocator = undefined;
+pub var stack_allocator: std.mem.Allocator = undefined;
+
 pub fn main() !void {
     const is_debug = builtin.mode == .Debug;
     var gpa = if (is_debug) std.heap.GeneralPurposeAllocator(.{}){} else {};
@@ -16,6 +19,10 @@ pub fn main() !void {
         .ReleaseSafe => std.heap.c_allocator,
         .ReleaseFast, .ReleaseSmall => std.heap.raw_c_allocator,
     };
+
+    var buf: [65536]u8 = undefined;
+    fba = std.heap.FixedBufferAllocator.init(&buf);
+    stack_allocator = fba.allocator();
 
     assets.init() catch |err| {
         std.log.err("Failed to initialize assets: {any}", .{err});
