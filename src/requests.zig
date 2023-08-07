@@ -5,7 +5,7 @@ var client: std.http.Client = undefined;
 var headers: std.http.Headers = undefined;
 var buffer: [std.math.maxInt(u16)]u8 = undefined;
 
-pub fn init(allocator: std.mem.Allocator) !void {
+pub fn init(allocator: std.mem.Allocator) void {
     client = std.http.Client{ .allocator = allocator };
     headers = std.http.Headers{ .allocator = allocator };
 }
