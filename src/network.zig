@@ -141,6 +141,7 @@ pub const Server = struct {
             };
             switch (packet_id) {
                 .create_success => handleCreateSuccess(&self.reader),
+                else => return
                 // .text => handleText(&self.reader),
                 // .server_player_shoot => try handleServerPlayerShoot(self),
                 // .damage => handleDamage(&self.reader),

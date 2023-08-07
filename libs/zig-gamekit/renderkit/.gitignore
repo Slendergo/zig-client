@@ -1,5 +1,0 @@
-zig-cache
-imgui.ini
-gamekit/deps/imgui/build
-src/deps/imgui/build
-.DS_Store

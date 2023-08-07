@@ -4,6 +4,31 @@ const builtin = @import("builtin");
 
 pub var rng = std.rand.DefaultPrng.init(0x99999999);
 
+pub fn strlen(str: []const u8) usize {
+    var i: usize = 0;
+    while (str[i] != 0) : (i += 1) {}
+    return i;
+}
+
+pub fn halfBound(angle: f32) f32 {
+    var new_angle = angle;
+    new_angle = @mod(new_angle, std.math.tau);
+    new_angle = @mod(new_angle + std.math.tau, std.math.tau);
+    if (new_angle > std.math.pi)
+        new_angle -= std.math.tau;
+    return new_angle;
+}
+
+pub inline fn distSqr(x1: f32, y1: f32, x2: f32, y2: f32) f32 {
+    const x_dt = x2 - x1;
+    const y_dt = y2 - y1;
+    return x_dt * x_dt + y_dt * y_dt;
+}
+
+pub inline fn dist(x1: f32, y1: f32, x2: f32, y2: f32) f32 {
+    return @sqrt(distSqr(x1, y1, x2, y2));
+}
+
 pub const PacketWriter = struct {
     index: u16 = 0,
     buffer: [65535]u8 = undefined,

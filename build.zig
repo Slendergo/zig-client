@@ -1,6 +1,13 @@
 const std = @import("std");
-const gamekit_build = @import("libs/zig-gamekit/build.zig");
 const libxml2 = @import("libs/libxml/libxml2.zig");
+const zflecs = @import("libs/zflecs/build.zig");
+const zglfw = @import("libs/zglfw/build.zig");
+const zgpu = @import("libs/zgpu/build.zig");
+const zpool = @import("libs/zpool/build.zig");
+const zgui = @import("libs/zgui/build.zig");
+const zstbi = @import("libs/zstbi/build.zig");
+const zstbrp = @import("libs/zstbrp/build.zig");
+const ztracy = @import("libs/ztracy/build.zig");
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -15,7 +22,33 @@ pub fn build(b: *std.Build) !void {
     });
     libxml.link(exe);
 
-    gamekit_build.addGameKitToArtifact(b, exe, target, "libs/zig-gamekit/");
+    const zflecs_pkg = zflecs.package(b, target, optimize, .{});
+    zflecs_pkg.link(exe);
+
+    const zstbi_pkg = zstbi.package(b, target, optimize, .{});
+    zstbi_pkg.link(exe);
+
+    const zstbrp_pkg = zstbrp.package(b, target, optimize, .{});
+    zstbrp_pkg.link(exe);
+
+    const zgui_pkg = zgui.package(b, target, optimize, .{
+        .options = .{ .backend = .glfw_wgpu },
+    });
+    zgui_pkg.link(exe);
+
+    const ztracy_pkg = ztracy.package(b, target, optimize, .{
+        .options = .{ .enable_ztracy = true },
+    });
+    ztracy_pkg.link(exe);
+
+    const zglfw_pkg = zglfw.package(b, target, optimize, .{});
+    const zpool_pkg = zpool.package(b, target, optimize, .{});
+    const zgpu_pkg = zgpu.package(b, target, optimize, .{
+        .deps = .{ .zpool = zpool_pkg.zpool, .zglfw = zglfw_pkg.zglfw },
+    });
+
+    zglfw_pkg.link(exe);
+    zgpu_pkg.link(exe);
 
     b.installArtifact(exe);
     const run_cmd = b.addRunArtifact(exe);
