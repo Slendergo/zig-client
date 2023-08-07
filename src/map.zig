@@ -1,0 +1,1 @@
+pub var local_player_id: i32 = -1;
