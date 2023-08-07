@@ -98,3 +98,61 @@ pub fn sendAccountRegister(email: []const u8, password: []const u8) ![]const u8 
     const len = try req.readAll(&buffer);
     return buffer[0..len];
 }
+
+pub fn sendAccountChangePassword(email: []const u8, password: []const u8, newPassword: []const u8) ![]const u8 {
+    var req = client.request(std.http.Method.POST, std.Uri.parse(settings.app_engine_url ++ "account/changePassword") catch unreachable, headers, .{ .max_redirects = 0 }) catch |e| {
+        std.log.err("Could not send account/changePassword (params: email={s}, password={s}, newPassword={s}): {any}\n", .{ email, password, newPassword, e });
+        return "<Error />";
+    };
+
+    defer req.deinit();
+    req.transfer_encoding = .chunked;
+    try req.start();
+    const writer = req.writer();
+    try writer.writeAll("email=");
+    try writer.writeAll(email);
+    try writer.writeAll("&password=");
+    try writer.writeAll(password);
+    try writer.writeAll("&newPassword=");
+    try writer.writeAll(newPassword);
+    try req.finish();
+    try req.wait();
+    const len = try req.readAll(&buffer);
+    return buffer[0..len];
+}
+
+pub fn sendAccountSetName(email: []const u8, password: []const u8, name: []const u8) ![]const u8 {
+    var req = client.request(std.http.Method.POST, std.Uri.parse(settings.app_engine_url ++ "account/setName") catch unreachable, headers, .{ .max_redirects = 0 }) catch |e| {
+        std.log.err("Could not send account/setName (params: email={s}, password={s}, name={s}): {any}\n", .{ email, password, name, e });
+        return "<Error />";
+    };
+
+    defer req.deinit();
+    req.transfer_encoding = .chunked;
+    try req.start();
+    const writer = req.writer();
+    try writer.writeAll("email=");
+    try writer.writeAll(email);
+    try writer.writeAll("&password=");
+    try writer.writeAll(password);
+    try writer.writeAll("&name=");
+    try writer.writeAll(name);
+    try req.finish();
+    try req.wait();
+    const len = try req.readAll(&buffer);
+    return buffer[0..len];
+}
+
+pub fn sendAppInit() ![]const u8 {
+    var req = client.request(std.http.Method.POST, std.Uri.parse(settings.app_engine_url ++ "app/init") catch unreachable, headers, .{ .max_redirects = 0 }) catch |e| {
+        std.log.err("Could not send app/init: {any}\n", .{ e });
+        return "<Error />";
+    };
+
+    defer req.deinit();
+    req.transfer_encoding = .chunked;
+    try req.start();
+    try req.wait();
+    const len = try req.readAll(&buffer);
+    return buffer[0..len];
+}
