@@ -110,7 +110,11 @@ pub fn main() !void {
     // parse char list later
     server = network.Server.init("127.0.0.1", 2050);
 
-    try gk.run(.{ .init = init, .update = update, .render = render, .shutdown = shutdown, .window = .{ .disable_vsync = true } });
+    try gk.run(.{ .init = init, .update = update, .render = render, .shutdown = shutdown, .update_rate = 10000, .window = .{
+        .disable_vsync = true,
+        .width = 1280,
+        .height = 720,
+    } });
 }
 
 fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) void {
@@ -160,7 +164,10 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
 
 fn init() !void {}
 
-fn update() !void {}
+fn update() !void {
+    if (@mod(gk.time.frames(), 10000) == 0) 
+        std.log.debug("FPS: {d}\n", .{gk.time.fps()});
+}
 
 fn render() !void {}
 
