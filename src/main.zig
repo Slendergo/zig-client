@@ -4,46 +4,44 @@ const assets = @import("assets.zig");
 const settings = @import("settings.zig");
 const requests = @import("requests.zig");
 const networking = @import("networking.zig");
+const builtin = @import("builtin");
 
 pub fn main() !void {
-    std.log.debug("Hello, world!", .{});
+    const is_debug = builtin.mode == .Debug;
+    var gpa = if (is_debug) std.heap.GeneralPurposeAllocator(.{}){} else {};
+    defer _ = if (is_debug) gpa.deinit();
+
+    const allocator = switch (builtin.mode) {
+        .Debug => gpa.allocator(),
+        .ReleaseSafe => std.heap.c_allocator,
+        .ReleaseFast, .ReleaseSmall => std.heap.raw_c_allocator,
+    };
 
     assets.init() catch |err| {
-        std.log.err("Failed to initialize assets", .{});
-        return err;
+        std.log.err("Failed to initialize assets: {any}", .{err});
     };
 
     settings.init() catch |err| {
-        std.log.err("Failed to initialize settings", .{});
-        return err;
+        std.log.err("Failed to initialize settings: {any}", .{err});
     };
 
-    const allocator = std.heap.page_allocator;
     requests.init(allocator) catch |err| {
-        std.log.err("Failed to initialize requests", .{});
-        return err;
+        std.log.err("Failed to initialize requests: {any}", .{err});
     };
 
     networking.init() catch |err| {
-        std.log.err("Failed to initialize networking", .{});
-        return err;
+        std.log.err("Failed to initialize networking: {any}", .{err});
     };
 
     try gk.run(.{ .init = init, .update = update, .render = render, .shutdown = shutdown, .window = .{ .disable_vsync = true } });
 }
 
-fn init() !void {
-}
+fn init() !void {}
 
-fn deinit() !void {
-    requests.deinit();
-}
+fn update() !void {}
 
-fn update() !void {
-}
-
-fn render() !void {
-}
+fn render() !void {}
 
 fn shutdown() !void {
+    requests.deinit();
 }
