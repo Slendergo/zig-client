@@ -1,10 +1,10 @@
 const pad = @import("assets.zig").padding;
-const math = @import("std").math;
 const rotate_speed = @import("settings.zig").rotate_speed;
 const map = @import("map.zig");
+const tau = @import("std").math.tau;
 
-pub const px_per_tile: i16 = 88;
-pub const size_mult: f32 = 72.0 / (8.0 + @as(f32, @floatFromInt(pad)));
+pub const px_per_tile: i16 = 56;
+pub const size_mult: f32 = 48.0 / (8.0 + @as(f32, @floatFromInt(pad)));
 
 pub var x: f32 = 0.0;
 pub var y: f32 = 0.0;
@@ -38,11 +38,13 @@ pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
     y = target_y;
 
     if (rotate != 0) {
-        angle = @mod(angle + @as(f32, @floatFromInt(dt)) * rotate_speed * @as(f32, @floatFromInt(rotate)), math.tau);
+        const float_dt: f32 = @floatFromInt(dt);
+        const float_rotate: f32 = @floatFromInt(rotate);
+        angle = @mod((angle + float_dt) * rotate_speed * float_rotate, tau);
     }
 
-    const cos_angle = math.cos(angle);
-    const sin_angle = math.sin(angle);
+    const cos_angle = @cos(angle);
+    const sin_angle = @sin(angle);
 
     cos = cos_angle * px_per_tile;
     sin = sin_angle * px_per_tile;
@@ -55,7 +57,7 @@ pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
 
     const w_half = screen_width / (2 * px_per_tile);
     const h_half = screen_height / (2 * px_per_tile);
-    const max_dist = math.ceil(math.sqrt(w_half * w_half + h_half * h_half));
+    const max_dist = @ceil(@sqrt(w_half * w_half + h_half * h_half));
     max_dist_sq = max_dist * max_dist;
 
     const min_x_dt = target_x - max_dist;

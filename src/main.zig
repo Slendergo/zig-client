@@ -65,19 +65,18 @@ pub const CharacterData = struct {
     // zig fmt: off
     pub fn parse(allocator: std.mem.Allocator, node: xml.Node, id: u32) !CharacterData {
         _ = allocator;
-        const objType = try node.getValueInt("ObjectType", u16, 0);
-        const charData = CharacterData {
+        const obj_type = try node.getValueInt("ObjectType", u16, 0);
+        return CharacterData {
             .id = id,
-            .obj_type = objType,
+            .obj_type = obj_type,
             .tex1 = try node.getValueInt("Tex1", u32, 0),
             .tex2 = try node.getValueInt("Tex2", u32, 0),
             .texture = try node.getValueInt("Texture", u16, 0),
             .health_pots = try node.getValueInt("HealthStackCount", i8, 0),
             .magic_pots = try node.getValueInt("MagicStackCount", i8, 0),
             .has_backpack = try node.getValueInt("HasBackpack", i8, 0) > 0,
-            .name = assets.obj_type_to_name.get(objType) orelse "Unknown Class",
+            .name = assets.obj_type_to_name.get(obj_type) orelse "Unknown Class",
         };
-        return charData;
     }
     // zig fmt: on
 };
@@ -115,17 +114,14 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
     _ = window.setMouseButtonCallback(input.mouseEvent);
 
     zgui.init(allocator);
-    const scale_factor = scale_factor: {
-        const scale = window.getContentScale();
-        break :scale_factor @max(scale[0], scale[1]);
-    };
+    const scale = window.getContentScale();
+    const scale_factor = @max(scale[0], scale[1]);
     const font_size = 16.0 * scale_factor;
     const font_large = zgui.io.addFontFromMemory(embedded_font_data, @floor(font_size * 1.1));
     const font_normal = zgui.io.addFontFromFile(asset_dir ++ "fonts/Ubuntu-Bold.ttf", @floor(font_size));
     std.debug.assert(zgui.io.getFont(0) == font_large);
     std.debug.assert(zgui.io.getFont(1) == font_normal);
 
-    // This needs to be called *after* adding your custom fonts.
     zgui.backend.initWithConfig(
         window,
         gctx.device,
@@ -133,28 +129,18 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
         .{ .texture_filter_mode = .linear, .pipeline_multisample_count = 1 },
     );
 
-    // This call is optional. Initially, zgui.io.getFont(0) is a default font.
     zgui.io.setDefaultFont(font_normal);
 
-    // You can directly manipulate zgui.Style *before* `newFrame()` call.
-    // Once frame is started (after `newFrame()` call) you have to use
-    // zgui.pushStyleColor*()/zgui.pushStyleVar*() functions.
     const style = zgui.getStyle();
-
     style.anti_aliased_fill = true;
     style.anti_aliased_lines = true;
     style.window_min_size = .{ 500.0, 200.0 };
     style.window_border_size = 2.0;
     style.scrollbar_size = 8.0;
-    {
-        var color = style.getColor(.scrollbar_grab);
-        color[1] = 0.8;
-        style.setColor(.scrollbar_grab, color);
-    }
+    var color = style.getColor(.scrollbar_grab);
+    color[1] = 0.8;
+    style.setColor(.scrollbar_grab, color);
     style.scaleAllSizes(scale_factor);
-
-    // To reset zgui.Style with default values:
-    //zgui.getStyle().* = zgui.Style.init();
 }
 
 fn updateUi(allocator: std.mem.Allocator) !void {
