@@ -12,7 +12,6 @@ const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
 const zgui = @import("zgui");
 const zstbi = @import("zstbi");
-const ztracy = @import("ztracy");
 const input = @import("input.zig");
 const utils = @import("utils.zig");
 const camera = @import("camera.zig");
@@ -272,7 +271,6 @@ inline fn draw() void {
     //     render.draw(current_time, gctx, back_buffer, encoder);
     // }
 
-    const ui_draw_zone = ztracy.ZoneNC(@src(), "Drawing UI", 0x00FF0000);
     const color_attachments = [_]wgpu.RenderPassColorAttachment{.{
         .view = back_buffer,
         .load_op = .load,
@@ -286,9 +284,7 @@ inline fn draw() void {
     zgui.backend.draw(pass);
     pass.end();
     pass.release();
-    ui_draw_zone.End();
 
-    const command_submit_zone = ztracy.ZoneNC(@src(), "Submitting Commands", 0x00FF0000);
     const commands = encoder.finish(null);
     gctx.submit(&.{commands});
     if (gctx.present() == .swap_chain_resized) {
@@ -299,7 +295,6 @@ inline fn draw() void {
         camera.clip_scale_x = 2.0 / float_w;
         camera.clip_scale_y = 2.0 / float_h;
     }
-    command_submit_zone.End();
 
     back_buffer.release();
     encoder.release();
@@ -335,15 +330,11 @@ fn networkTick(allocator: std.mem.Allocator) void {
 
 fn renderTick(allocator: std.mem.Allocator) void {
     while (tick_render) {
-        const ui_update_zone = ztracy.ZoneNC(@src(), "UI Update", 0x00FF0000);
         updateUi(allocator) catch |e| {
             std.log.err("UI update failed: {any}", .{e});
         };
-        ui_update_zone.End();
 
-        const draw_zone = ztracy.ZoneNC(@src(), "Draw", 0x00FF0000);
         draw();
-        draw_zone.End();
     }
 }
 
@@ -432,7 +423,6 @@ pub fn main() !void {
     while (!window.shouldClose()) {
         zglfw.pollEvents();
 
-        const update_zone = ztracy.ZoneNC(@src(), "Map Update", 0x00FF0000);
         if (tick_frame) {
             current_time = @intCast(std.time.milliTimestamp() - start_time);
             const dt = current_time - last_update;
@@ -441,7 +431,6 @@ pub fn main() !void {
             // ui.update(current_time, dt, allocator);
             last_update = current_time;
         }
-        update_zone.End();
     }
 }
 
