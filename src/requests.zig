@@ -77,8 +77,7 @@ pub fn sendAccountVerify(email: []const u8, password: []const u8) ![]const u8 {
     return buffer[0..len];
 }
 
-pub fn sendAccountRegister(email: []const u8, password: []const u8, name: []const u8) ![]const u8 {
-    _ = name; // todo: add name to registering
+pub fn sendAccountRegister(email: []const u8, password: []const u8, username: []const u8) ![]const u8 { // todo: add name to registering
     var req = client.request(std.http.Method.POST, std.Uri.parse(settings.app_engine_url ++ "account/register") catch unreachable, headers, .{ .max_redirects = 0 }) catch |e| {
         std.log.err("Could not send account/register (params: email={s}, password={s}): {any}\n", .{ email, password, e });
         return "<Error />";
@@ -88,12 +87,12 @@ pub fn sendAccountRegister(email: []const u8, password: []const u8, name: []cons
     req.transfer_encoding = .chunked;
     try req.start();
     const writer = req.writer();
-    try writer.writeAll("guid=");
-    try writer.writeAll("0"); // Server requires randomized GUID, leaving it as 0 for now
-    try writer.writeAll("newGUID=");
+    try writer.writeAll("&email=");
     try writer.writeAll(email);
-    try writer.writeAll("&newPassword=");
+    try writer.writeAll("&password=");
     try writer.writeAll(password);
+    try writer.writeAll("&username=");
+    try writer.writeAll(username);
     try req.finish();
     try req.wait();
     const len = try req.readAll(&buffer);
@@ -116,28 +115,6 @@ pub fn sendAccountChangePassword(email: []const u8, password: []const u8, newPas
     try writer.writeAll(password);
     try writer.writeAll("&newPassword=");
     try writer.writeAll(newPassword);
-    try req.finish();
-    try req.wait();
-    const len = try req.readAll(&buffer);
-    return buffer[0..len];
-}
-
-pub fn sendAccountSetName(email: []const u8, password: []const u8, name: []const u8) ![]const u8 {
-    var req = client.request(std.http.Method.POST, std.Uri.parse(settings.app_engine_url ++ "account/setName") catch unreachable, headers, .{ .max_redirects = 0 }) catch |e| {
-        std.log.err("Could not send account/setName (params: email={s}, password={s}, name={s}): {any}\n", .{ email, password, name, e });
-        return "<Error />";
-    };
-
-    defer req.deinit();
-    req.transfer_encoding = .chunked;
-    try req.start();
-    const writer = req.writer();
-    try writer.writeAll("email=");
-    try writer.writeAll(email);
-    try writer.writeAll("&password=");
-    try writer.writeAll(password);
-    try writer.writeAll("&name=");
-    try writer.writeAll(name);
     try req.finish();
     try req.wait();
     const len = try req.readAll(&buffer);
