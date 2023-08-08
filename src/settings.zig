@@ -32,7 +32,7 @@ pub const Button = union(enum) {
 
 pub const build_version = "0.5";
 pub const app_engine_url = "http://127.0.0.1:8080/";
-pub const log_packets = LogType.off;
+pub const log_packets = LogType.all;
 pub const print_atlas = false;
 pub const rotate_speed = 0.002;
 

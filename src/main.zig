@@ -323,6 +323,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
                         std.log.err("Could not send Hello: {any}", .{e});
                     };
                     sent_hello = true;
+                    std.debug.print("Sent Hello\n", .{});
                 }
 
                 server.?.accept(allocator) catch |e| {
@@ -479,6 +480,7 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
         var char_iter = list_root.iterate(&.{}, "Char");
         while (char_iter.next()) |node|
             try char_list.append(try CharacterData.parse(allocator, node, try node.getAttributeInt("id", u32, 0)));
+        std.debug.print("Total characters: {d}\n", .{char_list.capacity});
 
         character_list = try allocator.dupe(CharacterData, char_list.items);
 
@@ -492,6 +494,9 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
                 try server_data_list.append(try ServerData.parse(server_node, allocator));
 
             server_list = try allocator.dupe(ServerData, server_data_list.items);
+            std.debug.print("Total servers: {d}\n", .{server_list.?.len});
         }
+
+        std.debug.print("Logged in as {s}\n", .{current_account.name});
     }
 }
