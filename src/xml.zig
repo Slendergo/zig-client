@@ -80,6 +80,14 @@ pub const Node = struct {
         return try allocator.dupe(u8, val.?);
     }
 
+    pub fn getAttributeAllocZ(node: Node, key: [:0]const u8, allocator: std.mem.Allocator, default_value: []const u8) ![:0]const u8 {
+        const val = getAttribute(node, key);
+        if (val == null)
+            return try allocator.dupeZ(u8, default_value);
+
+        return try allocator.dupeZ(u8, val.?);
+    }
+
     pub fn getAttributeInt(node: Node, key: [:0]const u8, comptime T: type, default_value: T) !T {
         const val = getAttribute(node, key);
         if (val == null)
@@ -151,6 +159,14 @@ pub const Node = struct {
             return try allocator.dupe(u8, default_value);
 
         return try allocator.dupe(u8, val.?);
+    }
+
+    pub fn getValueAllocZ(node: Node, key: []const u8, allocator: std.mem.Allocator, default_value: []const u8) ![:0]const u8 {
+        const val = getValue(node, key);
+        if (val == null)
+            return try allocator.dupeZ(u8, default_value);
+
+        return try allocator.dupeZ(u8, val.?);
     }
 
     pub fn getValueInt(node: Node, key: []const u8, comptime T: type, default_value: T) !T {

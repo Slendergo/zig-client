@@ -17,8 +17,8 @@ const utils = @import("utils.zig");
 const camera = @import("camera.zig");
 
 pub const ServerData = struct {
-    name: []const u8 = "",
-    dns: []const u8 = "",
+    name: [:0]const u8 = "",
+    dns: [:0]const u8 = "",
     port: u16,
     max_players: u16,
     admin_only: bool,
@@ -26,8 +26,8 @@ pub const ServerData = struct {
     // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ServerData {
         return ServerData {
-            .name = try node.getValueAlloc("Name", allocator, "Unknown"),
-            .dns = try node.getValueAlloc("DNS", allocator, "127.0.0.1"),
+            .name = try node.getValueAllocZ("Name", allocator, "Unknown"),
+            .dns = try node.getValueAllocZ("DNS", allocator, "127.0.0.1"),
             .port = try node.getValueInt("Port", u16, 2050),
             .max_players = try node.getValueInt("MaxPlayers", u16, 0),
             .admin_only = node.elementExists("AdminOnly") and std.mem.eql(u8, node.getValue("AdminOnly").?, "true")
@@ -37,7 +37,7 @@ pub const ServerData = struct {
 };
 
 pub const AccountData = struct {
-    name: []const u8 = "Guest",
+    name: [:0]const u8 = "Guest",
     email: []const u8 = "",
     password: []const u8 = "",
     admin: bool = false,
@@ -50,7 +50,7 @@ pub const CharacterData = struct {
     id: u32 = 0,
     tier: u8 = 1,
     obj_type: u16 = 0x00,
-    name: []const u8 = "",
+    name: [:0]const u8 = "",
     health: u16 = 100,
     mana: u16 = 0,
     tex1: u32 = 0,
@@ -63,7 +63,6 @@ pub const CharacterData = struct {
 
     // zig fmt: off
     pub fn parse(allocator: std.mem.Allocator, node: xml.Node, id: u32) !CharacterData {
-        _ = allocator;
         const obj_type = try node.getValueInt("ObjectType", u16, 0);
         return CharacterData {
             .id = id,
@@ -74,7 +73,7 @@ pub const CharacterData = struct {
             .health_pots = try node.getValueInt("HealthStackCount", i8, 0),
             .magic_pots = try node.getValueInt("MagicStackCount", i8, 0),
             .has_backpack = try node.getValueInt("HasBackpack", i8, 0) > 0,
-            .name = assets.obj_type_to_name.get(obj_type) orelse "Unknown Class",
+            .name = try allocator.dupeZ(u8, assets.obj_type_to_name.get(obj_type) orelse "Unknown Class"),
         };
     }
     // zig fmt: on
@@ -441,8 +440,8 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
     defer verify_doc.deinit();
     const verify_root = try verify_doc.getRootElement();
 
-    current_account.name = allocator.dupe(u8, verify_root.getValue("Name") orelse "Guest") catch |e| {
-        std.debug.print("Could not dupe current account name: {any}", .{e});
+    current_account.name = allocator.dupeZ(u8, verify_root.getValue("Name") orelse "Guest") catch |e| {
+        std.log.err("Could not dupe current account name: {any}", .{e});
         return;
     };
 
