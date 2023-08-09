@@ -79,7 +79,7 @@ pub const CharacterData = struct {
     // zig fmt: on
 };
 
-pub const ScreenType = enum(u8) { main_menu, char_select, map_editor, in_game };
+pub const ScreenType = enum(u8) { main_menu, char_select, char_creation, map_editor, in_game };
 
 const embedded_font_data = @embedFile(asset_dir ++ "fonts/Ubuntu-Medium.ttf");
 
@@ -92,6 +92,8 @@ pub var current_account = AccountData{};
 pub var character_list: []CharacterData = undefined;
 pub var server_list: ?[]ServerData = null;
 pub var selected_char_id: u32 = 65535;
+pub var char_create_type: u16 = 0;
+pub var char_create_skin_type: u16 = 0;
 pub var selected_server: ?ServerData = null;
 pub var next_char_id: u32 = 0;
 pub var max_chars: u32 = 0;
@@ -234,6 +236,44 @@ fn updateUi(allocator: std.mem.Allocator) !void {
             }
             zgui.end();
         },
+        ScreenType.char_creation => {
+            if (zgui.begin("Character Creation", .{})) {
+                const static = struct {
+                    var server_index: u32 = 0;
+                    var char_type: i32 = 0;
+                    var skin_type: i32 = 0;
+                };
+
+                zgui.text("Logged in as [{s}]", .{current_account.name});
+
+                _ = zgui.inputInt("Character Type", .{ .v = &static.char_type, .step = 1, .step_fast = 1 });
+                _ = zgui.inputInt("Skin Type", .{ .v = &static.skin_type, .step = 1, .step_fast = 1 });
+
+                if (server_list == null) {
+                    zgui.text("No servers available", .{});
+                } else if (zgui.beginListBox("Server", .{})) {
+                    for (server_list.?, 0..) |serverData, index| {
+                        const i: u32 = @intCast(index);
+                        if (zgui.selectable(serverData.name[0.. :0], .{ .selected = static.server_index == i }))
+                            static.server_index = i;
+                    }
+                    zgui.endListBox();
+                }
+                
+                if (zgui.button("Create Character", .{ .w = 150.0 })) {
+                    current_screen = ScreenType.in_game;
+                    char_create_type = @as(u16, @intCast(static.char_type));
+                    char_create_skin_type = @as(u16, @intCast(static.skin_type));
+                    selected_char_id = next_char_id;
+                    next_char_id += 1;
+                    if (server_list != null) {
+                        std.debug.print("Using server index {d}\n", .{static.server_index});
+                        selected_server = server_list.?[static.server_index];
+                    }
+                }
+            }
+            zgui.end();
+        },
         ScreenType.map_editor => {},
         ScreenType.in_game => {
             if (zgui.begin("Debug", .{})) {
@@ -313,7 +353,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
 
             if (server != null) {
                 if (selected_char_id != 65535 and !sent_hello) {
-                    server.?.hello(settings.build_version, -2, current_account.email, current_account.password, @as(i16, @intCast(selected_char_id)), false, 0, 0) catch |e| {
+                    server.?.hello(settings.build_version, -2, current_account.email, current_account.password, @as(i16, @intCast(selected_char_id)), char_create_type != 0, char_create_type, char_create_skin_type) catch |e| {
                         std.log.err("Could not send Hello: {any}", .{e});
                     };
                     sent_hello = true;
@@ -493,5 +533,12 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
         }
 
         std.debug.print("Logged in as {s}\n", .{current_account.name});
+        // if no chars current_screen = ScreenType.char_select else current_screen = ScreenType.char_creation
+        if (character_list.len > 0){
+            current_screen = ScreenType.char_select;
+        }
+        else {
+            current_screen = ScreenType.char_creation;
+        }
     }
 }
