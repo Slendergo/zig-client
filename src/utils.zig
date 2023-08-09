@@ -31,7 +31,28 @@ pub inline fn dist(x1: f32, y1: f32, x2: f32, y2: f32) f32 {
 
 pub const PacketWriter = struct {
     index: u16 = 0,
+    length_index: u16 = 0,
     buffer: [65535]u8 = undefined,
+
+    pub fn writeLength(self: *PacketWriter) void {
+        self.length_index = self.index;
+        self.index += 2;
+    }
+
+    pub fn updateLength(self: *PacketWriter) void {
+        const buf = self.buffer[self.length_index .. self.length_index + 2];
+        const len = self.index - self.length_index;
+        switch (builtin.cpu.arch.endian()) {
+            .Little => {
+                @memcpy(buf, std.mem.asBytes(&len));
+            },
+            .Big => {
+                var len_buf = std.mem.toBytes(len);
+                std.mem.reverse(u8, len_buf[0..2]);
+                @memcpy(buf, len_buf[0..2]);
+            },
+        }
+    }
 
     pub fn write(self: *PacketWriter, value: anytype) void {
         const T = @TypeOf(value);

@@ -113,6 +113,7 @@ pub const Server = struct {
             std.log.debug("Send - Hello: build_ver={s}, game_id={d}, email={s}, password={s}, char_id={d}, create_char={any}, class_type={d}, skin_type={d}", .{ build_ver, gameId, email, password, char_id, create_char, class_type, skin_type });
 
         self.writer.write(@intFromEnum(C2SPacketId.hello));
+        self.writer.writeLength();
         self.writer.write(build_ver);
         self.writer.write(gameId);
         self.writer.write(email);
@@ -123,6 +124,7 @@ pub const Server = struct {
             self.writer.write(class_type);
             self.writer.write(skin_type);
         }
+        self.writer.updateLength();
 
         try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
         self.writer.index = 0;
