@@ -710,6 +710,16 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         allocator.free(tex_list.*);
     }
 
+    for (classes) |class| {
+        allocator.free(class.texture.sheet);
+        allocator.free(class.hit_sound);
+        allocator.free(class.death_sound);
+        allocator.free(class.name);
+        allocator.free(class.desc);
+    }
+
+    allocator.free(classes);
+
     item_name_to_type.deinit();
     item_type_to_props.deinit();
     item_type_to_name.deinit();

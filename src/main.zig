@@ -386,6 +386,12 @@ pub fn main() !void {
         return;
     };
 
+    defer {
+        zgui.backend.deinit();
+        zgui.deinit();
+        gctx.destroy(allocator);
+    }
+
     if (!std.mem.eql(u8, "Guest", current_account.name)) {
         defer allocator.free(current_account.name);
     }
@@ -394,30 +400,12 @@ pub fn main() !void {
     defer {
         tick_network = false;
         network_thread.join();
-        if (server != null) {
-            server.?.deinit();
-        }
     }
 
     render_thread = try std.Thread.spawn(.{}, renderTick, .{allocator});
     defer {
         tick_render = false;
         render_thread.join();
-
-        if (character_list.len > 0) {
-            for (character_list) |char| {
-                allocator.free(char.name);
-            }
-            allocator.free(character_list);
-        }
-
-        if (server_list != null) {
-            for (server_list.?) |srv| {
-                allocator.free(srv.name);
-                allocator.free(srv.dns);
-            }
-            allocator.free(server_list.?);
-        }
     }
 
     while (!window.shouldClose()) {
@@ -431,6 +419,25 @@ pub fn main() !void {
             // ui.update(current_time, dt, allocator);
             last_update = current_time;
         }
+    }
+
+    if (server != null) {
+        defer server.?.deinit();
+    }
+
+    if (character_list.len > 0) {
+        for (character_list) |char| {
+            defer allocator.free(char.name);
+        }
+        defer allocator.free(character_list);
+    }
+
+    if (server_list != null) {
+        for (server_list.?) |srv| {
+            defer allocator.free(srv.name);
+            defer allocator.free(srv.dns);
+        }
+        defer allocator.free(server_list.?);
     }
 }
 
