@@ -169,7 +169,12 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 if (zgui.button("Login", .{ .w = 150.0 })) {
                     const email = static.email_buf[0..utils.strlen(static.email_buf[0..])];
                     const password = static.password_buf[0..utils.strlen(static.password_buf[0..])];
-                    try login(allocator, email, password);
+                    if (email.len > 0 and password.len > 0) {
+                        const logged_in = try login(allocator, email, password);
+                        if (logged_in) {
+                            current_screen = ScreenType.char_select;
+                        }
+                    }
                 }
             }
             zgui.end();
@@ -193,7 +198,10 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     const password = static.password_buf[0..utils.strlen(static.password_buf[0..])];
                     const response = try requests.sendAccountRegister(email, password, name);
                     if (std.mem.indexOf(u8, "<Success />", response) != null) {
-                        try login(allocator, email, password);
+                        const logged_in = try login(allocator, email, password);
+                        if (logged_in) {
+                            current_screen = ScreenType.char_select;
+                        }
                     }
                 }
             }
@@ -201,6 +209,9 @@ fn updateUi(allocator: std.mem.Allocator) !void {
         },
         ScreenType.char_select => {
             if (zgui.begin("Character Select", .{})) {
+                if (character_list.len < 1) {
+                    current_screen = ScreenType.char_creation;
+                }
                 const static = struct {
                     var char_index: u32 = 0;
                     var server_index: u32 = 0;
@@ -259,7 +270,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     }
                     zgui.endListBox();
                 }
-                
+
                 if (zgui.button("Create Character", .{ .w = 150.0 })) {
                     current_screen = ScreenType.in_game;
                     char_create_type = @as(u16, @intCast(static.char_type));
@@ -481,7 +492,7 @@ pub fn main() !void {
     }
 }
 
-fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) !void {
+fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) !bool {
     const response = try requests.sendAccountVerify(email, password);
 
     const verify_doc = try xml.Doc.fromMemory(response);
@@ -490,55 +501,54 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
 
     current_account.name = allocator.dupeZ(u8, verify_root.getValue("Name") orelse "Guest") catch |e| {
         std.log.err("Could not dupe current account name: {any}", .{e});
-        return;
+        return false;
     };
 
-    if (!std.mem.eql(u8, current_account.name, "Guest")) {
-        current_account.email = email;
-        current_account.password = password;
-        current_account.admin = verify_root.elementExists("Admin");
+    current_account.email = email;
+    current_account.password = password;
+    current_account.admin = verify_root.elementExists("Admin");
 
-        const guild_node = verify_root.findChild("Guild");
-        current_account.guild_name = try guild_node.?.getValueAlloc("Name", allocator, "");
-        current_account.guild_rank = try guild_node.?.getValueInt("Rank", u8, 0);
+    const guild_node = verify_root.findChild("Guild");
+    current_account.guild_name = try guild_node.?.getValueAlloc("Name", allocator, "");
+    current_account.guild_rank = try guild_node.?.getValueInt("Rank", u8, 0);
 
-        const list_response = try requests.sendCharList(email, password);
-        const list_doc = try xml.Doc.fromMemory(list_response);
-        defer list_doc.deinit();
-        const list_root = try list_doc.getRootElement();
-        next_char_id = try list_root.getAttributeInt("nextCharId", u8, 0);
-        max_chars = try list_root.getAttributeInt("maxNumChars", u8, 0);
+    const list_response = try requests.sendCharList(email, password);
+    const list_doc = try xml.Doc.fromMemory(list_response);
+    defer list_doc.deinit();
+    const list_root = try list_doc.getRootElement();
+    next_char_id = try list_root.getAttributeInt("nextCharId", u8, 0);
+    max_chars = try list_root.getAttributeInt("maxNumChars", u8, 0);
 
-        var char_list = std.ArrayList(CharacterData).init(allocator);
-        defer char_list.deinit();
+    var char_list = std.ArrayList(CharacterData).init(allocator);
+    defer char_list.deinit();
 
-        var char_iter = list_root.iterate(&.{}, "Char");
-        while (char_iter.next()) |node|
-            try char_list.append(try CharacterData.parse(allocator, node, try node.getAttributeInt("id", u32, 0)));
-        std.debug.print("Total characters: {d}\n", .{char_list.capacity});
+    var char_iter = list_root.iterate(&.{}, "Char");
+    while (char_iter.next()) |node|
+        try char_list.append(try CharacterData.parse(allocator, node, try node.getAttributeInt("id", u32, 0)));
+    std.debug.print("Total characters: {d}\n", .{char_list.capacity});
 
-        character_list = try allocator.dupe(CharacterData, char_list.items);
+    character_list = try allocator.dupe(CharacterData, char_list.items);
 
-        const server_root = list_root.findChild("Servers");
-        if (server_root != null) {
-            var server_data_list = std.ArrayList(ServerData).init(allocator);
-            defer server_data_list.deinit();
+    const server_root = list_root.findChild("Servers");
+    if (server_root != null) {
+        var server_data_list = std.ArrayList(ServerData).init(allocator);
+        defer server_data_list.deinit();
 
-            var server_iter = server_root.?.iterate(&.{}, "Server");
-            while (server_iter.next()) |server_node|
-                try server_data_list.append(try ServerData.parse(server_node, allocator));
+        var server_iter = server_root.?.iterate(&.{}, "Server");
+        while (server_iter.next()) |server_node|
+            try server_data_list.append(try ServerData.parse(server_node, allocator));
 
-            server_list = try allocator.dupe(ServerData, server_data_list.items);
-            std.debug.print("Total servers: {d}\n", .{server_list.?.len});
-        }
-
-        std.debug.print("Logged in as {s}\n", .{current_account.name});
-        // if no chars current_screen = ScreenType.char_select else current_screen = ScreenType.char_creation
-        if (character_list.len > 0){
-            current_screen = ScreenType.char_select;
-        }
-        else {
-            current_screen = ScreenType.char_creation;
-        }
+        server_list = try allocator.dupe(ServerData, server_data_list.items);
+        std.debug.print("Total servers: {d}\n", .{server_list.?.len});
     }
+
+    std.debug.print("Logged in as {s}\n", .{current_account.name});
+    // if no chars current_screen = ScreenType.char_select else current_screen = ScreenType.char_creation
+    if (character_list.len > 0) {
+        current_screen = ScreenType.char_select;
+    } else {
+        current_screen = ScreenType.char_creation;
+    }
+
+    return true;
 }
