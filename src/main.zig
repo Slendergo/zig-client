@@ -405,6 +405,7 @@ pub fn disconnect() void {
 
         server.?.stream.close();
         server = null;
+        selected_server = null;
         sent_hello = false;
     }
 
