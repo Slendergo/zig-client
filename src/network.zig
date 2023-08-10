@@ -112,8 +112,8 @@ pub const Server = struct {
         if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
             std.log.debug("Send - Hello: build_ver={s}, game_id={d}, email={s}, password={s}, char_id={d}, create_char={any}, class_type={d}, skin_type={d}", .{ build_ver, gameId, email, password, char_id, create_char, class_type, skin_type });
 
-        self.writer.write(@intFromEnum(C2SPacketId.hello));
         self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.hello));
         self.writer.write(build_ver);
         self.writer.write(gameId);
         self.writer.write(email);
@@ -153,9 +153,12 @@ pub const Server = struct {
                 self.buffer_idx = 0;
                 return;
             };
+
             switch (packet_id) {
                 .create_success => handleCreateSuccess(&self.reader),
-                else => return,
+                else => {
+                    std.log.debug("packet id: {}", .{packet_id});
+                },
                 // .text => handleText(&self.reader),
                 // .server_player_shoot => try handleServerPlayerShoot(self),
                 // .damage => handleDamage(&self.reader),
