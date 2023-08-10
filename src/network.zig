@@ -198,7 +198,7 @@ pub const Server = struct {
 
     pub fn playerText(self: *Server, text: []const u8) !void {
         if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-            std.log.debug("Send - Text: text={s}", .{text});
+            std.log.debug("Send - PlayerText: text={s}", .{text});
 
         self.writer.writeLength();
         self.writer.write(@intFromEnum(C2SPacketId.player_text));
