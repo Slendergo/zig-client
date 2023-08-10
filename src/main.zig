@@ -15,6 +15,7 @@ const zstbi = @import("zstbi");
 const input = @import("input.zig");
 const utils = @import("utils.zig");
 const camera = @import("camera.zig");
+const map = @import("map.zig");
 
 pub const ServerData = struct {
     name: [:0]const u8 = "",
@@ -356,7 +357,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
         std.time.sleep(101 * std.time.ns_per_ms);
 
         if (selected_server != null) {
-            network_lock.lock();
+            while (!network_lock.tryLock()) {}
             defer network_lock.unlock();
 
             if (server == null)
@@ -387,6 +388,27 @@ fn renderTick(allocator: std.mem.Allocator) void {
 
         draw();
     }
+}
+
+pub fn clear() void {
+    map.local_player_id = -1;
+    // map.interactive_id = -1;
+    // map.objects.clearRetainingCapacity();
+    // map.projectiles.clearRetainingCapacity();
+    // map.players.clearRetainingCapacity();
+}
+
+pub fn disconnect() void {
+    if (server != null) {
+        while (!network_lock.tryLock()) {}
+        defer network_lock.unlock();
+
+        server.?.stream.close();
+        server = null;
+        sent_hello = false;
+    }
+
+    clear();
 }
 
 pub fn main() !void {

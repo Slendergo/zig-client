@@ -37,6 +37,9 @@ inline fn keyPress(key: zglfw.Key) void {
         camera.angle = 0;
     } else if (key == settings.shoot.getKey()) {
         attacking = true;
+    } else if (key == settings.options.getKey()) {
+        main.current_screen = .char_select;
+        main.disconnect();
     }
 }
 
@@ -79,6 +82,9 @@ inline fn mousePress(button: zglfw.MouseButton) void {
         camera.angle = 0;
     } else if (button == settings.shoot.getMouse()) {
         attacking = true;
+    } else if (button == settings.options.getMouse()) {
+        main.current_screen = .char_select;
+        main.disconnect();
     }
 }
 
