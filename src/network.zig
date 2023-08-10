@@ -197,7 +197,7 @@ pub const Server = struct {
         const angle = reader.read(f32);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
-            std.log.debug("Recv - AllyShoot: bullet_id={d}, owner_id={d}, container_type={d}, angle={f}", .{ bullet_id, owner_id, container_type, angle });
+            std.log.debug("Recv - AllyShoot: bullet_id={d}, owner_id={d}, container_type={d}, angle={d}", .{ bullet_id, owner_id, container_type, angle });
     }
 
     inline fn handleAoe(reader: *utils.PacketReader) void {
@@ -209,7 +209,7 @@ pub const Server = struct {
         const orig_type = reader.read(u8);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
-            std.log.debug("Recv - Aoe: position={v3}, radius={f}, damage={d}, condition_effect={d}, duration={f}, orig_type={d}", .{ position, radius, damage, condition_effect, duration, orig_type });
+            std.log.debug("Recv - Aoe: position={d}, radius={d}, damage={d}, condition_effect={d}, duration={d}, orig_type={d}", .{ position, radius, damage, condition_effect, duration, orig_type });
     }
 
     inline fn handleBuyResult(reader: *utils.PacketReader) void {
@@ -237,7 +237,7 @@ pub const Server = struct {
         const object_id = reader.read(i32);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
-            std.log.debug("Recv - Damage: target_id={d}, effects={d}, damage_amount={d}, kill={d}, bullet_id={d}, object_id={d}", .{ target_id, effects, damage_amount, kill, bullet_id, object_id });
+            std.log.debug("Recv - Damage: target_id={d}, effects={d}, damage_amount={d}, kill={any}, bullet_id={d}, object_id={d}", .{ target_id, effects, damage_amount, kill, bullet_id, object_id });
     }
 
     inline fn handleDeath(reader: *utils.PacketReader) void {
@@ -260,7 +260,7 @@ pub const Server = struct {
         const angle_inc = reader.read(f32);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
-            std.log.debug("Recv - EnemyShoot: bullet_id={d}, owner_id={d}, bullet_type={d}, starting_pos={v3}, angle={f}, damage={d}, num_shots={d}, angle_inc={f}", .{ bullet_id, owner_id, bullet_type, starting_pos, angle, damage, num_shots, angle_inc });
+            std.log.debug("Recv - EnemyShoot: bullet_id={d}, owner_id={d}, bullet_type={d}, starting_pos={d}, angle={d}, damage={d}, num_shots={d}, angle_inc={d}", .{ bullet_id, owner_id, bullet_type, starting_pos, angle, damage, num_shots, angle_inc });
     }
 
     inline fn handleFailure(reader: *utils.PacketReader) void {
@@ -284,7 +284,7 @@ pub const Server = struct {
         const position = 0; // handle pos
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - Goto: object_id={d}, position={v3}", .{ object_id, position });
+            std.log.debug("Recv - Goto: object_id={d}, position={d}", .{ object_id, position });
     }
 
     inline fn handleGuildResult(reader: *utils.PacketReader) void {
@@ -292,7 +292,7 @@ pub const Server = struct {
         const error_text = reader.read([]u8);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - GuildResult: success={d}, error_text={s}", .{ success, error_text });
+            std.log.debug("Recv - GuildResult: success={any}, error_text={s}", .{ success, error_text });
     }
 
     inline fn handleInvitedToGuild(reader: *utils.PacketReader) void {
@@ -322,7 +322,7 @@ pub const Server = struct {
         const show_displays = reader.read(bool);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, difficulty={d}, seed={d}, background={d}, allow_player_teleport={d}, show_displays={d}", .{ width, height, name, display_name, difficulty, seed, background, allow_player_teleport, show_displays });
+            std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, difficulty={d}, seed={d}, background={d}, allow_player_teleport={any}, show_displays={any}", .{ width, height, name, display_name, difficulty, seed, background, allow_player_teleport, show_displays });
     }
 
     inline fn handleNameResult(reader: *utils.PacketReader) void {
@@ -330,7 +330,7 @@ pub const Server = struct {
         const error_text = reader.read([]u8);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - NameResult: success={d}, error_text={s}", .{ success, error_text });
+            std.log.debug("Recv - NameResult: success={any}, error_text={s}", .{ success, error_text });
     }
 
     inline fn handleNewTick(reader: *utils.PacketReader) void {
@@ -339,7 +339,7 @@ pub const Server = struct {
         const statuses = 0; // handle statuses
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
-            std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses={v}", .{ tick_id, tick_time, statuses });
+            std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses={d}", .{ tick_id, tick_time, statuses });
     }
 
     inline fn handleNotification(reader: *utils.PacketReader) void {
@@ -382,7 +382,7 @@ pub const Server = struct {
         const damage = reader.read(i16);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - ServerPlayerShoot: bullet_id={d}, owner_id={d}, container_type={d}, starting_pos={v}, angle={f}, damage={d}", .{ bullet_id, owner_id, container_type, starting_pos, angle, damage });
+            std.log.debug("Recv - ServerPlayerShoot: bullet_id={d}, owner_id={d}, container_type={d}, starting_pos={d}, angle={f}, damage={d}", .{ bullet_id, owner_id, container_type, starting_pos, angle, damage });
     }
 
     inline fn handleShowEffect(reader: *utils.PacketReader) void {
@@ -393,7 +393,7 @@ pub const Server = struct {
         const color = 0; // handle color
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - ShowEffect: effect_type={d}, target_object_id={d}, pos1={v}, pos2={v}, color={d}", .{ effect_type, target_object_id, pos1, pos2, color });
+            std.log.debug("Recv - ShowEffect: effect_type={d}, target_object_id={d}, pos1={d}, pos2={d}, color={d}", .{ effect_type, target_object_id, pos1, pos2, color });
     }
 
     inline fn handleText(reader: *utils.PacketReader) void {
@@ -413,14 +413,14 @@ pub const Server = struct {
         const your_offer = reader.read([]bool);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - TradeAccepted: my_offer={v}, your_offer={v}", .{ my_offer, your_offer });
+            std.log.debug("Recv - TradeAccepted: my_offer={any}, your_offer={any}", .{ my_offer, your_offer });
     }
 
     inline fn handleTradeChanged(reader: *utils.PacketReader) void {
         const offer = reader.read([]bool);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - TradeChanged: offer={v}", .{ offer });
+            std.log.debug("Recv - TradeChanged: offer={any}", .{ offer });
     }
 
     inline fn handleTradeDone(reader: *utils.PacketReader) void {
@@ -444,7 +444,7 @@ pub const Server = struct {
         const your_items = 0; // handle trade items
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - TradeStart: my_items={v}, your_name={s}, your_items={v}", .{ my_items, your_name, your_items });
+            std.log.debug("Recv - TradeStart: my_items={d}, your_name={s}, your_items={d}", .{ my_items, your_name, your_items });
     }
 
     inline fn handleUpdate(reader: *utils.PacketReader) void {
@@ -453,7 +453,7 @@ pub const Server = struct {
         const pos = reader.read([]i32);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
-            std.log.debug("Recv - Update: tiles={v}, new_objects={v}, pos={v}", .{ tiles, new_objects, pos });
+            std.log.debug("Recv - Update: tiles={d}, new_objects={d}, pos={d}", .{ tiles, new_objects, pos });
     }
 
     pub fn hello(self: *Server, build_ver: []const u8, gameId: i32, email: []const u8, password: []const u8, char_id: i16, create_char: bool, class_type: u16, skin_type: u16) !void {
