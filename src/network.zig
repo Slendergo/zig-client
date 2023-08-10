@@ -196,6 +196,19 @@ pub const Server = struct {
         self.buffer_idx = 0;
     }
 
+    pub fn playerText(self: *Server, text: []const u8) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - Text: text={s}", .{text});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.player_text));
+        self.writer.write(text);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
     inline fn handleCreateSuccess(reader: *utils.PacketReader) void {
         map.local_player_id = reader.read(i32);
         const char_id = reader.read(i32);

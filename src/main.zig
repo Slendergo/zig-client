@@ -300,11 +300,11 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 _ = zgui.inputText("Text", .{ .buf = static.text_buf[0..] });
 
                 if (zgui.button("Send message", .{ .w = 150.0 })) {
-                    // if (server != null) {
-                    //     server.?.playerText(static.text_buf[0..utils.strlen(static.text_buf[0..])]) catch |e| {
-                    //         std.log.err("Can't send player text: {any}", .{e});
-                    //     };
-                    // }
+                    if (server != null) {
+                        server.?.playerText(static.text_buf[0..utils.strlen(static.text_buf[0..])]) catch |e| {
+                            std.log.err("Can't send player text: {any}", .{e});
+                        };
+                    }
                     static.text_buf = std.mem.zeroes([128]u8);
                 }
             }
