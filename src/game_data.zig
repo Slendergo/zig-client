@@ -2,11 +2,11 @@ const std = @import("std");
 const xml = @import("xml.zig");
 const utils = @import("utils.zig");
 const asset_dir = @import("build_options").asset_dir;
-const item_files = [_][]const u8{"Equip"};
+
+const item_files = [_][]const u8{ "Equip", "Dyes", "Textiles" };
 // zig fmt: off
 const object_files = [_][]const u8{
-    "Projectiles",          "Equip",               "Dyes",
-    "Textiles",             "Permapets",           "WillemTesting",
+    "Projectiles",          "WillemTesting",       "MountainTempleObject",
     "TTesting",             "BTesting",            "STesting",
     "MTesting",             "KTesting",            "Players",
     "Containers",           "Objects",             "Portals",
@@ -27,11 +27,11 @@ const object_files = [_][]const u8{
     "LairOfShaitan",        "Shatters",            "Belladonna",
     "PuppetMaster",         "IceCave",             "TheHive",
     "ToxicSewers",          "PuppetMasterEncore",  "IceTomb",
-    "stPatricksObject",     "buffedBunnyObject",   "hanaminexusObject",
-    "mountainTempleObject",
+    "StPatricksObject",     "BuffedBunnyObject",   "HanaminexusObject",
 };
 // zig fmt: on
 const ground_files = [_][]const u8{ "Ground", "stPatricksGround", "hanaminexusGround", "mountainTempleGround" };
+
 const region_files = [_][]const u8{"Regions"};
 
 pub const ClassType = enum(u8) {
