@@ -2,8 +2,6 @@ const std = @import("std");
 const xml = @import("xml.zig");
 const utils = @import("utils.zig");
 const asset_dir = @import("build_options").asset_dir;
-
-const ground_files = [_][]const u8{"Ground"};
 const item_files = [_][]const u8{"Equip"};
 // zig fmt: off
 const object_files = [_][]const u8{
@@ -33,6 +31,7 @@ const object_files = [_][]const u8{
     "MountainTempleObject",
 };
 // zig fmt: on
+const ground_files = [_][]const u8{ "Ground", "StPatricksGround", "HanamiNexusGround", "MountainTempleGround" };
 const region_files = [_][]const u8{"Regions"};
 
 pub const ClassType = enum(u8) {
@@ -656,14 +655,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
     region_type_to_name = std.AutoHashMap(u16, []const u8).init(allocator);
     region_type_to_color = std.AutoHashMap(u16, u32).init(allocator);
 
-    inline for (ground_files) |ground_name| {
-        const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ ground_name ++ ".xml");
-        defer doc.deinit();
-        parseGrounds(doc, allocator) catch |e| {
-            std.log.err("Ground parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
-        };
-    }
-
     inline for (item_files) |item_name| {
         const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ item_name ++ ".xml");
         defer doc.deinit();
@@ -677,6 +668,14 @@ pub fn init(allocator: std.mem.Allocator) !void {
         defer doc.deinit();
         parseObjects(doc, allocator) catch |e| {
             std.log.err("Object parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
+        };
+    }
+    
+    inline for (ground_files) |ground_name| {
+        const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ ground_name ++ ".xml");
+        defer doc.deinit();
+        parseGrounds(doc, allocator) catch |e| {
+            std.log.err("Ground parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
         };
     }
 
