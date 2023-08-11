@@ -1,6 +1,7 @@
 const std = @import("std");
 const gk = @import("gamekit");
 const assets = @import("assets.zig");
+const game_data = @import("game_data.zig");
 const settings = @import("settings.zig");
 const requests = @import("requests.zig");
 const network = @import("network.zig");
@@ -74,7 +75,7 @@ pub const CharacterData = struct {
             .health_pots = try node.getValueInt("HealthStackCount", i8, 0),
             .magic_pots = try node.getValueInt("MagicStackCount", i8, 0),
             .has_backpack = try node.getValueInt("HasBackpack", i8, 0) > 0,
-            .name = try allocator.dupeZ(u8, assets.obj_type_to_name.get(obj_type) orelse "Unknown Class"),
+            .name = try allocator.dupeZ(u8, game_data.obj_type_to_name.get(obj_type) orelse "Unknown Class"),
         };
     }
     // zig fmt: on
@@ -431,6 +432,9 @@ pub fn main() !void {
 
     try assets.init(allocator);
     defer assets.deinit(allocator);
+
+    try game_data.init(allocator);
+    defer game_data.deinit(allocator);
 
     settings.init();
     defer settings.save();

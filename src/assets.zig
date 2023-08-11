@@ -1,920 +1,464 @@
-const std = @import("std");
 const xml = @import("xml.zig");
-const utils = @import("utils.zig");
+const zstbi = @import("zstbi");
+const zstbrp = @import("zstbrp");
 const asset_dir = @import("build_options").asset_dir;
-const item_files = [_][]const u8{"Equip"};
-// zig fmt: off
-const object_files = [_][]const u8{
-    "Projectiles",          "Equip",               "Dyes",
-    "Textiles",             "Permapets",           "WillemTesting",
-    "TTesting",             "BTesting",            "STesting",
-    "MTesting",             "KTesting",            "Players",
-    "Containers",           "Objects",             "Portals",
-    "TestingObjects",       "StaticObjects",       "TutorialObjects",
-    "TutorialMonsters",     "Allies",              "Heroes",
-    "PlayersZombies",       "Pets",                "NPCs",
-    "Shore",                "Low",                 "Mid",
-    "High",                 "Mountains",           "Encounters",
-    "Arena",                "OryxCastle",          "TombOfTheAncients",
-    "SpriteWorld",          "UndeadLair",          "OceanTrench",
-    "ForbiddenJungle",      "OryxChamber",         "OryxChickenChamber",
-    "OryxWineCellar",       "ManorOfTheImmortals", "PirateCave",
-    "SnakePit",             "SpiderDen",           "AbyssOfDemons",
-    "GhostShip",            "MadLab",              "CaveOfAThousandTreasures",
-    "CandyLand",            "HauntedCemetery",     "ForestMaze",
-    "EpicForestMaze",       "EpicPirateCave",      "EpicSpiderDen",
-    "NexusDestroyed",       "MiniDungeonHub",      "LairOfDraconis",
-    "LairOfShaitan",        "Shatters",            "Belladonna",
-    "PuppetMaster",         "IceCave",             "TheHive",
-    "ToxicSewers",          "PuppetMasterEncore",  "IceTomb",
-    "stPatricksObject",     "buffedBunnyObject",   "hanaminexusObject",
-    "mountainTempleObject",
-};
-// zig fmt: on
-const ground_files = [_][]const u8{ "Ground", "stPatricksGround", "hanaminexusGround", "mountainTempleGround" };
-const region_files = [_][]const u8{"Regions"};
+const std = @import("std");
+const game_data = @import("game_data.zig");
+const settings = @import("settings.zig");
+const freetype = @import("freetype");
 
-pub const ClassType = enum(u8) {
-    arena_guard = 0,
-    arena_portal = 1,
-    cave_wall = 2,
-    character = 3,
-    character_changer = 4,
-    closed_gift_chest = 5,
-    closed_vault_chest = 6,
-    connected_wall = 7,
-    container = 8,
-    daily_login_rewards = 9,
-    double_wall = 10,
-    fortune_ground = 11,
-    fortune_teller = 12,
-    game_object = 13,
-    guild_board = 14,
-    guild_chronicle = 15,
-    guild_hall_portal = 16,
-    guild_merchant = 17,
-    guild_register = 18,
-    merchant = 19,
-    money_changer = 20,
-    mystery_box_ground = 21,
-    name_changer = 22,
-    one_way_container = 23,
-    pet = 24,
-    pet_upgrader = 25,
-    player = 26,
-    portal = 27,
-    projectile = 28,
-    quest_rewards = 29,
-    reskin_vendor = 30,
-    sign = 31,
-    spider_web = 32,
-    stalagmite = 33,
-    wall = 34,
-    yard_upgrader = 35,
+pub const padding = 2;
 
-    const map = std.ComptimeStringMap(ClassType, .{
-        .{ "ArenaGuard", .arena_guard },
-        .{ "ArenaPortal", .arena_portal },
-        .{ "CaveWall", .cave_wall },
-        .{ "Character", .character },
-        .{ "CharacterChanger", .character_changer },
-        .{ "ClosedGiftChest", .closed_gift_chest },
-        .{ "ClosedVaultChest", .closed_vault_chest },
-        .{ "ConnectedWall", .connected_wall },
-        .{ "Container", .container },
-        .{ "DailyLoginRewards", .daily_login_rewards },
-        .{ "DoubleWall", .double_wall },
-        .{ "FortuneGround", .fortune_ground },
-        .{ "FortuneTeller", .fortune_teller },
-        .{ "GameObject", .game_object },
-        .{ "GuildBoard", .guild_board },
-        .{ "GuildChronicle", .guild_chronicle },
-        .{ "GuildHallPortal", .guild_hall_portal },
-        .{ "GuildMerchant", .guild_merchant },
-        .{ "GuildRegister", .guild_register },
-        .{ "Merchant", .merchant },
-        .{ "MoneyChanger", .money_changer },
-        .{ "MysteryBoxGround", .mystery_box_ground },
-        .{ "NameChanger", .name_changer },
-        .{ "OneWayContainer", .one_way_container },
-        .{ "Pet", .pet },
-        .{ "PetUpgrader", .pet_upgrader },
-        .{ "Player", .player },
-        .{ "Portal", .portal },
-        .{ "Projectile", .projectile },
-        .{ "QuestRewards", .quest_rewards },
-        .{ "ReskinVendor", .reskin_vendor },
-        .{ "Sign", .sign },
-        .{ "SpiderWeb", .spider_web },
-        .{ "Stalagmite", .stalagmite },
-        .{ "Wall", .wall },
-        .{ "YardUpgrader", .yard_upgrader },
-    });
+pub const atlas_width: u32 = 4096;
+pub const atlas_height: u32 = 4096;
+pub const base_texel_w: f32 = 1.0 / 4096.0;
+pub const base_texel_h: f32 = 1.0 / 4096.0;
 
-    pub fn fromString(str: []const u8) ClassType {
-        return map.get(str) orelse .game_object;
-    }
-};
+pub const right_dir: u8 = 0;
+pub const left_dir: u8 = 1;
+pub const down_dir: u8 = 2;
+pub const up_dir: u8 = 3;
 
-pub const TextureData = struct {
-    sheet: []const u8,
-    index: u16,
-    animated: bool,
+pub const char_atlas_w = 1024;
+pub const char_atlas_h = 512;
+pub const char_size = 64.0;
 
-    // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator, animated: bool) !TextureData {
-        return TextureData {
-            .sheet = try node.getValueAlloc("Sheet", allocator, "Unknown"),
-            .index = try node.getValueInt("Index", u16, 0),
-            .animated = animated,
+pub const CharacterData = struct {
+    x_advance: f32,
+    tex_u: f32,
+    tex_v: f32,
+    tex_w: f32,
+    tex_h: f32,
+    x_offset: f32,
+    y_offset: f32,
+    width: f32,
+    height: f32,
+
+    pub fn parse(split: *std.mem.SplitIterator(u8, .sequence)) !CharacterData {
+        var data = CharacterData{
+            .x_advance = try std.fmt.parseFloat(f32, split.next().?) * char_size,
+            .x_offset = try std.fmt.parseFloat(f32, split.next().?) * char_size,
+            .y_offset = try std.fmt.parseFloat(f32, split.next().?) * char_size,
+            .width = try std.fmt.parseFloat(f32, split.next().?) * char_size,
+            .height = try std.fmt.parseFloat(f32, split.next().?) * char_size,
+            .tex_u = try std.fmt.parseFloat(f32, split.next().?) / char_atlas_w,
+            .tex_h = (char_atlas_h - try std.fmt.parseFloat(f32, split.next().?)) / char_atlas_h,
+            .tex_w = try std.fmt.parseFloat(f32, split.next().?) / char_atlas_w,
+            .tex_v = (char_atlas_h - try std.fmt.parseFloat(f32, split.next().?)) / char_atlas_h,
         };
+        data.width -= data.x_offset;
+        data.height -= data.y_offset;
+        data.tex_h -= data.tex_v;
+        data.tex_w -= data.tex_u;
+        return data;
     }
-    // zig fmt: on
 };
 
-pub const CharacterSkin = struct {
-    obj_type: u16,
-    name: []const u8,
-    texture: TextureData,
-
-    // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) CharacterSkin {
-        return CharacterSkin {
-            .objType = try node.getAttributeInt("type", u16, 0),
-            .name = try node.getAttributeAlloc("id", allocator, "Unknown"),
-            .texture = try TextureData.parse(node.findChild("AnimatedTexture") orelse @panic("Could not parse CharacterClass"), allocator, false),
-        };
-    }
-    // zig fmt: on
+pub const AnimEnemyData = struct {
+    // left/right dir
+    walk_anims: [2][3]zstbrp.PackRect,
+    attack_anims: [2][2]zstbrp.PackRect,
 };
 
-pub const CharacterClass = struct {
-    obj_type: u16,
-    name: []const u8,
-    desc: []const u8,
-    hit_sound: []const u8,
-    death_sound: []const u8,
-    blood_prob: f32,
-    slot_types: []i8,
-    equipment: []i16,
-    texture: TextureData,
-    skins: ?[]CharacterSkin,
-
-    // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !CharacterClass {
-        var slot_list = std.ArrayList(i8).init(allocator);
-        defer slot_list.deinit();
-        var slot_iter = std.mem.split(u8, node.getValue("SlotTypes") orelse "", ", ");
-        while (slot_iter.next()) |s|
-            try slot_list.append(try std.fmt.parseInt(i8, s, 0));
-
-        var equip_list = std.ArrayList(i16).init(allocator);
-        defer equip_list.deinit();
-        var equip_iter = std.mem.split(u8, node.getValue("Equipment") orelse "", ", ");
-        while (equip_iter.next()) |s|
-            try equip_list.append(try std.fmt.parseInt(i16, s, 0));
-
-        return CharacterClass {
-            .obj_type = try node.getAttributeInt("type", u16, 0),
-            .name = try node.getAttributeAlloc("id", allocator, "Unknown"),
-            .desc = try node.getValueAlloc("Description", allocator, "Unknown"),
-            .hit_sound = try node.getValueAlloc("HitSound", allocator, "Unknown"),
-            .death_sound = try node.getValueAlloc("DeathSound", allocator, "Unknown"),
-            .blood_prob = try node.getAttributeFloat("BloodProb", f32, 0.0),
-            .slot_types = slot_list.items,
-            .equipment = equip_list.items,
-            .texture = try TextureData.parse(node.findChild("AnimatedTexture") orelse @panic("Could not parse CharacterClass"), allocator, false),
-            .skins = null
-        };
-    }
-    // zig fmt: on
+pub const AnimPlayerData = struct {
+    // all dirs
+    walk_anims: [4][3]zstbrp.PackRect,
+    attack_anims: [4][2]zstbrp.PackRect,
 };
 
-pub const AnimFrame = struct {
-    time: u16,
-    tex: TextureData,
-
-    // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) AnimFrame {
-        return AnimFrame {
-            .time = try node.getAttributeFloat("time", f32, 0.0) * 1000,
-            .tex = TextureData.parse(node.findChild("Texture"), allocator, false)
-        };
-    }
-    // zig fmt: on
+pub const FloatRect = struct {
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
 };
 
-pub const AnimProps = struct {
-    prob: f32,
-    period: u16,
-    period_jitter: u16,
-    sync: bool,
-    frames: []AnimFrame,
+pub var atlas: zstbi.Image = undefined;
+pub var light_tex: zstbi.Image = undefined;
 
-    // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) AnimProps {
-        var frame_list = std.ArrayList(AnimFrame).init(allocator);
-        defer frame_list.deinit();
-        var frame_iter = node.iterate(&.{}, "Frame");
-        while (frame_iter.next()) |animNode|
-            try frame_list.append(AnimFrame.parse(animNode, allocator));
+pub var bold_atlas: zstbi.Image = undefined;
+pub var bold_chars: [256]CharacterData = undefined;
+pub var bold_italic_atlas: zstbi.Image = undefined;
+pub var bold_italic_chars: [256]CharacterData = undefined;
+pub var medium_atlas: zstbi.Image = undefined;
+pub var medium_chars: [256]CharacterData = undefined;
+pub var medium_italic_atlas: zstbi.Image = undefined;
+pub var medium_italic_chars: [256]CharacterData = undefined;
 
-        return AnimProps {
-            .prob = try node.getAttributeFloat("prob", f32, 0.0),
-            .period = try node.getAttributeInt("period", u16, 0),
-            .period_jitter = try node.getAttributeInt("periodJitter", u16, 0),
-            .sync = node.attributeExists("sync"),
-            .frames = frame_list.items
-        };
+pub var rects: std.StringHashMap([]zstbrp.PackRect) = undefined;
+pub var anim_enemies: std.StringHashMap([]AnimEnemyData) = undefined;
+pub var anim_players: std.StringHashMap([]AnimPlayerData) = undefined;
+
+pub var left_top_mask_uv: [4]f32 = undefined;
+pub var right_bottom_mask_uv: [4]f32 = undefined;
+pub var wall_backface_uv: [2]f32 = undefined;
+pub var empty_bar_rect: FloatRect = undefined;
+pub var hp_bar_rect: FloatRect = undefined;
+pub var mp_bar_rect: FloatRect = undefined;
+
+fn isImageEmpty(img: zstbi.Image, x: usize, y: usize, w: u32, h: u32) bool {
+    for (y..y + h) |loop_y| {
+        for (x..x + w) |loop_x| {
+            if (img.data[(loop_y * img.width + loop_x) * 4 + 3] != 0)
+                return false;
+        }
     }
-    // zig fmt: on
-};
 
-pub const GroundProps = struct {
-    obj_type: u16,
-    obj_id: []const u8,
-    no_walk: bool,
-    damage: u16,
-    blend_prio: i16,
-    speed: f32,
-    sink: bool,
-    light_color: i32,
-    light_intensity: f32,
-    light_radius: f32,
+    return true;
+}
 
-    // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !GroundProps {
-        return GroundProps {
-            .obj_type = try node.getAttributeInt("node", u16, 0),
-            .obj_id = try node.getAttributeAlloc("id", allocator, "Unknown"),
-            .no_walk = node.elementExists("NoWalk"),
-            .damage = try node.getValueInt("Damage", u16, 0),
-            .blend_prio = try node.getValueInt("BlendPriority", i16, 0),
-            .speed = try node.getValueFloat("Speed", f32, 0.0),
-            .sink = node.elementExists("Sink"),
-            .light_color = try node.getValueInt("LightColor", i32, -1),
-            .light_intensity = try node.getValueFloat("LightIntensity", f32, 0.1),
-            .light_radius = try node.getValueFloat("LightRadius", f32, 1.0),
-        };
+inline fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
+    var img = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/" ++ image_name, 4);
+    defer img.deinit();
+
+    const img_size = cut_width * cut_height;
+    var len = @divFloor(img.width * img.height, img_size);
+    var current_rects = try allocator.alloc(zstbrp.PackRect, len);
+
+    for (0..len) |i| {
+        const cur_src_x = (i * cut_width) % img.width;
+        const cur_src_y = @divFloor(i * cut_width, img.width) * cut_height;
+
+        if (!isImageEmpty(img, cur_src_x, cur_src_y, cut_width, cut_height)) {
+            current_rects[i].w = cut_width + padding * 2;
+            current_rects[i].h = cut_height + padding * 2;
+        } else {
+            current_rects[i].w = 0;
+            current_rects[i].h = 0;
+        }
     }
-    // zig fmt: on
-};
 
-pub const ObjProps = struct {
-    obj_type: u16,
-    obj_id: []const u8,
-    display_id: []const u8,
-    is_player: bool,
-    is_enemy: bool,
-    draw_on_ground: bool,
-    occupy_square: bool,
-    static: bool,
-    no_mini_map: bool,
-    base_z: f32,
-    show_name: bool,
-    min_size: f32,
-    max_size: f32,
-    size_step: f32,
-    angle_correction: f32,
-    rotation: f32,
-    float: bool,
-    float_time: u16,
-    float_height: f32,
-    float_sine: bool,
-    light_color: i32,
-    light_intensity: f32,
-    light_radius: f32,
-    alpha_mult: f32,
-    projectiles: []ProjProps,
+    if (zstbrp.packRects(ctx, current_rects)) {
+        for (0..len) |i| {
+            const rect = current_rects[i];
+            if (rect.w == 0 or rect.h == 0)
+                continue;
 
-    // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ObjProps {
-        const obj_id = try node.getAttributeAlloc("id", allocator, "");
-        var min_size = try node.getValueFloat("MinSize", f32, 100.0) / 100.0;
-        var max_size = try node.getValueFloat("MaxSize", f32, 100.0) / 100.0;
-        const size = try node.getValueFloat("Size", f32, 0.0) / 100.0;
-        if (size > 0) {
-            min_size = size;
-            max_size = size;
+            const cur_atlas_x = rect.x + padding;
+            const cur_atlas_y = rect.y + padding;
+            const cur_src_x = (i * cut_width) % img.width;
+            const cur_src_y = @divFloor(i * cut_width, img.width) * cut_height;
+
+            for (0..img_size) |j| {
+                const row_count = @divFloor(j, cut_width);
+                const row_idx = j % cut_width;
+                const atlas_idx = ((cur_atlas_y + row_count) * atlas_width + cur_atlas_x + row_idx) * 4;
+                const src_idx = ((cur_src_y + row_count) * img.width + cur_src_x + row_idx) * 4;
+                @memcpy(atlas.data[atlas_idx .. atlas_idx + 4], img.data[src_idx .. src_idx + 4]);
+            }
         }
 
-        var proj_it = node.iterate(&.{}, "Projectile");
-        var proj_list = std.ArrayList(ProjProps).init(allocator);
-        defer proj_list.deinit();
-        while (proj_it.next()) |proj_node|
-            try proj_list.append(try ProjProps.parse(proj_node, allocator));
-
-        const float_node = node.findChild("Float");
-        return ObjProps {
-            .obj_type = try node.getAttributeInt("type", u16, 0),
-            .obj_id = obj_id,
-            .display_id = try node.getValueAlloc("DisplayId", allocator, obj_id),
-            .is_player = node.elementExists("Player"),
-            .is_enemy = node.elementExists("Enemy"),
-            .draw_on_ground = node.elementExists("DrawOnGround"),
-            .occupy_square = node.elementExists("OccupySquare"),
-            .static = node.elementExists("Static"),
-            .no_mini_map = node.elementExists("NoMiniMap"),
-            .base_z = try node.getValueFloat("Z", f32, 0.0),
-            .show_name = node.elementExists("ShowName"),
-            .min_size = min_size,
-            .max_size = max_size,
-            .size_step = try node.getValueFloat("SizeStep", f32, 0.0) / 100.0,
-            .angle_correction = try node.getValueFloat("AngleCorrection", f32, 0.0) * (std.math.pi / 4.0),
-            .rotation = try node.getValueFloat("Rotation", f32, 0.0),
-            .light_color = try node.getValueInt("LightColor", i32, -1),
-            .light_intensity = try node.getValueFloat("LightIntensity", f32, 0.1),
-            .light_radius = try node.getValueFloat("LightRadius", f32, 1.0),
-            .alpha_mult = try node.getValueFloat("AlphaMult", f32, 1.0),
-            .float = float_node != null,
-            .float_time = try std.fmt.parseInt(u16, if (float_node != null) float_node.?.getAttribute("time") orelse "0" else "0", 0),
-            .float_height = try std.fmt.parseFloat(f32, if (float_node != null) float_node.?.getAttribute("height") orelse "0.0" else "0.0"),
-            .float_sine = float_node != null and float_node.?.getAttribute("sine") != null,
-            .projectiles = try allocator.dupe(ProjProps, proj_list.items),
-        };
+        try rects.put(sheet_name, current_rects);
+    } else {
+        std.log.err("Could not pack " ++ image_name ++ " into the atlas", .{});
     }
-    // zig fmt: on
+}
 
-    pub fn getSize(self: *const ObjProps) f32 {
-        if (self.min_size == self.max_size)
-            return self.min_size;
+inline fn addAnimEnemy(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, comptime full_cut_width: u32, comptime full_cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
+    var img = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/" ++ image_name, 4);
+    defer img.deinit();
 
-        const max_steps = std.math.round((self.max_size - self.min_size) / self.size_step);
-        return self.min_size + std.math.round(utils.rng.random().float(f32) * max_steps) * self.size_step;
-    }
-};
+    const img_size = cut_width * cut_height;
+    var len = @divFloor(img.width, full_cut_width) * @divFloor(img.height, full_cut_height) * 5;
 
-pub const ProjProps = struct {
-    texture_data: []TextureData,
-    angle_correction: f32,
-    rotation: f32,
-    light_color: i32,
-    light_intensity: f32,
-    light_radius: f32,
-    lifetime_ms: u16,
-    speed: f32,
-    size: f32,
-    phys_dmg: u16,
-    magic_dmg: u16,
-    true_dmg: u16,
-    piercing: bool,
-    parametric: bool,
-    boomerang: bool,
-    amplitude: f32,
-    frequency: f32,
-    magnitude: f32,
-    accel: f32,
-    accel_delay: u16,
-    speed_clamp: u16,
-    angle_change: f32,
-    angle_change_delay: u16,
-    angle_change_end: u16,
-    angle_change_accel: f32,
-    angle_change_accel_delay: u16,
-    angle_change_clamp: f32,
-    zero_velocity_delay: i16,
-    heat_seek_speed: f32,
-    heat_seek_radius: f32,
-    heat_seek_delay: u16,
+    var current_rects = try allocator.alloc(zstbrp.PackRect, len * 2);
+    defer allocator.free(current_rects);
 
-    // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ProjProps {
-        return ProjProps {
-            .texture_data = try parseTexture(node, allocator),
-            .angle_correction = try node.getValueFloat("AngleCorrection", f32, 0.0) * (std.math.pi / 4.0),
-            .rotation = try node.getValueFloat("Rotation", f32, 0.0),
-            .light_color = try node.getValueInt("LightColor", i32, -1),
-            .light_intensity = try node.getValueFloat("LightIntensity", f32, 0.1),
-            .light_radius = try node.getValueFloat("LightRadius", f32, 1.0),
-            .lifetime_ms = try node.getValueInt("LifetimeMS", u16, 0),
-            .speed = try node.getValueFloat("Speed", f32, 0) / 10000.0,
-            .size = try node.getValueFloat("Size", f32, 100.0) / 100.0,
-            .phys_dmg = try node.getValueInt("Damage", u16, 0),
-            .magic_dmg = try node.getValueInt("MagicDamage", u16, 0),
-            .true_dmg = try node.getValueInt("TrueDamage", u16, 0),
-            .piercing = node.elementExists("MultiHit"),
-            .parametric = node.elementExists("Parametric"),
-            .boomerang = node.elementExists("Boomerang"),
-            .amplitude = try node.getValueFloat("Amplitude", f32, 0.0),
-            .frequency = try node.getValueFloat("Frequency", f32, 0.0),
-            .magnitude = try node.getValueFloat("Magnitude", f32, 0.0),
-            .accel = try node.getValueFloat("Acceleration", f32, 0.0),
-            .accel_delay = try node.getValueInt("AccelerationDelay", u16, 0),
-            .speed_clamp = try node.getValueInt("SpeedClamp", u16, 0),
-            .angle_change = std.math.degreesToRadians(f32, try node.getValueFloat("AngleChange", f32, 0.0)),
-            .angle_change_delay = try node.getValueInt("AngleChangeDelay", u16, 0),
-            .angle_change_end = try node.getValueInt("AngleChangeEnd", u16, 0),
-            .angle_change_accel = std.math.degreesToRadians(f32, try node.getValueFloat("AngleChangeAccel", f32, 0.0)),
-            .angle_change_accel_delay = try node.getValueInt("AngleChangeAccelDelay", u16, 0),
-            .angle_change_clamp = try node.getValueFloat("AngleChangeClamp", f32, 0.0),
-            .zero_velocity_delay = try node.getValueInt("ZeroVelocityDelay", i16, -1),
-            .heat_seek_speed = try node.getValueFloat("HeatSeekSpeed", f32, 0.0) / 10000.0,
-            .heat_seek_radius = try node.getValueFloat("HeatSeekRadius", f32, 0.0),
-            .heat_seek_delay = try node.getValueInt("HeatSeekDelay", u16, 0),
-        };
-    }
-    // zig fmt: on
-};
+    const enemy_data = try allocator.alloc(AnimEnemyData, @divFloor(len, 5));
 
-pub const StatType = enum(u8) {
-    hp = 0,
-    size = 1,
-    mp = 2,
-    inv0 = 3,
-    inv1 = 4,
-    inv2 = 5,
-    inv3 = 6,
-    inv4 = 7,
-    inv5 = 8,
-    inv6 = 9,
-    inv7 = 10,
-    inv8 = 11,
-    inv9 = 12,
-    inv10 = 13,
-    inv11 = 14,
-    inv12 = 15,
-    inv13 = 16,
-    inv14 = 17,
-    inv15 = 18,
-    inv16 = 19,
-    inv17 = 20,
-    inv18 = 21,
-    inv19 = 22,
-    inv20 = 23,
-    inv21 = 24,
-    name = 25,
-    merch_type = 26,
-    merch_price = 27,
-    merch_count = 28,
-    gems = 29,
-    gold = 30,
-    crowns = 31,
-    owner_account_id = 32,
-    max_hp = 33,
-    max_mp = 34,
-    strength = 35,
-    defense = 36,
-    speed = 37,
-    stamina = 38,
-    wit = 39,
-    resistance = 40,
-    intelligence = 41,
-    penetration = 42,
-    piercing = 43,
-    haste = 44,
-    tenacity = 45,
-    max_hp_boost = 46,
-    max_mp_boost = 47,
-    strength_boost = 48,
-    defense_boost = 49,
-    speed_boost = 50,
-    stamina_boost = 51,
-    wit_boost = 52,
-    resistance_boost = 53,
-    intelligence_boost = 54,
-    penetration_boost = 55,
-    piercing_boost = 56,
-    haste_boost = 57,
-    tenacity_boost = 58,
-    condition = 59,
-    tex_mask_1 = 60,
-    tex_mask_2 = 61,
-    sellable_price = 62,
-    portal_usable = 63,
-    acc_id = 64,
-    level = 65,
-    damage_multiplier = 66,
-    hit_multiplier = 67,
-    glow = 68,
-    alt_texture = 69,
-    guild_name = 70,
-    guild_rank = 71,
-    texture = 72,
+    for (0..2) |i| {
+        for (0..len) |j| {
+            const cur_src_x = (j % 5) * cut_width;
+            const cur_src_y = @divFloor(j, 5) * cut_height;
 
-    const map = std.ComptimeStringMap(StatType, .{
-        .{ "MaxHP", .max_hp },
-        .{ "MaxMP", .max_mp },
-        .{ "Strength", .strength },
-        .{ "Wit", .wit },
-        .{ "Defense", .defense },
-        .{ "Resistance", .resistance },
-        .{ "Stamina", .stamina },
-        .{ "Intelligence", .intelligence },
-        .{ "Penetration", .penetration },
-        .{ "Piercing", .piercing },
-        .{ "Speed", .speed },
-        .{ "Haste", .haste },
-        .{ "Tenacity", .tenacity },
-    });
-
-    pub fn fromString(str: []const u8) StatType {
-        return map.get(str) orelse .max_hp;
-    }
-};
-
-pub const ActivationType = enum(u8) {
-    increment_stat,
-    heal,
-    magic,
-    unlock_skin,
-    open_portal,
-
-    const map = std.ComptimeStringMap(ActivationType, .{
-        .{ "IncrementStat", .increment_stat },
-        .{ "Heal", .heal },
-        .{ "Magic", .magic },
-        .{ "UnlockSkin", .unlock_skin },
-        .{ "OpenPortal", .open_portal },
-    });
-
-    pub fn fromString(str: []const u8) ActivationType {
-        return map.get(str) orelse .increment_stat;
-    }
-};
-
-pub const ActivationData = struct {
-    type: ActivationType,
-
-    // zig fmt: off
-    pub fn parse(node: xml.Node) !ActivationData { // todo
-        return ActivationData {
-            .type = ActivationType.fromString(node.currentValue() orelse "IncrementStat"),
-        };
-    }
-    // zig fmt: on
-};
-
-pub const StatIncrementData = struct {
-    stat: StatType,
-    amount: u16,
-
-    // zig fmt: off
-    pub fn parse(node: xml.Node) !StatIncrementData {
-        return StatIncrementData {
-            .stat = StatType.fromString(node.getAttribute("stat") orelse "MaxHP"),
-            .amount = try node.getAttributeInt("amount", u16, 0),
-        };
-    }
-    // zig fmt: on
-};
-
-pub const ItemProps = struct {
-    consumable: bool,
-    untradable: bool,
-    slot_type: i8,
-    tier_req: i8,
-    bag_type: u8,
-    num_projectiles: u8,
-    arc_gap: f32,
-    rate_of_fire: f32,
-    tier: []const u8,
-    texture_data: TextureData,
-    projectile: ?ProjProps,
-    stat_increments: []StatIncrementData,
-    activations: []ActivationData,
-
-    // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ItemProps {
-        var incr_it = node.iterate(&.{}, "IncrementStat");
-        var incr_list = std.ArrayList(StatIncrementData).init(allocator);
-        defer incr_list.deinit();
-        while (incr_it.next()) |incr_node|
-            try incr_list.append(try StatIncrementData.parse(incr_node));
-
-        var activate_it = node.iterate(&.{}, "Activate");
-        var activate_list = std.ArrayList(ActivationData).init(allocator);
-        defer activate_list.deinit();
-        while (activate_it.next()) |activate_node|
-            try activate_list.append(try ActivationData.parse(activate_node));
-
-        return ItemProps {
-            .consumable = node.elementExists("Consumable"),
-            .untradable = node.elementExists("Untradable"),
-            .slot_type = try node.getValueInt("SlotType", i8, 0),
-            .tier_req = try node.getValueInt("TierReq", i8, 0),
-            .bag_type = try node.getValueInt("BagType", u8, 0),
-            .num_projectiles = try node.getValueInt("NumProjectiles", u8, 1),
-            .arc_gap = std.math.degreesToRadians(f32, try node.getValueFloat("ArcGap", f32, 11.25)),
-            .rate_of_fire = try node.getValueFloat("RateOfFire", f32, 1.0),
-            .tier = try node.getValueAlloc("Tier", allocator, "Common"),
-            .texture_data = try TextureData.parse(node.findChild("Texture").?, allocator, false),
-            .projectile = if (node.elementExists("Projectile")) try ProjProps.parse(node.findChild("Projectile").?, allocator) else null,
-            .stat_increments = try allocator.dupe(StatIncrementData, incr_list.items),
-            .activations = try allocator.dupe(ActivationData, activate_list.items),
-        };
-    }
-    // zig fmt: on
-};
-
-// zig fmt: off
-pub const ItemType = enum(i8) {
-    Weapon,
-    Ability,
-    Armor,
-    Ring,
-    Potion,
-    StatPot,
-    Other,
-    None,
-};
-// zig fmt: on
-
-pub var classes: []CharacterClass = undefined;
-pub var item_name_to_type: std.StringHashMap(u16) = undefined;
-pub var item_type_to_props: std.AutoHashMap(u16, ItemProps) = undefined;
-pub var item_type_to_name: std.AutoHashMap(u16, []const u8) = undefined;
-pub var obj_name_to_type: std.StringHashMap(u16) = undefined;
-pub var obj_type_to_props: std.AutoHashMap(u16, ObjProps) = undefined;
-pub var obj_type_to_name: std.AutoHashMap(u16, []const u8) = undefined;
-pub var obj_type_to_tex_data: std.AutoHashMap(u16, []const TextureData) = undefined;
-pub var obj_type_to_top_tex_data: std.AutoHashMap(u16, []const TextureData) = undefined;
-pub var obj_type_to_anim_data: std.AutoHashMap(u16, AnimProps) = undefined;
-pub var obj_type_to_class: std.AutoHashMap(u16, ClassType) = undefined;
-pub var ground_name_to_type: std.StringHashMap(u16) = undefined;
-pub var ground_type_to_props: std.AutoHashMap(u16, GroundProps) = undefined;
-pub var ground_type_to_name: std.AutoHashMap(u16, []const u8) = undefined;
-pub var ground_type_to_tex_data: std.AutoHashMap(u16, []const TextureData) = undefined;
-pub var region_type_to_name: std.AutoHashMap(u16, []const u8) = undefined;
-pub var region_type_to_color: std.AutoHashMap(u16, u32) = undefined;
-
-pub fn init(allocator: std.mem.Allocator) !void {
-    item_name_to_type = std.StringHashMap(u16).init(allocator);
-    item_type_to_props = std.AutoHashMap(u16, ItemProps).init(allocator);
-    item_type_to_name = std.AutoHashMap(u16, []const u8).init(allocator);
-    obj_name_to_type = std.StringHashMap(u16).init(allocator);
-    obj_type_to_props = std.AutoHashMap(u16, ObjProps).init(allocator);
-    obj_type_to_name = std.AutoHashMap(u16, []const u8).init(allocator);
-    obj_type_to_tex_data = std.AutoHashMap(u16, []const TextureData).init(allocator);
-    obj_type_to_top_tex_data = std.AutoHashMap(u16, []const TextureData).init(allocator);
-    obj_type_to_anim_data = std.AutoHashMap(u16, AnimProps).init(allocator);
-    obj_type_to_class = std.AutoHashMap(u16, ClassType).init(allocator);
-    ground_name_to_type = std.StringHashMap(u16).init(allocator);
-    ground_type_to_props = std.AutoHashMap(u16, GroundProps).init(allocator);
-    ground_type_to_name = std.AutoHashMap(u16, []const u8).init(allocator);
-    ground_type_to_tex_data = std.AutoHashMap(u16, []const TextureData).init(allocator);
-    region_type_to_name = std.AutoHashMap(u16, []const u8).init(allocator);
-    region_type_to_color = std.AutoHashMap(u16, u32).init(allocator);
-
-    inline for (item_files) |item_name| {
-        const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ item_name ++ ".xml");
-        defer doc.deinit();
-        parseItems(doc, allocator) catch |e| {
-            std.log.err("Item parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
-        };
+            const attack_scale = @as(u32, @intFromBool(j % 5 == 4)) + 1;
+            if (!isImageEmpty(img, cur_src_x, cur_src_y, cut_width * attack_scale, cut_height)) {
+                current_rects[i * len + j].w = (cut_width + padding * 2) * attack_scale;
+                current_rects[i * len + j].h = cut_height + padding * 2;
+            } else {
+                current_rects[i * len + j].w = 0;
+                current_rects[i * len + j].h = 0;
+            }
+        }
     }
 
-    inline for (object_files) |object_name| {
-        const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ object_name ++ ".xml");
-        defer doc.deinit();
-        parseObjects(doc, allocator) catch |e| {
-            std.log.err("Object parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
-        };
+    if (zstbrp.packRects(ctx, current_rects)) {
+        for (0..2) |i| {
+            for (0..len) |j| {
+                const rect = current_rects[i * len + j];
+                const frame_idx = j % 5;
+                const set_idx = @divFloor(j, 5);
+                if (frame_idx >= 3) {
+                    enemy_data[set_idx].attack_anims[i][frame_idx - 3] = rect;
+                } else {
+                    enemy_data[set_idx].walk_anims[i][frame_idx] = rect;
+                }
+                const cur_atlas_x = rect.x + padding;
+                const cur_atlas_y = rect.y + padding;
+                const cur_src_x = frame_idx * cut_width;
+                const cur_src_y = set_idx * cut_height;
+
+                const attack_scale = @as(u32, @intFromBool(j % 5 == 4)) + 1;
+                const size = img_size * attack_scale;
+                const scaled_w = cut_width * attack_scale;
+                for (0..size) |k| {
+                    const row_count = @divFloor(k, scaled_w);
+                    const row_idx = k % scaled_w;
+                    const atlas_idx = ((cur_atlas_y + row_count) * atlas_width + cur_atlas_x + row_idx) * 4;
+
+                    if (i == left_dir) {
+                        const src_idx = ((cur_src_y + row_count) * img.width + cur_src_x + scaled_w - row_idx - 1) * 4;
+                        @memcpy(atlas.data[atlas_idx .. atlas_idx + 4], img.data[src_idx .. src_idx + 4]);
+                    } else {
+                        const src_idx = ((cur_src_y + row_count) * img.width + cur_src_x + row_idx) * 4;
+                        @memcpy(atlas.data[atlas_idx .. atlas_idx + 4], img.data[src_idx .. src_idx + 4]);
+                    }
+                }
+            }
+        }
+
+        try anim_enemies.put(sheet_name, enemy_data);
+    } else {
+        std.log.err("Could not pack " ++ image_name ++ " into the atlas", .{});
+    }
+}
+
+inline fn addAnimPlayer(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, comptime full_cut_width: u32, comptime full_cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
+    var img = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/" ++ image_name, 4);
+    defer img.deinit();
+
+    const img_size = cut_width * cut_height;
+    var len = @divFloor(img.width, full_cut_width) * @divFloor(img.height, full_cut_height) * 5;
+    len += @divFloor(len, 3);
+
+    var current_rects = try allocator.alloc(zstbrp.PackRect, len);
+    defer allocator.free(current_rects);
+
+    const player_data = try allocator.alloc(AnimPlayerData, @divFloor(len, 5 * 4));
+
+    var left_sub: u32 = 0;
+    for (0..len) |j| {
+        const frame_idx = j % 5;
+        const set_idx = @divFloor(j, 5);
+        const cur_src_x = frame_idx * cut_width;
+        if (set_idx % 4 == 1 and frame_idx == 0) {
+            left_sub += 1;
+        }
+
+        const cur_src_y = (set_idx - left_sub) * cut_height;
+
+        const attack_scale = @as(u32, @intFromBool(frame_idx == 4)) + 1;
+        if (!isImageEmpty(img, cur_src_x, cur_src_y, cut_width * attack_scale, cut_height)) {
+            current_rects[j].w = (cut_width + padding * 2) * attack_scale;
+            current_rects[j].h = cut_height + padding * 2;
+        } else {
+            current_rects[j].w = 0;
+            current_rects[j].h = 0;
+        }
     }
 
-    inline for (ground_files) |ground_name| {
-        const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ ground_name ++ ".xml");
-        defer doc.deinit();
-        parseGrounds(doc, allocator) catch |e| {
-            std.log.err("Ground parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
-        };
+    if (zstbrp.packRects(ctx, current_rects)) {
+        left_sub = 0;
+        for (0..len) |j| {
+            const rect = current_rects[j];
+            const frame_idx = j % 5;
+            const set_idx = @divFloor(j, 5);
+            if (set_idx % 4 == 1 and frame_idx == 0) {
+                left_sub += 1;
+            }
+
+            const data_idx = @divFloor(set_idx, 4);
+            if (frame_idx >= 3) {
+                player_data[data_idx].attack_anims[set_idx % 4][frame_idx - 3] = rect;
+            } else {
+                player_data[data_idx].walk_anims[set_idx % 4][frame_idx] = rect;
+            }
+            const cur_atlas_x = rect.x + padding;
+            const cur_atlas_y = rect.y + padding;
+            const cur_src_x = frame_idx * cut_width;
+            const cur_src_y = (set_idx - left_sub) * cut_height;
+
+            const attack_scale = @as(u32, @intFromBool(frame_idx == 4)) + 1;
+            const size = img_size * attack_scale;
+            const scaled_w = cut_width * attack_scale;
+            for (0..size) |k| {
+                const row_count = @divFloor(k, scaled_w);
+                const row_idx = k % scaled_w;
+                const atlas_idx = ((cur_atlas_y + row_count) * atlas_width + cur_atlas_x + row_idx) * 4;
+
+                if (set_idx % 4 == left_dir) {
+                    const src_idx = ((cur_src_y + row_count) * img.width + cur_src_x + scaled_w - row_idx - 1) * 4;
+                    @memcpy(atlas.data[atlas_idx .. atlas_idx + 4], img.data[src_idx .. src_idx + 4]);
+                } else {
+                    const src_idx = ((cur_src_y + row_count) * img.width + cur_src_x + row_idx) * 4;
+                    @memcpy(atlas.data[atlas_idx .. atlas_idx + 4], img.data[src_idx .. src_idx + 4]);
+                }
+            }
+        }
+
+        try anim_players.put(sheet_name, player_data);
+    } else {
+        std.log.err("Could not pack " ++ image_name ++ " into the atlas", .{});
     }
-
-    inline for (region_files) |region_name| {
-        const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ region_name ++ ".xml");
-        defer doc.deinit();
-        parseRegions(doc, allocator) catch |e| {
-            std.log.err("Region parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
-        };
-    }
-
-    const player_doc = try xml.Doc.fromFile(asset_dir ++ "xmls/Players.xml");
-    defer player_doc.deinit();
-    const player_root = try player_doc.getRootElement();
-    var player_root_it = player_root.iterate(&.{}, "Object");
-
-    var class_list = std.ArrayList(CharacterClass).init(allocator);
-    defer class_list.deinit();
-    while (player_root_it.next()) |node|
-        try class_list.append(try CharacterClass.parse(node, allocator));
-    classes = try allocator.dupe(CharacterClass, class_list.items);
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
-    var obj_id_iter = obj_type_to_name.valueIterator();
-    while (obj_id_iter.next()) |id| {
-        allocator.free(id.*);
-    }
+    atlas.deinit();
+    light_tex.deinit();
+    bold_atlas.deinit();
+    bold_italic_atlas.deinit();
+    medium_atlas.deinit();
+    medium_italic_atlas.deinit();
 
-    var obj_props_iter = obj_type_to_props.valueIterator();
-    while (obj_props_iter.next()) |props| {
-        allocator.free(props.obj_id);
-        allocator.free(props.display_id);
-        for (props.projectiles) |proj| {
-            for (proj.texture_data) |tex| {
-                allocator.free(tex.sheet);
-            }
-            allocator.free(proj.texture_data);
+    var rects_iter = rects.valueIterator();
+    while (rects_iter.next()) |sheet_rects| {
+        if (sheet_rects.len > 0) {
+            allocator.free(sheet_rects.*);
         }
-        allocator.free(props.projectiles);
     }
 
-    var item_props_iter = item_type_to_props.valueIterator();
-    while (item_props_iter.next()) |props| {
-        allocator.free(props.tier);
-        if (props.projectile) |proj| {
-            for (proj.texture_data) |tex| {
-                allocator.free(tex.sheet);
-            }
-            allocator.free(proj.texture_data);
+    var anim_enemy_iter = anim_enemies.valueIterator();
+    while (anim_enemy_iter.next()) |enemy_data| {
+        if (enemy_data.len > 0) {
+            allocator.free(enemy_data.*);
         }
-
-        allocator.free(props.stat_increments);
-        allocator.free(props.activations);
-        allocator.free(props.texture_data.sheet);
     }
 
-    var item_name_iter = item_type_to_name.valueIterator();
-    while (item_name_iter.next()) |id| {
-        allocator.free(id.*);
-    }
-
-    var ground_name_iter = ground_type_to_name.valueIterator();
-    while (ground_name_iter.next()) |id| {
-        allocator.free(id.*);
-    }
-
-    var ground_iter = ground_type_to_props.valueIterator();
-    while (ground_iter.next()) |props| {
-        allocator.free(props.obj_id);
-    }
-
-    var region_iter = region_type_to_name.valueIterator();
-    while (region_iter.next()) |id| {
-        allocator.free(id.*);
-    }
-
-    var ground_tex_iter = ground_type_to_tex_data.valueIterator();
-    while (ground_tex_iter.next()) |tex_list| {
-        for (tex_list.*) |tex| {
-            allocator.free(tex.sheet);
+    var anim_player_iter = anim_players.valueIterator();
+    while (anim_player_iter.next()) |player_data| {
+        if (player_data.len > 0) {
+            allocator.free(player_data.*);
         }
-        allocator.free(tex_list.*);
     }
 
-    var obj_tex_iter = obj_type_to_tex_data.valueIterator();
-    while (obj_tex_iter.next()) |tex_list| {
-        for (tex_list.*) |tex| {
-            allocator.free(tex.sheet);
-        }
-        allocator.free(tex_list.*);
-    }
-
-    var obj_top_tex_iter = obj_type_to_top_tex_data.valueIterator();
-    while (obj_top_tex_iter.next()) |tex_list| {
-        for (tex_list.*) |tex| {
-            allocator.free(tex.sheet);
-        }
-        allocator.free(tex_list.*);
-    }
-
-    for (classes) |class| {
-        allocator.free(class.texture.sheet);
-        allocator.free(class.hit_sound);
-        allocator.free(class.death_sound);
-        allocator.free(class.name);
-        allocator.free(class.desc);
-    }
-
-    allocator.free(classes);
-
-    item_name_to_type.deinit();
-    item_type_to_props.deinit();
-    item_type_to_name.deinit();
-    obj_name_to_type.deinit();
-    obj_type_to_props.deinit();
-    obj_type_to_name.deinit();
-    obj_type_to_tex_data.deinit();
-    obj_type_to_top_tex_data.deinit();
-    obj_type_to_anim_data.deinit();
-    obj_type_to_class.deinit();
-    ground_name_to_type.deinit();
-    ground_type_to_props.deinit();
-    ground_type_to_name.deinit();
-    ground_type_to_tex_data.deinit();
-    region_type_to_name.deinit();
-    region_type_to_color.deinit();
+    rects.deinit();
+    anim_enemies.deinit();
+    anim_players.deinit();
 }
 
-inline fn parseTexture(node: xml.Node, allocator: std.mem.Allocator) ![]TextureData {
-    const random_tex_child = node.findChild("RandomTexture");
-    if (random_tex_child != null) {
-        var tex_iter = random_tex_child.?.iterate(&.{}, "Texture");
-        var tex_list = std.ArrayList(TextureData).init(allocator);
-        defer tex_list.deinit();
-        while (tex_iter.next()) |tex_node| {
-            try tex_list.append(try TextureData.parse(tex_node, allocator, false));
-        }
+fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]CharacterData) !void {
+    const file = try std.fs.cwd().openFile(path, .{});
+    defer file.close();
 
-        if (tex_list.items.len > 0) {
-            return try allocator.dupe(TextureData, tex_list.items);
-        } else {
-            var anim_tex_iter = random_tex_child.?.iterate(&.{}, "AnimatedTexture");
-            var anim_tex_list = std.ArrayList(TextureData).init(allocator);
-            defer anim_tex_list.deinit();
-            while (anim_tex_iter.next()) |tex_node| {
-                try anim_tex_list.append(try TextureData.parse(tex_node, allocator, true));
-            }
+    const data = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
+    defer allocator.free(data);
 
-            return try allocator.dupe(TextureData, anim_tex_list.items);
-        }
-    } else {
-        const tex_child = node.findChild("Texture");
-        if (tex_child != null) {
-            const ret = try allocator.alloc(TextureData, 1);
-            ret[0] = try TextureData.parse(tex_child orelse unreachable, allocator, false);
-            return ret;
-        } else {
-            const anim_tex_child = node.findChild("AnimatedTexture");
-            if (anim_tex_child != null) {
-                const ret = try allocator.alloc(TextureData, 1);
-                ret[0] = try TextureData.parse(anim_tex_child orelse unreachable, allocator, true);
-                return ret;
-            }
-        }
-    }
+    var iter = std.mem.splitSequence(u8, data, "\n");
+    while (iter.next()) |line| {
+        if (line.len == 0)
+            continue;
 
-    return &[0]TextureData{};
-}
-
-pub fn parseItems(doc: xml.Doc, allocator: std.mem.Allocator) !void {
-    const root = try doc.getRootElement();
-    var iter = root.iterate(&.{}, "Item");
-    while (iter.next()) |node| {
-        const obj_type = try node.getAttributeInt("type", u16, 0);
-        const id = try node.getAttributeAlloc("id", allocator, "Unknown");
-        try item_name_to_type.put(id, obj_type);
-        try item_type_to_props.put(obj_type, try ItemProps.parse(node, allocator));
-        try item_type_to_name.put(obj_type, id);
+        var split = std.mem.splitSequence(u8, line, ",");
+        const idx = try std.fmt.parseInt(usize, split.next().?, 0);
+        chars[idx] = try CharacterData.parse(&split);
     }
 }
 
-pub fn parseObjects(doc: xml.Doc, allocator: std.mem.Allocator) !void {
-    const root = try doc.getRootElement();
-    var iter = root.iterate(&.{}, "Object");
-    while (iter.next()) |node| {
-        const obj_type = try node.getAttributeInt("type", u16, 0);
-        const id = try node.getAttributeAlloc("id", allocator, "Unknown");
-        try obj_type_to_class.put(obj_type, ClassType.fromString(node.getValue("Class") orelse "GameObject"));
-        try obj_name_to_type.put(id, obj_type);
-        try obj_type_to_props.put(obj_type, try ObjProps.parse(node, allocator));
-        try obj_type_to_name.put(obj_type, id);
+pub fn init(allocator: std.mem.Allocator) !void {
+    rects = std.StringHashMap([]zstbrp.PackRect).init(allocator);
+    anim_enemies = std.StringHashMap([]AnimEnemyData).init(allocator);
+    anim_players = std.StringHashMap([]AnimPlayerData).init(allocator);
 
-        try obj_type_to_tex_data.put(obj_type, try parseTexture(node, allocator));
+    bold_atlas = try zstbi.Image.loadFromFile(asset_dir ++ "fonts/Ubuntu-Bold.png", 4);
+    bold_italic_atlas = try zstbi.Image.loadFromFile(asset_dir ++ "fonts/Ubuntu-BoldItalic.png", 4);
+    medium_atlas = try zstbi.Image.loadFromFile(asset_dir ++ "fonts/Ubuntu-Medium.png", 4);
+    medium_italic_atlas = try zstbi.Image.loadFromFile(asset_dir ++ "fonts/Ubuntu-MediumItalic.png", 4);
 
-        const top_tex_child = node.findChild("Top");
-        if (top_tex_child != null) {
-            try obj_type_to_top_tex_data.put(obj_type, try parseTexture(top_tex_child.?, allocator));
-        }
+    try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-Bold.csv", &bold_chars);
+    try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-BoldItalic.csv", &bold_italic_chars);
+    try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-Medium.csv", &medium_chars);
+    try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-MediumItalic.csv", &medium_italic_chars);
+
+    light_tex = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/Light.png", 4);
+
+    atlas = try zstbi.Image.createEmpty(atlas_width, atlas_height, 4, .{});
+    var ctx = zstbrp.PackContext{
+        .width = atlas_width,
+        .height = atlas_height,
+        .pack_align = 0,
+        .init_mode = 0,
+        .heuristic = 0,
+        .num_nodes = 100,
+        .active_head = null,
+        .free_head = null,
+        .extra = [2]zstbrp.PackNode{ zstbrp.PackNode{ .x = 0, .y = 0, .next = null }, zstbrp.PackNode{ .x = 0, .y = 0, .next = null } },
+    };
+
+    var nodes = try allocator.alloc(zstbrp.PackNode, 4096);
+    zstbrp.initPack(&ctx, nodes);
+
+    try addImage("wallBackface", "WallBackface.png", 8, 8, &ctx, allocator);
+    try addImage("invisible", "Invisible.png", 8, 8, &ctx, allocator);
+    try addImage("cursors", "Cursors.png", 32, 32, &ctx, allocator);
+    try addImage("keyIndicators", "KeyIndicators.png", 100, 100, &ctx, allocator);
+    try addImage("bars", "Bars.png", 24, 8, &ctx, allocator);
+    try addImage("groundMasks", "GroundMasks.png", 8, 8, &ctx, allocator);
+    try addImage("buffedBunnyObjects8x8", "BuffedBunnyObjects8x8.png", 8, 8, &ctx, allocator);
+    try addImage("buffedBunnyObjects16x16", "BuffedBunnyObjects16x16.png", 16, 16, &ctx, allocator);
+    try addAnimEnemy("buffedBunnyChars16x16", "BuffedBunnyChars16x16.png", 16, 16, 96, 16, &ctx, allocator);
+    try addAnimEnemy("chars8x8dBeach", "Chars8x8dBeach.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimPlayer("players", "Players.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimPlayer("playerskins", "PlayersSkins.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimPlayer("playerskins16", "PlayersSkins16.png", 16, 16, 96, 16, &ctx, allocator);
+
+    if (settings.print_atlas)
+        try zstbi.Image.writeToFile(atlas, "atlas.png", .png);
+
+    // zig fmt: off
+    const mask_rects = rects.get("ground");
+    if (mask_rects != null) {
+        const left_mask_rect = mask_rects.?[0];
+        const top_mask_rect = mask_rects.?[1];
+        left_top_mask_uv = [4]f32{
+            @as(f32, @floatFromInt(left_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
+            @as(f32, @floatFromInt(left_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
+            @as(f32, @floatFromInt(top_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
+            @as(f32, @floatFromInt(top_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height))
+        };
+
+        const right_mask_rect = mask_rects.?[2];
+        const bottom_mask_rect = mask_rects.?[3];
+        right_bottom_mask_uv = [4]f32{
+            @as(f32, @floatFromInt(right_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
+            @as(f32, @floatFromInt(right_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
+            @as(f32, @floatFromInt(bottom_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
+            @as(f32, @floatFromInt(bottom_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height))
+        };
     }
-}
+    
+    const wall_backface_rect = rects.get("wallBackface").?[0x0];
+    wall_backface_uv = [2]f32{
+        @as(f32, @floatFromInt(wall_backface_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
+        @as(f32, @floatFromInt(wall_backface_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height))
+    };
 
-pub fn parseGrounds(doc: xml.Doc, allocator: std.mem.Allocator) !void {
-    const root = try doc.getRootElement();
-    var iter = root.iterate(&.{}, "Ground");
-    while (iter.next()) |node| {
-        const obj_type = try node.getAttributeInt("type", u16, 0);
-        const id = try node.getAttributeAlloc("id", allocator, "Unknown");
-        try ground_name_to_type.put(id, obj_type);
-        try ground_type_to_props.put(obj_type, try GroundProps.parse(node, allocator));
-        try ground_type_to_name.put(obj_type, id);
+    const bar_rects = rects.get("bars");
+    if (bar_rects != null) {
+        const empty_bar_rect_rp = bar_rects.?[0x4];
+        empty_bar_rect = FloatRect{
+            .x = @as(f32, @floatFromInt(empty_bar_rect_rp.x)) / @as(f32, @floatFromInt(atlas_width)),
+            .y = @as(f32, @floatFromInt(empty_bar_rect_rp.y)) / @as(f32, @floatFromInt(atlas_height)),
+            .w = @as(f32, @floatFromInt(empty_bar_rect_rp.w)) / @as(f32, @floatFromInt(atlas_width)),
+            .h = @as(f32, @floatFromInt(empty_bar_rect_rp.h)) / @as(f32, @floatFromInt(atlas_height)),
+        };
 
-        const random_tex_child = node.findChild("RandomTexture");
-        if (random_tex_child != null) {
-            var tex_iter = random_tex_child.?.iterate(&.{}, "Texture");
-            var tex_list = std.ArrayList(TextureData).init(allocator);
-            defer tex_list.deinit();
-            while (tex_iter.next()) |tex_node| {
-                try tex_list.append(try TextureData.parse(tex_node, allocator, false));
-            }
-            try ground_type_to_tex_data.put(obj_type, try allocator.dupe(TextureData, tex_list.items));
-        } else {
-            const tex_child = node.findChild("Texture");
-            if (tex_child != null) {
-                const ret = try allocator.alloc(TextureData, 1);
-                ret[0] = try TextureData.parse(tex_child orelse unreachable, allocator, false);
-                try ground_type_to_tex_data.put(obj_type, ret);
-            }
-        }
+        const hp_bar_rect_rp = bar_rects.?[0x0];
+        hp_bar_rect = FloatRect{
+            .x = @as(f32, @floatFromInt(hp_bar_rect_rp.x)) / @as(f32, @floatFromInt(atlas_width)),
+            .y = @as(f32, @floatFromInt(hp_bar_rect_rp.y)) / @as(f32, @floatFromInt(atlas_height)),
+            .w = @as(f32, @floatFromInt(hp_bar_rect_rp.w)) / @as(f32, @floatFromInt(atlas_width)),
+            .h = @as(f32, @floatFromInt(hp_bar_rect_rp.h)) / @as(f32, @floatFromInt(atlas_height)),
+        };
+
+        const mp_bar_rect_rp = bar_rects.?[0x1];
+        mp_bar_rect = FloatRect{
+            .x = @as(f32, @floatFromInt(mp_bar_rect_rp.x)) / @as(f32, @floatFromInt(atlas_width)),
+            .y = @as(f32, @floatFromInt(mp_bar_rect_rp.y)) / @as(f32, @floatFromInt(atlas_height)),
+            .w = @as(f32, @floatFromInt(mp_bar_rect_rp.w)) / @as(f32, @floatFromInt(atlas_width)),
+            .h = @as(f32, @floatFromInt(mp_bar_rect_rp.h)) / @as(f32, @floatFromInt(atlas_height)),
+        };
     }
-}
+    // zig fmt: on
 
-pub fn parseRegions(doc: xml.Doc, allocator: std.mem.Allocator) !void {
-    const root = try doc.getRootElement();
-    var iter = root.iterate(&.{}, "Region");
-    while (iter.next()) |node| {
-        const obj_type = try node.getAttributeInt("type", u16, 0);
-        const id = try node.getAttributeAlloc("id", allocator, "Unknown");
-        try region_type_to_name.put(obj_type, id);
-        try region_type_to_color.put(obj_type, try node.getValueInt("Color", u32, 0));
-    }
+    allocator.free(nodes);
 }
