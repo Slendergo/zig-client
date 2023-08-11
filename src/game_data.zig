@@ -6,6 +6,7 @@ const asset_dir = @import("build_options").asset_dir;
 const item_files = [_][]const u8{ "Equip", "Dyes", "Textiles" };
 // zig fmt: off
 const object_files = [_][]const u8{
+<<<<<<< Updated upstream
     "Projectiles",          "WillemTesting",       "MountainTempleObject",
     "TTesting",             "BTesting",            "STesting",
     "MTesting",             "KTesting",            "Players",
@@ -32,6 +33,23 @@ const object_files = [_][]const u8{
 // zig fmt: on
 const ground_files = [_][]const u8{ "Ground", "stPatricksGround", "hanaminexusGround", "mountainTempleGround" };
 
+=======
+    "Projectiles",     "Equip",           "Dyes",
+    "Textiles",        "Permapets",       "Players",
+    "Objects",         "TestingObjects",  "StaticObjects",
+    "TutorialObjects", "Monsters",        "Pets",
+    "TempObjects",     "Shore",           "Low",
+    "Mid",             "High",            "Mountains",
+    "Encounters",      "OryxCastle",      "TombOfTheAncients",
+    "SpriteWorld",     "UndeadLair",      "OceanTrench",
+    "ForbiddenJungle", "OryxChamber",     "ManorOfTheImmortals",
+    "PirateCave",      "SnakePit",        "AbyssOfDemons",
+    "GhostShip",       "MadLab",          "CaveOfAThousandTreasures",
+    "CandyLand",       "HauntedCemetery",
+};
+// zig fmt: on
+const ground_files = [_][]const u8{"Ground"};
+>>>>>>> Stashed changes
 const region_files = [_][]const u8{"Regions"};
 
 pub const ClassType = enum(u8) {
