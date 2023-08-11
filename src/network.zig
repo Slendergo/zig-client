@@ -6,6 +6,32 @@ const map = @import("map.zig");
 
 const Position = extern struct { x: f32, y: f32 };
 
+const TileData = extern struct { x: i16, y: i16, tile: u16 };
+
+const TradeItem = extern struct { item: i32, slot_type: i32, tradeable: bool, included: bool };
+
+const ARGB = extern struct { a: u8, r: u8, g: u8, b: u8 };
+
+const EffectType = enum(u8) {
+    unknown = 0,
+    potion = 1,
+    teleport = 2,
+    stream = 3,
+    throw = 4,
+    area_blast = 5,
+    dead = 6,
+    trail = 7,
+    diffuse = 8,
+    flow = 9,
+    trap = 10,
+    lightning = 11,
+    concentrate = 12,
+    blast_wave = 13,
+    earthquake = 14,
+    flashing = 15,
+    beach_ball = 16,
+};
+
 const C2SPacketId = enum(u8) {
     unknown = 0,
     accept_trade = 1,
@@ -85,6 +111,85 @@ const S2CPacketId = enum(u8) {
     update = 34,
 };
 
+const StatType = enum(u8) {
+    maximum_hp = 0,
+    hp = 1,
+    size = 2,
+    maximum_mp = 3,
+    mp = 4,
+    experience_goal = 5,
+    experience = 6,
+    level = 7,
+    inventory0 = 8,
+    inventory1 = 9,
+    inventory2 = 10,
+    inventory3 = 11,
+    inventory4 = 12,
+    inventory5 = 13,
+    inventory6 = 14,
+    inventory7 = 15,
+    inventory8 = 16,
+    inventory9 = 17,
+    inventory10 = 18,
+    inventory11 = 19,
+    attack = 20,
+    defense = 21,
+    speed = 22,
+    vitality = 26,
+    wisdom = 27,
+    dexterity = 28,
+    effects = 29,
+    stars = 30,
+    name = 31,
+    texture1 = 32,
+    texture2 = 33,
+    merchant_merchandise_type = 34,
+    credits = 35,
+    sellable_price = 36,
+    portal_usable = 37,
+    account_id = 38,
+    current_fame = 39,
+    sellable_price_currency = 40,
+    object_connection = 41,
+    merchant_remaining_count = 42,
+    merchant_remaining_minute = 43,
+    merchant_discount = 44,
+    sellable_rank_requirement = 45,
+    hp_boost = 46,
+    mp_boost = 47,
+    attack_bonus = 48,
+    defense_bonus = 49,
+    speed_bonus = 50,
+    vitality_bonus = 51,
+    wisdom_bonus = 52,
+    dexterity_bonus = 53,
+    owner_account_id = 54,
+    name_changer_star = 55,
+    name_chosen = 56,
+    fame = 57,
+    fame_goal = 58,
+    glow = 59,
+    sink_offset = 60,
+    alt_texture_index = 61,
+    guild = 62,
+    guild_rank = 63,
+    oxygen_bar = 64,
+    health_stack_count = 65,
+    magic_stack_count = 66,
+    back_pack0 = 67,
+    back_pack1 = 68,
+    back_pack2 = 69,
+    back_pack3 = 70,
+    back_pack4 = 71,
+    back_pack5 = 72,
+    back_pack6 = 73,
+    back_pack7 = 74,
+    has_backpack = 75,
+    skin = 76,
+
+    none = 255,
+};
+
 pub const Server = struct {
     message_len: u16 = 65535,
     buffer_idx: usize = 0,
@@ -137,11 +242,11 @@ pub const Server = struct {
             switch (packet_id) {
                 .account_list => handleAccountList(&self.reader),
                 .ally_shoot => handleAllyShoot(&self.reader),
-                //.aoe => handleAoe(&self.reader),
+                .aoe => handleAoe(&self.reader),
                 .buy_result => handleBuyResult(&self.reader),
                 // .client_stat => handleClientStat(&self.reader),
                 .create_success => handleCreateSuccess(&self.reader),
-                //.damage => handleDamage(&self.reader),
+                .damage => handleDamage(&self.reader),
                 .death => handleDeath(&self.reader),
                 .enemy_shoot => handleEnemyShoot(&self.reader),
                 .failure => handleFailure(&self.reader),
@@ -153,14 +258,14 @@ pub const Server = struct {
                 .map_info => handleMapInfo(&self.reader),
                 .name_result => handleNameResult(&self.reader),
                 //.new_tick => handleNewTick(&self.reader),
-                //.notification => handleNotification(&self.reader),
-                // .pic => handlePic(&self.reader),
+                .notification => handleNotification(&self.reader),
+                //.pic => handlePic(&self.reader),
                 .ping => handlePing(&self.reader),
                 .play_sound => handlePlaySound(&self.reader),
                 .quest_obj_id => handleQuestObjId(&self.reader),
                 //.reconnect => handleReconnect(&self.reader),
                 .server_player_shoot => handleServerPlayerShoot(&self.reader),
-                //.show_effect => handleShowEffect(&self.reader),
+                .show_effect => handleShowEffect(&self.reader),
                 .text => handleText(&self.reader),
                 .trade_accepted => handleTradeAccepted(&self.reader),
                 .trade_changed => handleTradeChanged(&self.reader),
@@ -205,7 +310,7 @@ pub const Server = struct {
         const position = reader.read(Position);
         const radius = reader.read(f32);
         const damage = reader.read(i16);
-        const condition_effect = 0; // handle cond effect
+        const condition_effect = reader.read(u64);
         const duration = reader.read(f32);
         const orig_type = reader.read(u8);
 
@@ -231,7 +336,7 @@ pub const Server = struct {
 
     inline fn handleDamage(reader: *utils.PacketReader) void {
         const target_id = reader.read(i32);
-        const effects = 0; // handle cond effect
+        const effects = reader.read(u64);
         const damage_amount = reader.read(u16);
         const kill = reader.read(bool);
         const bullet_id = reader.read(i8);
@@ -337,19 +442,32 @@ pub const Server = struct {
     inline fn handleNewTick(reader: *utils.PacketReader) void {
         const tick_id = reader.read(i32);
         const tick_time = reader.read(i32);
-        const statuses = 0; // handle statuses
+
+        const statuses_len = reader.read(u16);
+        for (0..statuses_len) |_| {
+            const obj_id = reader.read(i32);
+            _ = obj_id;
+            const position = reader.read(Position);
+            _ = position;
+
+            const stats_len = reader.read(u16);
+            for (0..stats_len) |_| {
+                const stat_type = @as(StatType, @enumFromInt(reader.read(u8)));
+                parseStatData(reader, stat_type);
+            }
+        }
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
-            std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses={d}", .{ tick_id, tick_time, statuses });
+            std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });
     }
 
     inline fn handleNotification(reader: *utils.PacketReader) void {
         const object_id = reader.read(i32);
         const message = reader.read([]u8);
-        const color = 0; // handle color
+        const color = reader.read(ARGB);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - Notification: object_id={d}, message={s}, color={d}", .{ object_id, message, color });
+            std.log.debug("Recv - Notification: object_id={d}, message={s}, color={any}", .{ object_id, message, color });
     }
 
     inline fn handlePing(reader: *utils.PacketReader) void {
@@ -387,14 +505,14 @@ pub const Server = struct {
     }
 
     inline fn handleShowEffect(reader: *utils.PacketReader) void {
-        const effect_type = 0; // handle effect type
+        const effect_type = @as(EffectType, @enumFromInt(reader.read(u8)));
         const target_object_id = reader.read(i32);
         const pos1 = reader.read(Position);
         const pos2 = reader.read(Position);
-        const color = 0; // handle color
+        const color = reader.read(ARGB);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - ShowEffect: effect_type={d}, target_object_id={d}, x1={e}, y1={e}, x2={e}, y2={e}, color={d}", .{ effect_type, target_object_id, pos1.x, pos1.y, pos2.x, pos2.y, color });
+            std.log.debug("Recv - ShowEffect: effect_type={any}, target_object_id={d}, x1={e}, y1={e}, x2={e}, y2={e}, color={any}", .{ effect_type, target_object_id, pos1.x, pos1.y, pos2.x, pos2.y, color });
     }
 
     inline fn handleText(reader: *utils.PacketReader) void {
@@ -440,22 +558,100 @@ pub const Server = struct {
     }
 
     inline fn handleTradeStart(reader: *utils.PacketReader) void {
-        const my_items = 0; // handle trade items
+        const my_items = reader.read(TradeItem);
         const your_name = reader.read([]u8);
-        const your_items = 0; // handle trade items
+        const your_items = reader.read(TradeItem);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - TradeStart: my_items={d}, your_name={s}, your_items={d}", .{ my_items, your_name, your_items });
+            std.log.debug("Recv - TradeStart: my_items={any}, your_name={s}, your_items={any}", .{ my_items, your_name, your_items });
     }
 
     inline fn handleUpdate(reader: *utils.PacketReader) void {
-        _ = reader;
-        const tiles = 0; // handle tile data
-        const new_objects = 0; // handle new objects
-        const drops = 0; // handle drops
+        const tiles = reader.read([]TileData);
+        const drops = reader.read([]i32);
+        const new_objs_len = reader.read(u16);
+        for (0..new_objs_len) |_| {
+            const obj_type = reader.read(u16);
+            _ = obj_type;
+            const obj_id = reader.read(i32);
+            _ = obj_id;
+            const position = reader.read(Position);
+            _ = position;
+
+            const stats_len = reader.read(u16);
+            for (0..stats_len) |_| {
+                const stat_type: StatType = @enumFromInt(reader.read(u8));
+                parseStatData(reader, stat_type);
+            }
+        }
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
-            std.log.debug("Recv - Update: tiles={d}, new_objects={d}, drops={d}", .{ tiles, new_objects, drops });
+            std.log.debug("Recv - Update: tiles_len={d}, new_objs_len={d}, drops_len={d}", .{ tiles.len, new_objs_len, drops.len });
+    }
+
+    inline fn parseStatData(reader: *utils.PacketReader, stat_type: StatType) void {
+        switch (stat_type) {
+                .maximum_hp => reader.read(i32),
+                .hp => reader.read(i32),
+                .size => reader.read(i32),
+                .maximum_mp => reader.read(i32),
+                .mp => reader.read(i32),
+                .experience_goal => reader.read(i32),
+                .experience => reader.read(i32),
+                .level => reader.read(i32),
+                .inventory0, .inventory1, .inventory2, .inventory3, .inventory4, .inventory5, .inventory6, .inventory7, .inventory8, .inventory9, .inventory10, .inventory11 => reader.read(u16),
+                .attack => reader.read(i32),
+                .defense => reader.read(i32),
+                .speed => reader.read(i32),
+                .vitality => reader.read(i32),
+                .wisdom => reader.read(i32),
+                .dexterity => reader.read(i32),
+                .effects => reader.read(i32),
+                .stars => reader.read(i32),
+                .name => reader.read([]u8),
+                .texture1 => reader.read(i32),
+                .texture2 => reader.read(i32),
+                .merchant_merchandise_type => reader.read(u16),
+                .credits => reader.read(i32),
+                .sellable_price => reader.read(i32),
+                .portal_usable => reader.read(bool),
+                .account_id => reader.read(i32),
+                .current_fame => reader.read(i32),
+                .sellable_price_currency => reader.read(i32),
+                .object_connection => reader.read(u32),
+                .merchant_remaining_count => reader.read(i32),
+                .merchant_remaining_minute => reader.read(i32),
+                .merchant_discount => reader.read(i32),
+                .sellable_rank_requirement => reader.read(i32),
+                .hp_boost => reader.read(i32),
+                .mp_boost => reader.read(i32),
+                .attack_bonus => reader.read(i32),
+                .defense_bonus => reader.read(i32),
+                .speed_bonus => reader.read(i32),
+                .vitality_bonus => reader.read(i32),
+                .wisdom_bonus => reader.read(i32),
+                .dexterity_bonus => reader.read(i32),
+                .owner_account_id => reader.read(i32),
+                .name_changer_star => reader.read(i32),
+                .name_chosen => reader.read(bool),
+                .fame => reader.read(i32),
+                .fame_goal => reader.read(i32),
+                .glow => reader.read(i32),
+                .sink_offset => reader.read(i32),
+                .alt_texture_index => reader.read(i32),
+                .guild => reader.read([]u8),
+                .guild_rank => reader.read(i32),
+                .oxygen_bar => reader.read(i32),
+                .health_stack_count => reader.read(i32),
+                .magic_stack_count => reader.read(i32),
+                .back_pack0, .back_pack1, .back_pack2, .back_pack3, .back_pack4, .back_pack5, .back_pack6, .back_pack7 => reader.read(i32),
+                .has_backpack => reader.read(bool),
+                .skin => reader.read(i32),
+                inline else => {
+                    std.log.err("Unknown stat type: {any}", .{ stat_type });
+                    return;
+                },
+        }
     }
 
     pub fn hello(self: *Server, build_ver: []const u8, gameId: i32, email: []const u8, password: []const u8, char_id: i16, create_char: bool, class_type: u16, skin_type: u16) !void {

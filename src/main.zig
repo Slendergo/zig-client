@@ -566,7 +566,7 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
     }
 
     std.debug.print("Logged in as {s}\n", .{current_account.name});
-    // if no chars current_screen = ScreenType.char_select else current_screen = ScreenType.char_creation
+    
     if (character_list.len > 0) {
         current_screen = ScreenType.char_select;
     } else {
