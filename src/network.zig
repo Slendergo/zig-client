@@ -663,7 +663,7 @@ pub const Server = struct {
             std.log.debug("Send - AcceptTrade: my_offer={any} your_offer={any}", .{ my_offer, your_offer });
 
         self.writer.writeLength();
-        self.writer.write(@intFromEnum(C2SPacketId.change_guild_rank));
+        self.writer.write(@intFromEnum(C2SPacketId.accept_trade));
         self.writer.write(my_offer);
         self.writer.write(your_offer);
         self.writer.updateLength();
