@@ -5,35 +5,7 @@ const asset_dir = @import("build_options").asset_dir;
 
 const item_files = [_][]const u8{ "Equip", "Dyes", "Textiles" };
 // zig fmt: off
-const object_files = [_][]const u8{
-<<<<<<< Updated upstream
-    "Projectiles",          "WillemTesting",       "MountainTempleObject",
-    "TTesting",             "BTesting",            "STesting",
-    "MTesting",             "KTesting",            "Players",
-    "Containers",           "Objects",             "Portals",
-    "TestingObjects",       "StaticObjects",       "TutorialObjects",
-    "TutorialMonsters",     "Allies",              "Heroes",
-    "PlayersZombies",       "Pets",                "NPCs",
-    "Shore",                "Low",                 "Mid",
-    "High",                 "Mountains",           "Encounters",
-    "Arena",                "OryxCastle",          "TombOfTheAncients",
-    "SpriteWorld",          "UndeadLair",          "OceanTrench",
-    "ForbiddenJungle",      "OryxChamber",         "OryxChickenChamber",
-    "OryxWineCellar",       "ManorOfTheImmortals", "PirateCave",
-    "SnakePit",             "SpiderDen",           "AbyssOfDemons",
-    "GhostShip",            "MadLab",              "CaveOfAThousandTreasures",
-    "CandyLand",            "HauntedCemetery",     "ForestMaze",
-    "EpicForestMaze",       "EpicPirateCave",      "EpicSpiderDen",
-    "NexusDestroyed",       "MiniDungeonHub",      "LairOfDraconis",
-    "LairOfShaitan",        "Shatters",            "Belladonna",
-    "PuppetMaster",         "IceCave",             "TheHive",
-    "ToxicSewers",          "PuppetMasterEncore",  "IceTomb",
-    "StPatricksObject",     "BuffedBunnyObject",   "HanaminexusObject",
-};
-// zig fmt: on
-const ground_files = [_][]const u8{ "Ground", "stPatricksGround", "hanaminexusGround", "mountainTempleGround" };
-
-=======
+const object_files = [_][]const u8 {
     "Projectiles",     "Equip",           "Dyes",
     "Textiles",        "Permapets",       "Players",
     "Objects",         "TestingObjects",  "StaticObjects",
@@ -49,7 +21,6 @@ const ground_files = [_][]const u8{ "Ground", "stPatricksGround", "hanaminexusGr
 };
 // zig fmt: on
 const ground_files = [_][]const u8{"Ground"};
->>>>>>> Stashed changes
 const region_files = [_][]const u8{"Regions"};
 
 pub const ClassType = enum(u8) {
