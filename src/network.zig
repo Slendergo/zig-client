@@ -963,7 +963,7 @@ pub const Server = struct {
     }
 
     pub fn sendMove(self: *Server, tick_id: i32, time: i32, new_pos: Position, records: []const TimedPosition) !void {
-        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+        if (settings.log_packets == .all or settings.log_packets == .c2s)
             std.log.debug("Send - Move: tick_id={d} time={d} new_pos={any} records={any}", .{ tick_id, time, new_pos, records });
 
         self.writer.writeLength();
@@ -1134,7 +1134,7 @@ pub const Server = struct {
     }
 
     pub fn sendUpdateAck(self: *Server) !void {
-        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+        if (settings.log_packets == .all or settings.log_packets == .c2s)
             std.log.debug("Send - UpdateAck", .{});
 
         self.writer.writeLength();
@@ -1163,10 +1163,10 @@ pub const Server = struct {
 
     pub fn sendUsePortal(self: *Server, object_id: i32) !void {
         if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-            std.log.debug("Send - UpdateAck: object_id={d}", .{object_id});
+            std.log.debug("Send - UsePortal: object_id={d}", .{object_id});
 
         self.writer.writeLength();
-        self.writer.write(@intFromEnum(C2SPacketId.update_ack));
+        self.writer.write(@intFromEnum(C2SPacketId.use_portal));
         self.writer.write(object_id);
         self.writer.updateLength();
 
