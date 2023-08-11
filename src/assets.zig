@@ -27,11 +27,11 @@ const object_files = [_][]const u8{
     "LairOfShaitan",        "Shatters",            "Belladonna",
     "PuppetMaster",         "IceCave",             "TheHive",
     "ToxicSewers",          "PuppetMasterEncore",  "IceTomb",
-    "StPatricksObject",     "BuffedBunnyObject",   "HanamiNexusObject",
-    "MountainTempleObject",
+    "stPatricksObject",     "buffedBunnyObject",   "hanaminexusObject",
+    "mountainTempleObject",
 };
 // zig fmt: on
-const ground_files = [_][]const u8{ "Ground", "StPatricksGround", "HanamiNexusGround", "MountainTempleGround" };
+const ground_files = [_][]const u8{ "Ground", "stPatricksGround", "hanaminexusGround", "mountainTempleGround" };
 const region_files = [_][]const u8{"Regions"};
 
 pub const ClassType = enum(u8) {
@@ -670,7 +670,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             std.log.err("Object parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
         };
     }
-    
+
     inline for (ground_files) |ground_name| {
         const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ ground_name ++ ".xml");
         defer doc.deinit();
