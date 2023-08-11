@@ -101,7 +101,7 @@
       <Color>0xAA22FF</Color>
    </Region>
    <Region type="0x31" id="Store 32">
-      <Color>111AAA</Color>
+      <Color>0x111AAA</Color>
    </Region>
    <Region type="0x32" id="Store 33">
       <Color>0xFF99AA</Color>
