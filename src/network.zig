@@ -4,7 +4,11 @@ const settings = @import("settings.zig");
 const main = @import("main.zig");
 const map = @import("map.zig");
 
+const ObjectSlot = extern struct { object_id: i32, slot_id: u8, object_type: i16 };
+
 const Position = extern struct { x: f32, y: f32 };
+
+const TimedPosition = extern struct { time: i32, position: Position };
 
 const TileData = extern struct { x: i16, y: i16, tile: u16 };
 
@@ -591,70 +595,297 @@ pub const Server = struct {
 
     inline fn parseStatData(reader: *utils.PacketReader, stat_type: StatType) void {
         switch (stat_type) {
-                .maximum_hp => reader.read(i32),
-                .hp => reader.read(i32),
-                .size => reader.read(i32),
-                .maximum_mp => reader.read(i32),
-                .mp => reader.read(i32),
-                .experience_goal => reader.read(i32),
-                .experience => reader.read(i32),
-                .level => reader.read(i32),
-                .inventory0, .inventory1, .inventory2, .inventory3, .inventory4, .inventory5, .inventory6, .inventory7, .inventory8, .inventory9, .inventory10, .inventory11 => reader.read(u16),
-                .attack => reader.read(i32),
-                .defense => reader.read(i32),
-                .speed => reader.read(i32),
-                .vitality => reader.read(i32),
-                .wisdom => reader.read(i32),
-                .dexterity => reader.read(i32),
-                .effects => reader.read(i32),
-                .stars => reader.read(i32),
-                .name => reader.read([]u8),
-                .texture1 => reader.read(i32),
-                .texture2 => reader.read(i32),
-                .merchant_merchandise_type => reader.read(u16),
-                .credits => reader.read(i32),
-                .sellable_price => reader.read(i32),
-                .portal_usable => reader.read(bool),
-                .account_id => reader.read(i32),
-                .current_fame => reader.read(i32),
-                .sellable_price_currency => reader.read(i32),
-                .object_connection => reader.read(u32),
-                .merchant_remaining_count => reader.read(i32),
-                .merchant_remaining_minute => reader.read(i32),
-                .merchant_discount => reader.read(i32),
-                .sellable_rank_requirement => reader.read(i32),
-                .hp_boost => reader.read(i32),
-                .mp_boost => reader.read(i32),
-                .attack_bonus => reader.read(i32),
-                .defense_bonus => reader.read(i32),
-                .speed_bonus => reader.read(i32),
-                .vitality_bonus => reader.read(i32),
-                .wisdom_bonus => reader.read(i32),
-                .dexterity_bonus => reader.read(i32),
-                .owner_account_id => reader.read(i32),
-                .name_changer_star => reader.read(i32),
-                .name_chosen => reader.read(bool),
-                .fame => reader.read(i32),
-                .fame_goal => reader.read(i32),
-                .glow => reader.read(i32),
-                .sink_offset => reader.read(i32),
-                .alt_texture_index => reader.read(i32),
-                .guild => reader.read([]u8),
-                .guild_rank => reader.read(i32),
-                .oxygen_bar => reader.read(i32),
-                .health_stack_count => reader.read(i32),
-                .magic_stack_count => reader.read(i32),
-                .back_pack0, .back_pack1, .back_pack2, .back_pack3, .back_pack4, .back_pack5, .back_pack6, .back_pack7 => reader.read(i32),
-                .has_backpack => reader.read(bool),
-                .skin => reader.read(i32),
-                inline else => {
-                    std.log.err("Unknown stat type: {any}", .{ stat_type });
-                    return;
-                },
+            .maximum_hp => reader.read(i32),
+            .hp => reader.read(i32),
+            .size => reader.read(i32),
+            .maximum_mp => reader.read(i32),
+            .mp => reader.read(i32),
+            .experience_goal => reader.read(i32),
+            .experience => reader.read(i32),
+            .level => reader.read(i32),
+            .inventory0, .inventory1, .inventory2, .inventory3, .inventory4, .inventory5, .inventory6, .inventory7, .inventory8, .inventory9, .inventory10, .inventory11 => reader.read(u16),
+            .attack => reader.read(i32),
+            .defense => reader.read(i32),
+            .speed => reader.read(i32),
+            .vitality => reader.read(i32),
+            .wisdom => reader.read(i32),
+            .dexterity => reader.read(i32),
+            .effects => reader.read(i32),
+            .stars => reader.read(i32),
+            .name => reader.read([]u8),
+            .texture1 => reader.read(i32),
+            .texture2 => reader.read(i32),
+            .merchant_merchandise_type => reader.read(u16),
+            .credits => reader.read(i32),
+            .sellable_price => reader.read(i32),
+            .portal_usable => reader.read(bool),
+            .account_id => reader.read(i32),
+            .current_fame => reader.read(i32),
+            .sellable_price_currency => reader.read(i32),
+            .object_connection => reader.read(u32),
+            .merchant_remaining_count => reader.read(i32),
+            .merchant_remaining_minute => reader.read(i32),
+            .merchant_discount => reader.read(i32),
+            .sellable_rank_requirement => reader.read(i32),
+            .hp_boost => reader.read(i32),
+            .mp_boost => reader.read(i32),
+            .attack_bonus => reader.read(i32),
+            .defense_bonus => reader.read(i32),
+            .speed_bonus => reader.read(i32),
+            .vitality_bonus => reader.read(i32),
+            .wisdom_bonus => reader.read(i32),
+            .dexterity_bonus => reader.read(i32),
+            .owner_account_id => reader.read(i32),
+            .name_changer_star => reader.read(i32),
+            .name_chosen => reader.read(bool),
+            .fame => reader.read(i32),
+            .fame_goal => reader.read(i32),
+            .glow => reader.read(i32),
+            .sink_offset => reader.read(i32),
+            .alt_texture_index => reader.read(i32),
+            .guild => reader.read([]u8),
+            .guild_rank => reader.read(i32),
+            .oxygen_bar => reader.read(i32),
+            .health_stack_count => reader.read(i32),
+            .magic_stack_count => reader.read(i32),
+            .back_pack0, .back_pack1, .back_pack2, .back_pack3, .back_pack4, .back_pack5, .back_pack6, .back_pack7 => reader.read(i32),
+            .has_backpack => reader.read(bool),
+            .skin => reader.read(i32),
+            inline else => {
+                std.log.err("Unknown stat type: {any}", .{stat_type});
+                return;
+            },
         }
     }
 
-    pub fn hello(self: *Server, build_ver: []const u8, gameId: i32, email: []const u8, password: []const u8, char_id: i16, create_char: bool, class_type: u16, skin_type: u16) !void {
+    pub fn sendAcceptTrade(self: *Server, my_offer: []bool, your_offer: []bool) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - AcceptTrade: my_offer={any} your_offer={any}", .{ my_offer, your_offer });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.accept_trade));
+        self.writer.write(my_offer);
+        self.writer.write(your_offer);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendAoeAck(self: *Server, time: u32, position: Position) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - AoeAck: time={d} position={any}", .{ time, position });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.aoe_ack));
+        self.writer.write(time);
+        self.writer.write(position);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendBuy(self: *Server, object_id: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - Buy: object_id={d}", .{object_id});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.buy));
+        self.writer.write(object_id);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendCancelTrade(self: *Server) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - CancelTrade", .{});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.cancel_trade));
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendChangeGuildRank(self: *Server, name: []const u8, guild_rank: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - ChangeGuildRank: name={s} guild_rank={}", .{ name, guild_rank });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.change_guild_rank));
+        self.writer.write(name);
+        self.writer.write(guild_rank);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendChangeTrade(self: *Server, offer: []bool) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - ChangeTrade: offer={any}", .{offer});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.change_trade));
+        self.writer.write(offer);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendCheckCredits(self: *Server) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - CheckCredits", .{});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.check_credits));
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendChooseName(self: *Server, name: []const u8) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - ChooseName: name={s}", .{name});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.choose_name));
+        self.writer.write(name);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendCreate(self: *Server, class_type: u16, skin_type: u16) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - Create: class_type={d} skin_type={d}", .{ class_type, skin_type });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.create));
+        self.writer.write(class_type);
+        self.writer.write(skin_type);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendCreateGuild(self: *Server, name: []const u8) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - CreateGuild: name={s}", .{name});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.create_guild));
+        self.writer.write(name);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendEditAccountList(self: *Server, account_list_id: i32, add: bool, object_id: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - EditAccountList: account_list_id={d} add={any} object_id={d}", .{ account_list_id, add, object_id });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.edit_account_list));
+        self.writer.write(account_list_id);
+        self.writer.write(add);
+        self.writer.write(object_id);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendEnemyHit(self: *Server, time: i32, bullet_id: u8, target_id: i32, killed: bool) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - EnemyHit: time={d} bullet_id={d} target_id={d} killed={any}", .{ time, bullet_id, target_id, killed });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.enemy_hit));
+        self.writer.write(time);
+        self.writer.write(bullet_id);
+        self.writer.write(target_id);
+        self.writer.write(killed);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendEscape(self: *Server) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - Escape", .{});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.escape));
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendGotoAck(self: *Server, time: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - GotoAck: time={d}", .{time});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.goto_ack));
+        self.writer.write(time);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendGroundDamage(self: *Server, time: i32, position: Position) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - GroundDamage: time={d} position={any}", .{ time, position });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.ground_damage));
+        self.writer.write(time);
+        self.writer.write(position);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendGuildInvite(self: *Server, name: []const u8) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - GuildInvite: name={s}", .{name});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.guild_invite));
+        self.writer.write(name);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendGuildRemove(self: *Server, name: []const u8) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - GuildRemove: name={s}", .{name});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.guild_remove));
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendHello(self: *Server, build_ver: []const u8, gameId: i32, email: []const u8, password: []const u8, char_id: i16, create_char: bool, class_type: u16, skin_type: u16) !void {
         if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
             std.log.debug("Send - Hello: build_ver={s}, game_id={d}, email={s}, password={s}, char_id={d}, create_char={any}, class_type={d}, skin_type={d}", .{ build_ver, gameId, email, password, char_id, create_char, class_type, skin_type });
 
@@ -676,13 +907,267 @@ pub const Server = struct {
         self.writer.index = 0;
     }
 
-    pub fn playerText(self: *Server, text: []const u8) !void {
+    pub fn sendInvDrop(self: *Server, slot_object: ObjectSlot) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - InvDrop: slot_object={any}", .{slot_object});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.inv_drop));
+        self.writer.write(slot_object);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendInvSwap(self: *Server, time: i32, position: Position, from_slot: ObjectSlot, to_slot: ObjectSlot) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - InvSwap: time={d} position={any} from_slot={any} to_slot={any}", .{ time, position, from_slot, to_slot });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.inv_swap));
+        self.writer.write(time);
+        self.writer.write(position);
+        self.writer.write(from_slot);
+        self.writer.write(to_slot);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendJoinGuild(self: *Server, name: []const u8) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - JoinGuild: name={s}", .{name});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.join_guild));
+        self.writer.write(name);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendLoad(self: *Server, char_id: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - Load: char_id={d}", .{char_id});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.load));
+        self.writer.write(char_id);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendMove(self: *Server, tick_id: i32, time: i32, new_pos: Position, records: []const TimedPosition) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s)
+            std.log.debug("Send - Move: tick_id={d} time={d} new_pos={any} records={any}", .{ tick_id, time, new_pos, records });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.move));
+        self.writer.write(tick_id);
+        self.writer.write(time);
+        self.writer.write(new_pos);
+        self.writer.write(records);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendOtherHit(self: *Server, time: i32, bullet_id: u8, object_id: i32, target_id: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - OtherHit: time={d} bullet_id={d} object_id={d} target_id={d}", .{ time, bullet_id, object_id, target_id });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.other_hit));
+        self.writer.write(time);
+        self.writer.write(bullet_id);
+        self.writer.write(object_id);
+        self.writer.write(target_id);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendPlayerHit(self: *Server, bullet_id: u8, object_id: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - PlayerHit: bullet_id={d} object_id={d}", .{ bullet_id, object_id });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.player_hit));
+        self.writer.write(bullet_id);
+        self.writer.write(object_id);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendPlayerShoot(self: *Server, time: i32, bullet_id: u8, container_type: u16, starting_pos: Position, angle: f32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - PlayerShoot: time={d} bullet_id={d} container_type={d} staring_pos={any} angle={d}", .{ time, bullet_id, container_type, starting_pos, angle });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.player_shoot));
+        self.writer.write(time);
+        self.writer.write(bullet_id);
+        self.writer.write(container_type);
+        self.writer.write(starting_pos);
+        self.writer.write(angle);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendPlayerText(self: *Server, text: []const u8) !void {
         if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
             std.log.debug("Send - PlayerText: text={s}", .{text});
 
         self.writer.writeLength();
         self.writer.write(@intFromEnum(C2SPacketId.player_text));
         self.writer.write(text);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendPong(self: *Server, serial: i32, time: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - Pong: serial={d} time={d}", .{ serial, time });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.pong));
+        self.writer.write(serial);
+        self.writer.write(time);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendRequestTrade(self: *Server, name: []const u8) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - RequestTrade: name={s}", .{name});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.request_trade));
+        self.writer.write(name);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendReskin(self: *Server, skin_id: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - Reskin: skin_id={d}", .{skin_id});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.reskin));
+        self.writer.write(skin_id);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendSetCondition(self: *Server, condition_effect: i32, condition_duration: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - SetCondition: condition_effect={d} condition_duration={d}", .{ condition_effect, condition_duration });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.set_condition));
+        self.writer.write(condition_effect);
+        self.writer.write(condition_duration);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendShootAck(self: *Server, time: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - ShootAck: time={d}", .{time});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.shoot_ack));
+        self.writer.write(time);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendSquareHit(self: *Server, time: i32, bullet_id: u8, object_id: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - SquareHit: time={d} bullet_id={d} object_id={d}", .{ time, bullet_id, object_id });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.square_hit));
+        self.writer.write(time);
+        self.writer.write(bullet_id);
+        self.writer.write(object_id);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendTeleport(self: *Server, object_id: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - Teleport: object_id={d}", .{object_id});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.teleport));
+        self.writer.write(object_id);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendUpdateAck(self: *Server) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s)
+            std.log.debug("Send - UpdateAck", .{});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.update_ack));
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendUseItem(self: *Server, time: i32, slot_object: ObjectSlot, use_position: Position, use_type: u8) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - UseItem: time={d} slot_object={any} use_position={any} use_type={d} ", .{ time, slot_object, use_position, use_type });
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.use_item));
+        self.writer.write(time);
+        self.writer.write(slot_object);
+        self.writer.write(use_position);
+        self.writer.write(use_type);
+        self.writer.updateLength();
+
+        try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
+        self.writer.index = 0;
+    }
+
+    pub fn sendUsePortal(self: *Server, object_id: i32) !void {
+        if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
+            std.log.debug("Send - UsePortal: object_id={d}", .{object_id});
+
+        self.writer.writeLength();
+        self.writer.write(@intFromEnum(C2SPacketId.use_portal));
+        self.writer.write(object_id);
         self.writer.updateLength();
 
         try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);

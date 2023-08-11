@@ -303,7 +303,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
 
                 if (zgui.button("Send message", .{ .w = 150.0 })) {
                     if (server != null) {
-                        server.?.playerText(static.text_buf[0..utils.strlen(static.text_buf[0..])]) catch |e| {
+                        server.?.sendPlayerText(static.text_buf[0..utils.strlen(static.text_buf[0..])]) catch |e| {
                             std.log.err("Can't send player text: {any}", .{e});
                         };
                     }
@@ -366,7 +366,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
 
             if (server != null) {
                 if (selected_char_id != 65535 and !sent_hello) {
-                    server.?.hello(settings.build_version, -2, current_account.email, current_account.password, @as(i16, @intCast(selected_char_id)), char_create_type != 0, char_create_type, char_create_skin_type) catch |e| {
+                    server.?.sendHello(settings.build_version, -2, current_account.email, current_account.password, @as(i16, @intCast(selected_char_id)), char_create_type != 0, char_create_type, char_create_skin_type) catch |e| {
                         std.log.err("Could not send Hello: {any}", .{e});
                     };
                     sent_hello = true;
@@ -570,7 +570,7 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
     }
 
     std.debug.print("Logged in as {s}\n", .{current_account.name});
-    
+
     if (character_list.len > 0) {
         current_screen = ScreenType.char_select;
     } else {
