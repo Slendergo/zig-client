@@ -27,10 +27,10 @@ const object_files = [_][]const u8{
     "LairOfShaitan",        "Shatters",            "Belladonna",
     "PuppetMaster",         "IceCave",             "TheHive",
     "ToxicSewers",          "PuppetMasterEncore",  "IceTomb",
-    "StPatricksObject",     "BuffedBunnyObject",   "HanaminexusObject",
+    "StPatricksObject",     "BuffedBunnyObject",   "HanamiNexusObject",
 };
 // zig fmt: on
-const ground_files = [_][]const u8{ "Ground", "stPatricksGround", "hanaminexusGround", "mountainTempleGround" };
+const ground_files = [_][]const u8{ "Ground", "StPatricksGround", "HanamiNexusGround", "MountainTempleGround" };
 
 const region_files = [_][]const u8{"Regions"};
 
@@ -283,7 +283,7 @@ pub const ObjProps = struct {
     blood_probability: f32,
     blood_color: u32,
     shadow_color: u32,
-    portrait: TextureData,
+    portrait: ?TextureData,
     min_size: f32,
     max_size: f32,
     size_step: f32,
@@ -336,12 +336,13 @@ pub const ObjProps = struct {
             .sink_immune = node.elementExists("ProtectFromSink"),
             .base_z = try node.getValueFloat("Z", f32, 0.0),
             .flying = node.elementExists("Flying"),
+            .color = try node.getValueInt("Color", u32, 0xFFFFFF),
             .show_name = node.elementExists("ShowName"),
             .face_attacks = !node.elementExists("DontFaceAttacks"),
             .blood_probability = try node.getValueFloat("BloodProb", f32, 0.0),
             .blood_color = try node.getValueInt("BloodColor", u32, 0),
             .shadow_color = try node.getValueInt("ShadowColor", u32, 0),
-            .portrait = TextureData.parse(node.findChild("Portrait"), allocator, false),
+            .portrait = if (node.elementExists("Portrait")) try TextureData.parse(node.findChild("Portrait").?, allocator, false) else null,
             .min_size = min_size,
             .max_size = max_size,
             .size_step = try node.getValueFloat("SizeStep", f32, 0.0) / 100.0,
