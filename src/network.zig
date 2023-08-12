@@ -336,6 +336,8 @@ pub const Server = struct {
         const object_id = reader.read(i32);
         const position = reader.read(Position);
 
+        main.server.?.sendGotoAck(main.last_update);
+
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
             std.log.debug("Recv - Goto: object_id={d}, x={e}, y={e}", .{ object_id, position.x, position.y });
     }
@@ -404,6 +406,8 @@ pub const Server = struct {
             }
         }
 
+        //main.server.?.sendMove(tick_id: i32, time: i32, new_pos: Position, records: []const TimedPosition)
+
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
             std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });
     }
@@ -419,6 +423,8 @@ pub const Server = struct {
 
     inline fn handlePing(reader: *utils.PacketReader) void {
         const serial = reader.read(i32);
+
+        main.server.?.sendPong(serial, main.current_time);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
             std.log.debug("Recv - Ping: serial={d}", .{serial});
@@ -531,6 +537,8 @@ pub const Server = struct {
                 parseStatData(reader, stat_type);
             }
         }
+
+        main.server.?.sendUpdateAck();
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
             std.log.debug("Recv - Update: tiles_len={d}, new_objs_len={d}, drops_len={d}", .{ tiles.len, new_objs_len, drops.len });
