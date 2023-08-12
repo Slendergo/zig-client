@@ -35,7 +35,7 @@ const TradeItem = extern struct {
     included: bool 
 };
 
-const ARGB = extern struct { 
+const ARGB = packed struct(u32) { 
     a: u8, 
     r: u8, 
     g: u8, 
@@ -201,14 +201,14 @@ pub const Server = struct {
                 .enemy_shoot => handleEnemyShoot(&self.reader),
                 .failure => handleFailure(&self.reader),
                 .global_notification => handleGlobalNotification(&self.reader),
-                .goto => handleGoto(&self.reader),
+                .goto => handleGoto(self),
                 .invited_to_guild => handleInvitedToGuild(&self.reader),
                 .inv_result => handleInvResult(&self.reader),
                 .map_info => handleMapInfo(&self.reader),
                 .name_result => handleNameResult(&self.reader),
                 .new_tick => handleNewTick(&self.reader),
                 .notification => handleNotification(&self.reader),
-                .ping => handlePing(&self.reader),
+                .ping => handlePing(self),
                 .play_sound => handlePlaySound(&self.reader),
                 .quest_obj_id => handleQuestObjId(&self.reader),
                 .server_player_shoot => handleServerPlayerShoot(&self.reader),
@@ -219,7 +219,7 @@ pub const Server = struct {
                 .trade_done => handleTradeDone(&self.reader),
                 .trade_requested => handleTradeRequested(&self.reader),
                 .trade_start => handleTradeStart(&self.reader),
-                .update => handleUpdate(&self.reader),
+                .update => handleUpdate(self),
                 else => {
                     std.log.err("Unknown S2CPacketId: id={d}, size={d}, len={d}", .{ byte_id, self.buffer_idx, self.message_len });
                     self.buffer_idx = 0;
@@ -332,11 +332,14 @@ pub const Server = struct {
             std.log.debug("Recv - GlobalNotification: type={d}, text={s}", .{ notif_type, text });
     }
 
-    inline fn handleGoto(reader: *utils.PacketReader) void {
+    inline fn handleGoto(self: *Server) void {
+        var reader = &self.reader;
         const object_id = reader.read(i32);
         const position = reader.read(Position);
 
-        main.server.?.sendGotoAck(main.last_update);
+        self.sendGotoAck(main.last_update) catch |e| {
+            std.log.err("Could not send GotoAck: {any}", .{e});
+        };
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
             std.log.debug("Recv - Goto: object_id={d}, x={e}, y={e}", .{ object_id, position.x, position.y });
@@ -421,10 +424,13 @@ pub const Server = struct {
             std.log.debug("Recv - Notification: object_id={d}, message={s}, color={any}", .{ object_id, message, color });
     }
 
-    inline fn handlePing(reader: *utils.PacketReader) void {
+    inline fn handlePing(self: *Server) void {
+        var reader = &self.reader;
         const serial = reader.read(i32);
 
-        main.server.?.sendPong(serial, main.current_time);
+        self.sendPong(serial, main.current_time) catch |e| {
+            std.log.err("Could not send Pong: {any}", .{e});
+        };
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
             std.log.debug("Recv - Ping: serial={d}", .{serial});
@@ -519,7 +525,8 @@ pub const Server = struct {
             std.log.debug("Recv - TradeStart: my_items={any}, your_name={s}, your_items={any}", .{ my_items, your_name, your_items });
     }
 
-    inline fn handleUpdate(reader: *utils.PacketReader) void {
+    inline fn handleUpdate(self: *Server) void {
+        var reader = &self.reader;
         const tiles = reader.read([]TileData);
         const drops = reader.read([]i32);
         const new_objs_len = reader.read(u16);
@@ -538,7 +545,9 @@ pub const Server = struct {
             }
         }
 
-        main.server.?.sendUpdateAck();
+        self.sendUpdateAck() catch |e| {
+            std.log.err("Could not send UpdateAck: {any}", .{e});
+        };
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
             std.log.debug("Recv - Update: tiles_len={d}, new_objs_len={d}, drops_len={d}", .{ tiles.len, new_objs_len, drops.len });
