@@ -388,7 +388,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     zstbrp.initPack(&ctx, nodes);
 
     try addImage("bars", "Bars.png", 24, 8, &ctx, allocator);
-    try addAnimEnemy("chars8x8dEncounters", "Chars8x8dEncounters.png", 8, 8, 48, &ctx, allocator);
+    try addAnimEnemy("chars8x8dEncounters", "Chars8x8dEncounters.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dHero1", "Chars8x8dHero1.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dBeach", "Chars8x8dBeach.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8rEncounters", "Chars8x8rEncounters.png", 8, 8, 48, 8, &ctx, allocator);
@@ -438,7 +438,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addImage("lofiProjsBig", "LofiProjsBig.png", 16, 16, &ctx, allocator);
     try addImage("outerMask", "OuterMask.png", 8, 8, &ctx, allocator);
     try addAnimPlayer("players", "Players.png", 8, 8, 48, 8, &ctx, allocator);
-    try addAnimPlayer("playersMask", "PlayersMask.png", 8, 8, 48, &ctx, allocator);
+    try addAnimPlayer("playersMask", "PlayersMask.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimPlayer("playerskins", "PlayersSkins.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimPlayer("playersSkinsMask", "PlayersSkinsMask.png", 8, 8, 48, 8, &ctx, allocator);
     try addImage("redLootBag", "RedLootBag.png", 8, 8, &ctx, allocator);
