@@ -7,7 +7,7 @@ const game_data = @import("game_data.zig");
 
 // zig fmt: off
 const ObjectSlot = extern struct { 
-    object_id: i32, 
+    object_id: i32,
     slot_id: u8, 
     object_type: i16 
 };
@@ -31,7 +31,7 @@ const TileData = extern struct {
 const TradeItem = extern struct { 
     item: i32, 
     slot_type: i32, 
-    tradeable: bool, 
+    tradeable: bool,
     included: bool 
 };
 
@@ -221,7 +221,7 @@ pub const Server = struct {
                 .trade_start => handleTradeStart(&self.reader),
                 .update => handleUpdate(self),
                 else => {
-                    std.log.err("Unknown S2CPacketId: id={d}, size={d}, len={d}", .{ byte_id, self.buffer_idx, self.message_len });
+                    std.log.err("Unknown S2CPacketId: id={any}, size={d}, len={d}", .{ packet_id, self.buffer_idx, self.message_len });
                     self.buffer_idx = 0;
                     return;
                 },
@@ -373,8 +373,8 @@ pub const Server = struct {
         const height = reader.read(i32);
         const name = reader.read([]u8);
         const display_name = reader.read([]u8);
-        const difficulty = reader.read(i32);
         const seed = reader.read(u32);
+        const difficulty = reader.read(i32);
         const background = reader.read(i32);
         const allow_player_teleport = reader.read(bool);
         const show_displays = reader.read(bool);
