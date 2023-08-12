@@ -198,8 +198,8 @@ pub const GroundProps = struct {
     obj_type: i32,
     obj_id: []const u8,
     no_walk: bool,
-    min_damage: ?i32,
-    max_damage: ?i32,
+    min_damage: i32,
+    max_damage: i32,
     animate: ?AnimProps,
     blend_prio: i32,
     composite_prio: i32,
@@ -509,7 +509,7 @@ pub const ProjProps = struct {
     bullet_type: i32,
     object_id: []const u8,
     lifetime_ms: i32,
-    speed: i32,
+    speed: f32,
     size: i32,
     min_damage: i32,
     max_damage: i32,
@@ -537,11 +537,11 @@ pub const ProjProps = struct {
             .bullet_type = try node.getAttributeInt("type", i32, 0), 
             .object_id = try node.getValueAlloc("ObjectId", allocator, ""), 
             .lifetime_ms = try node.getValueInt("LifetimeMS", u16, 0),
-            .speed = try node.getValueFloat("Speed", f32, 0) / 10000.0,
-            .size = try node.getValueFloat("Size", f32, 100.0) / 100.0,
+            .speed = try node.getValueFloat("Speed", f32, 0),
+            .size = try node.getValueInt("Size", i32, 1),
             .min_damage = try node.getValueInt("MinDamage", i32, 0),
             .max_damage = try node.getValueInt("MaxDamage", i32, 0),
-            .effects = effect_list,
+            .effects = try allocator.dupe(ConditionEffect, effect_list.items),
             .piercing = node.elementExists("MultiHit"),
             .passes_cover = node.elementExists("PassesCover"),
             .armor_piercing = node.elementExists("ArmorPiercing"),
@@ -847,31 +847,32 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     }
 
     var obj_props_iter = obj_type_to_props.valueIterator();
-    while (obj_props_iter.next()) |props| {
-        allocator.free(props.obj_id);
-        allocator.free(props.display_id);
-        for (props.projectiles) |proj| {
-            for (proj.texture_data) |tex| {
-                allocator.free(tex.sheet);
-            }
-            allocator.free(proj.texture_data);
+    while (obj_props_iter.next()) |prop| {
+        allocator.free(prop.obj_id);
+        allocator.free(prop.display_id);
+        allocator.free(prop.death_sound);
+        allocator.free(prop.hit_sound);
+
+        for (prop.projectiles) |proj_prop| {
+            allocator.free(proj_prop.object_id);
+            allocator.free(proj_prop.effects);
         }
-        allocator.free(props.projectiles);
     }
 
     var item_props_iter = item_type_to_props.valueIterator();
-    while (item_props_iter.next()) |props| {
-        allocator.free(props.tier);
-        if (props.projectile) |proj| {
-            for (proj.texture_data) |tex| {
-                allocator.free(tex.sheet);
-            }
-            allocator.free(proj.texture_data);
-        }
+    while (item_props_iter.next()) |prop| {
+        allocator.free(prop.tier);
+        allocator.free(prop.stat_increments);
+        allocator.free(prop.activations);
 
-        allocator.free(props.stat_increments);
-        allocator.free(props.activations);
-        allocator.free(props.texture_data.sheet);
+        allocator.free(prop.texture_data.sheet);
+
+        if (prop.projectile != null) {
+            var proj_prop = prop.projectile.?;
+
+            allocator.free(proj_prop.object_id);
+            allocator.free(proj_prop.effects);
+        }
     }
 
     var item_name_iter = item_type_to_name.valueIterator();
