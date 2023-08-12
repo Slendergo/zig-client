@@ -440,7 +440,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addAnimPlayer("players", "Players.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimPlayer("playersMask", "PlayersMask.png", 8, 8, 48, &ctx, allocator);
     try addAnimPlayer("playerskins", "PlayersSkins.png", 8, 8, 48, 8, &ctx, allocator);
-    try addAnimPlayer("playersSkinsMask", "PlayersSkinsMask.png", 8, 8, 48, &ctx, allocator);
+    try addAnimPlayer("playersSkinsMask", "PlayersSkinsMask.png", 8, 8, 48, 8, &ctx, allocator);
     try addImage("redLootBag", "RedLootBag.png", 8, 8, &ctx, allocator);
     try addImage("sidesMask", "SidesMask.png", 4, 4, &ctx, allocator);
     try addImage("stars", "Stars.png", 8, 8, &ctx, allocator);
