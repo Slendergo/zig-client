@@ -353,7 +353,7 @@ inline fn draw() void {
     commands.release();
 }
 
-fn networkTick(allocator: std.mem.Allocator) void {
+fn networkTick() void {
     while (tick_network) {
         std.time.sleep(101 * std.time.ns_per_ms);
 
@@ -373,7 +373,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
                     std.debug.print("Sent Hello\n", .{});
                 }
 
-                server.?.accept(allocator) catch |e| {
+                server.?.accept() catch |e| {
                     std.log.err("Error while accepting server packets: {any}\n", .{e});
                 };
             }
@@ -474,7 +474,7 @@ pub fn main() !void {
         defer allocator.free(current_account.name);
     }
 
-    network_thread = try std.Thread.spawn(.{}, networkTick, .{allocator});
+    network_thread = try std.Thread.spawn(.{}, networkTick, .{});
     defer {
         tick_network = false;
         network_thread.join();
@@ -525,6 +525,11 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
     const verify_doc = try xml.Doc.fromMemory(response);
     defer verify_doc.deinit();
     const verify_root = try verify_doc.getRootElement();
+
+    if (std.mem.eql(u8, verify_root.currentName().?, "Error")) {
+        std.log.err("Login failed: {s}", .{verify_root.currentValue().?});
+        return false;
+    }
 
     current_account.name = allocator.dupeZ(u8, verify_root.getValue("Name") orelse "Guest") catch |e| {
         std.log.err("Could not dupe current account name: {any}", .{e});
