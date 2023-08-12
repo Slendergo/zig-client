@@ -155,14 +155,14 @@ pub const CharacterClass = struct {
 };
 
 pub const AnimFrame = struct {
-    time: u16,
+    time: f32,
     tex: TextureData,
 
     // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) AnimFrame {
+    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !AnimFrame {
         return AnimFrame {
             .time = try node.getAttributeFloat("time", f32, 0.0) * 1000,
-            .tex = TextureData.parse(node.findChild("Texture"), allocator, false)
+            .tex = try TextureData.parse(node.findChild("Texture").?, allocator, false)
         };
     }
     // zig fmt: on
@@ -176,12 +176,12 @@ pub const AnimProps = struct {
     frames: []AnimFrame,
 
     // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) AnimProps {
+    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !AnimProps {
         var frame_list = std.ArrayList(AnimFrame).init(allocator);
         defer frame_list.deinit();
         var frame_iter = node.iterate(&.{}, "Frame");
         while (frame_iter.next()) |animNode|
-            try frame_list.append(AnimFrame.parse(animNode, allocator));
+            try frame_list.append(try AnimFrame.parse(animNode, allocator));
 
         return AnimProps {
             .prob = try node.getAttributeFloat("prob", f32, 0.0),
@@ -195,30 +195,52 @@ pub const AnimProps = struct {
 };
 
 pub const GroundProps = struct {
-    obj_type: u16,
+    obj_type: i32,
     obj_id: []const u8,
     no_walk: bool,
-    damage: u16,
-    blend_prio: i16,
+    min_damage: ?i32,
+    max_damage: ?i32,
+    animate: ?AnimProps,
+    blend_prio: i32,
+    composite_prio: i32,
     speed: f32,
+    x_offset: f32,
+    y_offset: f32,
+    push: bool,
     sink: bool,
-    light_color: i32,
-    light_intensity: f32,
-    light_radius: f32,
+    random_offset: bool,
+    top_texture_data: ?TextureData,
+    top_anim_props: ?AnimProps,
 
     // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !GroundProps {
+    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !GroundProps {        
+        var top_texture_data: ?TextureData = null;
+        const top_node = node.findChild("Top");
+        if (top_node != null)
+            top_texture_data = try TextureData.parse(top_node.?, allocator, false);
+
+        var top_anim_props: ?AnimProps = null;
+        const top_anim_node = node.findChild("TopAnimate");
+        if (top_anim_node != null)
+            top_anim_props = try AnimProps.parse(top_anim_node.?, allocator);
+
         return GroundProps {
-            .obj_type = try node.getAttributeInt("node", u16, 0),
+            .obj_type = try node.getAttributeInt("type", i32, 0),
             .obj_id = try node.getAttributeAlloc("id", allocator, "Unknown"),
             .no_walk = node.elementExists("NoWalk"),
-            .damage = try node.getValueInt("Damage", u16, 0),
-            .blend_prio = try node.getValueInt("BlendPriority", i16, 0),
+            .min_damage = try node.getValueInt("MinDamage", i32, 0),
+            .max_damage = try node.getValueInt("MaxDamage", i32, 0),
+            .animate = if (node.elementExists("Animate")) try AnimProps.parse(node.findChild("Animate").?, allocator) else null,
+            .blend_prio = try node.getValueInt("BlendPriority", i32, 0),
+            .composite_prio = try node.getValueInt("CompositePriority", i32, 0),
             .speed = try node.getValueFloat("Speed", f32, 0.0),
+            .x_offset = try node.getValueFloat("XOffset", f32, 0.0),
+            .y_offset = try node.getValueFloat("YOffset", f32, 0.0),
+            .push = node.elementExists("Push"),
             .sink = node.elementExists("Sink"),
-            .light_color = try node.getValueInt("LightColor", i32, -1),
-            .light_intensity = try node.getValueFloat("LightIntensity", f32, 0.1),
-            .light_radius = try node.getValueFloat("LightRadius", f32, 1.0),
+            .random_offset = node.elementExists("RandomOffset"),
+            .top_texture_data = top_texture_data,
+            .top_anim_props = top_anim_props,
         };
     }
     // zig fmt: on

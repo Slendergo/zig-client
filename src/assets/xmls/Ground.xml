@@ -558,7 +558,7 @@
 	<Ground type="0xbf" id="Quicksand">
 		<Texture><File>lofiEnvironment2</File><Index>0x08</Index></Texture>
 		<BlendPriority>3</BlendPriority>
-		<Sinking/>
+		<Sink/>
 		<Speed>0.6</Speed>
 		<Animate dx=".1" dy=".1">Flow</Animate>
 	</Ground>
