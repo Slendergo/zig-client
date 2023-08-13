@@ -339,7 +339,7 @@ fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]Ch
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
 
-    const data = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
+    const data = try file.readToEndAlloc(allocator, std.math.maxInt(u16));
     defer allocator.free(data);
 
     var iter = std.mem.splitSequence(u8, data, "\n");
@@ -348,7 +348,7 @@ fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]Ch
             continue;
 
         var split = std.mem.splitSequence(u8, line, ",");
-        const idx = try std.fmt.parseInt(usize, split.next().?, 0);
+        const idx = try std.fmt.parseInt(u16, split.next().?, 0);
         chars[idx] = try CharacterData.parse(&split);
     }
 }
