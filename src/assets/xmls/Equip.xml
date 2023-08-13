@@ -7789,7 +7789,6 @@
       <File>lofiObj3</File>
       <Index>0x1fe</Index>
     </Texture>
-    <ScaleValue>1</ScaleValue>
     <SlotType>10</SlotType>
     <Description>Get 2x all XP gained! Lasts until level 20 or death.</Description>
     <Sound>use_potion</Sound>
