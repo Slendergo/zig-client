@@ -5,7 +5,6 @@ const asset_dir = @import("build_options").asset_dir;
 const std = @import("std");
 const game_data = @import("game_data.zig");
 const settings = @import("settings.zig");
-const freetype = @import("freetype");
 
 pub const padding = 2;
 

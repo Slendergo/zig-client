@@ -190,9 +190,6 @@ pub const Server = struct {
                 return;
             };
 
-            std.log.debug("Got packet id={any} ({d}), size={d}, len={d}", .{ packet_id, byte_id, self.buffer_idx, self.message_len });
-            //std.log.debug("{d}", .{self.reader.buffer[self.buffer_idx - size .. self.buffer_idx]});
-
             switch (packet_id) {
                 .account_list => handleAccountList(&self.reader),
                 .ally_shoot => handleAllyShoot(&self.reader),

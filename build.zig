@@ -1,6 +1,5 @@
 const std = @import("std");
 const libxml2 = @import("libs/libxml/libxml2.zig");
-const zflecs = @import("libs/zflecs/build.zig");
 const zglfw = @import("libs/zglfw/build.zig");
 const zgpu = @import("libs/zgpu/build.zig");
 const zpool = @import("libs/zpool/build.zig");
@@ -21,9 +20,6 @@ pub fn build(b: *std.Build) !void {
         .zlib = false,
     });
     libxml.link(exe);
-
-    const zflecs_pkg = zflecs.package(b, target, optimize, .{});
-    zflecs_pkg.link(exe);
 
     const zstbi_pkg = zstbi.package(b, target, optimize, .{});
     zstbi_pkg.link(exe);
