@@ -19,11 +19,11 @@ pub const left_dir: u8 = 1;
 pub const down_dir: u8 = 2;
 pub const up_dir: u8 = 3;
 
-pub const char_atlas_w = 1024;
-pub const char_atlas_h = 512;
-pub const char_size = 64.0;
-
 pub const CharacterData = struct {
+    const char_atlas_w = 1024;
+    const char_atlas_h = 512;
+    const char_size = 64.0;
+
     x_advance: f32,
     tex_u: f32,
     tex_v: f32,
@@ -387,19 +387,63 @@ pub fn init(allocator: std.mem.Allocator) !void {
     var nodes = try allocator.alloc(zstbrp.PackNode, 4096);
     zstbrp.initPack(&ctx, nodes);
 
-    try addImage("wallBackface", "WallBackface.png", 8, 8, &ctx, allocator);
-    try addImage("invisible", "Invisible.png", 8, 8, &ctx, allocator);
-    try addImage("cursors", "Cursors.png", 32, 32, &ctx, allocator);
-    try addImage("keyIndicators", "KeyIndicators.png", 100, 100, &ctx, allocator);
+    try addImage("textile4x4", "Textile4x4.png", 4, 4, &ctx, allocator);
+    try addImage("textile5x5", "Textile5x5.png", 5, 5, &ctx, allocator);
+    try addImage("textile9x9", "Textile9x9.png", 9, 9, &ctx, allocator);
+    try addImage("textile10x10", "Textile10x10.png", 10, 10, &ctx, allocator);
+    try addImage("redLootBag", "RedLootBag.png", 8, 8, &ctx, allocator);
     try addImage("bars", "Bars.png", 24, 8, &ctx, allocator);
-    try addImage("groundMasks", "GroundMasks.png", 8, 8, &ctx, allocator);
-    try addImage("buffedBunnyObjects8x8", "BuffedBunnyObjects8x8.png", 8, 8, &ctx, allocator);
-    try addImage("buffedBunnyObjects16x16", "BuffedBunnyObjects16x16.png", 16, 16, &ctx, allocator);
-    try addAnimEnemy("buffedBunnyChars16x16", "BuffedBunnyChars16x16.png", 16, 16, 96, 16, &ctx, allocator);
+    try addImage("cursors", "Cursors.png", 32, 32, &ctx, allocator);
+    try addImage("errorTexture", "ErrorTexture.png", 8, 8, &ctx, allocator);
+    try addImage("invisible", "Invisible.png", 8, 8, &ctx, allocator);
+    try addImage("keyIndicators", "KeyIndicators.png", 100, 100, &ctx, allocator);
+    try addImage("lofiChar", "LofiChar.png", 8, 8, &ctx, allocator);
+    try addImage("lofiChar2", "LofiChar2.png", 8, 8, &ctx, allocator);
+    try addImage("lofiCharBig", "LofiCharBig.png", 16, 16, &ctx, allocator);
+    try addImage("lofiEnvironment", "LofiEnvironment.png", 8, 8, &ctx, allocator);
+    try addImage("lofiEnvironment2", "LofiEnvironment2.png", 8, 8, &ctx, allocator);
+    try addImage("lofiEnvironment3", "LofiEnvironment3.png", 8, 8, &ctx, allocator);
+    try addImage("lofiInterface", "LofiInterface.png", 8, 8, &ctx, allocator);
+    try addImage("lofiInterface2", "LofiInterface2.png", 8, 8, &ctx, allocator);
+    try addImage("lofiInterfaceBig", "LofiInterfaceBig.png", 16, 16, &ctx, allocator);
+    try addImage("lofiObj", "LofiObj.png", 8, 8, &ctx, allocator);
+    try addImage("lofiObj2", "LofiObj2.png", 8, 8, &ctx, allocator);
+    try addImage("lofiObj3", "LofiObj3.png", 8, 8, &ctx, allocator);
+    try addImage("lofiObj4", "LofiObj4.png", 8, 8, &ctx, allocator);
+    try addImage("lofiObj5", "LofiObj5.png", 8, 8, &ctx, allocator);
+    try addImage("lofiObj6", "LofiObj6.png", 8, 8, &ctx, allocator);
+    try addImage("lofiObj40x40", "LofiObj40x40.png", 40, 40, &ctx, allocator);
+    try addImage("lofiObjBig", "LofiObjBig.png", 16, 16, &ctx, allocator);
+    try addImage("lofiParts", "LofiParts.png", 8, 8, &ctx, allocator);
+    try addImage("lofiProjs", "LofiProjs.png", 8, 8, &ctx, allocator);
+    try addImage("lofiProjsBig", "LofiProjsBig.png", 16, 16, &ctx, allocator);
+    try addImage("stars", "Stars.png", 8, 8, &ctx, allocator);
+    try addImage("wallBackface", "WallBackface.png", 8, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8dEncounters", "Chars8x8dEncounters.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8dHero1", "Chars8x8dHero1.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dBeach", "Chars8x8dBeach.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rEncounters", "Chars8x8rEncounters.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rHero1", "Chars8x8rHero1.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rHero2", "Chars8x8rHero2.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rHigh", "Chars8x8rHigh.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rLow1", "Chars8x8rLow1.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rLow2", "Chars8x8rLow2.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rMid", "Chars8x8rMid.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rMid2", "Chars8x8rMid2.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rPets1", "Chars8x8rPets1.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rPets1Mask", "Chars8x8rPets1Mask.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rPetsKaratePenguin", "Chars8x8rPetsKaratePenguin.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars16x8dEncounters", "Chars16x8dEncounters.png", 16, 8, 96, 8, &ctx, allocator);
+    try addAnimEnemy("chars16x8rEncounters", "Chars16x8rEncounters.png", 16, 8, 96, 8, &ctx, allocator);
+    try addAnimEnemy("chars16x16dEncounters", "Chars16x16dEncounters.png", 16, 16, 96, 16, &ctx, allocator);
+    try addAnimEnemy("chars16x16dEncounters2", "Chars16x16dEncounters2.png", 16, 16, 96, 16, &ctx, allocator);
+    try addAnimEnemy("chars16x16dMountains1", "Chars16x16dMountains1.png", 16, 16, 96, 16, &ctx, allocator);
+    try addAnimEnemy("chars16x16dMountains2", "Chars16x16dMountains2.png", 16, 16, 96, 16, &ctx, allocator);
+    try addAnimEnemy("chars16x16rEncounters", "Chars16x16rEncounters.png", 16, 16, 96, 16, &ctx, allocator);
     try addAnimPlayer("players", "Players.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimPlayer("playersMask", "PlayersMask.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimPlayer("playerskins", "PlayersSkins.png", 8, 8, 48, 8, &ctx, allocator);
-    try addAnimPlayer("playerskins16", "PlayersSkins16.png", 16, 16, 96, 16, &ctx, allocator);
+    try addAnimPlayer("playerskinsMask", "PlayersSkinsMask.png", 8, 8, 48, 8, &ctx, allocator);
 
     if (settings.print_atlas)
         try zstbi.Image.writeToFile(atlas, "atlas.png", .png);

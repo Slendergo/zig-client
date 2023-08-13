@@ -185,6 +185,13 @@ pub const Node = struct {
         return try std.fmt.parseFloat(T, val.?);
     }
 
+    pub fn currentName(node: Node) ?[:0]const u8 {
+        return if (node.impl.name) |name|
+            std.mem.span(name)
+        else
+            null;
+    }
+
     pub fn currentValue(node: Node) ?[:0]const u8 {
         return if (node.impl.children) |value_node|
             if (@as(*c.xmlNode, @ptrCast(value_node)).content) |content|
