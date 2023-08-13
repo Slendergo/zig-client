@@ -359,37 +359,39 @@ pub const ObjProps = struct {
 };
 
 pub const ConditionEnum = enum(u8) {
-    dead = 0,
-    quiet = 1,
-    weak = 2,
-    slowed = 3,
-    sick = 4,
-    dazed = 5,
-    stunned = 6,
-    blind = 7,
-    hallucinating = 8,
-    drunk = 9,
-    confused = 10,
-    stun_immune = 11,
-    invisible = 12,
-    paralyzed = 13,
-    speedy = 14,
-    bleeding = 15,
-    not_used = 16,
-    healing = 17,
-    damaging = 18,
-    berserk = 19,
-    paused = 20,
-    stasis = 21,
-    stasis_immune = 22,
-    invincible = 23,
-    invulnerable = 24,
-    armored = 25,
-    armor_broken = 26,
-    hexed = 27,
-    ninja_speedy = 28,
+    unknown = 0,
+    dead = 1,
+    quiet = 2,
+    weak = 3,
+    slowed = 4,
+    sick = 5,
+    dazed = 6,
+    stunned = 7,
+    blind = 8,
+    hallucinating = 9,
+    drunk = 10,
+    confused = 11,
+    stun_immune = 12,
+    invisible = 13,
+    paralyzed = 14,
+    speedy = 15,
+    bleeding = 16,
+    not_used = 17,
+    healing = 18,
+    damaging = 19,
+    berserk = 20,
+    paused = 21,
+    stasis = 22,
+    stasis_immune = 23,
+    invincible = 24,
+    invulnerable = 25,
+    armored = 26,
+    armor_broken = 27,
+    hexed = 28,
+    ninja_speedy = 29,
 
     const map = std.ComptimeStringMap(ConditionEnum, .{
+        .{ "Unknown", .unknown },
         .{ "Dead", .dead },
         .{ "Quiet", .quiet },
         .{ "Weak", .weak },
@@ -422,7 +424,7 @@ pub const ConditionEnum = enum(u8) {
     });
 
     pub fn fromString(str: []const u8) ConditionEnum {
-        return map.get(str) orelse .dead;
+        return map.get(str) orelse .unknown;
     }
 };
 
@@ -764,18 +766,31 @@ pub const ActivationType = enum(u8) {
 };
 
 pub const ActivationData = struct {
-    type: ActivationType,
+    activation_type: ActivationType,
     object_id: []const u8,
     duration: f32,
-    max_distance: f32,
+    max_distance: u8,
     radius: f32,
-    total_damage: i32,
+    total_damage: u32,
     cond_duration: f32,
+    id: []const u8,
+    effect: ConditionEnum,
+    range: f32,
 
     // zig fmt: off
-    pub fn parse(node: xml.Node) !ActivationData { // todo
+    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ActivationData { // todo
         return ActivationData {
-            .type = ActivationType.fromString(node.currentValue() orelse "IncrementStat"),
+            .activation_type = ActivationType.fromString(node.currentValue() orelse "IncrementStat"),
+            .object_id = try node.getAttributeAlloc("objectId", allocator, ""),
+            .id = try node.getAttributeAlloc("id", allocator, ""),
+            .effect = ConditionEnum.fromString(try node.getAttributeAlloc("effect", allocator, "")),
+            .duration = try node.getAttributeFloat("duration", f32, 0.0),
+            .cond_duration = try node.getAttributeFloat("condDuration", f32, 0.0),
+            .max_distance = try node.getAttributeInt("maxDistance", u8, 0),
+            .radius = try node.getAttributeFloat("maxDistance", f32, 0.0),
+            .total_damage = try node.getAttributeInt("totalDamage", u32, 0),
+            .range = try node.getAttributeFloat("condDuration", f32, 0.0),
+
         };
     }
     // zig fmt: on
@@ -818,7 +833,7 @@ pub const ItemProps = struct {
     ld_boosted: bool,
     backpack: bool,
     slot_type: i8,
-    tier: i8,
+    tier: []const u8,
     mp_cost: f32,
     fame_bonus: u8,
     bag_type: u8,
@@ -828,17 +843,16 @@ pub const ItemProps = struct {
     display_id: []const u8,
     successor_id: []const u8,
     rate_of_fire: f32,
-    tier: []const u8,
     texture_data: TextureData,
     projectile: ?ProjProps,
-    stat_increments: []StatIncrementData,
-    activations: []ActivationData,
-    coolodwn: f32,
+    stat_increments: ?[]StatIncrementData,
+    activations: ?[]ActivationData,
+    cooldown: f32,
     sound: []const u8,
     old_sound: []const u8,
     mp_end_cost: u32,
     timer: f32,
-    extra_tooltip_data: []EffectInfo,
+    extra_tooltip_data: ?[]EffectInfo,
 
     // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ItemProps {
@@ -852,14 +866,20 @@ pub const ItemProps = struct {
         var activate_list = std.ArrayList(ActivationData).init(allocator);
         defer activate_list.deinit();
         while (activate_it.next()) |activate_node|
-            try activate_list.append(try ActivationData.parse(activate_node));
+            try activate_list.append(try ActivationData.parse(activate_node, allocator));
+
+        var extra_tooltip_it = node.iterate(&.{}, "ExtraTooltipData");
+        var extra_tooltip_list = std.ArrayList(EffectInfo).init(allocator);
+        defer extra_tooltip_list.deinit();
+        while (extra_tooltip_it.next()) |extra_tooltip_node|
+            try extra_tooltip_list.append(try EffectInfo.parse(extra_tooltip_node, allocator));
 
         return ItemProps {
             .consumable = node.elementExists("Consumable"),
             .untradeable = node.elementExists("Soulbound"),
             .usable = node.elementExists("Usable"),
             .slot_type = try node.getValueInt("SlotType", i8, 0),
-            .tier = try node.getValueInt("TierReq", i8, 0),
+            .tier = try node.getValueAlloc("Tier", allocator, ""),
             .bag_type = try node.getValueInt("BagType", u8, 0),
             .num_projectiles = try node.getValueInt("NumProjectiles", u8, 1),
             .arc_gap = std.math.degreesToRadians(f32, try node.getValueFloat("ArcGap", f32, 11.25)),
@@ -872,7 +892,7 @@ pub const ItemProps = struct {
             .texture_data = try TextureData.parse(node.findChild("Texture").?, allocator, false),
             .projectile = if (node.elementExists("Projectile")) try ProjProps.parse(node.findChild("Projectile").?, allocator) else null,
             .stat_increments = try allocator.dupe(StatIncrementData, incr_list.items),
-            .activations = if (node.elementExists("Activate"))  try allocator.dupe(ActivationData, activate_list.items) else null,
+            .activations = if (node.elementExists("Activate")) try allocator.dupe(ActivationData, activate_list.items) else null,
             .sound = try node.getValueAlloc("Sound", allocator, ""),
             .old_sound = try node.getValueAlloc("OldSound", allocator, ""),
             .is_potion = node.elementExists("Potion"),
@@ -884,6 +904,7 @@ pub const ItemProps = struct {
             .lt_boosted = node.elementExists("LTBoosted"),
             .ld_boosted = node.elementExists("LDBoosted"),
             .backpack = node.elementExists("Backpack"),
+            .extra_tooltip_data = if (node.elementExists("ExtraTooltipData")) try allocator.dupe(EffectInfo, extra_tooltip_list.items) else null,
         };
     }
     // zig fmt: on
@@ -1003,9 +1024,8 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 
     var item_props_iter = item_type_to_props.valueIterator();
     while (item_props_iter.next()) |prop| {
-        allocator.free(prop.tier);
-        allocator.free(prop.stat_increments);
-        allocator.free(prop.activations);
+        allocator.free(prop.stat_increments.?);
+        allocator.free(prop.activations.?);
 
         allocator.free(prop.texture_data.sheet);
 
