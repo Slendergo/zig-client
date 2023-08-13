@@ -339,17 +339,16 @@ fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]Ch
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
 
-    const data = try file.readToEndAlloc(allocator, std.math.maxInt(u16));
+    const data = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
     defer allocator.free(data);
 
-    _ = std.mem.replace(u8, data, "\r", "", data);
-    var iter = std.mem.splitSequence(u8, data, "\n");
+    var iter = std.mem.splitSequence(u8, data, "\r\n");
     while (iter.next()) |line| {
         if (line.len == 0)
             continue;
 
         var split = std.mem.splitSequence(u8, line, ",");
-        const idx = try std.fmt.parseInt(u16, split.next().?, 0);
+        const idx = try std.fmt.parseInt(usize, split.next().?, 0);
         chars[idx] = try CharacterData.parse(&split);
     }
 }
