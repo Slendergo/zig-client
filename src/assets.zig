@@ -342,6 +342,7 @@ fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]Ch
     const data = try file.readToEndAlloc(allocator, std.math.maxInt(u16));
     defer allocator.free(data);
 
+    _ = std.mem.replace(u8, data, "\r", "", data);
     var iter = std.mem.splitSequence(u8, data, "\n");
     while (iter.next()) |line| {
         if (line.len == 0)
