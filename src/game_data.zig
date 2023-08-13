@@ -209,21 +209,9 @@ pub const GroundProps = struct {
     push: bool,
     sink: bool,
     random_offset: bool,
-    top_texture_data: ?TextureData,
-    top_anim_props: ?AnimProps,
 
     // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !GroundProps {        
-        var top_texture_data: ?TextureData = null;
-        const top_node = node.findChild("Top");
-        if (top_node != null)
-            top_texture_data = try TextureData.parse(top_node.?, allocator, false);
-
-        var top_anim_props: ?AnimProps = null;
-        const top_anim_node = node.findChild("TopAnimate");
-        if (top_anim_node != null)
-            top_anim_props = try AnimProps.parse(top_anim_node.?, allocator);
-
         return GroundProps {
             .obj_type = try node.getAttributeInt("type", i32, 0),
             .obj_id = try node.getAttributeAlloc("id", allocator, "Unknown"),
@@ -239,8 +227,6 @@ pub const GroundProps = struct {
             .push = node.elementExists("Push"),
             .sink = node.elementExists("Sink"),
             .random_offset = node.elementExists("RandomOffset"),
-            .top_texture_data = top_texture_data,
-            .top_anim_props = top_anim_props,
         };
     }
     // zig fmt: on
@@ -343,8 +329,8 @@ pub const ObjProps = struct {
             .float_height = try std.fmt.parseFloat(f32, if (float_node != null) float_node.?.getAttribute("height") orelse "0.0" else "0.0"),
             .float_sine = float_node != null and float_node.?.getAttribute("sine") != null,
             .projectiles = try allocator.dupe(ProjProps, proj_list.items),
-            .hit_sound = try node.getAttributeAlloc("HitSound", allocator, "Unknown"),
-            .death_sound = try node.getAttributeAlloc("DeathSound", allocator, "Unknown"),
+            .hit_sound = try node.getValueAlloc("HitSound", allocator, "Unknown"),
+            .death_sound = try node.getValueAlloc("DeathSound", allocator, "Unknown"),
         };
     }
     // zig fmt: on
@@ -1014,10 +1000,16 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         allocator.free(prop.death_sound);
         allocator.free(prop.hit_sound);
 
+        if (prop.portrait) |tex_data| {
+            allocator.free(tex_data.sheet);
+        }
+
         for (prop.projectiles) |proj_prop| {
             allocator.free(proj_prop.object_id);
             allocator.free(proj_prop.effects);
         }
+
+        allocator.free(prop.projectiles);
     }
 
     var item_props_iter = item_type_to_props.valueIterator();
@@ -1027,9 +1019,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 
         allocator.free(prop.texture_data.sheet);
 
-        if (prop.projectile != null) {
-            var proj_prop = prop.projectile.?;
-
+        if (prop.projectile) |proj_prop| {
             allocator.free(proj_prop.object_id);
             allocator.free(proj_prop.effects);
         }
