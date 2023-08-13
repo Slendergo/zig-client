@@ -727,6 +727,7 @@ pub const ActivationType = enum(u8) {
     daze_blast,
     unlock_portal,
     shuriken_ability,
+    backpack,
 
     const map = std.ComptimeStringMap(ActivationType, .{
         .{ "IncrementStat", .increment_stat },
@@ -754,6 +755,7 @@ pub const ActivationType = enum(u8) {
         .{ "DazeBlast", .daze_blast },
         .{ "UnlockPortal", .unlock_portal },
         .{ "ShurikenAbility", .shuriken_ability },
+        .{ "Backpack", .backpack },
     });
 
     pub fn fromString(str: []const u8) ActivationType {
@@ -814,6 +816,7 @@ pub const ItemProps = struct {
     xp_boost: bool,
     lt_boosted: bool,
     ld_boosted: bool,
+    backpack: bool,
     slot_type: i8,
     tier: i8,
     mp_cost: f32,
@@ -880,6 +883,7 @@ pub const ItemProps = struct {
             .xp_boost = node.elementExists("XpBoost"),
             .lt_boosted = node.elementExists("LTBoosted"),
             .ld_boosted = node.elementExists("LDBoosted"),
+            .backpack = node.elementExists("Backpack"),
         };
     }
     // zig fmt: on
