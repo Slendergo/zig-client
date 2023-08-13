@@ -5,6 +5,7 @@ const asset_dir = @import("build_options").asset_dir;
 const std = @import("std");
 const game_data = @import("game_data.zig");
 const settings = @import("settings.zig");
+const builtin = @import("builtin");
 
 pub const padding = 2;
 
@@ -342,7 +343,7 @@ fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]Ch
     const data = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
     defer allocator.free(data);
 
-    var iter = std.mem.splitSequence(u8, data, "\r\n");
+    var iter = std.mem.splitSequence(u8, data, if (builtin.os.tag == .windows) "\r\n" else "\n");
     while (iter.next()) |line| {
         if (line.len == 0)
             continue;
