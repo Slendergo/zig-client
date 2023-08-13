@@ -705,14 +705,55 @@ pub const ActivationType = enum(u8) {
     heal,
     magic,
     unlock_skin,
-    open_portal,
+    create,
+    heal_nova,
+    bullet_nova,
+    stat_boost,
+    stat_boost_aura,
+    effect_aura,
+    effect,
+    teleport,
+    shoot,
+    vampire_blast,
+    poison_grenade,
+    trap,
+    stasis_blast,
+    pet,
+    decoy,
+    lightning,
+    remove_debuffs,
+    remove_debuffs_aura,
+    magic_nova,
+    daze_blast,
+    unlock_portal,
+    shuriken_ability,
 
     const map = std.ComptimeStringMap(ActivationType, .{
         .{ "IncrementStat", .increment_stat },
         .{ "Heal", .heal },
+        .{ "HealNova", .heal_nova },
+        .{ "BulletNova", .bullet_nova },
         .{ "Magic", .magic },
         .{ "UnlockSkin", .unlock_skin },
-        .{ "OpenPortal", .open_portal },
+        .{ "Create", .create },
+        .{ "StatBoost", .stat_boost },
+        .{ "StatBoostAura", .stat_boost_aura },
+        .{ "ConditionEffectAura", .effect_aura },
+        .{ "ConditionEffectSelf", .effect },
+        .{ "Teleport", .teleport },
+        .{ "Shoot", .shoot },
+        .{ "VampireBlast", .vampire_blast },
+        .{ "PoisonGrenade", .poison_grenade },
+        .{ "Trap", .trap },
+        .{ "StasisBlast", .stasis_blast },
+        .{ "Pet", .pet },
+        .{ "Decoy", .decoy },
+        .{ "Lightning", .remove_debuffs },
+        .{ "RemoveNegativeConditions", .remove_debuffs_aura },
+        .{ "MagicNova", .magic_nova },
+        .{ "DazeBlast", .daze_blast },
+        .{ "UnlockPortal", .unlock_portal },
+        .{ "ShurikenAbility", .shuriken_ability },
     });
 
     pub fn fromString(str: []const u8) ActivationType {
@@ -722,6 +763,12 @@ pub const ActivationType = enum(u8) {
 
 pub const ActivationData = struct {
     type: ActivationType,
+    object_id: []const u8,
+    duration: f32,
+    max_distance: f32,
+    radius: f32,
+    total_damage: i32,
+    cond_duration: f32,
 
     // zig fmt: off
     pub fn parse(node: xml.Node) !ActivationData { // todo
@@ -746,20 +793,49 @@ pub const StatIncrementData = struct {
     // zig fmt: on
 };
 
+pub const EffectInfo = struct {
+    name: []const u8,
+    description: []const u8,
+
+    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !EffectInfo {
+        return EffectInfo{
+            .name = try node.getAttributeAlloc("name", allocator, ""),
+            .description = try node.getAttributeAlloc("description", allocator, ""),
+        };
+    }
+};
+
 pub const ItemProps = struct {
     consumable: bool,
-    untradable: bool,
+    untradeable: bool,
+    usable: bool,
+    is_potion: bool,
+    multi_phase: bool,
+    xp_boost: bool,
+    lt_boosted: bool,
+    ld_boosted: bool,
     slot_type: i8,
-    tier_req: i8,
+    tier: i8,
+    mp_cost: f32,
+    fame_bonus: u8,
     bag_type: u8,
     num_projectiles: u8,
     arc_gap: f32,
+    doses: u8,
+    display_id: []const u8,
+    successor_id: []const u8,
     rate_of_fire: f32,
     tier: []const u8,
     texture_data: TextureData,
     projectile: ?ProjProps,
     stat_increments: []StatIncrementData,
     activations: []ActivationData,
+    coolodwn: f32,
+    sound: []const u8,
+    old_sound: []const u8,
+    mp_end_cost: u32,
+    timer: f32,
+    extra_tooltip_data: []EffectInfo,
 
     // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ItemProps {
@@ -777,18 +853,33 @@ pub const ItemProps = struct {
 
         return ItemProps {
             .consumable = node.elementExists("Consumable"),
-            .untradable = node.elementExists("Untradable"),
+            .untradeable = node.elementExists("Soulbound"),
+            .usable = node.elementExists("Usable"),
             .slot_type = try node.getValueInt("SlotType", i8, 0),
-            .tier_req = try node.getValueInt("TierReq", i8, 0),
+            .tier = try node.getValueInt("TierReq", i8, 0),
             .bag_type = try node.getValueInt("BagType", u8, 0),
             .num_projectiles = try node.getValueInt("NumProjectiles", u8, 1),
             .arc_gap = std.math.degreesToRadians(f32, try node.getValueFloat("ArcGap", f32, 11.25)),
+            .doses = try node.getValueInt("Doses", u8, 0),
+            .display_id = try node.getValueAlloc("DisplayId", allocator, ""),
+            .successor_id = try node.getValueAlloc("SuccessorId", allocator, ""),
+            .mp_cost = try node.getValueFloat("MpCost", f32, 0.0),
+            .fame_bonus = try node.getValueInt("FameBonus", u8, 0),
             .rate_of_fire = try node.getValueFloat("RateOfFire", f32, 1.0),
-            .tier = try node.getValueAlloc("Tier", allocator, "Common"),
             .texture_data = try TextureData.parse(node.findChild("Texture").?, allocator, false),
             .projectile = if (node.elementExists("Projectile")) try ProjProps.parse(node.findChild("Projectile").?, allocator) else null,
             .stat_increments = try allocator.dupe(StatIncrementData, incr_list.items),
-            .activations = try allocator.dupe(ActivationData, activate_list.items),
+            .activations = if (node.elementExists("Activate"))  try allocator.dupe(ActivationData, activate_list.items) else null,
+            .sound = try node.getValueAlloc("Sound", allocator, ""),
+            .old_sound = try node.getValueAlloc("OldSound", allocator, ""),
+            .is_potion = node.elementExists("Potion"),
+            .cooldown = try node.getValueFloat("Cooldown", f32, 0.0),
+            .mp_end_cost = try node.getValueInt("MpEndCost", u32, 0),
+            .timer = try node.getValueFloat("Timer", f32, 0.0),
+            .multi_phase = node.elementExists("MultiPhase"),
+            .xp_boost = node.elementExists("XpBoost"),
+            .lt_boosted = node.elementExists("LTBoosted"),
+            .ld_boosted = node.elementExists("LDBoosted"),
         };
     }
     // zig fmt: on
