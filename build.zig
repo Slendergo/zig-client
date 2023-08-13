@@ -13,6 +13,7 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     const exe = b.addExecutable(.{ .name = "Client", .root_source_file = .{ .path = "src/main.zig" }, .target = target, .optimize = optimize });
+    exe.want_lto = false; // remove later
 
     const libxml = try libxml2.create(b, target, optimize, .{
         .iconv = false,
