@@ -6,8 +6,10 @@ pub const LogType = enum(u8) {
     all_non_tick = 1,
     c2s = 2,
     c2s_non_tick = 3,
-    s2c = 4,
-    s2c_non_tick = 5,
+    c2s_tick = 4,
+    s2c = 5,
+    s2c_non_tick = 6,
+    s2c_tick = 7,
     off = 255,
 };
 

@@ -190,6 +190,9 @@ pub const Server = struct {
                 return;
             };
 
+            std.log.debug("Got packet id={any} ({d}), size={d}, len={d}", .{ packet_id, byte_id, self.buffer_idx, self.message_len });
+            //std.log.debug("{d}", .{self.reader.buffer[self.buffer_idx - size .. self.buffer_idx]});
+
             switch (packet_id) {
                 .account_list => handleAccountList(&self.reader),
                 .ally_shoot => handleAllyShoot(&self.reader),
@@ -237,7 +240,7 @@ pub const Server = struct {
 
     inline fn handleAccountList(reader: *utils.PacketReader) void {
         const account_list_id = reader.read(i32);
-        const account_ids = reader.read([]i32);
+        const account_ids = reader.read([][]const u8);
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
             std.log.debug("Recv - AccountList: account_list_id={d}, account_ids={d}", .{ account_list_id, account_ids });
