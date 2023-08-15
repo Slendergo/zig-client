@@ -379,6 +379,9 @@ pub const Server = struct {
         const allow_player_teleport = reader.read(bool);
         const show_displays = reader.read(bool);
 
+        main.clear();
+        main.tick_frame = true;
+
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
             std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, difficulty={d}, seed={d}, background={d}, allow_player_teleport={any}, show_displays={any}", .{ width, height, name, display_name, difficulty, seed, background, allow_player_teleport, show_displays });
     }
@@ -865,6 +868,9 @@ pub const Server = struct {
         if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
             std.log.debug("Send - Escape", .{});
 
+        main.clear();
+        main.tick_frame = false;
+
         self.writer.writeLength();
         self.writer.write(@intFromEnum(C2SPacketId.escape));
         self.writer.updateLength();
@@ -1205,6 +1211,9 @@ pub const Server = struct {
     pub fn sendUsePortal(self: *Server, object_id: i32) !void {
         if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
             std.log.debug("Send - UsePortal: object_id={d}", .{object_id});
+
+        main.clear();
+        main.tick_frame = false;
 
         self.writer.writeLength();
         self.writer.write(@intFromEnum(C2SPacketId.use_portal));
