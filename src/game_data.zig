@@ -951,7 +951,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ item_name ++ ".xml");
         defer doc.deinit();
         parseItems(doc, allocator) catch |e| {
-            std.log.err("Item parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
+            std.log.err("Item parsing error: {any} {any}", .{ e, @errorReturnTrace() orelse return });
         };
     }
 
@@ -959,7 +959,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ object_name ++ ".xml");
         defer doc.deinit();
         parseObjects(doc, allocator) catch |e| {
-            std.log.err("Object parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
+            std.log.err("Object parsing error: {any} {any}", .{ e, @errorReturnTrace() orelse return });
         };
     }
 
@@ -967,7 +967,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ ground_name ++ ".xml");
         defer doc.deinit();
         parseGrounds(doc, allocator) catch |e| {
-            std.log.err("Ground parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
+            std.log.err("Ground parsing error: {any} {any}", .{ e, @errorReturnTrace() orelse return });
         };
     }
 
@@ -975,7 +975,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         const doc = try xml.Doc.fromFile(asset_dir ++ "xmls/" ++ region_name ++ ".xml");
         defer doc.deinit();
         parseRegions(doc, allocator) catch |e| {
-            std.log.err("Region parsing error: {any} {any}", .{ e, @errorReturnTrace().? });
+            std.log.err("Region parsing error: {any} {any}", .{ e, @errorReturnTrace() orelse return });
         };
     }
 
