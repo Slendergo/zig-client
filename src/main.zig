@@ -102,7 +102,6 @@ pub var max_chars: u32 = 0;
 pub var current_time: i32 = 0;
 pub var last_update: i32 = 0;
 pub var network_thread: std.Thread = undefined;
-pub var network_lock: std.Thread.Mutex = .{};
 pub var tick_network = true;
 pub var render_thread: std.Thread = undefined;
 pub var tick_render = true;
@@ -358,9 +357,6 @@ fn networkTick() void {
         std.time.sleep(101 * std.time.ns_per_ms);
 
         if (selected_server != null) {
-            while (!network_lock.tryLock()) {}
-            defer network_lock.unlock();
-
             if (server == null)
                 server = network.Server.init(selected_server.?.dns, selected_server.?.port); // dialog maybe
 
@@ -393,17 +389,14 @@ fn renderTick(allocator: std.mem.Allocator) void {
 
 pub fn clear() void {
     map.local_player_id = -1;
-    // map.interactive_id = -1;
-    // map.objects.clearRetainingCapacity();
-    // map.projectiles.clearRetainingCapacity();
-    // map.players.clearRetainingCapacity();
+    map.interactive_id = -1;
+    map.objects.clearRetainingCapacity();
+    map.projectiles.clearRetainingCapacity();
+    map.players.clearRetainingCapacity();
 }
 
 pub fn disconnect() void {    
     if (server != null) {
-        while (!network_lock.tryLock()) {}
-        defer network_lock.unlock();
-
         server.?.stream.close();
         server = null;
         selected_server = null;

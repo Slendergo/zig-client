@@ -223,6 +223,7 @@ pub var projectiles: std.ArrayList(Projectile) = undefined;
 pub var proj_indices_to_remove: std.ArrayList(usize) = undefined;
 
 pub var local_player_id: i32 = -1;
+pub var interactive_id: i32 = -1;
 
 pub var move_records: std.ArrayList(network.TimedPosition) = undefined;
 pub var last_records_clear_time: i32 = 0;
