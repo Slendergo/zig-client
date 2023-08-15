@@ -1,0 +1,158 @@
+name: ci
+on:
+  pull_request:
+  push:
+jobs:
+  x86_64-linux-debug:
+    timeout-minutes: 420
+    runs-on: [self-hosted, Linux, x86_64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+      - name: Build
+        run: zig build -Doptimize=Debug -Dtarget=x86_64-linux-gnu
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: zig-out/bin
+          name: x86_64-linux-debug
+  x86_64-linux-release:
+    timeout-minutes: 420
+    runs-on: [self-hosted, Linux, x86_64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+      - name: Build
+        run: zig build -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: zig-out/bin
+          name: x86_64-linux-release
+  aarch64-linux-debug:
+    timeout-minutes: 420
+    runs-on: [self-hosted, Linux, aarch64]
+    steps:
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+      - name: Build
+        run: zig build -Doptimize=Debug -Dtarget=aarch64-linux-gnu
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: zig-out/bin
+          name: aarch64-linux-debug
+  aarch64-linux-release:
+    runs-on: [self-hosted, Linux, aarch64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+      - name: Build
+        run: zig build -Doptimize=ReleaseFast -Dtarget=aarch64-linux-gnu
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: zig-out/bin
+          name: aarch64-linux-release
+  x86_64-macos-release:
+    runs-on: "macos-11"
+    env:
+      ARCH: "x86_64"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+      - name: Build
+        run: zig build -Doptimize=ReleaseFast -Dtarget=x86_64-macos-none
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: zig-out/bin
+          name: x86_64-macos-release
+  aarch64-macos-debug:
+    runs-on: [self-hosted, macOS, aarch64]
+    env:
+      ARCH: "aarch64"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+      - name: Build
+        run: zig build -Doptimize=Debug -Dtarget=aarch64-macos-none
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: zig-out/bin
+          name: aarch64-macos-debug
+  aarch64-macos-release:
+    runs-on: [self-hosted, macOS, aarch64]
+    env:
+      ARCH: "aarch64"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+      - name: Build
+        run: zig build -Doptimize=ReleaseFast -Dtarget=aarch64-macos-none
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: zig-out/bin
+          name: aarch64-macos-release
+  x86_64-windows-debug:
+    runs-on: windows-latest
+    env:
+      ARCH: "x86_64"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+      - name: Build
+        run: zig build -Doptimize=Debug -Dtarget=x86_64-windows-gnu
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: zig-out/bin
+          name: x86_64-windows-debug
+  x86_64-windows-release:
+    runs-on: windows-latest
+    env:
+      ARCH: "x86_64"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+      - name: Build
+        run: zig build -Doptimize=ReleaseFast -Dtarget=x86_64-windows-gnu
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: zig-out/bin
+          name: x86_64-windows-release
+  aarch64-windows:
+    runs-on: [self-hosted, Windows, aarch64]
+    env:
+      ARCH: "aarch64"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+      - name: Build
+        run: zig build -Doptimize=ReleaseFast -Dtarget=aarch64-windows-gnu
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          path: zig-out/bin
+          name: aarch64-windows-release
