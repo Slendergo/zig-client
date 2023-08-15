@@ -6,36 +6,36 @@ const map = @import("map.zig");
 const game_data = @import("game_data.zig");
 
 // zig fmt: off
-const ObjectSlot = extern struct { 
+pub const ObjectSlot = extern struct { 
     object_id: i32,
     slot_id: u8, 
     object_type: i16 
 };
 
-const Position = extern struct { 
+pub const Position = extern struct { 
     x: f32, 
     y: f32 
 };
 
-const TimedPosition = extern struct { 
+pub const TimedPosition = extern struct { 
     time: i32, 
     position: Position 
 };
 
-const TileData = extern struct { 
+pub const TileData = extern struct { 
     x: i16, 
     y: i16, 
     tile: u16 
 };
 
-const TradeItem = extern struct { 
+pub const TradeItem = extern struct { 
     item: i32, 
     slot_type: i32, 
     tradeable: bool,
     included: bool 
 };
 
-const ARGB = packed struct(u32) { 
+pub const ARGB = packed struct(u32) { 
     a: u8, 
     r: u8, 
     g: u8, 
@@ -206,7 +206,7 @@ pub const Server = struct {
                 .inv_result => handleInvResult(&self.reader),
                 .map_info => handleMapInfo(&self.reader),
                 .name_result => handleNameResult(&self.reader),
-                .new_tick => handleNewTick(&self.reader),
+                .new_tick => handleNewTick(self),
                 .notification => handleNotification(&self.reader),
                 .ping => handlePing(self),
                 .play_sound => handlePlaySound(&self.reader),
@@ -391,25 +391,49 @@ pub const Server = struct {
             std.log.debug("Recv - NameResult: success={any}, error_text={s}", .{ success, error_text });
     }
 
-    inline fn handleNewTick(reader: *utils.PacketReader) void {
+    inline fn handleNewTick(self: *Server) void {
+        var reader = &self.reader;
         const tick_id = reader.read(i32);
         const tick_time = reader.read(i32);
 
         const statuses_len = reader.read(u16);
         for (0..statuses_len) |_| {
+            const obj_type = reader.read(u16);
             const obj_id = reader.read(i32);
-            _ = obj_id;
             const position = reader.read(Position);
             _ = position;
 
             const stats_len = reader.read(u16);
-            for (0..stats_len) |_| {
-                const stat_type: game_data.StatType = @enumFromInt(reader.read(u8));
-                parseStatData(reader, stat_type);
+            const class = game_data.obj_type_to_class.get(obj_type) orelse game_data.ClassType.game_object;
+            switch (class) {
+                .player => {
+                    if (map.findPlayer(obj_id)) |player| {
+                        for (0..stats_len) |_| {
+                            if (!parsePlrStatData(reader, player, @as(game_data.StatType, @enumFromInt(reader.read(u8)))))
+                                return;
+                        }
+                    } else {
+                        std.log.err("Could not find player with id {d}", .{obj_id});
+                    }
+                },
+                inline else => {
+                    if (map.findObject(obj_id)) |obj| {
+                        for (0..stats_len) |_| {
+                            if (!parseObjStatData(reader, obj, @as(game_data.StatType, @enumFromInt(reader.read(u8)))))
+                                return;
+                        }
+                    } else {
+                        std.log.err("Could not find object with id {d}", .{obj_id});
+                    }
+                },
             }
         }
 
-        //main.server.?.sendMove(tick_id: i32, time: i32, new_pos: Position, records: []const TimedPosition)
+        if (map.findPlayer(map.local_player_id)) |player| {
+            self.sendMove(tick_id, main.last_update, player.x, player.y, map.move_records.items) catch |e| {
+                std.log.err("Could not send Move: {any}", .{e});
+            };
+        }
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
             std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });
@@ -532,16 +556,30 @@ pub const Server = struct {
         const new_objs_len = reader.read(u16);
         for (0..new_objs_len) |_| {
             const obj_type = reader.read(u16);
-            _ = obj_type;
             const obj_id = reader.read(i32);
-            _ = obj_id;
             const position = reader.read(Position);
-            _ = position;
 
             const stats_len = reader.read(u16);
-            for (0..stats_len) |_| {
-                const stat_type: game_data.StatType = @enumFromInt(reader.read(u8));
-                parseStatData(reader, stat_type);
+            const class = game_data.obj_type_to_class.get(obj_type) orelse game_data.ClassType.game_object;
+            switch (class) {
+                .player => {
+                    var player = map.Player{ .x = position.x, .y = position.y, .obj_id = obj_id, .obj_type = obj_type };
+                    for (0..stats_len) |_| {
+                        if (!parsePlrStatData(reader, &player, @as(game_data.StatType, @enumFromInt(reader.read(u8)))))
+                            return;
+                    }
+
+                    player.addToMap();
+                },
+                inline else => {
+                    var obj = map.GameObject{ .x = position.x, .y = position.y, .obj_id = obj_id, .obj_type = obj_type };
+                    for (0..stats_len) |_| {
+                        if (!parseObjStatData(reader, &obj, @as(game_data.StatType, @enumFromInt(reader.read(u8)))))
+                            return;
+                    }
+
+                    obj.addToMap();
+                },
             }
         }
 
@@ -553,71 +591,102 @@ pub const Server = struct {
             std.log.debug("Recv - Update: tiles_len={d}, new_objs_len={d}, drops_len={d}", .{ tiles.len, new_objs_len, drops.len });
     }
 
-    inline fn parseStatData(reader: *utils.PacketReader, stat_type: game_data.StatType) void {
-        _ = stat_type;
-        _ = reader;
-        // switch (stat_type) {
-        //     .max_hp => reader.read(i32),
-        //     .hp => reader.read(i32),
-        //     .size => reader.read(i32),
-        //     .max_mp => reader.read(i32),
-        //     .mp => reader.read(i32),
-        //     .exp_goal => reader.read(i32),
-        //     .exp => reader.read(i32),
-        //     .level => reader.read(i32),
-        //     .inv_0, .inv_1, .inv_2, .inv_3, .inv_4, .inv_5, .inv_6, .inv_7, .inv_8, .inv_9, .inv_10, .inv_11 => reader.read(u16),
-        //     .attack => reader.read(i32),
-        //     .defense => reader.read(i32),
-        //     .speed => reader.read(i32),
-        //     .vitality => reader.read(i32),
-        //     .wisdom => reader.read(i32),
-        //     .dexterity => reader.read(i32),
-        //     .effects => reader.read(i32),
-        //     .stars => reader.read(i32),
-        //     .name => reader.read([]u8),
-        //     .tex_1 => reader.read(i32),
-        //     .tex_2 => reader.read(i32),
-        //     .merchant_merch_type => reader.read(u16),
-        //     .credits => reader.read(i32),
-        //     .sellable_price => reader.read(i32),
-        //     .portal_usable => reader.read(bool),
-        //     .account_id => reader.read(i32),
-        //     .current_fame => reader.read(i32),
-        //     .sellable_price_currency => reader.read(i32),
-        //     .object_connection => reader.read(u32),
-        //     .merchant_rem_count => reader.read(i32),
-        //     .merchant_rem_minute => reader.read(i32),
-        //     .merchant_discount => reader.read(i32),
-        //     .sellable_rank_req => reader.read(i32),
-        //     .hp_boost => reader.read(i32),
-        //     .mp_boost => reader.read(i32),
-        //     .attack_bonus => reader.read(i32),
-        //     .defense_bonus => reader.read(i32),
-        //     .speed_bonus => reader.read(i32),
-        //     .vitality_bonus => reader.read(i32),
-        //     .wisdom_bonus => reader.read(i32),
-        //     .dexterity_bonus => reader.read(i32),
-        //     .owner_account_id => reader.read(i32),
-        //     .name_changer_star => reader.read(i32),
-        //     .name_chosen => reader.read(bool),
-        //     .fame => reader.read(i32),
-        //     .fame_goal => reader.read(i32),
-        //     .glow => reader.read(i32),
-        //     .sink_offset => reader.read(i32),
-        //     .alt_texture_index => reader.read(i32),
-        //     .guild => reader.read([]u8),
-        //     .guild_rank => reader.read(i32),
-        //     .oxygen_bar => reader.read(i32),
-        //     .health_stack_count => reader.read(i32),
-        //     .magic_stack_count => reader.read(i32),
-        //     .backpack_0, .backpack_1, .backpack_2, .backpack_3, .backpack_4, .backpack_5, .backpack_6, .backpack_7 => reader.read(i32),
-        //     .has_backpack => reader.read(bool),
-        //     .skin => reader.read(i32),
-        //     inline else => {
-        //         std.log.err("Unknown stat type: {any}", .{stat_type});
-        //         return;
-        //     },
-        // }
+    inline fn parsePlrStatData(reader: *utils.PacketReader, plr: *map.Player, stat_type: game_data.StatType) bool {
+        @setEvalBranchQuota(5000);
+        switch (stat_type) {
+            .max_hp => plr.max_hp = reader.read(i32),
+            .hp => plr.hp = reader.read(i32),
+            .size => plr.size = reader.read(i32),
+            .max_mp => plr.max_mp = reader.read(i32),
+            .mp => plr.mp = reader.read(i32),
+            .exp_goal => plr.exp_goal = reader.read(i32),
+            .exp => plr.exp = reader.read(i32),
+            .level => plr.level = reader.read(i32),
+            .attack => plr.attack = reader.read(i32),
+            .defense => plr.defense = reader.read(i32),
+            .speed => plr.speed = reader.read(i32),
+            .dexterity => plr.dexterity = reader.read(i32),
+            .vitality => plr.vitality = reader.read(i32),
+            .wisdom => plr.wisdom = reader.read(i32),
+            .condition => plr.condition = reader.read(u64),
+            .inv_0, .inv_1, .inv_2, .inv_3, .inv_4, .inv_5, .inv_6, .inv_7, .inv_8, .inv_9, .inv_10, .inv_11 => {
+                const inv_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.inv_0);
+                plr.inventory[inv_idx] = reader.read(i32);
+            },
+            .stars => plr.stars = reader.read(i32),
+            .name => plr.name = reader.read([]u8),
+            .tex_1 => plr.tex_1 = reader.read(i32),
+            .tex_2 => plr.tex_2 = reader.read(i32),
+            .credits => plr.credits = reader.read(i32),
+            .account_id => plr.account_id = reader.read(i32),
+            .current_fame => plr.current_fame = reader.read(i32),
+            .hp_boost => plr.hp_boost = reader.read(i32),
+            .mp_boost => plr.mp_boost = reader.read(i32),
+            .attack_bonus => plr.attack_bonus = reader.read(i32),
+            .defense_bonus => plr.defense_bonus = reader.read(i32),
+            .speed_bonus => plr.speed_bonus = reader.read(i32),
+            .vitality_bonus => plr.vitality_bonus = reader.read(i32),
+            .wisdom_bonus => plr.wisdom_bonus = reader.read(i32),
+            .dexterity_bonus => plr.dexterity_bonus = reader.read(i32),
+            .name_chosen => plr.name_chosen = reader.read(bool),
+            .fame => plr.fame = reader.read(i32),
+            .fame_goal => plr.fame_goal = reader.read(i32),
+            .glow => plr.glow = reader.read(i32),
+            .sink_offset => plr.sink_offset = reader.read(i32),
+            .guild => plr.guild = reader.read([]u8),
+            .guild_rank => plr.guild_rank = reader.read(i32),
+            .oxygen_bar => plr.oxygen_bar = reader.read(i32),
+            .health_stack_count => plr.health_stack_count = reader.read(i32),
+            .magic_stack_count => plr.magic_stack_count = reader.read(i32),
+            .backpack_0, .backpack_1, .backpack_2, .backpack_3, .backpack_4, .backpack_5, .backpack_6, .backpack_7 => {
+                const backpack_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.backpack_0) + 12;
+                plr.inventory[backpack_idx] = reader.read(i32);
+            },
+            .has_backpack => plr.has_backpack = reader.read(bool),
+            .skin => plr.skin = reader.read(i32),
+            inline else => {
+                std.log.err("Unknown stat type: {any}", .{stat_type});
+                return false;
+            },
+        }
+
+        return true;
+    }
+
+    inline fn parseObjStatData(reader: *utils.PacketReader, obj: *map.GameObject, stat_type: game_data.StatType) bool {
+        @setEvalBranchQuota(5000);
+        switch (stat_type) {
+            .max_hp => obj.max_hp = reader.read(i32),
+            .hp => obj.hp = reader.read(i32),
+            .size => obj.size = reader.read(i32),
+            .level => obj.level = reader.read(i32),
+            .defense => obj.defense = reader.read(i32),
+            .condition => obj.condition = reader.read(u64),
+            .inv_0, .inv_1, .inv_2, .inv_3, .inv_4, .inv_5, .inv_6, .inv_7, .inv_8, .inv_9, .inv_10, .inv_11 => {
+                const inv_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.inv_0);
+                obj.inventory[inv_idx] = reader.read(i32);
+            },
+            .name => obj.name = reader.read([]u8),
+            .tex_1 => obj.tex_1 = reader.read(i32),
+            .tex_2 => obj.tex_2 = reader.read(i32),
+            .merchant_merch_type => obj.merchant_rem_count = reader.read(u16),
+            .merchant_rem_count => obj.merchant_rem_count = reader.read(i32),
+            .merchant_rem_minute => obj.merchant_rem_minute = reader.read(i32),
+            .sellable_price => obj.sellable_price = reader.read(i32),
+            .sellable_currency => obj.sellable_currency = @enumFromInt(reader.read(u8)),
+            .sellable_rank_req => obj.sellable_rank_req = reader.read(i32),
+            .portal_active => obj.portal_active = reader.read(bool),
+            .object_connection => obj.object_connection = reader.read(i32),
+            .owner_acc_id => obj.owner_acc_id = reader.read(i32),
+            .rank_required => obj.rank_required = reader.read(i32),
+            .alt_texture_index => obj.alt_texture_index = reader.read(i32),
+            inline else => {
+                std.log.err("Unknown stat type: {any}", .{stat_type});
+                return false;
+            },
+        }
+
+        return true;
     }
 
     pub fn sendAcceptTrade(self: *Server, my_offer: []bool, your_offer: []bool) !void {
@@ -924,15 +993,16 @@ pub const Server = struct {
         self.writer.index = 0;
     }
 
-    pub fn sendMove(self: *Server, tick_id: i32, time: i32, new_pos: Position, records: []const TimedPosition) !void {
+    pub fn sendMove(self: *Server, tick_id: i32, time: i32, pos_x: f32, pos_y: f32, records: []const TimedPosition) !void {
         if (settings.log_packets == .all or settings.log_packets == .c2s)
-            std.log.debug("Send - Move: tick_id={d} time={d} new_pos={any} records={any}", .{ tick_id, time, new_pos, records });
+            std.log.debug("Send - Move: tick_id={d} time={d} pos_x={d} pos_y={d} records={any}", .{ tick_id, time, pos_x, pos_y, records });
 
         self.writer.writeLength();
         self.writer.write(@intFromEnum(C2SPacketId.move));
         self.writer.write(tick_id);
         self.writer.write(time);
-        self.writer.write(new_pos);
+        self.writer.write(pos_x);
+        self.writer.write(pos_y);
         self.writer.write(records);
         self.writer.updateLength();
 

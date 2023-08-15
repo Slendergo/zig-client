@@ -123,7 +123,7 @@ pub fn sendAccountChangePassword(email: []const u8, password: []const u8, newPas
 
 pub fn sendAppInit() ![]const u8 {
     var req = client.request(std.http.Method.POST, std.Uri.parse(settings.app_engine_url ++ "app/init") catch unreachable, headers, .{ .max_redirects = 0 }) catch |e| {
-        std.log.err("Could not send app/init: {any}\n", .{ e });
+        std.log.err("Could not send app/init: {any}\n", .{e});
         return "<Error />";
     };
 

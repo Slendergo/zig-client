@@ -619,7 +619,7 @@ pub const StatType = enum(u8) {
     vitality = 26,
     wisdom = 27,
     dexterity = 28,
-    effects = 29,
+    condition = 29,
     stars = 30,
     name = 31,
     tex_1 = 32,
@@ -627,10 +627,10 @@ pub const StatType = enum(u8) {
     merchant_merch_type = 34,
     credits = 35,
     sellable_price = 36,
-    portal_usable = 37,
+    portal_active = 37,
     account_id = 38,
     current_fame = 39,
-    sellable_price_currency = 40,
+    sellable_currency = 40,
     object_connection = 41,
     merchant_rem_count = 42,
     merchant_rem_minute = 43,
@@ -644,8 +644,8 @@ pub const StatType = enum(u8) {
     vitality_bonus = 51,
     wisdom_bonus = 52,
     dexterity_bonus = 53,
-    owner_account_id = 54,
-    name_changer_star = 55,
+    owner_acc_id = 54,
+    rank_required = 55,
     name_chosen = 56,
     fame = 57,
     fame_goal = 58,
@@ -894,7 +894,6 @@ pub const ItemProps = struct {
     // zig fmt: on
 };
 
-// zig fmt: off
 pub const ItemType = enum(i8) {
     Weapon,
     Ability,
@@ -905,7 +904,12 @@ pub const ItemType = enum(i8) {
     Other,
     None,
 };
-// zig fmt: on
+
+pub const Currency = enum(u8) {
+    Gold = 0,
+    Fame = 1,
+    GuildFame = 2,
+};
 
 pub var classes: []CharacterClass = undefined;
 pub var item_name_to_type: std.StringHashMap(u16) = undefined;
