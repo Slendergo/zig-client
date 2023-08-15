@@ -7,6 +7,8 @@ jobs:
     timeout-minutes: 420
     runs-on: [self-hosted, Linux, x86_64]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Build
@@ -20,6 +22,8 @@ jobs:
     timeout-minutes: 420
     runs-on: [self-hosted, Linux, x86_64]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Build
@@ -45,6 +49,8 @@ jobs:
   aarch64-linux-release:
     runs-on: [self-hosted, Linux, aarch64]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Build
@@ -59,6 +65,8 @@ jobs:
     env:
       ARCH: "x86_64"
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Build
@@ -73,6 +81,8 @@ jobs:
     env:
       ARCH: "aarch64"
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Build
@@ -87,6 +97,8 @@ jobs:
     env:
       ARCH: "aarch64"
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Build
@@ -101,6 +113,8 @@ jobs:
     env:
       ARCH: "x86_64"
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Build
@@ -115,6 +129,8 @@ jobs:
     env:
       ARCH: "x86_64"
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Build
@@ -129,6 +145,8 @@ jobs:
     env:
       ARCH: "aarch64"
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
       - name: Build
