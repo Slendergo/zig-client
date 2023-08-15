@@ -52,15 +52,6 @@ pub const GameObject = struct {
 
         std.debug.print("Added object with obj_id: {}, obj_type: {} to map\n", .{ self.obj_id, self.obj_type });
     }
-
-    pub fn removeFromMap(self: GameObject) void {
-        if (!removeObject(self.obj_id)) {
-            std.debug.print("Error removing object from map: object not found\n", .{});
-            return;
-        }
-
-        std.debug.print("Removed object with obj_id: {}, obj_type: {} from map\n", .{ self.obj_id, self.obj_type });
-    }
 };
 
 pub const Player = struct {
@@ -133,15 +124,6 @@ pub const Player = struct {
 
         std.debug.print("Added player with obj_id: {}, obj_type: {} to map\n", .{ self.obj_id, self.obj_type });
     }
-
-    pub fn removeFromMap(self: Player) void {
-        if (!removePlayer(self.obj_id)) {
-            std.debug.print("Error removing player from map: player not found\n", .{});
-            return;
-        }
-
-        std.debug.print("Removed player with obj_id: {}, obj_type: {} from map\n", .{ self.obj_id, self.obj_type });
-    }
 };
 
 pub const Projectile = struct {
@@ -152,8 +134,6 @@ pub const Projectile = struct {
     y: f32 = 0.0,
 
     pub fn addToMap() void {}
-
-    pub fn removeFromMap() void {}
 };
 
 pub var objects: std.ArrayList(GameObject) = undefined;

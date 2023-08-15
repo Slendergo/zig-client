@@ -399,7 +399,7 @@ pub fn clear() void {
     // map.players.clearRetainingCapacity();
 }
 
-pub fn disconnect() void {
+pub fn disconnect() void {    
     if (server != null) {
         while (!network_lock.tryLock()) {}
         defer network_lock.unlock();
@@ -411,6 +411,8 @@ pub fn disconnect() void {
     }
 
     clear();
+
+    std.debug.print("Disconnected\n", .{});
 }
 
 pub fn main() !void {

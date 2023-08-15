@@ -553,6 +553,15 @@ pub const Server = struct {
         var reader = &self.reader;
         const tiles = reader.read([]TileData);
         const drops = reader.read([]i32);
+        for (drops) |drop| {
+            if (map.removeObject(drop) or map.removePlayer(drop)) {
+                std.debug.print("Removed object with id {d}\n", .{drop});
+                continue;
+            }
+
+            std.debug.print("Could not remove object with id {d}\n", .{drop});
+        }
+
         const new_objs_len = reader.read(u16);
         for (0..new_objs_len) |_| {
             const obj_type = reader.read(u16);
