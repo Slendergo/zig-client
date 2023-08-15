@@ -397,7 +397,7 @@ pub fn clear() void {
 
 pub fn disconnect() void {    
     if (server != null) {
-        server.?.stream.close();
+        server.?.deinit();
         server = null;
         selected_server = null;
         sent_hello = false;
