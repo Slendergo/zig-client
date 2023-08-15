@@ -1,6 +1,9 @@
 const std = @import("std");
 const network = @import("network.zig");
 const game_data = @import("game_data.zig");
+const camera = @import("camera.zig");
+const input = @import("input.zig");
+const main = @import("main.zig");
 
 pub const GameObject = struct {
     obj_id: i32 = -1,
@@ -51,6 +54,12 @@ pub const GameObject = struct {
         };
 
         std.debug.print("Added object with obj_id: {}, obj_type: {} to map\n", .{ self.obj_id, self.obj_type });
+    }
+
+    pub fn update(self: *GameObject, time: i32, dt: i32) void {
+        _ = dt;
+        _ = time;
+        _ = self;
     }
 };
 
@@ -116,6 +125,9 @@ pub const Player = struct {
 
     oxygen_bar: i32 = 0,
     sink_offset: i32 = 0,
+    attack_start: i32 = 0,
+    attack_angle: f32 = 0,
+    next_bullet_id: u8 = 0,
 
     pub fn addToMap(self: Player) void {
         players.append(self) catch |err| {
@@ -124,21 +136,91 @@ pub const Player = struct {
 
         std.debug.print("Added player with obj_id: {}, obj_type: {} to map\n", .{ self.obj_id, self.obj_type });
     }
+
+    pub fn shoot(self: *Player, angle: f32, time: i32) void {
+        const weapon = self.inventory[0];
+        if (weapon == -1)
+            return;
+
+        const item_props = game_data.item_type_to_props.get(@intCast(weapon));
+        if (item_props == null or item_props.?.projectile == null)
+            return;
+
+        const attack_delay: i32 = @intFromFloat(200.0 / item_props.?.rate_of_fire);
+        if (time < self.attack_start + attack_delay)
+            return;
+
+        const projs_len = item_props.?.num_projectiles;
+        const arc_gap = item_props.?.arc_gap;
+        const total_angle = arc_gap * @as(f32, @floatFromInt(projs_len - 1));
+        var current_angle = angle - total_angle / 2.0;
+        const proj_props = item_props.?.projectile.?;
+        for (0..projs_len) |_| {
+            const bullet_id = @mod(self.next_bullet_id + 1, 128);
+            self.next_bullet_id = bullet_id;
+            const x = self.x + @cos(current_angle) * 0.25;
+            const y = self.y + @sin(current_angle) * 0.25;
+            // zig fmt: off
+            var proj = Projectile{ 
+                .x = x,
+                .y = y,
+                .props = proj_props,
+                .angle = current_angle,
+                .start_time = time,
+                .bullet_id = bullet_id,
+                .owner_id = self.obj_id,
+            };
+            // zig fmt: on
+            proj.addToMap();
+
+            if (main.server) |*server| {
+                server.sendPlayerShoot(time, bullet_id, @intCast(weapon), network.Position{ .x = x, .y = y }, current_angle) catch |e| {
+                    std.log.err("PlayerShoot failure: {any}", .{e});
+                };
+            }
+
+            current_angle += arc_gap;
+        }
+
+        self.attack_angle = angle - camera.angle;
+        self.attack_start = time;
+    }
+
+    pub fn update(self: *Player, time: i32, dt: i32) void {
+        _ = dt;
+        _ = time;
+        _ = self;
+    }
 };
 
 pub const Projectile = struct {
     obj_id: i32 = -1,
     obj_type: u16 = 0,
-
+    props: game_data.ProjProps,
+    angle: f32 = 0,
+    start_time: i32 = -1,
+    bullet_id: u8 = 0,
+    owner_id: i32 = 0,
     x: f32 = 0.0,
     y: f32 = 0.0,
 
-    pub fn addToMap() void {}
+    pub fn addToMap(self: Projectile) void {
+        _ = self;
+    }
+
+    pub fn update(self: *Projectile, time: i32, dt: i32, allocator: std.mem.Allocator) bool {
+        _ = allocator;
+        _ = dt;
+        _ = time;
+        _ = self;
+        return true;
+    }
 };
 
 pub var objects: std.ArrayList(GameObject) = undefined;
 pub var players: std.ArrayList(Player) = undefined;
 pub var projectiles: std.ArrayList(Projectile) = undefined;
+pub var proj_indices_to_remove: std.ArrayList(usize) = undefined;
 
 pub var local_player_id: i32 = -1;
 
@@ -149,7 +231,7 @@ pub fn init(allocator: std.mem.Allocator) void {
     objects = std.ArrayList(GameObject).init(allocator);
     players = std.ArrayList(Player).init(allocator);
     projectiles = std.ArrayList(Projectile).init(allocator);
-
+    proj_indices_to_remove = std.ArrayList(usize).init(allocator);
     move_records = std.ArrayList(network.TimedPosition).init(allocator);
 }
 
@@ -157,7 +239,7 @@ pub fn deinit() void {
     objects.deinit();
     players.deinit();
     projectiles.deinit();
-
+    proj_indices_to_remove.deinit();
     move_records.deinit();
 }
 
@@ -219,6 +301,41 @@ pub fn removeProj(obj_id: i32) bool {
     }
 
     return false;
+}
+
+pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
+    if (findPlayer(local_player_id)) |local_player| {
+        camera.update(local_player.x, local_player.y, dt, input.rotate);
+        if (input.attacking) {
+            const y: f32 = @floatCast(input.mouse_y);
+            const x: f32 = @floatCast(input.mouse_x);
+            const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
+            local_player.shoot(shoot_angle, time);
+        }
+    }
+
+    for (players.items) |*player| {
+        player.update(time, dt);
+    }
+
+    for (objects.items) |*obj| {
+        obj.update(time, dt);
+    }
+
+    for (projectiles.items, 0..) |*proj, i| {
+        if (!proj.update(time, dt, allocator))
+            proj_indices_to_remove.append(i) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
+    }
+
+    std.mem.reverse(usize, proj_indices_to_remove.items);
+
+    for (proj_indices_to_remove.items) |idx| {
+        _ = projectiles.orderedRemove(idx);
+    }
+
+    proj_indices_to_remove.clearRetainingCapacity();
 }
 
 pub fn addMoveRecord(time: i32, position: network.Position) void {

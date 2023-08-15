@@ -494,8 +494,7 @@ pub fn main() !void {
         if (tick_frame) {
             current_time = @intCast(std.time.milliTimestamp() - start_time);
             const dt = current_time - last_update;
-            _ = dt;
-            // map.update(current_time, dt, allocator);
+            map.update(current_time, dt, allocator);
             // ui.update(current_time, dt, allocator);
             last_update = current_time;
         }
