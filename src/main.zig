@@ -368,7 +368,6 @@ fn networkTick() void {
                     sent_hello = true;
                     std.debug.print("Sent Hello\n", .{});
                 }
-                std.log.err("Server is not null", .{});
 
                 server.?.accept() catch |e| {
                     std.log.err("Error while accepting server packets: {any}\n", .{e});
