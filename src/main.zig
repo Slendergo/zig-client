@@ -107,6 +107,7 @@ pub var render_thread: std.Thread = undefined;
 pub var tick_render = true;
 pub var tick_frame = false;
 pub var sent_hello = false;
+pub var lost_connection = false;
 
 fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
     gctx = try zgpu.GraphicsContext.create(allocator, window, .{ .present_mode = .immediate });
@@ -210,6 +211,13 @@ fn updateUi(allocator: std.mem.Allocator) !void {
         },
         ScreenType.char_select => {
             if (zgui.begin("Character Select", .{})) {
+                if (lost_connection) {
+                    zgui.text("Server connection was lost", .{});
+                    if (zgui.button("Dismiss", .{ .w = 75.0 })) {
+                        lost_connection = false;
+                    }
+                }
+
                 if (character_list.len < 1) {
                     current_screen = ScreenType.char_creation;
                 }
@@ -372,6 +380,7 @@ fn networkTick() void {
                 server.?.accept() catch |e| {
                     std.log.err("Error while accepting server packets: {any}\n", .{e});
 
+                    lost_connection = true;
                     // disconnect and then return screen to prevent spamming console with exceptions from accept();
                     current_screen = .char_select;
                     disconnect();
