@@ -320,6 +320,8 @@ pub const Server = struct {
         const error_id = reader.read(i32);
         const error_description = reader.read([]u8);
 
+        main.disconnect();
+
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
             std.log.debug("Recv - Failure: error_id={d}, error_description={s}", .{ error_id, error_description });
     }
@@ -379,11 +381,23 @@ pub const Server = struct {
         const allow_player_teleport = reader.read(bool);
         const show_displays = reader.read(bool);
 
+        const bg_light_color = reader.read(i32);
+        const bg_light_intensity = reader.read(f32);
+        const day_and_night = reader.read(bool);
+        if (day_and_night) {
+            const day_light_intensity = reader.read(f32);
+            _ = day_light_intensity;
+            const night_light_intensity = reader.read(f32);
+            _ = night_light_intensity;
+            const game_time = reader.read(i32);
+            _ = game_time;
+        }
+
         main.clear();
         main.tick_frame = true;
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, difficulty={d}, seed={d}, background={d}, allow_player_teleport={any}, show_displays={any}", .{ width, height, name, display_name, difficulty, seed, background, allow_player_teleport, show_displays });
+            std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, seed={d}, difficulty={d}, background={d}, allow_player_teleport={any}, show_displays={any}, bg_light_color={d}, bg_light_intensity={e}, day_and_night={any}", .{ width, height, name, display_name, seed, difficulty, background, allow_player_teleport, show_displays, bg_light_color, bg_light_intensity, day_and_night });
     }
 
     inline fn handleNameResult(reader: *utils.PacketReader) void {
