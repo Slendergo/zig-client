@@ -368,9 +368,14 @@ fn networkTick() void {
                     sent_hello = true;
                     std.debug.print("Sent Hello\n", .{});
                 }
+                std.log.err("Server is not null", .{});
 
                 server.?.accept() catch |e| {
                     std.log.err("Error while accepting server packets: {any}\n", .{e});
+
+                    // disconnect and then return screen to prevent spamming console with exceptions from accept();
+                    current_screen = .char_select;
+                    disconnect();
                 };
             }
         }
@@ -395,7 +400,7 @@ pub fn clear() void {
     map.players.clearRetainingCapacity();
 }
 
-pub fn disconnect() void {    
+pub fn disconnect() void {
     if (server != null) {
         server.?.deinit();
         server = null;
