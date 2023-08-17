@@ -556,7 +556,7 @@ pub const ProjProps = struct {
             .bullet_type = try node.getAttributeInt("type", i32, 0), 
             .object_id = try node.getValueAlloc("ObjectId", allocator, ""), 
             .lifetime_ms = try node.getValueInt("LifetimeMS", u16, 0),
-            .speed = try node.getValueFloat("Speed", f32, 0),
+            .speed = try node.getValueFloat("Speed", f32, 0) / 10000.0,
             .size = try node.getValueFloat("Size", f32, 100) / 100.0,
             .min_damage = try node.getValueInt("MinDamage", i32, 0),
             .max_damage = try node.getValueInt("MaxDamage", i32, 0),
@@ -1197,7 +1197,7 @@ inline fn parseTexture(node: xml.Node, allocator: std.mem.Allocator) ![]TextureD
 
 pub fn parseItems(doc: xml.Doc, allocator: std.mem.Allocator) !void {
     const root = try doc.getRootElement();
-    var iter = root.iterate(&.{}, "Item");
+    var iter = root.iterate(&.{}, "Object");
     while (iter.next()) |node| {
         const obj_type = try node.getAttributeInt("type", u16, 0);
         const id = try node.getAttributeAlloc("id", allocator, "Unknown");
