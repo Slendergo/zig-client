@@ -400,6 +400,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addImage("keyIndicators", "KeyIndicators.png", 100, 100, &ctx, allocator);
     try addImage("lofiChar", "LofiChar.png", 8, 8, &ctx, allocator);
     try addImage("lofiChar2", "LofiChar2.png", 8, 8, &ctx, allocator);
+    try addImage("lofiChar216x16", "LofiChar2.png", 16, 16, &ctx, allocator);
     try addImage("lofiCharBig", "LofiCharBig.png", 16, 16, &ctx, allocator);
     try addImage("lofiEnvironment", "LofiEnvironment.png", 8, 8, &ctx, allocator);
     try addImage("lofiEnvironment2", "LofiEnvironment2.png", 8, 8, &ctx, allocator);

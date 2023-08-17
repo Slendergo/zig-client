@@ -103,6 +103,7 @@ pub var next_char_id: u32 = 0;
 pub var max_chars: u32 = 0;
 pub var current_time: i32 = 0;
 pub var last_update: i32 = 0;
+pub var network_lock: std.Thread.Mutex = .{};
 pub var network_thread: std.Thread = undefined;
 pub var tick_network = true;
 pub var render_thread: std.Thread = undefined;
@@ -367,6 +368,9 @@ fn networkTick(allocator: std.mem.Allocator) void {
         std.time.sleep(101 * std.time.ns_per_ms);
 
         if (selected_server != null) {
+            network_lock.lock();
+            defer network_lock.unlock();
+
             if (server == null)
                 server = network.Server.init(selected_server.?.dns, selected_server.?.port); // dialog maybe
 
@@ -412,6 +416,9 @@ pub fn clear() void {
 
 pub fn disconnect() void {
     if (server != null) {
+        network_lock.lock();
+        defer network_lock.unlock();
+
         server.?.deinit();
         server = null;
         selected_server = null;
