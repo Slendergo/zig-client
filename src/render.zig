@@ -700,7 +700,7 @@ inline fn drawQuadVerts(idx: u16, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y
 
     base_vert_data[idx] = BaseVertexData{
         .pos = [2]f32{ x1, y1 },
-        .uv = [2]f32{ tex_u, tex_v + tex_h },
+        .uv = [2]f32{ tex_u, tex_v },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
         .flash_strength = flash_strength,
@@ -710,7 +710,7 @@ inline fn drawQuadVerts(idx: u16, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y
 
     base_vert_data[idx + 1] = BaseVertexData{
         .pos = [2]f32{ x2, y2 },
-        .uv = [2]f32{ tex_u + tex_w, tex_v + tex_h },
+        .uv = [2]f32{ tex_u + tex_w, tex_v },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
         .flash_strength = flash_strength,
@@ -720,7 +720,7 @@ inline fn drawQuadVerts(idx: u16, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y
 
     base_vert_data[idx + 2] = BaseVertexData{
         .pos = [2]f32{ x3, y3 },
-        .uv = [2]f32{ tex_u + tex_w, tex_v },
+        .uv = [2]f32{ tex_u + tex_w, tex_v + tex_h },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
         .flash_strength = flash_strength,
@@ -730,7 +730,7 @@ inline fn drawQuadVerts(idx: u16, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y
 
     base_vert_data[idx + 3] = BaseVertexData{
         .pos = [2]f32{ x4, y4 },
-        .uv = [2]f32{ tex_u, tex_v },
+        .uv = [2]f32{ tex_u, tex_v + tex_h },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
         .flash_strength = flash_strength,
