@@ -987,11 +987,16 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
         }
 
-        encoder.writeBuffer(gctx.lookupResource(ground_vb).?, 0, GroundVertexData, ground_vert_data[0..square_idx]);
-        endDraw(encoder, render_pass_info, vb_info, ib_info, pipeline, bind_group, @divFloor(square_idx, 4) * 6, &.{mem.offset});
+        if (square_idx > 0) {
+            encoder.writeBuffer(gctx.lookupResource(ground_vb).?, 0, GroundVertexData, ground_vert_data[0..square_idx]);
+            endDraw(encoder, render_pass_info, vb_info, ib_info, pipeline, bind_group, @divFloor(square_idx, 4) * 6, &.{mem.offset});
+        }
     }
 
     normalPass: {
+        if (map.objects.items.len + map.players.items.len + map.projectiles.items.len <= 0)
+            break :normalPass;
+            
         while (!map.object_lock.tryLock()) {}
         defer map.object_lock.unlock();
 
