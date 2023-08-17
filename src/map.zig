@@ -518,15 +518,9 @@ pub const Player = struct {
                 const move_speed = self.moveSpeed();
                 const total_angle = camera.angle + self.move_angle;
                 const float_dt: f32 = @floatFromInt(dt);
-
                 const next_x = self.x + move_speed * float_dt * @cos(total_angle);
                 const next_y = self.y + move_speed * float_dt * @sin(total_angle);
-
-                var new_x: f32 = 0.0;
-                var new_y: f32 = 0.0;
-                modifyMove(self, next_x, next_y, &new_x, &new_y);
-                self.x = new_x;
-                self.y = new_y;
+                modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
 
             if (time - self.last_ground_damage >= 550) {
