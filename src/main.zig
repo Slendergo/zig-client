@@ -17,6 +17,8 @@ const input = @import("input.zig");
 const utils = @import("utils.zig");
 const camera = @import("camera.zig");
 const map = @import("map.zig");
+const ui = @import("ui.zig");
+const render = @import("render.zig");
 
 pub const ServerData = struct {
     name: [:0]const u8 = "",
@@ -326,9 +328,9 @@ inline fn draw() void {
     const back_buffer = gctx.swapchain.getCurrentTextureView();
     const encoder = gctx.device.createCommandEncoder(null);
 
-    // if (current_screen == .in_game and tick_frame) {
-    //     render.draw(current_time, gctx, back_buffer, encoder);
-    // }
+    if (current_screen == .in_game and tick_frame) {
+        render.draw(current_time, gctx, back_buffer, encoder);
+    }
 
     const color_attachments = [_]wgpu.RenderPassColorAttachment{.{
         .view = back_buffer,
@@ -360,7 +362,7 @@ inline fn draw() void {
     commands.release();
 }
 
-fn networkTick() void {
+fn networkTick(allocator: std.mem.Allocator) void {
     while (tick_network) {
         std.time.sleep(101 * std.time.ns_per_ms);
 
@@ -377,7 +379,7 @@ fn networkTick() void {
                     std.debug.print("Sent Hello\n", .{});
                 }
 
-                server.?.accept() catch |e| {
+                server.?.accept(allocator) catch |e| {
                     std.log.err("Error while accepting server packets: {any}\n", .{e});
 
                     lost_connection = true;
@@ -450,7 +452,13 @@ pub fn main() !void {
     requests.init(allocator);
     defer requests.deinit();
 
-    var buf: [65536]u8 = undefined;
+    map.init(allocator);
+    defer map.deinit(allocator);
+
+    ui.init(allocator);
+    defer ui.deinit(allocator);
+
+    var buf: [std.math.maxInt(u16)]u8 = undefined;
     fba = std.heap.FixedBufferAllocator.init(&buf);
     stack_allocator = fba.allocator();
 
@@ -482,7 +490,9 @@ pub fn main() !void {
         defer allocator.free(current_account.name);
     }
 
-    network_thread = try std.Thread.spawn(.{}, networkTick, .{});
+    render.init(gctx, allocator);
+
+    network_thread = try std.Thread.spawn(.{}, networkTick, .{allocator});
     defer {
         tick_network = false;
         network_thread.join();
@@ -501,7 +511,7 @@ pub fn main() !void {
             current_time = @intCast(std.time.milliTimestamp() - start_time);
             const dt = current_time - last_update;
             map.update(current_time, dt, allocator);
-            // ui.update(current_time, dt, allocator);
+            ui.update(current_time, dt, allocator);
             last_update = current_time;
         }
     }

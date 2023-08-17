@@ -88,7 +88,7 @@ pub const TextureData = struct {
     // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator, animated: bool) !TextureData {
         return TextureData {
-            .sheet = try node.getValueAlloc("Sheet", allocator, "Unknown"),
+            .sheet = try node.getValueAlloc("File", allocator, "Unknown"),
             .index = try node.getValueInt("Index", u16, 0),
             .animated = animated,
         };
@@ -198,8 +198,8 @@ pub const GroundProps = struct {
     obj_type: i32,
     obj_id: []const u8,
     no_walk: bool,
-    min_damage: i32,
-    max_damage: i32,
+    min_damage: u16,
+    max_damage: u16,
     animate: ?AnimProps,
     blend_prio: i32,
     composite_prio: i32,
@@ -209,6 +209,9 @@ pub const GroundProps = struct {
     push: bool,
     sink: bool,
     random_offset: bool,
+    light_color: i32,
+    light_intensity: f32,
+    light_radius: f32,
 
     // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !GroundProps {        
@@ -216,8 +219,8 @@ pub const GroundProps = struct {
             .obj_type = try node.getAttributeInt("type", i32, 0),
             .obj_id = try node.getAttributeAlloc("id", allocator, "Unknown"),
             .no_walk = node.elementExists("NoWalk"),
-            .min_damage = try node.getValueInt("MinDamage", i32, 0),
-            .max_damage = try node.getValueInt("MaxDamage", i32, 0),
+            .min_damage = try node.getValueInt("MinDamage", u16, 0),
+            .max_damage = try node.getValueInt("MaxDamage", u16, 0),
             .animate = if (node.elementExists("Animate")) try AnimProps.parse(node.findChild("Animate").?, allocator) else null,
             .blend_prio = try node.getValueInt("BlendPriority", i32, 0),
             .composite_prio = try node.getValueInt("CompositePriority", i32, 0),
@@ -227,6 +230,9 @@ pub const GroundProps = struct {
             .push = node.elementExists("Push"),
             .sink = node.elementExists("Sink"),
             .random_offset = node.elementExists("RandomOffset"),
+            .light_color = try node.getValueInt("LightColor", i32, -1),
+            .light_intensity = try node.getValueFloat("LightIntensity", f32, 0.1),
+            .light_radius = try node.getValueFloat("LightRadius", f32, 1.0),
         };
     }
     // zig fmt: on
@@ -494,11 +500,17 @@ pub const ConditionEffect = struct {
 };
 
 pub const ProjProps = struct {
+    texture_data: []TextureData,
+    angle_correction: f32,
+    rotation: f32,
+    light_color: i32,
+    light_intensity: f32,
+    light_radius: f32,
     bullet_type: i32,
     object_id: []const u8,
-    lifetime_ms: i32,
+    lifetime_ms: u16,
     speed: f32,
-    size: i32,
+    size: f32,
     min_damage: i32,
     max_damage: i32,
     effects: []ConditionEffect,
@@ -512,6 +524,19 @@ pub const ProjProps = struct {
     amplitude: f32,
     frequency: f32,
     magnitude: f32,
+    accel: f32,
+    accel_delay: u16,
+    speed_clamp: u16,
+    angle_change: f32,
+    angle_change_delay: u16,
+    angle_change_end: u16,
+    angle_change_accel: f32,
+    angle_change_accel_delay: u16,
+    angle_change_clamp: f32,
+    zero_velocity_delay: i16,
+    heat_seek_speed: f32,
+    heat_seek_radius: f32,
+    heat_seek_delay: u16,
 
     // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ProjProps {
@@ -522,11 +547,17 @@ pub const ProjProps = struct {
             try effect_list.append(try ConditionEffect.parse(effect_node));
 
         return ProjProps {
+            .texture_data = try parseTexture(node, allocator),
+            .angle_correction = try node.getValueFloat("AngleCorrection", f32, 0.0) * (std.math.pi / 4.0),
+            .rotation = try node.getValueFloat("Rotation", f32, 0.0),
+            .light_color = try node.getValueInt("LightColor", i32, -1),
+            .light_intensity = try node.getValueFloat("LightIntensity", f32, 0.1),
+            .light_radius = try node.getValueFloat("LightRadius", f32, 1.0),
             .bullet_type = try node.getAttributeInt("type", i32, 0), 
             .object_id = try node.getValueAlloc("ObjectId", allocator, ""), 
             .lifetime_ms = try node.getValueInt("LifetimeMS", u16, 0),
             .speed = try node.getValueFloat("Speed", f32, 0),
-            .size = try node.getValueInt("Size", i32, 1),
+            .size = try node.getValueFloat("Size", f32, 100) / 100.0,
             .min_damage = try node.getValueInt("MinDamage", i32, 0),
             .max_damage = try node.getValueInt("MaxDamage", i32, 0),
             .effects = try allocator.dupe(ConditionEffect, effect_list.items),
@@ -540,6 +571,19 @@ pub const ProjProps = struct {
             .amplitude = try node.getValueFloat("Amplitude", f32, 0.0),
             .frequency = try node.getValueFloat("Frequency", f32, 0.0),
             .magnitude = try node.getValueFloat("Magnitude", f32, 0.0),
+            .accel = try node.getValueFloat("Acceleration", f32, 0.0),
+            .accel_delay = try node.getValueInt("AccelerationDelay", u16, 0),
+            .speed_clamp = try node.getValueInt("SpeedClamp", u16, 0),
+            .angle_change = std.math.degreesToRadians(f32, try node.getValueFloat("AngleChange", f32, 0.0)),
+            .angle_change_delay = try node.getValueInt("AngleChangeDelay", u16, 0),
+            .angle_change_end = try node.getValueInt("AngleChangeEnd", u16, 0),
+            .angle_change_accel = std.math.degreesToRadians(f32, try node.getValueFloat("AngleChangeAccel", f32, 0.0)),
+            .angle_change_accel_delay = try node.getValueInt("AngleChangeAccelDelay", u16, 0),
+            .angle_change_clamp = try node.getValueFloat("AngleChangeClamp", f32, 0.0),
+            .zero_velocity_delay = try node.getValueInt("ZeroVelocityDelay", i16, -1),
+            .heat_seek_speed = try node.getValueFloat("HeatSeekSpeed", f32, 0.0) / 10000.0,
+            .heat_seek_radius = try node.getValueFloat("HeatSeekRadius", f32, 0.0),
+            .heat_seek_delay = try node.getValueInt("HeatSeekDelay", u16, 0),
         };
     }
     // zig fmt: on

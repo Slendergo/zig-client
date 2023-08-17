@@ -25,7 +25,7 @@ pub const TimedPosition = extern struct {
 pub const TileData = extern struct { 
     x: i16, 
     y: i16, 
-    tile: u16 
+    tile_type: u16 
 };
 
 pub const TradeItem = extern struct { 
@@ -167,7 +167,7 @@ pub const Server = struct {
         self.stream.close();
     }
 
-    pub fn accept(self: *Server) !void {
+    pub fn accept(self: *Server, allocator: std.mem.Allocator) !void {
         const size = try self.stream.read(self.reader.buffer[self.buffer_idx..]);
         self.buffer_idx += size;
 
@@ -204,7 +204,7 @@ pub const Server = struct {
                 .goto => handleGoto(self),
                 .invited_to_guild => handleInvitedToGuild(&self.reader),
                 .inv_result => handleInvResult(&self.reader),
-                .map_info => handleMapInfo(&self.reader),
+                .map_info => handleMapInfo(&self.reader, allocator),
                 .name_result => handleNameResult(&self.reader),
                 .new_tick => handleNewTick(self),
                 .notification => handleNotification(&self.reader),
@@ -370,10 +370,11 @@ pub const Server = struct {
             std.log.debug("Recv - InvResult: result={d}", .{result});
     }
 
-    inline fn handleMapInfo(reader: *utils.PacketReader) void {
-        const width = reader.read(i32);
-        const height = reader.read(i32);
-        const name = reader.read([]u8);
+    inline fn handleMapInfo(reader: *utils.PacketReader, allocator: std.mem.Allocator) void {
+        const width: isize = @intCast(reader.read(i32));
+        const height: isize = @intCast(reader.read(i32));
+        map.setWH(width, height, allocator);
+        map.name = reader.read([]u8);
         const display_name = reader.read([]u8);
         const seed = reader.read(u32);
         const difficulty = reader.read(i32);
@@ -381,23 +382,20 @@ pub const Server = struct {
         const allow_player_teleport = reader.read(bool);
         const show_displays = reader.read(bool);
 
-        const bg_light_color = reader.read(i32);
-        const bg_light_intensity = reader.read(f32);
-        const day_and_night = reader.read(bool);
-        if (day_and_night) {
-            const day_light_intensity = reader.read(f32);
-            _ = day_light_intensity;
-            const night_light_intensity = reader.read(f32);
-            _ = night_light_intensity;
-            const game_time = reader.read(i32);
-            _ = game_time;
+        map.bg_light_color = reader.read(i32);
+        map.bg_light_intensity = reader.read(f32);
+        const uses_day_night = reader.read(bool);
+        if (uses_day_night) {
+            map.day_light_intensity = reader.read(f32);
+            map.night_light_intensity = reader.read(f32);
+            map.server_time_offset = reader.read(i32) - main.current_time;
         }
 
         main.clear();
         main.tick_frame = true;
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, seed={d}, difficulty={d}, background={d}, allow_player_teleport={any}, show_displays={any}, bg_light_color={d}, bg_light_intensity={e}, day_and_night={any}", .{ width, height, name, display_name, seed, difficulty, background, allow_player_teleport, show_displays, bg_light_color, bg_light_intensity, day_and_night });
+            std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, seed={d}, difficulty={d}, background={d}, allow_player_teleport={any}, show_displays={any}, bg_light_color={d}, bg_light_intensity={e}, day_and_night={any}", .{ width, height, map.name, display_name, seed, difficulty, background, allow_player_teleport, show_displays, map.bg_light_color, map.bg_light_intensity, uses_day_night });
     }
 
     inline fn handleNameResult(reader: *utils.PacketReader) void {
@@ -413,43 +411,69 @@ pub const Server = struct {
         const tick_id = reader.read(i32);
         const tick_time = reader.read(i32);
 
-        const statuses_len = reader.read(u16);
-        for (0..statuses_len) |_| {
-            const obj_type = reader.read(u16);
-            const obj_id = reader.read(i32);
-            const position = reader.read(Position);
-            _ = position;
-
-            const stats_len = reader.read(u16);
-            const class = game_data.obj_type_to_class.get(obj_type) orelse game_data.ClassType.game_object;
-            switch (class) {
-                .player => {
-                    if (map.findPlayer(obj_id)) |player| {
-                        for (0..stats_len) |_| {
-                            if (!parsePlrStatData(reader, player, @as(game_data.StatType, @enumFromInt(reader.read(u8)))))
-                                return;
-                        }
-                    } else {
-                        std.log.err("Could not find player with id {d}", .{obj_id});
-                    }
-                },
-                inline else => {
-                    if (map.findObject(obj_id)) |obj| {
-                        for (0..stats_len) |_| {
-                            if (!parseObjStatData(reader, obj, @as(game_data.StatType, @enumFromInt(reader.read(u8)))))
-                                return;
-                        }
-                    } else {
-                        std.log.err("Could not find object with id {d}", .{obj_id});
-                    }
-                },
+        defer {
+            if (map.findPlayer(map.local_player_id)) |player| {
+                self.sendMove(tick_id, main.last_update, player.x, player.y, map.move_records.items) catch |e| {
+                    std.log.err("Could not send Move: {any}", .{e});
+                };
             }
         }
 
-        if (map.findPlayer(map.local_player_id)) |player| {
-            self.sendMove(tick_id, main.last_update, player.x, player.y, map.move_records.items) catch |e| {
-                std.log.err("Could not send Move: {any}", .{e});
-            };
+        const statuses_len = reader.read(u16);
+        for (0..statuses_len) |_| {
+            const obj_type = reader.read(u16);
+            _ = obj_type;
+            const obj_id = reader.read(i32);
+            const position = reader.read(Position);
+
+            const stats_len = reader.read(u16);
+            if (map.findPlayer(obj_id)) |player| {
+                if (player.obj_id != map.local_player_id) {
+                    player.target_x = position.x;
+                    player.target_y = position.y;
+                    player.tick_x = player.x;
+                    player.tick_y = player.y;
+                    const y_dt = position.y - player.y;
+                    const x_dt = position.x - player.x;
+                    player.visual_move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan_f32 else std.math.atan2(f32, y_dt, x_dt);
+                }
+
+                for (0..stats_len) |_| {
+                    const stat_id = reader.read(u8);
+                    const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
+                        std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
+                        return;
+                    };
+                    if (!parsePlrStatData(reader, &player.*, stat))
+                        return;
+                }
+
+                continue;
+            }
+
+            if (map.findObject(obj_id)) |object| {
+                object.target_x = position.x;
+                object.target_y = position.y;
+                object.tick_x = object.x;
+                object.tick_y = object.y;
+                const y_dt = position.y - object.y;
+                const x_dt = position.x - object.x;
+                object.visual_move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan_f32 else std.math.atan2(f32, y_dt, x_dt);
+                for (0..stats_len) |_| {
+                    const stat_id = reader.read(u8);
+                    const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
+                        std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
+                        return;
+                    };
+                    if (!parseObjStatData(reader, &object.*, stat))
+                        return;
+                }
+
+                continue;
+            }
+
+            std.log.err("Could not find object in NewTick (obj_id={d}, x={d}, y={d})", .{ obj_id, position.x, position.y });
+            return;
         }
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
@@ -567,21 +591,30 @@ pub const Server = struct {
     }
 
     inline fn handleUpdate(self: *Server) void {
+        defer self.sendUpdateAck() catch |e| {
+            std.log.err("Could not send UpdateAck: {any}", .{e});
+        };
+
         var reader = &self.reader;
         const tiles = reader.read([]TileData);
+        for (tiles) |tile| {
+            map.setSquare(tile.x, tile.y, tile.tile_type);
+        }
+
         const drops = reader.read([]i32);
         for (drops) |drop| {
             if (map.removeObject(drop) or map.removePlayer(drop)) {
-                std.debug.print("Removed object with id {d}\n", .{drop});
                 continue;
             }
 
-            std.debug.print("Could not remove object with id {d}\n", .{drop});
+            std.log.err("Could not remove object with id {d}\n", .{drop});
         }
 
         const new_objs_len = reader.read(u16);
         for (0..new_objs_len) |_| {
             const obj_type = reader.read(u16);
+            const obj_type_2 = reader.read(u16); // ...
+            _ = obj_type_2;
             const obj_id = reader.read(i32);
             const position = reader.read(Position);
 
@@ -591,7 +624,12 @@ pub const Server = struct {
                 .player => {
                     var player = map.Player{ .x = position.x, .y = position.y, .obj_id = obj_id, .obj_type = obj_type };
                     for (0..stats_len) |_| {
-                        if (!parsePlrStatData(reader, &player, @as(game_data.StatType, @enumFromInt(reader.read(u8)))))
+                        const stat_id = reader.read(u8);
+                        const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
+                            std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
+                            return;
+                        };
+                        if (!parsePlrStatData(reader, &player, stat))
                             return;
                     }
 
@@ -600,7 +638,12 @@ pub const Server = struct {
                 inline else => {
                     var obj = map.GameObject{ .x = position.x, .y = position.y, .obj_id = obj_id, .obj_type = obj_type };
                     for (0..stats_len) |_| {
-                        if (!parseObjStatData(reader, &obj, @as(game_data.StatType, @enumFromInt(reader.read(u8)))))
+                        const stat_id = reader.read(u8);
+                        const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
+                            std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
+                            return;
+                        };
+                        if (!parseObjStatData(reader, &obj, stat))
                             return;
                     }
 
@@ -608,10 +651,6 @@ pub const Server = struct {
                 },
             }
         }
-
-        self.sendUpdateAck() catch |e| {
-            std.log.err("Could not send UpdateAck: {any}", .{e});
-        };
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
             std.log.debug("Recv - Update: tiles_len={d}, new_objs_len={d}, drops_len={d}", .{ tiles.len, new_objs_len, drops.len });
@@ -622,7 +661,7 @@ pub const Server = struct {
         switch (stat_type) {
             .max_hp => plr.max_hp = reader.read(i32),
             .hp => plr.hp = reader.read(i32),
-            .size => plr.size = reader.read(i32),
+            .size => plr.size = @as(f32, @floatFromInt(reader.read(i32))) / 100.0,
             .max_mp => plr.max_mp = reader.read(i32),
             .mp => plr.mp = reader.read(i32),
             .exp_goal => plr.exp_goal = reader.read(i32),
@@ -670,6 +709,7 @@ pub const Server = struct {
             },
             .has_backpack => plr.has_backpack = reader.read(bool),
             .skin => plr.skin = reader.read(i32),
+            .none, .alt_texture_index => {},
             inline else => {
                 std.log.err("Unknown stat type: {any}", .{stat_type});
                 return false;
@@ -684,7 +724,7 @@ pub const Server = struct {
         switch (stat_type) {
             .max_hp => obj.max_hp = reader.read(i32),
             .hp => obj.hp = reader.read(i32),
-            .size => obj.size = reader.read(i32),
+            .size => obj.size = @as(f32, @floatFromInt(reader.read(i32))) / 100.0,
             .level => obj.level = reader.read(i32),
             .defense => obj.defense = reader.read(i32),
             .condition => obj.condition = reader.read(u64),

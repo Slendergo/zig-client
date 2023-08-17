@@ -144,22 +144,20 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
 pub fn updateState() void {
     rotate = rotate_right - rotate_left;
 
-    // const local_player = map.findPlayer(map.local_player_id);
-    // if (local_player != null) {
-    //     const y_dt = move_down - move_up;
-    //     const x_dt = move_right - move_left;
-    //     // random ass -100
-    //     local_player.?.move_angle = if (y_dt == 0 and x_dt == 0) -100 else std.math.atan2(f32, y_dt, x_dt);
-    //     local_player.?.visual_move_angle = local_player.?.move_angle;
-    //     local_player.?.speed_mult = walking;
-    // }
+    if (map.findPlayer(map.local_player_id)) |local_player| {
+        const y_dt = move_down - move_up;
+        const x_dt = move_right - move_left;
+        local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan_f32 else std.math.atan2(f32, y_dt, x_dt);
+        local_player.visual_move_angle = local_player.move_angle;
+        local_player.speed_mult = walking;
 
-    // if (local_player != null and attacking) {
-    //     const y: f32 = @floatCast(mouse_y);
-    //     const x: f32 = @floatCast(mouse_x);
-    //     const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-    //     local_player.?.shoot(shoot_angle, main.current_time);
-    // }
+        if (attacking) {
+            const y: f32 = @floatCast(mouse_y);
+            const x: f32 = @floatCast(mouse_x);
+            const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
+            local_player.shoot(shoot_angle, main.current_time);
+        }
+    }
 }
 
 pub fn mouseMoveEvent(window: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) void {

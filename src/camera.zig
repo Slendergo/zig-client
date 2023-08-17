@@ -1,10 +1,11 @@
 const pad = @import("assets.zig").padding;
 const rotate_speed = @import("settings.zig").rotate_speed;
 const map = @import("map.zig");
-const tau = @import("std").math.tau;
+const math = @import("std").math;
+const utils = @import("utils.zig");
 
-pub const px_per_tile: i16 = 56;
-pub const size_mult: f32 = 48.0 / (8.0 + @as(f32, @floatFromInt(pad)));
+pub const px_per_tile: i16 = 88;
+pub const size_mult: f32 = 80.0 / (8.0 + @as(f32, @floatFromInt(pad)));
 
 pub var x: f32 = 0.0;
 pub var y: f32 = 0.0;
@@ -31,8 +32,6 @@ pub var screen_height: f32 = 720.0;
 pub var clip_scale_x: f32 = 2.0 / 1280.0;
 pub var clip_scale_y: f32 = 2.0 / 720.0;
 
-var last_angle: f32 = -100.0;
-
 pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
     x = target_x;
     y = target_y;
@@ -40,7 +39,7 @@ pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
     if (rotate != 0) {
         const float_dt: f32 = @floatFromInt(dt);
         const float_rotate: f32 = @floatFromInt(rotate);
-        angle = @mod((angle + float_dt) * rotate_speed * float_rotate, tau);
+        angle = @mod(angle + float_dt * rotate_speed * float_rotate, math.tau);
     }
 
     const cos_angle = @cos(angle);
@@ -67,4 +66,17 @@ pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
     const min_y_dt = target_y - max_dist;
     min_y = if (min_y_dt < 0) 0 else @intFromFloat(min_y_dt);
     max_y = @intFromFloat(target_y + max_dist);
+}
+
+pub inline fn rotateAroundCamera(x_in: f32, y_in: f32) utils.Point {
+    return utils.Point{
+        .x = x_in * cos + y_in * sin + clip_x + screen_width / 2.0,
+        .y = x_in * -sin + y_in * cos + clip_y + screen_height / 2.0,
+    };
+}
+
+pub inline fn visibleInCamera(x_in: f32, y_in: f32) bool {
+    const floor_x: u32 = @intFromFloat(@floor(x_in));
+    const floor_y: u32 = @intFromFloat(@floor(y_in));
+    return !(floor_x < min_x or floor_x > max_x or floor_y < min_y or floor_y > max_y);
 }

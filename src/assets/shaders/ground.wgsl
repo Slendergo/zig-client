@@ -30,7 +30,7 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    out.position = vec4(in.pos, 0.00001, 1.0); // hacky 
+    out.position = vec4(in.pos, 0.0, 1.0);
     out.baseUv = in.baseUv;
     out.uv = in.uv;
     out.leftBlendUv = in.leftBlendUv;

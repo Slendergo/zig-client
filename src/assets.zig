@@ -20,9 +20,10 @@ pub const down_dir: u8 = 2;
 pub const up_dir: u8 = 3;
 
 pub const CharacterData = struct {
-    const char_atlas_w = 1024;
-    const char_atlas_h = 512;
-    const char_size = 64.0;
+    pub const char_atlas_w = 1024;
+    pub const char_atlas_h = 512;
+    pub const char_size = 64.0;
+    pub const line_height = 1.149;
 
     x_advance: f32,
     tex_u: f32,

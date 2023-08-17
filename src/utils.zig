@@ -2,6 +2,11 @@ const std = @import("std");
 const main = @import("main.zig");
 const builtin = @import("builtin");
 
+pub const Point = struct {
+    x: f32,
+    y: f32,
+};
+
 pub var rng = std.rand.DefaultPrng.init(0x99999999);
 
 pub fn strlen(str: []const u8) usize {

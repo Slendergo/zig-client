@@ -29,7 +29,7 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    out.position = vec4(in.pos, 1.0, 1.0);
+    out.position = vec4(in.pos, 0.0, 1.0);
     out.uv = in.uv;
     out.color = in.color;
     out.textType = in.textType;
