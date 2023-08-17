@@ -110,7 +110,7 @@ pub var render_thread: std.Thread = undefined;
 pub var tick_render = true;
 pub var tick_frame = false;
 pub var sent_hello = false;
-pub var lost_connection = false;
+pub var lost_connection = true;
 
 fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
     gctx = try zgpu.GraphicsContext.create(allocator, window, .{ .present_mode = .immediate });
@@ -386,10 +386,13 @@ fn networkTick(allocator: std.mem.Allocator) void {
                 server.?.accept(allocator) catch |e| {
                     std.log.err("Error while accepting server packets: {any}\n", .{e});
 
-                    lost_connection = true;
-                    // disconnect and then return screen to prevent spamming console with exceptions from accept();
-                    current_screen = .char_select;
-                    disconnect();
+                    // disconnect and return screen when disconnected
+                    if(!lost_connection) 
+                    {
+                        lost_connection = true;
+                        current_screen = .char_select;
+                        disconnect();
+                    }
                 };
             }
         }
@@ -414,11 +417,15 @@ pub fn clear() void {
     map.players.clearRetainingCapacity();
 }
 
-pub fn disconnect() void {
-    if (server != null) {
-        network_lock.lock();
-        defer network_lock.unlock();
+pub fn disconnect() void 
+{
+    if(!network_lock.tryLock()) {
+        return;
+    }
+    defer network_lock.unlock();
 
+    if (server != null) 
+    {
         server.?.deinit();
         server = null;
         selected_server = null;
