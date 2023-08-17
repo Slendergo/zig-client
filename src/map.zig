@@ -9,6 +9,14 @@ const utils = @import("utils.zig");
 const assets = @import("assets.zig");
 const ui = @import("ui.zig");
 
+pub const move_threshold: f32 = 0.4;
+pub const min_move_speed: f32 = 0.004;
+pub const max_move_speed: f32 = 0.0096;
+pub const min_attack_freq: f32 = 0.0015;
+pub const max_attack_freq: f32 = 0.008;
+pub const min_attack_mult: f32 = 0.5;
+pub const max_attack_mult: f32 = 2;
+
 pub const Square = struct {
     tile_type: u16 = 0xFFFF,
     x: f32 = 0.0,
@@ -445,6 +453,15 @@ pub const Player = struct {
         };
     }
 
+    pub fn attackFrequency(self: *Player) f32 {
+
+        // if(isDazed()) return MIN_ATTACK_FREQ;
+        const frequency = (min_attack_freq + ((@as(f32, @floatFromInt(self.dexterity)) / 75.0) * (max_attack_freq - min_attack_freq)));
+        // if(isBerserk())
+        //     return frequency * 1.5;
+        return frequency;
+    }
+
     pub fn shoot(self: *Player, angle: f32, time: i32) void {
         const weapon = self.inventory[0];
         if (weapon == -1)
@@ -454,7 +471,7 @@ pub const Player = struct {
         if (item_props == null or item_props.?.projectile == null)
             return;
 
-        const attack_delay: i32 = @intFromFloat(200.0 / item_props.?.rate_of_fire);
+        const attack_delay: i32 = @intFromFloat((1.0 / attackFrequency(self)) * (1.0 / item_props.?.rate_of_fire));
         if (time < self.attack_start + attack_delay)
             return;
 

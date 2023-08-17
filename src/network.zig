@@ -616,7 +616,7 @@ pub const Server = struct {
 
             const stats_len = reader.read(u16);
             const class = game_data.obj_type_to_class.get(obj_type) orelse game_data.ClassType.game_object;
-           
+
             switch (class) {
                 .player => {
                     var player = map.Player{ .x = position.x, .y = position.y, .obj_id = obj_id, .obj_type = obj_type };
@@ -640,13 +640,13 @@ pub const Server = struct {
                             std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
                             return;
                         };
-                        if (!parseObjStatData(reader, &obj, stat)){
+                        if (!parseObjStatData(reader, &obj, stat)) {
                             return;
                         }
                     }
 
                     obj.addToMap();
-                }
+                },
             }
         }
 
