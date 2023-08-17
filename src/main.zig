@@ -551,6 +551,10 @@ pub fn main() !void {
 
 fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) !bool {
     const response = try requests.sendAccountVerify(email, password);
+    if (std.mem.eql(u8, response, "<Error />")) {
+        std.log.err("Login failed: {s}", .{response});
+        return false;
+    }
 
     const verify_doc = try xml.Doc.fromMemory(response);
     defer verify_doc.deinit();
