@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Debug",
-            "type": "cppvsdbg",
+            "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/zig-out/bin/Client",
             "args": [],
