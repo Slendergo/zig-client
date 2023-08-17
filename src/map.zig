@@ -576,15 +576,15 @@ pub const Player = struct {
         //     return;
         // }
 
-        const dx: f32 = x - self.x;
-        const dy: f32 = y - self.y;
+        const dx = x - self.x;
+        const dy = y - self.y;
 
         if (dx < move_threshold and dx > -move_threshold and dy < move_threshold and dy > -move_threshold) {
             modifyStep(self, x, y, target_x, target_y);
             return;
         }
 
-        var stepSize = move_threshold / @max(@fabs(dx), @fabs(dy));
+        var step_size = move_threshold / @max(@fabs(dx), @fabs(dy));
 
         target_x.* = self.x;
         target_y.* = self.y;
@@ -592,12 +592,12 @@ pub const Player = struct {
         var d: f32 = 0.0;
         var done: bool = false;
         while (!done) {
-            if (d + stepSize >= 1.0) {
-                stepSize = 1.0 - d;
+            if (d + step_size >= 1.0) {
+                step_size = 1.0 - d;
                 done = true;
             }
-            modifyStep(self, target_x.* + dx * stepSize, target_y.* + dy * stepSize, target_x, target_y);
-            d += stepSize;
+            modifyStep(self, target_x.* + dx * step_size, target_y.* + dy * step_size, target_x, target_y);
+            d += step_size;
         }
     }
 
@@ -605,46 +605,46 @@ pub const Player = struct {
         if (isOccupied(x, y))
             return false;
 
-        const xFrac: f32 = x - @floor(x);
-        const yFrac: f32 = y - @floor(y);
+        const x_frac = x - @floor(x);
+        const y_frac = y - @floor(y);
 
-        if (xFrac < 0.5) {
+        if (x_frac < 0.5) {
             if (isOccupied(x - 1, y)) {
                 return false;
             }
 
-            if (yFrac < 0.5) {
+            if (y_frac < 0.5) {
                 if (isOccupied(x, y - 1) or isOccupied(x - 1, y - 1)) {
                     return false;
                 }
             }
 
-            if (yFrac > 0.5) {
+            if (y_frac > 0.5) {
                 if (isOccupied(x, y + 1) or isOccupied(x - 1, y + 1)) {
                     return false;
                 }
             }
-        } else if (xFrac > 0.5) {
+        } else if (x_frac > 0.5) {
             if (isOccupied(x + 1, y)) {
                 return false;
             }
-            if (yFrac < 0.5) {
+            if (y_frac < 0.5) {
                 if (isOccupied(x, y - 1) or isOccupied(x + 1, y - 1)) {
                     return false;
                 }
             }
-            if (yFrac > 0.5) {
+            if (y_frac > 0.5) {
                 if (isOccupied(x, y + 1) or isOccupied(x + 1, y + 1)) {
                     return false;
                 }
             }
         } else {
-            if (yFrac < 0.5) {
+            if (y_frac < 0.5) {
                 if (isOccupied(x, y - 1)) {
                     return false;
                 }
             }
-            if (yFrac > 0.5) {
+            if (y_frac > 0.5) {
                 if (isOccupied(x, y + 1)) {
                     return false;
                 }
@@ -654,6 +654,9 @@ pub const Player = struct {
     }
 
     fn isOccupied(x: f32, y: f32) bool {
+        if (x < 0 or y < 0)
+            return true;
+
         const floor_x: u32 = @intFromFloat(@floor(x));
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
@@ -661,28 +664,28 @@ pub const Player = struct {
     }
 
     fn modifyStep(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
-        const xCross = (@mod(self.x, 0.5) == 0 and x != self.x) or (@floor(self.x / 0.5) != @floor(x / 0.5));
-        const yCross = (@mod(self.y, 0.5) == 0 and y != self.y) or (@floor(self.y / 0.5) != @floor(y / 0.5));
+        const x_cross = (@mod(self.x, 0.5) == 0 and x != self.x) or (@floor(self.x / 0.5) != @floor(x / 0.5));
+        const y_cross = (@mod(self.y, 0.5) == 0 and y != self.y) or (@floor(self.y / 0.5) != @floor(y / 0.5));
 
-        if ((!xCross and !yCross) or isValidPosition(x, y)) {
+        if ((!x_cross and !y_cross) or isValidPosition(x, y)) {
             target_x.* = x;
             target_y.* = y;
             return;
         }
 
-        var nextXBorder: f32 = 0.0;
-        var nextYBorder: f32 = 0.0;
-        if (xCross) {
-            nextXBorder = if (x > self.x) @floor(x * 2) / 2.0 else @floor(self.x * 2) / 2.0;
-            if (@floor(nextXBorder) > @floor(self.x)) {
-                nextXBorder -= 0.01;
+        var next_x_border: f32 = 0.0;
+        var next_y_border: f32 = 0.0;
+        if (x_cross) {
+            next_x_border = if (x > self.x) @floor(x * 2) / 2.0 else @floor(self.x * 2) / 2.0;
+            if (@floor(next_x_border) > @floor(self.x)) {
+                next_x_border -= 0.01;
             }
         }
 
-        if (yCross) {
-            nextYBorder = if (y > self.y) @floor(y * 2) / 2.0 else @floor(self.y * 2) / 2.0;
-            if (@floor(nextYBorder) > @floor(self.y)) {
-                nextYBorder -= 0.01;
+        if (y_cross) {
+            next_y_border = if (y > self.y) @floor(y * 2) / 2.0 else @floor(self.y * 2) / 2.0;
+            if (@floor(next_y_border) > @floor(self.y)) {
+                next_y_border -= 0.01;
             }
         }
 
@@ -705,37 +708,37 @@ pub const Player = struct {
         //     return;
         // }
 
-        const xBorderDist: f32 = if (x > self.x) x - nextXBorder else nextXBorder - x;
-        const yBorderDist: f32 = if (y > self.y) y - nextYBorder else nextYBorder - y;
+        const x_border_dist = if (x > self.x) x - next_x_border else next_x_border - x;
+        const y_border_dist = if (y > self.y) y - next_y_border else next_y_border - y;
 
-        if (xBorderDist > yBorderDist) {
-            if (isValidPosition(x, nextYBorder)) {
+        if (x_border_dist > y_border_dist) {
+            if (isValidPosition(x, next_y_border)) {
                 target_x.* = x;
-                target_y.* = nextYBorder;
+                target_y.* = next_y_border;
                 return;
             }
 
-            if (isValidPosition(nextXBorder, y)) {
-                target_x.* = nextXBorder;
+            if (isValidPosition(next_x_border, y)) {
+                target_x.* = next_x_border;
                 target_y.* = y;
                 return;
             }
         } else {
-            if (isValidPosition(nextXBorder, y)) {
-                target_x.* = nextXBorder;
+            if (isValidPosition(next_x_border, y)) {
+                target_x.* = next_x_border;
                 target_y.* = y;
                 return;
             }
 
-            if (isValidPosition(x, nextYBorder)) {
+            if (isValidPosition(x, next_y_border)) {
                 target_x.* = x;
-                target_y.* = nextYBorder;
+                target_y.* = next_y_border;
                 return;
             }
         }
 
-        target_x.* = nextXBorder;
-        target_y.* = nextYBorder;
+        target_x.* = next_x_border;
+        target_y.* = next_y_border;
     }
 };
 
