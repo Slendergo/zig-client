@@ -711,7 +711,7 @@ pub const Server = struct {
             .skin => plr.skin = reader.read(i32),
             .none, .alt_texture_index => {},
             inline else => {
-                std.log.err("Unknown stat type: {any}", .{stat_type});
+                std.log.err("Unknown player stat type: {any}", .{stat_type});
                 return false;
             },
         }
@@ -747,7 +747,7 @@ pub const Server = struct {
             .rank_required => obj.rank_required = reader.read(i32),
             .alt_texture_index => obj.alt_texture_index = reader.read(i32),
             inline else => {
-                std.log.err("Unknown stat type: {any}", .{stat_type});
+                std.log.err("Unknown entity stat type: {any}", .{stat_type});
                 return false;
             },
         }
