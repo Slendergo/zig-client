@@ -397,6 +397,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addImage("cursors", "Cursors.png", 32, 32, &ctx, allocator);
     try addImage("errorTexture", "ErrorTexture.png", 8, 8, &ctx, allocator);
     try addImage("invisible", "Invisible.png", 8, 8, &ctx, allocator);
+    try addImage("groundMasks", "GroundMasks.png", 8, 8, &ctx, allocator);
     try addImage("keyIndicators", "KeyIndicators.png", 100, 100, &ctx, allocator);
     try addImage("lofiChar", "LofiChar.png", 8, 8, &ctx, allocator);
     try addImage("lofiChar8x8", "LofiChar.png", 8, 8, &ctx, allocator);
@@ -453,7 +454,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         try zstbi.Image.writeToFile(atlas, "atlas.png", .png);
 
     // zig fmt: off
-    const mask_rects = rects.get("ground");
+    const mask_rects = rects.get("groundMasks");
     if (mask_rects != null) {
         const left_mask_rect = mask_rects.?[0];
         const top_mask_rect = mask_rects.?[1];
