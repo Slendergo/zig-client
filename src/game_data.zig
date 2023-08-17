@@ -806,12 +806,12 @@ pub const ActivationData = struct {
     range: f32,
 
     // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ActivationData { // todo
+    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ActivationData {
         return ActivationData {
             .activation_type = ActivationType.fromString(node.currentValue() orelse "IncrementStat"),
             .object_id = try node.getAttributeAlloc("objectId", allocator, ""),
             .id = try node.getAttributeAlloc("id", allocator, ""),
-            .effect = ConditionEnum.fromString(try node.getAttributeAlloc("effect", allocator, "")),
+            .effect = ConditionEnum.fromString(node.getAttribute("effect") orelse ""),
             .duration = try node.getAttributeFloat("duration", f32, 0.0),
             .cond_duration = try node.getAttributeFloat("condDuration", f32, 0.0),
             .max_distance = try node.getAttributeInt("maxDistance", u8, 0),
@@ -907,7 +907,7 @@ pub const ItemProps = struct {
             .untradeable = node.elementExists("Soulbound"),
             .usable = node.elementExists("Usable"),
             .slot_type = try node.getValueInt("SlotType", i8, 0),
-            .tier = try node.getValueAlloc("Tier", allocator, ""),
+            .tier = try node.getValueAlloc("Tier", allocator, "Unknown"),
             .bag_type = try node.getValueInt("BagType", u8, 0),
             .num_projectiles = try node.getValueInt("NumProjectiles", u8, 1),
             .arc_gap = std.math.degreesToRadians(f32, try node.getValueFloat("ArcGap", f32, 11.25)),
@@ -1067,10 +1067,29 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 
     var item_props_iter = item_type_to_props.valueIterator();
     while (item_props_iter.next()) |prop| {
-        allocator.free(prop.stat_increments.?);
-        allocator.free(prop.activations.?);
+        if (prop.stat_increments) |incr| {
+            allocator.free(incr);
+        }
+
+        if (prop.activations) |activate| {
+            for (activate) |data| {
+                allocator.free(data.id);
+                allocator.free(data.object_id);
+            }
+
+            allocator.free(activate);
+        }
+
+        if (prop.extra_tooltip_data) |data| {
+            allocator.free(data);
+        }
 
         allocator.free(prop.texture_data.sheet);
+        allocator.free(prop.tier);
+        allocator.free(prop.old_sound);
+        allocator.free(prop.sound);
+        allocator.free(prop.successor_id);
+        allocator.free(prop.display_id);
 
         if (prop.projectile) |proj_prop| {
             for (proj_prop.texture_data) |tex| {
