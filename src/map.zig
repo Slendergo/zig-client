@@ -1,4 +1,5 @@
 const std = @import("std");
+const zstbrp = @import("zstbrp");
 const network = @import("network.zig");
 const game_data = @import("game_data.zig");
 const camera = @import("camera.zig");
@@ -238,10 +239,23 @@ pub const GameObject = struct {
         const tex_list = game_data.obj_type_to_tex_data.get(self.obj_type);
         if (tex_list != null and tex_list.?.len > 0) {
             const tex = tex_list.?[@as(usize, @intCast(self.obj_id)) % tex_list.?.len];
+
             if (tex.animated) {
-                self.anim_data = assets.anim_enemies.get(tex.sheet).?[tex.index];
+                const tex_sheet = assets.anim_enemies.get(tex.sheet);
+                if (tex_sheet != null) {
+                    self.anim_data = tex_sheet.?[tex.index];
+                } else {
+                    self.anim_data = assets.error_anim;
+                }
             } else {
-                const rect = assets.rects.get(tex.sheet).?[tex.index];
+                const rect_sheet = assets.rects.get(tex.sheet);
+
+                var rect: zstbrp.PackRect = undefined;
+                if (rect_sheet != null) {
+                    rect = rect_sheet.?[tex.index];
+                } else {
+                    rect = assets.error_rect;
+                }
                 // hack
                 if (game_data.obj_type_to_class.get(self.obj_type) == .wall) {
                     self.tex_u = @as(f32, @floatFromInt(rect.x + assets.padding)) / @as(f32, @floatFromInt(assets.atlas_width));
@@ -411,7 +425,7 @@ pub const Player = struct {
     pub fn addToMap(self: *Player) void {
         while (!object_lock.tryLock()) {}
         defer object_lock.unlock();
-        
+
         const tex_list = game_data.obj_type_to_tex_data.get(self.obj_type);
         if (tex_list != null) {
             const tex = tex_list.?[@as(usize, @intCast(self.obj_id)) % tex_list.?.len];
