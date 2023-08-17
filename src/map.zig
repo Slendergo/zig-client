@@ -232,6 +232,9 @@ pub const GameObject = struct {
     }
 
     pub fn addToMap(self: *GameObject) void {
+        while (!object_lock.tryLock()) {}
+        defer object_lock.unlock();
+
         const tex_list = game_data.obj_type_to_tex_data.get(self.obj_type);
         if (tex_list != null and tex_list.?.len > 0) {
             const tex = tex_list.?[@as(usize, @intCast(self.obj_id)) % tex_list.?.len];
@@ -406,6 +409,9 @@ pub const Player = struct {
     }
 
     pub fn addToMap(self: *Player) void {
+        while (!object_lock.tryLock()) {}
+        defer object_lock.unlock();
+        
         const tex_list = game_data.obj_type_to_tex_data.get(self.obj_type);
         if (tex_list != null) {
             const tex = tex_list.?[@as(usize, @intCast(self.obj_id)) % tex_list.?.len];
@@ -424,7 +430,7 @@ pub const Player = struct {
             std.log.err("Could not add player to map (obj_id={d}, obj_type={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.obj_type, self.x, self.y, e });
         };
     }
-    
+
     pub fn shoot(self: *Player, angle: f32, time: i32) void {
         const weapon = self.inventory[0];
         if (weapon == -1)
