@@ -97,6 +97,9 @@ pub var empty_bar_rect: FloatRect = undefined;
 pub var hp_bar_rect: FloatRect = undefined;
 pub var mp_bar_rect: FloatRect = undefined;
 
+pub var error_rect: zstbrp.PackRect = undefined;
+pub var error_anim: AnimEnemyData = undefined;
+
 fn isImageEmpty(img: zstbi.Image, x: usize, y: usize, w: u32, h: u32) bool {
     for (y..y + h) |loop_y| {
         for (x..x + w) |loop_x| {
@@ -507,6 +510,22 @@ pub fn init(allocator: std.mem.Allocator) !void {
         };
     }
     // zig fmt: on
+
+    const error_rects = rects.get("errorTexture");
+    if (error_rects != null) {
+        error_rect = error_rects.?[0];
+
+        error_anim = AnimEnemyData{
+            .walk_anims = [2][3]zstbrp.PackRect{
+                [_]zstbrp.PackRect{ error_rect, error_rect, error_rect },
+                [_]zstbrp.PackRect{ error_rect, error_rect, error_rect },
+            },
+            .attack_anims = [2][2]zstbrp.PackRect{
+                [_]zstbrp.PackRect{ error_rect, error_rect },
+                [_]zstbrp.PackRect{ error_rect, error_rect },
+            },
+        };
+    }
 
     allocator.free(nodes);
 }
