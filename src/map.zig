@@ -336,7 +336,7 @@ pub const GameObject = struct {
                 }
 
                 const last_tick_var = last_tick_time;
-                const scale_dt = @as(f32, @floatFromInt(time - last_tick_var)) / 100.0;
+                const scale_dt = @as(f32, @floatFromInt(time - last_tick_var)) / 200.0;
                 if (scale_dt >= 1.0) {
                     self.x = self.target_x;
                     self.y = self.target_y;
@@ -556,7 +556,7 @@ pub const Player = struct {
                         break :moveBlock;
                     }
 
-                    const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / 100.0;
+                    const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / 200.0;
                     if (scale_dt >= 1.0) {
                         self.x = self.target_x;
                         self.y = self.target_y;
