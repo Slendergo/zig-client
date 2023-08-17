@@ -421,8 +421,6 @@ pub const Server = struct {
 
         const statuses_len = reader.read(u16);
         for (0..statuses_len) |_| {
-            const obj_type = reader.read(u16);
-            _ = obj_type;
             const obj_id = reader.read(i32);
             const position = reader.read(Position);
 
@@ -613,13 +611,12 @@ pub const Server = struct {
         const new_objs_len = reader.read(u16);
         for (0..new_objs_len) |_| {
             const obj_type = reader.read(u16);
-            const obj_type_2 = reader.read(u16); // ...
-            _ = obj_type_2;
             const obj_id = reader.read(i32);
             const position = reader.read(Position);
 
             const stats_len = reader.read(u16);
             const class = game_data.obj_type_to_class.get(obj_type) orelse game_data.ClassType.game_object;
+           
             switch (class) {
                 .player => {
                     var player = map.Player{ .x = position.x, .y = position.y, .obj_id = obj_id, .obj_type = obj_type };
@@ -643,12 +640,13 @@ pub const Server = struct {
                             std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
                             return;
                         };
-                        if (!parseObjStatData(reader, &obj, stat))
+                        if (!parseObjStatData(reader, &obj, stat)){
                             return;
+                        }
                     }
 
                     obj.addToMap();
-                },
+                }
             }
         }
 
@@ -709,7 +707,6 @@ pub const Server = struct {
             },
             .has_backpack => plr.has_backpack = reader.read(bool),
             .skin => plr.skin = reader.read(i32),
-            .none, .alt_texture_index => {},
             inline else => {
                 std.log.err("Unknown player stat type: {any}", .{stat_type});
                 return false;
@@ -739,7 +736,11 @@ pub const Server = struct {
             .merchant_rem_count => obj.merchant_rem_count = reader.read(i32),
             .merchant_rem_minute => obj.merchant_rem_minute = reader.read(i32),
             .sellable_price => obj.sellable_price = reader.read(i32),
-            .sellable_currency => obj.sellable_currency = @enumFromInt(reader.read(u8)),
+            .sellable_currency => {
+                const value = reader.read(u8);
+                std.log.err("Currency Value: {any}", .{value});
+                //obj.sellable_currency = @enumFromInt(value);
+            },
             .sellable_rank_req => obj.sellable_rank_req = reader.read(i32),
             .portal_active => obj.portal_active = reader.read(bool),
             .object_connection => obj.object_connection = reader.read(i32),

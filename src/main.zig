@@ -419,13 +419,12 @@ pub fn clear() void {
 
 pub fn disconnect() void 
 {
-    if(!network_lock.tryLock()) {
-        return;
-    }
-    defer network_lock.unlock();
-
     if (server != null) 
     {
+        // deadlock
+        // network_lock.lock();
+        // defer network_lock.unlock();
+
         server.?.deinit();
         server = null;
         selected_server = null;

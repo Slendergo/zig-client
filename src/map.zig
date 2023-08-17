@@ -256,7 +256,7 @@ pub const GameObject = struct {
         }
 
         const top_tex_list = game_data.obj_type_to_top_tex_data.get(self.obj_type);
-        if (top_tex_list != null) {
+        if (top_tex_list != null and top_tex_list.?.len > 0) {
             const tex = top_tex_list.?[@as(usize, @intCast(self.obj_id)) % top_tex_list.?.len];
             const rect = assets.rects.get(tex.sheet).?[tex.index];
             self.top_tex_u = @as(f32, @floatFromInt(rect.x + assets.padding)) / @as(f32, @floatFromInt(assets.atlas_width));
