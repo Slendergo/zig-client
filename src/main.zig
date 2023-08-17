@@ -387,8 +387,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
                     std.log.err("Error while accepting server packets: {any}\n", .{e});
 
                     // disconnect and return screen when disconnected
-                    if(!lost_connection) 
-                    {
+                    if (!lost_connection) {
                         lost_connection = true;
                         current_screen = .char_select;
                         disconnect();
@@ -417,10 +416,8 @@ pub fn clear() void {
     map.players.clearRetainingCapacity();
 }
 
-pub fn disconnect() void 
-{
-    if (server != null) 
-    {
+pub fn disconnect() void {
+    if (server != null) {
         // deadlock
         // network_lock.lock();
         // defer network_lock.unlock();
@@ -499,9 +496,7 @@ pub fn main() !void {
         gctx.destroy(allocator);
     }
 
-    if (!std.mem.eql(u8, "Guest", current_account.name)) {
-        defer allocator.free(current_account.name);
-    }
+    defer allocator.free(current_account.name);
 
     render.init(gctx, allocator);
 

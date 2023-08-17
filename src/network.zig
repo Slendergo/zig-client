@@ -736,11 +736,7 @@ pub const Server = struct {
             .merchant_rem_count => obj.merchant_rem_count = reader.read(i32),
             .merchant_rem_minute => obj.merchant_rem_minute = reader.read(i32),
             .sellable_price => obj.sellable_price = reader.read(i32),
-            .sellable_currency => {
-                const value = reader.read(u8);
-                std.log.err("Currency Value: {any}", .{value});
-                //obj.sellable_currency = @enumFromInt(value);
-            },
+            .sellable_currency => obj.sellable_currency = @enumFromInt(reader.read(u8)),
             .sellable_rank_req => obj.sellable_rank_req = reader.read(i32),
             .portal_active => obj.portal_active = reader.read(bool),
             .object_connection => obj.object_connection = reader.read(i32),

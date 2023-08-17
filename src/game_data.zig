@@ -953,6 +953,7 @@ pub const Currency = enum(u8) {
     Gold = 0,
     Fame = 1,
     GuildFame = 2,
+    Tokens = 3,
 };
 
 pub var classes: []CharacterClass = undefined;
@@ -1053,6 +1054,10 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         }
 
         for (prop.projectiles) |proj_prop| {
+            for (proj_prop.texture_data) |tex| {
+                allocator.free(tex.sheet);
+            }
+            allocator.free(proj_prop.texture_data);
             allocator.free(proj_prop.object_id);
             allocator.free(proj_prop.effects);
         }
@@ -1068,6 +1073,10 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         allocator.free(prop.texture_data.sheet);
 
         if (prop.projectile) |proj_prop| {
+            for (proj_prop.texture_data) |tex| {
+                allocator.free(tex.sheet);
+            }
+            allocator.free(proj_prop.texture_data);
             allocator.free(proj_prop.object_id);
             allocator.free(proj_prop.effects);
         }
