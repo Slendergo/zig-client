@@ -4,6 +4,7 @@ const settings = @import("settings.zig");
 const main = @import("main.zig");
 const map = @import("map.zig");
 const game_data = @import("game_data.zig");
+const ui = @import("ui.zig");
 
 // zig fmt: off
 pub const ObjectSlot = extern struct { 
@@ -207,7 +208,7 @@ pub const Server = struct {
                 .map_info => handleMapInfo(&self.reader, allocator),
                 .name_result => handleNameResult(&self.reader),
                 .new_tick => handleNewTick(self),
-                .notification => handleNotification(&self.reader),
+                .notification => handleNotification(&self.reader, allocator),
                 .ping => handlePing(self),
                 .play_sound => handlePlaySound(&self.reader),
                 .quest_obj_id => handleQuestObjId(&self.reader),
@@ -478,10 +479,34 @@ pub const Server = struct {
             std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });
     }
 
-    inline fn handleNotification(reader: *utils.PacketReader) void {
+    inline fn handleNotification(reader: *utils.PacketReader, allocator: std.mem.Allocator) void {
         const object_id = reader.read(i32);
         const message = reader.read([]u8);
         const color = reader.read(ARGB);
+
+        // zig fmt: off
+        if (map.findPlayer(object_id)) |player| {
+            ui.status_texts.append(ui.StatusText{
+                .ref_x = &player.screen_x,
+                .ref_y = &player.screen_y,
+                .start_time = main.current_time,
+                .color = @bitCast(color),
+                .lifetime = 2000,
+                .text = allocator.dupe(u8, message) catch unreachable, // not really unreachable is it now?
+            }) catch unreachable; 
+        }
+
+        if (map.findObject(object_id)) |obj| {
+            ui.status_texts.append(ui.StatusText{
+                .ref_x = &obj.screen_x,
+                .ref_y = &obj.screen_y,
+                .start_time = main.current_time,
+                .color = @bitCast(color),
+                .lifetime = 2000,
+                .text = allocator.dupe(u8, message) catch unreachable,
+            }) catch unreachable;
+        }
+        // zig fmt: on
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
             std.log.debug("Recv - Notification: object_id={d}, message={s}, color={any}", .{ object_id, message, color });
@@ -616,7 +641,7 @@ pub const Server = struct {
 
             const stats_len = reader.read(u16);
             const class = game_data.obj_type_to_class.get(obj_type) orelse game_data.ClassType.game_object;
-           
+
             switch (class) {
                 .player => {
                     var player = map.Player{ .x = position.x, .y = position.y, .obj_id = obj_id, .obj_type = obj_type };
@@ -640,13 +665,13 @@ pub const Server = struct {
                             std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
                             return;
                         };
-                        if (!parseObjStatData(reader, &obj, stat)){
+                        if (!parseObjStatData(reader, &obj, stat)) {
                             return;
                         }
                     }
 
                     obj.addToMap();
-                }
+                },
             }
         }
 
