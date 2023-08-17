@@ -5,6 +5,7 @@ const main = @import("main.zig");
 const map = @import("map.zig");
 const game_data = @import("game_data.zig");
 const ui = @import("ui.zig");
+const camera = @import("camera.zig");
 
 // zig fmt: off
 pub const ObjectSlot = extern struct { 
@@ -250,6 +251,27 @@ pub const Server = struct {
         const container_type = reader.read(u16);
         const angle = reader.read(f32);
 
+        if (map.findPlayer(owner_id)) |player| {
+            const weapon = player.inventory[0];
+            const item_props = game_data.item_type_to_props.get(@intCast(weapon));
+            const proj_props = item_props.?.projectile.?;
+            const projs_len = item_props.?.num_projectiles;
+            for (0..projs_len) |_| {
+                var proj = map.Projectile{
+                    .x = player.x,
+                    .y = player.y,
+                    .props = proj_props,
+                    .angle = angle,
+                    .start_time = main.current_time,
+                    .bullet_id = @intCast(bullet_id),
+                    .owner_id = player.obj_id,
+                };
+                proj.addToMap();
+            }
+            player.attack_angle = angle - camera.angle;
+            player.attack_start = main.current_time;
+        }
+
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
             std.log.debug("Recv - AllyShoot: bullet_id={d}, owner_id={d}, container_type={d}, angle={e}", .{ bullet_id, owner_id, container_type, angle });
     }
@@ -475,7 +497,7 @@ pub const Server = struct {
                     player.tick_y = player.y;
                     const y_dt = position.y - player.y;
                     const x_dt = position.x - player.x;
-                    player.visual_move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan_f32 else std.math.atan2(f32, y_dt, x_dt);
+                    player.visual_move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan_f32 else std.math.atan2(f32, y_dt, x_dt);
                 }
 
                 for (0..stats_len) |_| {
