@@ -1006,6 +1006,12 @@ pub const Server = struct {
     }
 
     pub fn sendEscape(self: *Server) !void {
+
+        // precheck to prevent client sided cleanup when already in nexus
+        if (std.mem.eql(u8, map.name, "Nexus")) {
+            return;
+        }
+
         if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
             std.log.debug("Send - Escape", .{});
 

@@ -22,6 +22,6 @@
             "label": "ReleaseSmall",
             "type": "shell",
             "command": "zig build -Doptimize=ReleaseSmall"
-        },
+        }
     ]
 }

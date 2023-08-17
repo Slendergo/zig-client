@@ -518,17 +518,15 @@ pub const Player = struct {
                 const move_speed = self.moveSpeed();
                 const total_angle = camera.angle + self.move_angle;
                 const float_dt: f32 = @floatFromInt(dt);
+
                 const next_x = self.x + move_speed * float_dt * @cos(total_angle);
                 const next_y = self.y + move_speed * float_dt * @sin(total_angle);
-                const next_x_floor: u32 = @intFromFloat(@floor(next_x));
-                const next_y_floor: u32 = @intFromFloat(@floor(next_y));
-                if (validPos(@intCast(next_x_floor), @intCast(next_y_floor))) {
-                    const target_square = squares[next_y_floor * @as(u32, @intCast(width)) + next_x_floor];
-                    if (!target_square.blocking) {
-                        self.x = next_x;
-                        self.y = next_y;
-                    }
-                }
+
+                var new_x: f32 = 0.0;
+                var new_y: f32 = 0.0;
+                modifyMove(self, next_x, next_y, &new_x, &new_y);
+                self.x = new_x;
+                self.y = new_y;
             }
 
             if (time - self.last_ground_damage >= 550) {
@@ -570,7 +568,177 @@ pub const Player = struct {
             }
         }
     }
+
+    fn modifyMove(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
+        // if (isParalyzed() OR isPetrified()) {
+        //     target_x.* = self.x;
+        //     target_y.* = self.y;
+        //     return;
+        // }
+
+        const dx: f32 = x - self.x;
+        const dy: f32 = y - self.y;
+
+        if (dx < move_threshold and dx > -move_threshold and dy < move_threshold and dy > -move_threshold) {
+            modifyStep(self, x, y, target_x, target_y);
+            return;
+        }
+
+        var stepSize = move_threshold / @max(@fabs(dx), @fabs(dy));
+
+        target_x.* = self.x;
+        target_y.* = self.y;
+
+        var d: f32 = 0.0;
+        var done: bool = false;
+        while (!done) {
+            if (d + stepSize >= 1.0) {
+                stepSize = 1.0 - d;
+                done = true;
+            }
+            modifyStep(self, target_x.* + dx * stepSize, target_y.* + dy * stepSize, target_x, target_y);
+            d += stepSize;
+        }
+    }
+
+    fn isValidPosition(x: f32, y: f32) bool {
+        if (isOccupied(x, y))
+            return false;
+
+        const xFrac: f32 = x - @floor(x);
+        const yFrac: f32 = y - @floor(y);
+
+        if (xFrac < 0.5) {
+            if (isOccupied(x - 1, y)) {
+                return false;
+            }
+
+            if (yFrac < 0.5) {
+                if (isOccupied(x, y - 1) or isOccupied(x - 1, y - 1)) {
+                    return false;
+                }
+            }
+
+            if (yFrac > 0.5) {
+                if (isOccupied(x, y + 1) or isOccupied(x - 1, y + 1)) {
+                    return false;
+                }
+            }
+        } else if (xFrac > 0.5) {
+            if (isOccupied(x + 1, y)) {
+                return false;
+            }
+            if (yFrac < 0.5) {
+                if (isOccupied(x, y - 1) or isOccupied(x + 1, y - 1)) {
+                    return false;
+                }
+            }
+            if (yFrac > 0.5) {
+                if (isOccupied(x, y + 1) or isOccupied(x + 1, y + 1)) {
+                    return false;
+                }
+            }
+        } else {
+            if (yFrac < 0.5) {
+                if (isOccupied(x, y - 1)) {
+                    return false;
+                }
+            }
+            if (yFrac > 0.5) {
+                if (isOccupied(x, y + 1)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    fn isOccupied(x: f32, y: f32) bool {
+        const floor_x: u32 = @intFromFloat(@floor(x));
+        const floor_y: u32 = @intFromFloat(@floor(y));
+        const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
+        return square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.blocking;
+    }
+
+    fn modifyStep(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
+        const xCross = (@mod(self.x, 0.5) == 0 and x != self.x) or (@floor(self.x / 0.5) != @floor(x / 0.5));
+        const yCross = (@mod(self.y, 0.5) == 0 and y != self.y) or (@floor(self.y / 0.5) != @floor(y / 0.5));
+
+        if ((!xCross and !yCross) or isValidPosition(x, y)) {
+            target_x.* = x;
+            target_y.* = y;
+            return;
+        }
+
+        var nextXBorder: f32 = 0.0;
+        var nextYBorder: f32 = 0.0;
+        if (xCross) {
+            nextXBorder = if (x > self.x) @floor(x * 2) / 2.0 else @floor(self.x * 2) / 2.0;
+            if (@floor(nextXBorder) > @floor(self.x)) {
+                nextXBorder -= 0.01;
+            }
+        }
+
+        if (yCross) {
+            nextYBorder = if (y > self.y) @floor(y * 2) / 2.0 else @floor(self.y * 2) / 2.0;
+            if (@floor(nextYBorder) > @floor(self.y)) {
+                nextYBorder -= 0.01;
+            }
+        }
+
+        // when we add in sliding i will do this
+
+        // if (!xCross) {
+        //     newP.x = x;
+        //     newP.y = nextYBorder;
+        //     if (square_ != null and square_.props_.slideAmount_ != 0) {
+        //         resetMoveVector(false);
+        //     }
+        //     return;
+        // }
+        // else if (!yCross) {
+        //     newP.x = nextXBorder;
+        //     newP.y = y;
+        //     if (square_ != null and square_.props_.slideAmount_ != 0) {
+        //         resetMoveVector(true);
+        //     }
+        //     return;
+        // }
+
+        const xBorderDist: f32 = if (x > self.x) x - nextXBorder else nextXBorder - x;
+        const yBorderDist: f32 = if (y > self.y) y - nextYBorder else nextYBorder - y;
+
+        if (xBorderDist > yBorderDist) {
+            if (isValidPosition(x, nextYBorder)) {
+                target_x.* = x;
+                target_y.* = nextYBorder;
+                return;
+            }
+
+            if (isValidPosition(nextXBorder, y)) {
+                target_x.* = nextXBorder;
+                target_y.* = y;
+                return;
+            }
+        } else {
+            if (isValidPosition(nextXBorder, y)) {
+                target_x.* = nextXBorder;
+                target_y.* = y;
+                return;
+            }
+
+            if (isValidPosition(x, nextYBorder)) {
+                target_x.* = x;
+                target_y.* = nextYBorder;
+                return;
+            }
+        }
+
+        target_x.* = nextXBorder;
+        target_y.* = nextYBorder;
+    }
 };
+
 pub const Projectile = struct {
     var next_obj_id: i32 = 0x7F000000;
 
