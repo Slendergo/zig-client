@@ -475,6 +475,8 @@ pub const Server = struct {
             return;
         }
 
+        map.last_tick_time = main.current_time;
+
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
             std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });
     }
