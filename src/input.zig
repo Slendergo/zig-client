@@ -40,6 +40,18 @@ inline fn keyPress(key: zglfw.Key) void {
     } else if (key == settings.options.getKey()) {
         main.current_screen = .char_select;
         main.disconnect();
+    } else if (key == settings.escape.getKey()) {
+        if (main.server) |*server|
+            server.sendEscape() catch |e| {
+                std.log.err("Could not escape: {any}", .{e});
+            };
+    } else if (key == settings.interact.getKey()) {
+        if (map.interactive_id != -1) {
+            if (main.server) |*server|
+                server.sendUsePortal(map.interactive_id) catch |e| {
+                    std.log.err("Could not use portal: {any}", .{e});
+                };
+        }
     }
 }
 
@@ -85,6 +97,18 @@ inline fn mousePress(button: zglfw.MouseButton) void {
     } else if (button == settings.options.getMouse()) {
         main.current_screen = .char_select;
         main.disconnect();
+    } else if (button == settings.escape.getMouse()) {
+        if (main.server) |*server|
+            server.sendEscape() catch |e| {
+                std.log.err("Could not escape: {any}", .{e});
+            };
+    } else if (button == settings.interact.getMouse()) {
+        if (map.interactive_id != -1) {
+            if (main.server) |*server|
+                server.sendUsePortal(map.interactive_id) catch |e| {
+                    std.log.err("Could not use portal: {any}", .{e});
+                };
+        }
     }
 }
 

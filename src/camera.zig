@@ -76,6 +76,9 @@ pub inline fn rotateAroundCamera(x_in: f32, y_in: f32) utils.Point {
 }
 
 pub inline fn visibleInCamera(x_in: f32, y_in: f32) bool {
+    if (x_in < 0 or y_in < 0)
+        return false;
+        
     const floor_x: u32 = @intFromFloat(@floor(x_in));
     const floor_y: u32 = @intFromFloat(@floor(y_in));
     return !(floor_x < min_x or floor_x > max_x or floor_y < min_y or floor_y > max_y);

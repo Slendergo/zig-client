@@ -399,6 +399,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addImage("invisible", "Invisible.png", 8, 8, &ctx, allocator);
     try addImage("keyIndicators", "KeyIndicators.png", 100, 100, &ctx, allocator);
     try addImage("lofiChar", "LofiChar.png", 8, 8, &ctx, allocator);
+    try addImage("lofiChar8x8", "LofiChar.png", 8, 8, &ctx, allocator);
     try addImage("lofiChar2", "LofiChar2.png", 8, 8, &ctx, allocator);
     try addImage("lofiChar216x16", "LofiChar2.png", 16, 16, &ctx, allocator);
     try addImage("lofiCharBig", "LofiCharBig.png", 16, 16, &ctx, allocator);
@@ -424,6 +425,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addAnimEnemy("chars8x8dEncounters", "Chars8x8dEncounters.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dHero1", "Chars8x8dHero1.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dBeach", "Chars8x8dBeach.png", 8, 8, 48, 8, &ctx, allocator);
+    try addAnimEnemy("chars8x8rBeach", "Chars8x8rBeach.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8rEncounters", "Chars8x8rEncounters.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8rHero1", "Chars8x8rHero1.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8rHero2", "Chars8x8rHero2.png", 8, 8, 48, 8, &ctx, allocator);
