@@ -199,7 +199,7 @@ pub const Server = struct {
                 .create_success => handleCreateSuccess(&self.reader),
                 .damage => handleDamage(&self.reader),
                 .death => handleDeath(&self.reader),
-                .enemy_shoot => handleEnemyShoot(&self.reader),
+                .enemy_shoot => handleEnemyShoot(self),
                 .failure => handleFailure(&self.reader),
                 .global_notification => handleGlobalNotification(&self.reader),
                 .goto => handleGoto(self),
@@ -303,8 +303,9 @@ pub const Server = struct {
             std.log.debug("Recv - Death: account_id={d}, char_id={d}, killed_by={s}", .{ account_id, char_id, killed_by });
     }
 
-    inline fn handleEnemyShoot(reader: *utils.PacketReader) void {
-        const bullet_id = reader.read(i8);
+    inline fn handleEnemyShoot(self: *Server) void {
+        var reader = self.reader;
+        const bullet_id = reader.read(u8);
         const owner_id = reader.read(i32);
         const bullet_type = reader.read(u8);
         const starting_pos = reader.read(Position);
@@ -313,8 +314,48 @@ pub const Server = struct {
         const num_shots = reader.read(u8);
         const angle_inc = reader.read(f32);
 
+        // why?
+        if (num_shots == 0)
+            return;
+
+        const owner = map.findObject(owner_id);
+        if (owner == null)
+            return;
+
+        const owner_props = game_data.obj_type_to_props.get(owner.?.obj_type);
+        if (owner_props == null)
+            return;
+
+        const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
+        var current_angle = angle - total_angle / 2.0;
+        const proj_props = owner_props.?.projectiles[bullet_type];
+        for (0..num_shots) |i| {
+            // zig fmt: off
+            var proj = map.Projectile{ 
+                .x = starting_pos.x,
+                .y = starting_pos.y,
+                .props = proj_props,
+                .angle = current_angle,
+                .start_time = main.current_time,
+                .bullet_id = bullet_id +% @as(u8, @intCast(i)),
+                .owner_id = owner_id,
+                .damage_players = true,
+            };
+            // zig fmt: on
+            proj.addToMap();
+
+            current_angle += angle_inc;
+        }
+
+        owner.?.attack_angle = angle;
+        owner.?.attack_start = main.current_time;
+
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
             std.log.debug("Recv - EnemyShoot: bullet_id={d}, owner_id={d}, bullet_type={d}, x={e}, y={e}, angle={e}, damage={d}, num_shots={d}, angle_inc={e}", .{ bullet_id, owner_id, bullet_type, starting_pos.x, starting_pos.y, angle, damage, num_shots, angle_inc });
+
+        self.sendShootAck(main.current_time) catch |e| {
+            std.log.err("Could not send ShootAck: {any}", .{e});
+        };
     }
 
     inline fn handleFailure(reader: *utils.PacketReader) void {
