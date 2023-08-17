@@ -41,7 +41,7 @@ pub const ServerData = struct {
 };
 
 pub const AccountData = struct {
-    name: [:0]const u8 = "Guest",
+    name: [:0]const u8 = "",
     email: []const u8 = "",
     password: []const u8 = "",
     admin: bool = false,
@@ -496,8 +496,6 @@ pub fn main() !void {
         gctx.destroy(allocator);
     }
 
-    defer allocator.free(current_account.name);
-
     render.init(gctx, allocator);
 
     network_thread = try std.Thread.spawn(.{}, networkTick, .{allocator});
@@ -522,6 +520,10 @@ pub fn main() !void {
             ui.update(current_time, dt, allocator);
             last_update = current_time;
         }
+    }
+
+    if (!std.mem.eql(u8, current_account.name, "")) {
+        defer allocator.free(current_account.name);
     }
 
     if (server != null) {
