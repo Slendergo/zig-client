@@ -445,7 +445,7 @@ pub const Player = struct {
         // if (isSpeedy() || isNinjaSpeedy()) {
         //     moveSpeed *= 1.5;
         // }
-        move_speed *= self.ove_multiplier;
+        move_speed *= self.move_multiplier;
         return move_speed;
 
         // return (0.004 + @as(f32, @floatFromInt(self.speed)) / 100.0 * 0.004) * self.speed_mult;
