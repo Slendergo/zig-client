@@ -632,6 +632,9 @@ pub const Server = struct {
         const num_shots = 1; // todo
         const angle_inc = 0.0;
 
+        if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
+            std.log.debug("Recv - ServerPlayerShoot: bullet_id={d}, owner_id={d}, container_type={d}, x={e}, y={e}, angle={e}, damage={d}", .{ bullet_id, owner_id, container_type, starting_pos.x, starting_pos.y, angle, damage });
+
         const needs_ack = owner_id == map.local_player_id;
         if (map.findPlayer(owner_id)) |player| {
             _ = player;
@@ -671,9 +674,6 @@ pub const Server = struct {
                 std.log.err("Could not send ShootAck: {any}", .{e});
             };
         }
-
-        if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - ServerPlayerShoot: bullet_id={d}, owner_id={d}, container_type={d}, x={e}, y={e}, angle={e}, damage={d}", .{ bullet_id, owner_id, container_type, starting_pos.x, starting_pos.y, angle, damage });
     }
 
     inline fn handleShowEffect(reader: *utils.PacketReader) void {
@@ -1406,7 +1406,13 @@ pub const Server = struct {
         self.writer.index = 0;
     }
 
-    pub fn sendUseItem(self: *Server, time: i32, slot_object: ObjectSlot, use_position: Position, use_type: u8) !void {
+    pub fn sendUseItem(
+        self: *Server,
+        time: i32,
+        slot_object: ObjectSlot,
+        use_position: Position,
+        use_type: u8,
+    ) !void {
         if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
             std.log.debug("Send - UseItem: time={d} slot_object={any} use_position={any} use_type={d} ", .{ time, slot_object, use_position, use_type });
 
