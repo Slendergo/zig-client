@@ -597,7 +597,6 @@ inline fn drawWall(idx: u16, x: f32, y: f32, u: f32, v: f32, top_u: f32, top_v: 
     return idx_new;
 }
 
-// zig fmt: off
 const QuadOptions = struct {
     rotation: f32 = 0.0,
     texel_mult: f32 = 0.0,
@@ -607,10 +606,18 @@ const QuadOptions = struct {
     alpha_mult: f32 = -1.0,
 };
 
-inline fn drawQuad(idx: u16, x: f32, y: f32, w: f32, h: f32,
-    tex_u: f32, tex_v: f32, tex_w: f32, tex_h: f32,
-    opts: QuadOptions) void {
-// zig fmt: on
+inline fn drawQuad(
+    idx: u16,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    tex_u: f32,
+    tex_v: f32,
+    tex_w: f32,
+    tex_h: f32,
+    opts: QuadOptions,
+) void {
     var flash_rgb = [3]f32{ -1.0, -1.0, -1.0 };
     if (opts.flash_color != -1) {
         flash_rgb[0] = @as(f32, @floatFromInt((opts.flash_color >> 16) & 0xFF)) / 255.0;
@@ -682,11 +689,26 @@ inline fn drawQuad(idx: u16, x: f32, y: f32, w: f32, h: f32,
     };
 }
 
-// zig fmt: off
-inline fn drawQuadVerts(idx: u16, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y3: f32, x4: f32, y4: f32,
-    tex_u: f32, tex_v: f32, tex_w: f32, tex_h: f32, texel_mult: f32, glow_color: i32,
-    flash_color: i32, flash_strength: f32, alpha_mult: f32) void {
-// zig fmt: on
+inline fn drawQuadVerts(
+    idx: u16,
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    x3: f32,
+    y3: f32,
+    x4: f32,
+    y4: f32,
+    tex_u: f32,
+    tex_v: f32,
+    tex_w: f32,
+    tex_h: f32,
+    texel_mult: f32,
+    glow_color: i32,
+    flash_color: i32,
+    flash_strength: f32,
+    alpha_mult: f32,
+) void {
     var flash_rgb = [3]f32{ -1.0, -1.0, -1.0 };
     if (flash_color != -1) {
         flash_rgb[0] = @as(f32, @floatFromInt((flash_color >> 16) & 0xFF)) / 255.0;
@@ -745,12 +767,29 @@ inline fn drawQuadVerts(idx: u16, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y
     };
 }
 
-// zig fmt: off
-inline fn drawSquare(idx: u16, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y3: f32, x4: f32,
-    y4: f32, tex_u: f32, tex_v: f32, tex_w: f32, tex_h: f32, left_blend_u: f32, left_blend_v: f32,
-    top_blend_u: f32, top_blend_v: f32, right_blend_u: f32, right_blend_v: f32, bottom_blend_u: f32,
-    bottom_blend_v: f32) void {
-// zig fmt: on
+inline fn drawSquare(
+    idx: u16,
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    x3: f32,
+    y3: f32,
+    x4: f32,
+    y4: f32,
+    tex_u: f32,
+    tex_v: f32,
+    tex_w: f32,
+    tex_h: f32,
+    left_blend_u: f32,
+    left_blend_v: f32,
+    top_blend_u: f32,
+    top_blend_v: f32,
+    right_blend_u: f32,
+    right_blend_v: f32,
+    bottom_blend_u: f32,
+    bottom_blend_v: f32,
+) void {
     ground_vert_data[idx] = GroundVertexData{
         .pos = [2]f32{ x1, y1 },
         .uv = [2]f32{ tex_w, tex_h },
@@ -932,11 +971,16 @@ inline fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: i32, intens
     };
 }
 
-// zig fmt: off
-inline fn endDraw(encoder: zgpu.wgpu.CommandEncoder, render_pass_info: zgpu.wgpu.RenderPassDescriptor, 
-    vb_info: zgpu.BufferInfo, ib_info: zgpu.BufferInfo, pipeline: zgpu.wgpu.RenderPipeline,
-    bind_group: zgpu.wgpu.BindGroup, indices: u32, offsets: ?[]const u32) void {
-// zig fmt: on
+inline fn endDraw(
+    encoder: zgpu.wgpu.CommandEncoder,
+    render_pass_info: zgpu.wgpu.RenderPassDescriptor,
+    vb_info: zgpu.BufferInfo,
+    ib_info: zgpu.BufferInfo,
+    pipeline: zgpu.wgpu.RenderPipeline,
+    bind_group: zgpu.wgpu.BindGroup,
+    indices: u32,
+    offsets: ?[]const u32,
+) void {
     const pass = encoder.beginRenderPass(render_pass_info);
     pass.setVertexBuffer(0, vb_info.gpuobj.?, 0, vb_info.size);
     pass.setIndexBuffer(ib_info.gpuobj.?, .uint16, 0, ib_info.size);
