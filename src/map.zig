@@ -1168,7 +1168,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
 
     interactive_id = -1;
     for (objects.items) |*obj| {
-        if (interactive_id != -1 and obj.class == .portal) {
+        if (interactive_id == -1 and obj.class == .portal) {
             const dt_x = camera.x - obj.x;
             const dt_y = camera.y - obj.y;
             if (dt_x * dt_x + dt_y * dt_y < 1) {
