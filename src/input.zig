@@ -38,7 +38,6 @@ inline fn keyPress(key: zglfw.Key) void {
     } else if (key == settings.shoot.getKey()) {
         attacking = true;
     } else if (key == settings.options.getKey()) {
-        main.current_screen = .char_select;
         main.disconnect();
     } else if (key == settings.escape.getKey()) {
         if (main.server) |*server|
@@ -95,7 +94,6 @@ inline fn mousePress(button: zglfw.MouseButton) void {
     } else if (button == settings.shoot.getMouse()) {
         attacking = true;
     } else if (button == settings.options.getMouse()) {
-        main.current_screen = .char_select;
         main.disconnect();
     } else if (button == settings.escape.getMouse()) {
         if (main.server) |*server|

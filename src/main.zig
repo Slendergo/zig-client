@@ -389,7 +389,6 @@ fn networkTick(allocator: std.mem.Allocator) void {
                     // disconnect and return screen when disconnected
                     if (!lost_connection) {
                         lost_connection = true;
-                        current_screen = .char_select;
                         disconnect();
                     }
                 };
@@ -430,6 +429,7 @@ pub fn disconnect() void {
 
     clear();
 
+    current_screen = .char_select;
     std.debug.print("Disconnected\n", .{});
 }
 

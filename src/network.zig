@@ -321,6 +321,8 @@ pub const Server = struct {
         const char_id = reader.read(i32);
         const killed_by = reader.read([]u8);
 
+        main.disconnect();
+
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
             std.log.debug("Recv - Death: account_id={d}, char_id={d}, killed_by={s}", .{ account_id, char_id, killed_by });
     }
