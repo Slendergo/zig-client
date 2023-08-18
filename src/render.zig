@@ -434,7 +434,7 @@ inline fn drawWall(idx: u16, x: f32, y: f32, u: f32, v: f32, top_u: f32, top_v: 
     const size = 8 * assets.base_texel_w;
     const x_base = (x * camera.cos + y * camera.sin + camera.clip_x) * camera.clip_scale_x;
     const y_base = -(x * -camera.sin + y * camera.cos + camera.clip_y) * camera.clip_scale_y;
-    const y_base_top = -(x * -camera.sin + y * camera.cos + camera.clip_y - camera.px_per_tile) * camera.clip_scale_y;
+    const y_base_top = -(x * -camera.sin + y * camera.cos + camera.clip_y - camera.px_per_tile * camera.scale) * camera.clip_scale_y;
 
     const x1 = camera.x_cos + camera.x_sin + x_base;
     const x2 = -camera.x_cos + camera.x_sin + x_base;
@@ -791,7 +791,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
     const g: f32 = @as(f32, @floatFromInt((color >> 8) & 0xFF)) / 255.0;
     const b: f32 = @as(f32, @floatFromInt(color & 0xFF)) / 255.0;
     const rgb = [3]f32{ r, g, b };
-    const size_scale = size / assets.CharacterData.char_size;
+    const size_scale = size / assets.CharacterData.char_size * camera.scale;
     const line_height = assets.CharacterData.line_height * assets.CharacterData.char_size * size_scale;
 
     var idx_new = idx;
@@ -864,8 +864,8 @@ inline fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: i32, intens
     const rgb = [3]f32{ r, g, b };
 
     // 2x given size
-    const scaled_w = w * 4 * camera.clip_scale_x;
-    const scaled_h = h * 4 * camera.clip_scale_y;
+    const scaled_w = w * 4 * camera.clip_scale_x * camera.scale;
+    const scaled_h = h * 4 * camera.clip_scale_y * camera.scale;
     const scaled_x = (x - camera.screen_width / 2.0) * camera.clip_scale_x;
     const scaled_y = -(y - camera.screen_height / 2.0) * camera.clip_scale_y; // todo
 
@@ -996,7 +996,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     normalPass: {
         if (map.objects.items.len + map.players.items.len + map.projectiles.items.len <= 0)
             break :normalPass;
-            
+
         while (!map.object_lock.tryLock()) {}
         defer map.object_lock.unlock();
 
@@ -1019,7 +1019,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 continue;
             }
 
-            const size = camera.size_mult * player.size;
+            const size = camera.size_mult * camera.scale * player.size;
 
             var rect = player.anim_data.walk_anims[player.dir][0];
             var x_offset: f32 = 0.0;
@@ -1112,8 +1112,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 player.max_hp = player.hp;
 
             if (player.hp >= 0 and player.hp < player.max_hp) {
-                const hp_bar_w = assets.hp_bar_rect.w * assets.atlas_width * 2;
-                const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2;
+                const hp_bar_w = assets.hp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
+                const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
                 const hp_bar_y = screen_pos.y + h + y_pos;
 
                 // zig fmt: off
@@ -1144,8 +1144,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
 
             if (player.mp >= 0 and player.mp < player.max_mp) {
-                const mp_bar_w = assets.mp_bar_rect.w * assets.atlas_width * 2;
-                const mp_bar_h = assets.mp_bar_rect.h * assets.atlas_height * 2;
+                const mp_bar_w = assets.mp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
+                const mp_bar_h = assets.mp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
                 const mp_bar_y = screen_pos.y + h + y_pos;
 
                 // zig fmt: off
@@ -1186,15 +1186,15 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             var tex_w = bo.tex_w;
             var tex_h = bo.tex_h;
             var screen_pos = camera.rotateAroundCamera(bo.x, bo.y);
-            const size = camera.size_mult * bo.size;
+            const size = camera.size_mult * camera.scale * bo.size;
 
             const square = bo.getSquare();
             if (bo.draw_on_ground) {
                 // zig fmt: off
                 drawQuad(
-                    idx, screen_pos.x - camera.px_per_tile / 2,
-                    screen_pos.y - camera.px_per_tile / 2, 
-                    camera.px_per_tile, camera.px_per_tile,
+                    idx, screen_pos.x - camera.px_per_tile / 2 * camera.scale,
+                    screen_pos.y - camera.px_per_tile / 2 * camera.scale, 
+                    camera.px_per_tile * camera.scale, camera.px_per_tile * camera.scale,
                     tex_u * assets.base_texel_w,
                     tex_v * assets.base_texel_h,
                     tex_w * assets.base_texel_w,
@@ -1306,8 +1306,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 bo.max_hp = bo.hp;
 
             if (bo.hp >= 0 and bo.hp < bo.max_hp) {
-                const hp_bar_w = assets.hp_bar_rect.w * assets.atlas_width * 2;
-                const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2;
+                const hp_bar_w = assets.hp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
+                const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
                 const hp_bar_y = screen_pos.y + h + y_pos;
 
                 // zig fmt: off
@@ -1346,7 +1346,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 continue;
             }
 
-            const size = camera.size_mult * proj.props.size;
+            const size = camera.size_mult * camera.scale * proj.props.size;
             const w = proj.tex_w * assets.atlas_width * size;
             const h = proj.tex_h * assets.atlas_height * size;
             var screen_pos = camera.rotateAroundCamera(proj.x, proj.y);

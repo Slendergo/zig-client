@@ -32,6 +32,8 @@ pub var screen_height: f32 = 720.0;
 pub var clip_scale_x: f32 = 2.0 / 1280.0;
 pub var clip_scale_y: f32 = 2.0 / 720.0;
 
+pub var scale: f32 = 1.0;
+
 pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
     x = target_x;
     y = target_y;
@@ -45,17 +47,17 @@ pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
     const cos_angle = @cos(angle);
     const sin_angle = @sin(angle);
 
-    cos = cos_angle * px_per_tile;
-    sin = sin_angle * px_per_tile;
+    cos = cos_angle * px_per_tile * scale;
+    sin = sin_angle * px_per_tile * scale;
     x_cos = cos * clip_scale_x * 0.5;
     y_cos = cos * clip_scale_y * 0.5;
     x_sin = sin * clip_scale_x * 0.5;
     y_sin = sin * clip_scale_y * 0.5;
-    clip_x = (target_x * cos_angle + target_y * sin_angle) * -px_per_tile;
-    clip_y = (target_x * -sin_angle + target_y * cos_angle) * -px_per_tile;
+    clip_x = (target_x * cos_angle + target_y * sin_angle) * -px_per_tile * scale;
+    clip_y = (target_x * -sin_angle + target_y * cos_angle) * -px_per_tile * scale;
 
-    const w_half = screen_width / (2 * px_per_tile);
-    const h_half = screen_height / (2 * px_per_tile);
+    const w_half = screen_width / (2 * px_per_tile * scale);
+    const h_half = screen_height / (2 * px_per_tile * scale);
     const max_dist = @ceil(@sqrt(w_half * w_half + h_half * h_half));
     max_dist_sq = max_dist * max_dist;
 
@@ -87,8 +89,8 @@ pub inline fn visibleInCamera(x_in: f32, y_in: f32) bool {
 pub inline fn screenToWorld(x_in: f32, y_in: f32) utils.Point {
     const cos_angle = @cos(angle);
     const sin_angle = @sin(angle);
-    const x_div = x_in / px_per_tile;
-    const y_div = y_in / px_per_tile;
+    const x_div = x_in / px_per_tile * scale;
+    const y_div = y_in / px_per_tile * scale;
     return utils.Point{
         .x = x_div * cos_angle + y_div * sin_angle,
         .y = x_div * -sin_angle + y_div * cos_angle,
