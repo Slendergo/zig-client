@@ -36,6 +36,9 @@ pub const TextVertexData = extern struct {
     color: [3]f32,
     text_type: f32,
     alpha_mult: f32,
+    shadow_color: [3]f32,
+    shadow_alpha_mult: f32,
+    shadow_texel_offset: [2]f32,
 };
 
 pub const LightVertexData = extern struct {
@@ -346,6 +349,9 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
             .{ .format = .float32x3, .offset = @offsetOf(TextVertexData, "color"), .shader_location = 2 },
             .{ .format = .float32, .offset = @offsetOf(TextVertexData, "text_type"), .shader_location = 3 },
             .{ .format = .float32, .offset = @offsetOf(TextVertexData, "alpha_mult"), .shader_location = 4 },
+            .{ .format = .float32x3, .offset = @offsetOf(TextVertexData, "shadow_color"), .shader_location = 5 },
+            .{ .format = .float32, .offset = @offsetOf(TextVertexData, "shadow_alpha_mult"), .shader_location = 6 },
+            .{ .format = .float32x2, .offset = @offsetOf(TextVertexData, "shadow_texel_offset"), .shader_location = 7 },
         };
         const vertex_buffers = [_]zgpu.wgpu.VertexBufferLayout{.{
             .array_stride = @sizeOf(TextVertexData),
@@ -786,13 +792,27 @@ inline fn drawSquare(idx: u16, x1: f32, y1: f32, x2: f32, y2: f32, x3: f32, y3: 
     };
 }
 
-inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color: u32, alpha_mult: f32, text_type: f32) u16 {
+const TextOptions = struct {
+    shadow_color: u32 = 0x000000,
+    shadow_alpha_mult: f32 = 0.5,
+    shadow_texel_offset_mult: f32 = 6.0,
+};
+
+inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color: u32, alpha_mult: f32, text_type: f32, opts: TextOptions) u16 {
     const r: f32 = @as(f32, @floatFromInt((color >> 16) & 0xFF)) / 255.0;
     const g: f32 = @as(f32, @floatFromInt((color >> 8) & 0xFF)) / 255.0;
     const b: f32 = @as(f32, @floatFromInt(color & 0xFF)) / 255.0;
     const rgb = [3]f32{ r, g, b };
-    const size_scale = size / assets.CharacterData.char_size * camera.scale;
-    const line_height = assets.CharacterData.line_height * assets.CharacterData.char_size * size_scale;
+
+    const shadow_r: f32 = @as(f32, @floatFromInt((opts.shadow_color >> 16) & 0xFF)) / 255.0;
+    const shadow_g: f32 = @as(f32, @floatFromInt((opts.shadow_color >> 8) & 0xFF)) / 255.0;
+    const shadow_b: f32 = @as(f32, @floatFromInt(opts.shadow_color & 0xFF)) / 255.0;
+    const shadow_rgb = [3]f32{ shadow_r, shadow_g, shadow_b };
+
+    const shadow_texel_size = [2]f32{ opts.shadow_texel_offset_mult / assets.CharacterData.atlas_w, opts.shadow_texel_offset_mult / assets.CharacterData.atlas_h };
+
+    const size_scale = size / assets.CharacterData.size * camera.scale;
+    const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
     var idx_new = idx;
     var x_pointer = x - camera.screen_width / 2.0;
@@ -818,12 +838,16 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
 
+        // zig fmt: off
         text_vert_data[idx_new] = TextVertexData{
             .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
             .uv = [2]f32{ char_data.tex_u, char_data.tex_v },
             .color = rgb,
             .text_type = text_type,
             .alpha_mult = alpha_mult,
+            .shadow_color = shadow_rgb,
+            .shadow_alpha_mult = opts.shadow_alpha_mult,
+            .shadow_texel_offset = shadow_texel_size,
         };
 
         text_vert_data[idx_new + 1] = TextVertexData{
@@ -832,6 +856,9 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
             .color = rgb,
             .text_type = text_type,
             .alpha_mult = alpha_mult,
+            .shadow_color = shadow_rgb,
+            .shadow_alpha_mult = opts.shadow_alpha_mult,
+            .shadow_texel_offset = shadow_texel_size,
         };
 
         text_vert_data[idx_new + 2] = TextVertexData{
@@ -840,6 +867,9 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
             .color = rgb,
             .text_type = text_type,
             .alpha_mult = alpha_mult,
+            .shadow_color = shadow_rgb,
+            .shadow_alpha_mult = opts.shadow_alpha_mult,
+            .shadow_texel_offset = shadow_texel_size,
         };
 
         text_vert_data[idx_new + 3] = TextVertexData{
@@ -848,7 +878,11 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
             .color = rgb,
             .text_type = text_type,
             .alpha_mult = alpha_mult,
+            .shadow_color = shadow_rgb,
+            .shadow_alpha_mult = opts.shadow_alpha_mult,
+            .shadow_texel_offset = shadow_texel_size,
         };
+        // zig fmt: on
         idx_new += 4;
 
         x_pointer += char_data.x_advance * size_scale;
@@ -1091,7 +1125,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 text_idx += drawText(text_idx, 
                     screen_pos.x - x_offset - text_width / 2,
                     screen_pos.y - 15, 
-                    16, player.name, 0xFCDF00, 1.0, ui.medium_text_type);
+                    16, player.name, 0xFCDF00, 1.0, ui.medium_text_type, .{});
                 // zig fmt: on
             }
 
@@ -1272,7 +1306,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 text_idx += drawText(text_idx,
                     screen_pos.x - x_offset - text_width / 2,
                     screen_pos.y - 15,
-                    16, bo.name, 0xFFFFFF, 1.0, ui.medium_text_type);
+                    16, bo.name, 0xFFFFFF, 1.0, ui.medium_text_type, .{});
                 // zig fmt: on
 
                 if (is_portal and map.interactive_id == bo.obj_id) {
@@ -1281,7 +1315,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     text_idx += drawText(text_idx,
                         screen_pos.x - x_offset - enter_text_width / 2,
                         screen_pos.y + h + 5,
-                        16, "Enter", 0xFFFFFF, 1.0, ui.medium_text_type);
+                        16, "Enter", 0xFFFFFF, 1.0, ui.medium_text_type, .{});
                     // zig fmt: on
                 }
             }
@@ -1396,7 +1430,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             for (ui.status_texts.items) |text| {
                 // zig fmt: off
                 text_idx += drawText(text_idx, text.screen_x, text.screen_y, 
-                    text.size, text.text, text.color, text.alpha, ui.bold_text_type);
+                    text.size, text.text, text.color, text.alpha, ui.bold_text_type, .{});
                 // zig fmt: on
             }
 

@@ -20,9 +20,10 @@ pub const down_dir: u8 = 2;
 pub const up_dir: u8 = 3;
 
 pub const CharacterData = struct {
-    pub const char_atlas_w = 1024;
-    pub const char_atlas_h = 512;
-    pub const char_size = 64.0;
+    pub const atlas_w = 1024.0;
+    pub const atlas_h = 512.0;
+    pub const size = 64.0 / 1.25; // 1.25x = the amount of extra padding
+    pub const padding = 8.0;
     pub const line_height = 1.149;
 
     x_advance: f32,
@@ -37,15 +38,15 @@ pub const CharacterData = struct {
 
     pub fn parse(split: *std.mem.SplitIterator(u8, .sequence)) !CharacterData {
         var data = CharacterData{
-            .x_advance = try std.fmt.parseFloat(f32, split.next().?) * char_size,
-            .x_offset = try std.fmt.parseFloat(f32, split.next().?) * char_size,
-            .y_offset = try std.fmt.parseFloat(f32, split.next().?) * char_size,
-            .width = try std.fmt.parseFloat(f32, split.next().?) * char_size,
-            .height = try std.fmt.parseFloat(f32, split.next().?) * char_size,
-            .tex_u = try std.fmt.parseFloat(f32, split.next().?) / char_atlas_w,
-            .tex_h = (char_atlas_h - try std.fmt.parseFloat(f32, split.next().?)) / char_atlas_h,
-            .tex_w = try std.fmt.parseFloat(f32, split.next().?) / char_atlas_w,
-            .tex_v = (char_atlas_h - try std.fmt.parseFloat(f32, split.next().?)) / char_atlas_h,
+            .x_advance = try std.fmt.parseFloat(f32, split.next().?) * size,
+            .x_offset = try std.fmt.parseFloat(f32, split.next().?) * size,
+            .y_offset = try std.fmt.parseFloat(f32, split.next().?) * size,
+            .width = try std.fmt.parseFloat(f32, split.next().?) * size + CharacterData.padding * 2,
+            .height = try std.fmt.parseFloat(f32, split.next().?) * size + CharacterData.padding * 2,
+            .tex_u = (try std.fmt.parseFloat(f32, split.next().?) - CharacterData.padding) / atlas_w,
+            .tex_h = (atlas_h - try std.fmt.parseFloat(f32, split.next().?) + CharacterData.padding * 2) / atlas_h,
+            .tex_w = (try std.fmt.parseFloat(f32, split.next().?) + CharacterData.padding * 2) / atlas_w,
+            .tex_v = (atlas_h - try std.fmt.parseFloat(f32, split.next().?) - CharacterData.padding) / atlas_h,
         };
         data.width -= data.x_offset;
         data.height -= data.y_offset;

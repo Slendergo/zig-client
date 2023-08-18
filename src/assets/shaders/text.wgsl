@@ -9,12 +9,19 @@ const mediumItalicTextType = 1.0;
 const boldTextType = 2.0;
 const boldItalicTextType = 3.0;
 
+const shadowOffset = vec2(4.0 / 1024.0, 4.0 / 512.0); // Between 0 and spread / textureSize
+const shadowSmoothing = 0.3; // Between 0 and 0.5
+const shadowColor = vec4(0.0, 0.0, 0.0, 1.0);
+
 struct VertexInput {
   @location(0) pos: vec2<f32>,
   @location(1) uv: vec2<f32>,
   @location(2) color: vec3<f32>,
   @location(3) textType: f32,
   @location(4) alphaMult: f32,
+  @location(5) shadowColor: vec3<f32>,
+  @location(6) shadowAlphaMult: f32,
+  @location(7) shadowTexelOffset: vec2<f32>,
 }
 
 struct VertexOutput {
@@ -24,6 +31,9 @@ struct VertexOutput {
   @location(2) color: vec3<f32>,
   @location(3) textType: f32,
   @location(4) alphaMult: f32,
+  @location(5) shadowColor: vec3<f32>,
+  @location(6) shadowAlphaMult: f32,
+  @location(7) shadowTexelOffset: vec2<f32>,
 }
 
 @vertex
@@ -34,6 +44,9 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     out.color = in.color;
     out.textType = in.textType;
     out.alphaMult = in.alphaMult;
+    out.shadowColor = in.shadowColor;
+    out.shadowAlphaMult = in.shadowAlphaMult;
+    out.shadowTexelOffset = in.shadowTexelOffset;
     return out;
 }
 
@@ -47,24 +60,32 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let dy = dpdy(in.uv);
 
     var tex = vec4(0.0, 0.0, 0.0, 0.0);
+    var tex_offset = vec4(0.0, 0.0, 0.0, 0.0);
     var unitRange = vec2(2.0, 2.0);
     if in.textType == mediumTextType {
         tex = textureSampleGrad(medium_tex, defaultSampler, in.uv, dx, dy);
+        tex_offset = textureSampleGrad(medium_tex, defaultSampler, in.uv - shadowOffset, dx, dy);
         unitRange /= vec2<f32>(textureDimensions(medium_tex, 0));
     } else if in.textType == mediumItalicTextType {
         tex = textureSampleGrad(medium_italic_tex, defaultSampler, in.uv, dx, dy);
+        tex_offset = textureSampleGrad(medium_italic_tex, defaultSampler, in.uv - shadowOffset, dx, dy);
         unitRange /= vec2<f32>(textureDimensions(medium_italic_tex, 0));
     } else if in.textType == boldTextType {
         tex = textureSampleGrad(bold_tex, defaultSampler, in.uv, dx, dy);
+        tex_offset = textureSampleGrad(bold_tex, defaultSampler, in.uv - shadowOffset, dx, dy);
         unitRange /= vec2<f32>(textureDimensions(bold_tex, 0));
     } else if in.textType == boldItalicTextType {
         tex = textureSampleGrad(bold_italic_tex, defaultSampler, in.uv, dx, dy);
+        tex_offset = textureSampleGrad(bold_italic_tex, defaultSampler, in.uv - shadowOffset, dx, dy);
         unitRange /= vec2<f32>(textureDimensions(bold_italic_tex, 0));
     }
 
-    let screenTexSize = vec2(1.0, 1.0) / fwidth(in.uv);
+    let screenTexSize = vec2(1.0, 1.0) / fwidth(in.uv) / vec2(1.25, 1.25);
+    let screenTexSizeOffset = vec2(1.0, 1.0) / fwidth(in.uv - shadowOffset) / vec2(1.25, 1.25);
     let screenPxDist = max(0.5 * dot(unitRange, screenTexSize), 1.0) * (median(tex.r, tex.g, tex.b) - 0.5);
+    let screenPxDistOffset = max(0.5 * dot(unitRange, screenTexSizeOffset), 1.0) * (median(tex_offset.r, tex_offset.g, tex_offset.b) - 0.5);
     let opacity = clamp(screenPxDist + 0.5, 0.0, 1.0) * in.alphaMult;
-    return vec4(in.color, opacity);
-    //return mix(vec4(0.0, 0.0, 0.0, 1.0), vec4(in.color, 1.0), opacity);
+    let opacityOffset = clamp(screenPxDistOffset + 0.5, 0.0, 1.0) * in.shadowAlphaMult;
+
+    return mix(vec4(in.shadowColor, opacityOffset), vec4(in.color, opacity), opacity);
 }
