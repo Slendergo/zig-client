@@ -441,7 +441,7 @@ pub const Player = struct {
         //     return min_move_speed * move_multiplier;
         // }
 
-        var move_speed: f32 = min_move_speed + @as(f32, @floatFromInt(self.speed / 75.0)) * (max_move_speed - min_move_speed);
+        var move_speed: f32 = min_move_speed + @as(f32, @floatFromInt(self.speed)) / 75.0 * (max_move_speed - min_move_speed);
         // if (isSpeedy() || isNinjaSpeedy()) {
         //     moveSpeed *= 1.5;
         // }
