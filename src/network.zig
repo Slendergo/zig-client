@@ -208,7 +208,7 @@ pub const Server = struct {
                 .inv_result => handleInvResult(&self.reader),
                 .map_info => handleMapInfo(&self.reader, allocator),
                 .name_result => handleNameResult(&self.reader),
-                .new_tick => handleNewTick(self),
+                .new_tick => handleNewTick(self, allocator),
                 .notification => handleNotification(&self.reader, allocator),
                 .ping => handlePing(self),
                 .play_sound => handlePlaySound(&self.reader),
@@ -221,7 +221,7 @@ pub const Server = struct {
                 .trade_done => handleTradeDone(&self.reader),
                 .trade_requested => handleTradeRequested(&self.reader),
                 .trade_start => handleTradeStart(&self.reader),
-                .update => handleUpdate(self),
+                .update => handleUpdate(self, allocator),
                 else => {
                     std.log.err("Unknown S2CPacketId: id={any}, size={d}, len={d}", .{ packet_id, self.buffer_idx, self.message_len });
                     self.buffer_idx = 0;
@@ -487,7 +487,7 @@ pub const Server = struct {
             std.log.debug("Recv - NameResult: success={any}, error_text={s}", .{ success, error_text });
     }
 
-    inline fn handleNewTick(self: *Server) void {
+    inline fn handleNewTick(self: *Server, allocator: std.mem.Allocator) void {
         var reader = &self.reader;
         const tick_id = reader.read(i32);
         const tick_time = reader.read(i32);
@@ -523,7 +523,7 @@ pub const Server = struct {
                         std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
                         return;
                     };
-                    if (!parsePlrStatData(reader, &player.*, stat))
+                    if (!parsePlrStatData(reader, &player.*, stat, allocator))
                         return;
                 }
 
@@ -544,7 +544,7 @@ pub const Server = struct {
                         std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
                         return;
                     };
-                    if (!parseObjStatData(reader, &object.*, stat))
+                    if (!parseObjStatData(reader, &object.*, stat, allocator))
                         return;
                 }
 
@@ -738,7 +738,7 @@ pub const Server = struct {
             std.log.debug("Recv - TradeStart: my_items={any}, your_name={s}, your_items={any}", .{ my_items, your_name, your_items });
     }
 
-    inline fn handleUpdate(self: *Server) void {
+    inline fn handleUpdate(self: *Server, allocator: std.mem.Allocator) void {
         defer self.sendUpdateAck() catch |e| {
             std.log.err("Could not send UpdateAck: {any}", .{e});
         };
@@ -751,7 +751,14 @@ pub const Server = struct {
 
         const drops = reader.read([]i32);
         for (drops) |drop| {
-            if (map.removeObject(drop) or map.removePlayer(drop)) {
+            if (map.removeObject(drop)) |obj| {
+                allocator.free(obj.name_override);
+                continue;
+            }
+
+            if (map.removePlayer(drop)) |player| {
+                allocator.free(player.name_override);
+                allocator.free(player.guild);
                 continue;
             }
 
@@ -776,7 +783,7 @@ pub const Server = struct {
                             std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
                             return;
                         };
-                        if (!parsePlrStatData(reader, &player, stat))
+                        if (!parsePlrStatData(reader, &player, stat, allocator))
                             return;
                     }
 
@@ -790,7 +797,7 @@ pub const Server = struct {
                             std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
                             return;
                         };
-                        if (!parseObjStatData(reader, &obj, stat)) {
+                        if (!parseObjStatData(reader, &obj, stat, allocator)) {
                             return;
                         }
                     }
@@ -804,7 +811,7 @@ pub const Server = struct {
             std.log.debug("Recv - Update: tiles_len={d}, new_objs_len={d}, drops_len={d}", .{ tiles.len, new_objs_len, drops.len });
     }
 
-    inline fn parsePlrStatData(reader: *utils.PacketReader, plr: *map.Player, stat_type: game_data.StatType) bool {
+    inline fn parsePlrStatData(reader: *utils.PacketReader, plr: *map.Player, stat_type: game_data.StatType, allocator: std.mem.Allocator) bool {
         @setEvalBranchQuota(5000);
         switch (stat_type) {
             .max_hp => plr.max_hp = reader.read(i32),
@@ -827,7 +834,7 @@ pub const Server = struct {
                 plr.inventory[inv_idx] = reader.read(i32);
             },
             .stars => plr.stars = reader.read(i32),
-            .name => plr.name = reader.read([]u8),
+            .name => plr.name_override = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
             .tex_1 => plr.tex_1 = reader.read(i32),
             .tex_2 => plr.tex_2 = reader.read(i32),
             .credits => plr.credits = reader.read(i32),
@@ -846,7 +853,7 @@ pub const Server = struct {
             .fame_goal => plr.fame_goal = reader.read(i32),
             .glow => plr.glow = reader.read(i32),
             .sink_offset => plr.sink_offset = reader.read(i32),
-            .guild => plr.guild = reader.read([]u8),
+            .guild => plr.guild = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
             .guild_rank => plr.guild_rank = reader.read(i32),
             .oxygen_bar => plr.oxygen_bar = reader.read(i32),
             .health_stack_count => plr.health_stack_count = reader.read(i32),
@@ -866,7 +873,7 @@ pub const Server = struct {
         return true;
     }
 
-    inline fn parseObjStatData(reader: *utils.PacketReader, obj: *map.GameObject, stat_type: game_data.StatType) bool {
+    inline fn parseObjStatData(reader: *utils.PacketReader, obj: *map.GameObject, stat_type: game_data.StatType, allocator: std.mem.Allocator) bool {
         @setEvalBranchQuota(5000);
         switch (stat_type) {
             .max_hp => obj.max_hp = reader.read(i32),
@@ -879,7 +886,7 @@ pub const Server = struct {
                 const inv_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.inv_0);
                 obj.inventory[inv_idx] = reader.read(i32);
             },
-            .name => obj.name = reader.read([]u8),
+            .name => obj.name_override = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
             .tex_1 => obj.tex_1 = reader.read(i32),
             .tex_2 => obj.tex_2 = reader.read(i32),
             .merchant_merch_type => obj.merchant_rem_count = reader.read(u16),
