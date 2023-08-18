@@ -195,6 +195,7 @@ pub const GameObject = struct {
     tick_x: f32 = 0.0,
     tick_y: f32 = 0.0,
     name: []u8 = &[0]u8{},
+    name_override: []u8 = &[0]u8{},
     size: f32 = 0,
     max_hp: i32 = 0,
     hp: i32 = 0,
@@ -372,6 +373,7 @@ pub const Player = struct {
     screen_y: f32 = 0.0,
     h: f32 = 0.0,
     name: []u8 = &[0]u8{},
+    name_override: []u8 = &[0]u8{},
     name_chosen: bool = false,
     account_id: i32 = 0,
     size: f32 = 0,
@@ -1051,10 +1053,23 @@ pub fn init(allocator: std.mem.Allocator) void {
     move_records = std.ArrayList(network.TimedPosition).init(allocator);
 }
 
+pub fn dispose(allocator: std.mem.Allocator) void {
+    for (objects.items) |obj| {
+        allocator.free(obj.name_override);
+    }
+
+    for (players.items) |player| {
+        allocator.free(player.name_override);
+        allocator.free(player.guild);
+    }
+}
+
 pub fn deinit(allocator: std.mem.Allocator) void {
     if (squares.len > 0) {
         allocator.free(squares);
     }
+
+    dispose(allocator);
 
     objects.deinit();
     players.deinit();
@@ -1115,37 +1130,34 @@ pub fn findProj(obj_id: i32) ?*Projectile {
     return null;
 }
 
-pub fn removePlayer(obj_id: i32) bool {
+pub fn removePlayer(obj_id: i32) ?Player {
     for (players.items, 0..) |player, i| {
         if (player.obj_id == obj_id) {
-            _ = players.orderedRemove(i);
-            return true;
+            return players.orderedRemove(i);
         }
     }
 
-    return false;
+    return null;
 }
 
-pub fn removeObject(obj_id: i32) bool {
+pub fn removeObject(obj_id: i32) ?GameObject {
     for (objects.items, 0..) |object, i| {
         if (object.obj_id == obj_id) {
-            _ = objects.orderedRemove(i);
-            return true;
+            return objects.orderedRemove(i);
         }
     }
 
-    return false;
+    return null;
 }
 
-pub fn removeProj(obj_id: i32) bool {
+pub fn removeProj(obj_id: i32) ?Projectile {
     for (projectiles.items, 0..) |proj, i| {
         if (proj.obj_id == obj_id) {
-            _ = projectiles.orderedRemove(i);
-            return true;
+            return projectiles.orderedRemove(i);
         }
     }
 
-    return false;
+    return null;
 }
 
 pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {

@@ -1119,13 +1119,14 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 light_idx += 4;
             }
 
-            if (player.name.len > 0) {
-                const text_width = ui.textWidth(16, player.name, ui.medium_text_type);
+            const name = if (player.name_override.len > 0) player.name_override else player.name;
+            if (name.len > 0) {
+                const text_width = ui.textWidth(16, name, ui.medium_text_type);
                 // zig fmt: off
                 text_idx += drawText(text_idx, 
                     screen_pos.x - x_offset - text_width / 2,
                     screen_pos.y - 15, 
-                    16, player.name, 0xFCDF00, 1.0, ui.medium_text_type, .{});
+                    16, name, 0xFCDF00, 1.0, ui.medium_text_type, .{});
                 // zig fmt: on
             }
 
@@ -1300,13 +1301,14 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
 
             const is_portal = bo.class == .portal;
-            if (bo.name.len > 0 and (bo.show_name or is_portal)) {
-                const text_width = ui.textWidth(16, bo.name, ui.medium_text_type);
+            const name = if (bo.name_override.len > 0) bo.name_override else bo.name;
+            if (name.len > 0 and (bo.show_name or is_portal)) {
+                const text_width = ui.textWidth(16, name, ui.medium_text_type);
                 // zig fmt: off
                 text_idx += drawText(text_idx,
                     screen_pos.x - x_offset - text_width / 2,
                     screen_pos.y - 15,
-                    16, bo.name, 0xFFFFFF, 1.0, ui.medium_text_type, .{});
+                    16, name, 0xFFFFFF, 1.0, ui.medium_text_type, .{});
                 // zig fmt: on
 
                 if (is_portal and map.interactive_id == bo.obj_id) {

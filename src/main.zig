@@ -111,6 +111,7 @@ pub var tick_render = true;
 pub var tick_frame = false;
 pub var sent_hello = false;
 pub var lost_connection = true;
+var _allocator: std.mem.Allocator = undefined;
 
 fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
     gctx = try zgpu.GraphicsContext.create(allocator, window, .{ .present_mode = .immediate });
@@ -410,6 +411,7 @@ fn renderTick(allocator: std.mem.Allocator) void {
 pub fn clear() void {
     map.local_player_id = -1;
     map.interactive_id = -1;
+    map.dispose(_allocator);
     map.objects.clearRetainingCapacity();
     map.projectiles.clearRetainingCapacity();
     map.players.clearRetainingCapacity();
@@ -446,6 +448,7 @@ pub fn main() !void {
         .ReleaseSafe => std.heap.c_allocator,
         .ReleaseFast, .ReleaseSmall => std.heap.raw_c_allocator,
     };
+    _allocator = allocator; // hack because passing it to input is convoluted
 
     zstbi.init(allocator);
     defer zstbi.deinit();
