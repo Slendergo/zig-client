@@ -1144,8 +1144,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
 
             if (player.mp >= 0 and player.mp < player.max_mp) {
-                const mp_bar_w = assets.mp_bar_rect.w * assets.atlas_width;
-                const mp_bar_h = assets.mp_bar_rect.h * assets.atlas_height;
+                const mp_bar_w = assets.mp_bar_rect.w * assets.atlas_width * 2;
+                const mp_bar_h = assets.mp_bar_rect.h * assets.atlas_height * 2;
                 const mp_bar_y = screen_pos.y + h + y_pos;
 
                 // zig fmt: off
