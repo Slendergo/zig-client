@@ -56,6 +56,7 @@ pub var chat: Button = .{ .key = zglfw.Key.enter };
 pub var chat_cmd: Button = .{ .key = zglfw.Key.slash };
 pub var respond: Button = .{ .key = zglfw.Key.F2 };
 pub var shoot: Button = .{ .mouse = zglfw.MouseButton.left };
+pub var ability: Button = .{ .mouse = zglfw.MouseButton.right };
 
 pub fn init() void {}
 
