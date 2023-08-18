@@ -40,6 +40,8 @@ pub const Square = struct {
     light_radius: f32 = 1.0,
     damage: u16 = 0,
     blocking: bool = false,
+    full_occupy: bool = false,
+    occupy_square: bool = false,
 
     pub fn updateBlends(square: *Square) void {
         if (square.tile_type == 0xFFFF or square.tile_type == 0xFF)
@@ -306,10 +308,15 @@ pub const GameObject = struct {
             self.is_enemy = props.?.is_enemy;
             self.show_name = props.?.show_name;
             self.name = @constCast(props.?.display_id);
-            if (props.?.full_occupy or props.?.static and props.?.occupy_square) {
+
+            const full_occupy = props.?.full_occupy;
+            const occupy_square = props.?.occupy_square;
+            if (full_occupy or props.?.static and occupy_square) {
                 const floor_x: u32 = @intFromFloat(@floor(self.x));
                 const floor_y: u32 = @intFromFloat(@floor(self.y));
                 if (validPos(floor_x, floor_y)) {
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].occupy_square = occupy_square;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].full_occupy = full_occupy;
                     squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = true;
                 }
             }
@@ -602,50 +609,50 @@ pub const Player = struct {
     }
 
     fn isValidPosition(x: f32, y: f32) bool {
-        if (isOccupied(x, y))
+        if (isWalkable(x, y))
             return false;
 
         const x_frac = x - @floor(x);
         const y_frac = y - @floor(y);
 
         if (x_frac < 0.5) {
-            if (isOccupied(x - 1, y)) {
+            if (isFullOccupy(x - 1, y)) {
                 return false;
             }
 
             if (y_frac < 0.5) {
-                if (isOccupied(x, y - 1) or isOccupied(x - 1, y - 1)) {
+                if (isFullOccupy(x, y - 1) or isFullOccupy(x - 1, y - 1)) {
                     return false;
                 }
             }
 
             if (y_frac > 0.5) {
-                if (isOccupied(x, y + 1) or isOccupied(x - 1, y + 1)) {
+                if (isFullOccupy(x, y + 1) or isFullOccupy(x - 1, y + 1)) {
                     return false;
                 }
             }
         } else if (x_frac > 0.5) {
-            if (isOccupied(x + 1, y)) {
+            if (isFullOccupy(x + 1, y)) {
                 return false;
             }
             if (y_frac < 0.5) {
-                if (isOccupied(x, y - 1) or isOccupied(x + 1, y - 1)) {
+                if (isFullOccupy(x, y - 1) or isFullOccupy(x + 1, y - 1)) {
                     return false;
                 }
             }
             if (y_frac > 0.5) {
-                if (isOccupied(x, y + 1) or isOccupied(x + 1, y + 1)) {
+                if (isFullOccupy(x, y + 1) or isFullOccupy(x + 1, y + 1)) {
                     return false;
                 }
             }
         } else {
             if (y_frac < 0.5) {
-                if (isOccupied(x, y - 1)) {
+                if (isFullOccupy(x, y - 1)) {
                     return false;
                 }
             }
             if (y_frac > 0.5) {
-                if (isOccupied(x, y + 1)) {
+                if (isFullOccupy(x, y + 1)) {
                     return false;
                 }
             }
@@ -653,14 +660,24 @@ pub const Player = struct {
         return true;
     }
 
-    fn isOccupied(x: f32, y: f32) bool {
+    fn isWalkable(x: f32, y: f32) bool {
         if (x < 0 or y < 0)
             return true;
 
         const floor_x: u32 = @intFromFloat(@floor(x));
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-        return square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.blocking;
+        return square.occupy_square or square.blocking;
+    }
+
+    fn isFullOccupy(x: f32, y: f32) bool {
+        if (x < 0 or y < 0)
+            return true;
+
+        const floor_x: u32 = @intFromFloat(@floor(x));
+        const floor_y: u32 = @intFromFloat(@floor(y));
+        const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
+        return square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.full_occupy;
     }
 
     fn modifyStep(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
