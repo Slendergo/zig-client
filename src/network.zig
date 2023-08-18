@@ -403,6 +403,20 @@ pub const Server = struct {
         const object_id = reader.read(i32);
         const position = reader.read(Position);
 
+        if (map.findPlayer(object_id)) |player| {
+            if (object_id == map.local_player_id) {
+                player.x = position.x;
+                player.y = position.y;
+            } else {
+                player.target_x = position.x;
+                player.target_y = position.y;
+                player.tick_x = player.x;
+                player.tick_y = player.y;
+            }
+        } else {
+            std.log.err("Object id {d} not found while attempting to goto to pos {any}", .{object_id, position});
+        }
+
         self.sendGotoAck(main.last_update) catch |e| {
             std.log.err("Could not send GotoAck: {any}", .{e});
         };
