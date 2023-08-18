@@ -52,19 +52,7 @@ inline fn keyPress(key: zglfw.Key) void {
                 };
         }
     } else if (key == settings.ability.getKey()) {
-        if (main.server) |*server| {
-            if (map.findPlayer(map.local_player_id)) |local_player| {
-                // zig fmt: off
-                server.sendUseItem(main.current_time, .{
-                        .object_id = local_player.obj_id, 
-                        .slot_id = 1, 
-                        .object_type = @intCast(local_player.inventory[1])
-                    }, .{ .x = local_player.x, .y = local_player.y },  0) catch |e| {
-                    std.log.err("Could not use item: {any}", .{e});
-                };
-                // zig fmt: on
-            }
-        }
+        useAbility();
     }
 }
 
@@ -122,21 +110,7 @@ inline fn mousePress(button: zglfw.MouseButton) void {
                 };
         }
     } else if (button == settings.ability.getMouse()) {
-        if (main.server) |*server| {
-            if (map.findPlayer(map.local_player_id)) |local_player| {
-                const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
-                
-                // zig fmt: off
-                server.sendUseItem(main.current_time, .{
-                        .object_id = local_player.obj_id, 
-                        .slot_id = 1, 
-                        .object_type = @intCast(local_player.inventory[1])
-                    }, .{ .x = world_pos.x, .y = world_pos.y },  0) catch |e| {
-                    std.log.err("Could not use item: {any}", .{e});
-                };
-                // zig fmt: on
-            }
-        }
+        useAbility();
     }
 }
 
@@ -217,4 +191,23 @@ pub fn mouseMoveEvent(window: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) 
 
     mouse_x = xpos;
     mouse_y = ypos;
+}
+
+inline fn useAbility() void {
+    if (main.server) |*server| {
+        if (map.findPlayer(map.local_player_id)) |local_player| {
+            const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
+            std.debug.print("world_pos: {any}\n", .{world_pos});
+            
+            // zig fmt: off
+            server.sendUseItem(main.current_time, .{
+                    .object_id = local_player.obj_id, 
+                    .slot_id = 1, 
+                    .object_type = @intCast(local_player.inventory[1])
+                }, .{ .x = world_pos.x, .y = world_pos.y },  0) catch |e| {
+                std.log.err("Could not use item: {any}", .{e});
+            };
+            // zig fmt: on
+        }
+    }
 }

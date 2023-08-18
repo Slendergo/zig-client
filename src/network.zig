@@ -11,7 +11,7 @@ const camera = @import("camera.zig");
 pub const ObjectSlot = extern struct { 
     object_id: i32,
     slot_id: u8, 
-    object_type: i16 
+    object_type: u16
 };
 
 pub const Position = extern struct { 
