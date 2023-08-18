@@ -493,10 +493,12 @@ pub const Server = struct {
         const tick_time = reader.read(i32);
 
         defer {
-            if (map.findPlayer(map.local_player_id)) |player| {
-                self.sendMove(tick_id, main.last_update, player.x, player.y, map.move_records.items) catch |e| {
-                    std.log.err("Could not send Move: {any}", .{e});
-                };
+            if (main.tick_frame) {
+                if (map.findPlayer(map.local_player_id)) |player| {
+                    self.sendMove(tick_id, main.last_update, player.x, player.y, map.move_records.items) catch |e| {
+                        std.log.err("Could not send Move: {any}", .{e});
+                    };
+                }
             }
         }
 
@@ -739,9 +741,12 @@ pub const Server = struct {
     }
 
     inline fn handleUpdate(self: *Server, allocator: std.mem.Allocator) void {
-        defer self.sendUpdateAck() catch |e| {
-            std.log.err("Could not send UpdateAck: {any}", .{e});
-        };
+        defer {
+            if (main.tick_frame)
+                self.sendUpdateAck() catch |e| {
+                    std.log.err("Could not send UpdateAck: {any}", .{e});
+                };
+        }
 
         var reader = &self.reader;
         const tiles = reader.read([]TileData);
