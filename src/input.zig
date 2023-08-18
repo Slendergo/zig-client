@@ -3,6 +3,7 @@ const settings = @import("settings.zig");
 const std = @import("std");
 const map = @import("map.zig");
 const main = @import("main.zig");
+const zgui = @import("zgui");
 const camera = @import("camera.zig");
 
 var move_up: f32 = 0.0;
@@ -139,6 +140,10 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
     _ = scancode;
     _ = mods;
 
+    if (zgui.io.getWantCaptureKeyboard()) {
+        return;
+    }
+
     if (main.current_screen != .in_game)
         return;
 
@@ -154,6 +159,10 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
 pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
     _ = window;
     _ = mods;
+
+    if (zgui.io.getWantCaptureMouse()) {
+        return;
+    }
 
     if (main.current_screen != .in_game)
         return;
@@ -197,7 +206,7 @@ inline fn useAbility() void {
     if (main.server) |*server| {
         if (map.findPlayer(map.local_player_id)) |local_player| {
             const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
-            
+
             // zig fmt: off
             server.sendUseItem(main.current_time, .{
                     .object_id = local_player.obj_id, 

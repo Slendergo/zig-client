@@ -110,7 +110,6 @@ pub var render_thread: std.Thread = undefined;
 pub var tick_render = true;
 pub var tick_frame = false;
 pub var sent_hello = false;
-pub var lost_connection = true;
 var _allocator: std.mem.Allocator = undefined;
 
 fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
@@ -164,44 +163,43 @@ fn updateUi(allocator: std.mem.Allocator) !void {
 
     switch (current_screen) {
         ScreenType.main_menu => {
-            if (zgui.begin("Login Window", .{})) {
-                const static = struct {
-                    var email_buf: [128]u8 = undefined;
-                    var password_buf: [128]u8 = undefined;
-                };
+            if (zgui.begin("Main Menu", .{})) {
+                {
+                    const LoginStatic = struct {
+                        var email_buf: [128]u8 = undefined;
+                        var password_buf: [128]u8 = undefined;
+                    };
 
-                _ = zgui.inputText("E-mail", .{ .buf = static.email_buf[0..] });
-                _ = zgui.inputText("Password", .{ .buf = static.password_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
-                if (zgui.button("Login", .{ .w = 150.0 })) {
-                    const email = static.email_buf[0..utils.strlen(static.email_buf[0..])];
-                    const password = static.password_buf[0..utils.strlen(static.password_buf[0..])];
-                    if (email.len > 0 and password.len > 0) {
-                        const logged_in = try login(allocator, email, password);
-                        if (logged_in) {
-                            current_screen = ScreenType.char_select;
+                    _ = zgui.inputText("E-mail", .{ .buf = LoginStatic.email_buf[0..] });
+                    _ = zgui.inputText("Password", .{ .buf = LoginStatic.password_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
+                    if (zgui.button("Login", .{ .w = 150.0 })) {
+                        const email = LoginStatic.email_buf[0..utils.strlen(LoginStatic.email_buf[0..])];
+                        const password = LoginStatic.password_buf[0..utils.strlen(LoginStatic.password_buf[0..])];
+                        if (email.len > 0 and password.len > 0) {
+                            const logged_in = try login(allocator, email, password);
+                            if (logged_in) {
+                                current_screen = ScreenType.char_select;
+                            }
                         }
                     }
                 }
-            }
-            zgui.end();
 
-            if (zgui.begin("Register Window", .{})) {
-                const static = struct {
+                const RegisterStatic = struct {
                     var username_buf: [128]u8 = undefined;
                     var email_buf: [128]u8 = undefined;
                     var password_buf: [128]u8 = undefined;
                     var confirm_pw_buf: [128]u8 = undefined;
                 };
 
-                _ = zgui.inputText("Name", .{ .buf = static.username_buf[0..] });
-                _ = zgui.inputText("E-mail", .{ .buf = static.email_buf[0..] });
-                _ = zgui.inputText("Password", .{ .buf = static.password_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
-                _ = zgui.inputText("Confirm Password", .{ .buf = static.confirm_pw_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
+                _ = zgui.inputText("Name", .{ .buf = RegisterStatic.username_buf[0..] });
+                _ = zgui.inputText("E-mail##Register", .{ .buf = RegisterStatic.email_buf[0..] });
+                _ = zgui.inputText("Password##Register", .{ .buf = RegisterStatic.password_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
+                _ = zgui.inputText("Confirm Password", .{ .buf = RegisterStatic.confirm_pw_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
 
                 if (zgui.button("Register", .{ .w = 150.0 })) {
-                    const name = static.username_buf[0..utils.strlen(static.username_buf[0..])];
-                    const email = static.email_buf[0..utils.strlen(static.email_buf[0..])];
-                    const password = static.password_buf[0..utils.strlen(static.password_buf[0..])];
+                    const name = RegisterStatic.username_buf[0..utils.strlen(RegisterStatic.username_buf[0..])];
+                    const email = RegisterStatic.email_buf[0..utils.strlen(RegisterStatic.email_buf[0..])];
+                    const password = RegisterStatic.password_buf[0..utils.strlen(RegisterStatic.password_buf[0..])];
                     const response = try requests.sendAccountRegister(email, password, name);
                     if (std.mem.indexOf(u8, "<Success />", response) != null) {
                         const logged_in = try login(allocator, email, password);
@@ -214,17 +212,11 @@ fn updateUi(allocator: std.mem.Allocator) !void {
             zgui.end();
         },
         ScreenType.char_select => {
-            if (zgui.begin("Character Select", .{})) {
-                if (lost_connection) {
-                    zgui.text("Server connection was lost", .{});
-                    if (zgui.button("Dismiss", .{ .w = 75.0 })) {
-                        lost_connection = false;
-                    }
-                }
-
+            if (zgui.begin("Character", .{})) {
                 if (character_list.len < 1) {
                     current_screen = ScreenType.char_creation;
                 }
+
                 const static = struct {
                     var char_index: u32 = 0;
                     var server_index: u32 = 0;
@@ -240,22 +232,27 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     zgui.endListBox();
                 }
 
-                if (server_list == null) {
+                if (server_list == null or server_list.?.len == 0) {
                     zgui.text("No servers available", .{});
-                } else if (zgui.beginListBox("Server", .{})) {
-                    for (server_list.?, 0..) |serverData, index| {
-                        const i: u32 = @intCast(index);
-                        if (zgui.selectable(serverData.name[0.. :0], .{ .selected = static.server_index == i }))
-                            static.server_index = i;
+                    if (zgui.button("Return", .{})) {
+                        current_screen = .main_menu;
                     }
-                    zgui.endListBox();
-                }
+                } else {
+                    if (zgui.beginListBox("Server", .{})) {
+                        for (server_list.?, 0..) |serverData, index| {
+                            const i: u32 = @intCast(index);
+                            if (zgui.selectable(serverData.name[0.. :0], .{ .selected = static.server_index == i }))
+                                static.server_index = i;
+                        }
+                        zgui.endListBox();
+                    }
 
-                if (zgui.button("Play", .{ .w = 150.0 })) {
-                    current_screen = ScreenType.in_game;
-                    selected_char_id = character_list[static.char_index].id;
-                    if (server_list != null)
-                        selected_server = server_list.?[static.server_index];
+                    if (zgui.button("Play", .{ .w = 150.0 })) {
+                        current_screen = ScreenType.in_game;
+                        selected_char_id = character_list[static.char_index].id;
+                        if (server_list != null)
+                            selected_server = server_list.?[static.server_index];
+                    }
                 }
             }
             zgui.end();
@@ -273,24 +270,28 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 _ = zgui.inputInt("Character Type", .{ .v = &static.char_type, .step = 1, .step_fast = 1 });
                 _ = zgui.inputInt("Skin Type", .{ .v = &static.skin_type, .step = 1, .step_fast = 1 });
 
-                if (server_list == null) {
+                if (server_list == null or server_list.?.len == 0) {
                     zgui.text("No servers available", .{});
-                } else if (zgui.beginListBox("Server", .{})) {
-                    for (server_list.?, 0..) |serverData, index| {
-                        const i: u32 = @intCast(index);
-                        if (zgui.selectable(serverData.name[0.. :0], .{ .selected = static.server_index == i }))
-                            static.server_index = i;
+                    if (zgui.button("Return", .{})) {
+                        current_screen = .main_menu;
                     }
-                    zgui.endListBox();
-                }
+                } else {
+                    if (zgui.beginListBox("Server", .{})) {
+                        for (server_list.?, 0..) |serverData, index| {
+                            const i: u32 = @intCast(index);
+                            if (zgui.selectable(serverData.name[0.. :0], .{ .selected = static.server_index == i }))
+                                static.server_index = i;
+                        }
+                        zgui.endListBox();
+                    }
 
-                if (zgui.button("Create Character", .{ .w = 150.0 })) {
-                    current_screen = ScreenType.in_game;
-                    char_create_type = @as(u16, @intCast(static.char_type));
-                    char_create_skin_type = @as(u16, @intCast(static.skin_type));
-                    selected_char_id = next_char_id;
-                    next_char_id += 1;
-                    if (server_list != null) {
+                    if (zgui.button("Create Character", .{ .w = 150.0 })) {
+                        current_screen = ScreenType.in_game;
+                        char_create_type = @as(u16, @intCast(static.char_type));
+                        char_create_skin_type = @as(u16, @intCast(static.skin_type));
+                        selected_char_id = next_char_id;
+                        next_char_id += 1;
+
                         std.debug.print("Using server index {d}\n", .{static.server_index});
                         selected_server = server_list.?[static.server_index];
                     }
@@ -301,24 +302,106 @@ fn updateUi(allocator: std.mem.Allocator) !void {
         ScreenType.map_editor => {},
         ScreenType.in_game => {
             if (zgui.begin("Debug", .{})) {
-                zgui.bulletText(
+                zgui.text(
                     "{d:.3} ms/frame ({d:.1} fps)\n",
                     .{ gctx.stats.average_cpu_time, gctx.stats.fps },
                 );
 
-                const static = struct {
-                    var text_buf: [128]u8 = std.mem.zeroes([128]u8);
-                };
+                if (zgui.collapsingHeader("World\n", .{})) {
+                    zgui.text(
+                        "Size: {d}x{d}\n",
+                        .{ map.width, map.height },
+                    );
+                    zgui.text(
+                        "Players: {d}\n",
+                        .{map.players.items.len},
+                    );
+                    zgui.text(
+                        "Entities: {d}\n",
+                        .{map.objects.items.len},
+                    );
+                    zgui.text(
+                        "Projectiles: {d}\n",
+                        .{map.projectiles.items.len},
+                    );
+                }
 
-                _ = zgui.inputText("Text", .{ .buf = static.text_buf[0..] });
+                if (zgui.collapsingHeader("Player\n", .{})) {
+                    if (map.findPlayer(map.local_player_id)) |local_player| {
+                        zgui.text(
+                            "Position: {d:.3}, {d:.3}\n",
+                            .{ local_player.x, local_player.x },
+                        );
 
-                if (zgui.button("Send message", .{ .w = 150.0 })) {
-                    if (server != null) {
-                        server.?.sendPlayerText(static.text_buf[0..utils.strlen(static.text_buf[0..])]) catch |e| {
-                            std.log.err("Can't send player text: {any}", .{e});
-                        };
+                        zgui.text(
+                            "Move Angle: {d:.3}\n",
+                            .{local_player.move_angle},
+                        );
+
+                        zgui.text(
+                            "Visual Move: {d:.3}\n",
+                            .{local_player.visual_move_angle},
+                        );
+
+                        zgui.text(
+                            "Attack Frequency: {d:.3} | {d} dexterity\n",
+                            .{ local_player.attackFrequency(), local_player.dexterity },
+                        );
+
+                        zgui.text(
+                            "Move Speed: {d:.3} | {d} speed\n",
+                            .{ local_player.moveSpeed(), local_player.speed },
+                        );
+
+                        zgui.text(
+                            "Move Multiplier: {d:.3}\n",
+                            .{local_player.move_multiplier},
+                        );
+
+                        if (zgui.treeNode("Animation\n")) {
+                            zgui.text(
+                                "Direction: {d}\n",
+                                .{local_player.dir},
+                            );
+
+                            const tex_list = game_data.obj_type_to_tex_data.get(local_player.obj_type);
+                            if (tex_list != null) {
+                                const tex = tex_list.?[@as(usize, @intCast(local_player.obj_id)) % tex_list.?.len];
+                                zgui.text(
+                                    "Texture Sheet: {s}\n",
+                                    .{tex.sheet},
+                                );
+                                zgui.text(
+                                    "Texture Index: {d}\n",
+                                    .{tex.index},
+                                );
+                            }
+                        }
+                        zgui.treePop();
+                    } else {
+                        zgui.text("No Player\n", .{});
                     }
-                    static.text_buf = std.mem.zeroes([128]u8);
+                }
+
+                if (zgui.collapsingHeader("Mouse\n", .{})) {
+                    zgui.text("Position: {d:.3}, {d:.3}\n", .{ input.mouse_x, input.mouse_y });
+                }
+
+                if (zgui.collapsingHeader("Chat\n", .{})) {
+                    const static = struct {
+                        var text_buf: [128]u8 = std.mem.zeroes([128]u8);
+                    };
+
+                    _ = zgui.inputText("Message", .{ .buf = static.text_buf[0..] });
+
+                    if (zgui.button("Send message", .{ .w = 150.0 })) {
+                        if (server != null) {
+                            server.?.sendPlayerText(static.text_buf[0..utils.strlen(static.text_buf[0..])]) catch |e| {
+                                std.log.err("Can't send player text: {any}", .{e});
+                            };
+                        }
+                        static.text_buf = std.mem.zeroes([128]u8);
+                    }
                 }
             }
             zgui.end();
@@ -386,12 +469,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
 
                 server.?.accept(allocator) catch |e| {
                     std.log.err("Error while accepting server packets: {any}\n", .{e});
-
-                    // disconnect and return screen when disconnected
-                    if (!lost_connection) {
-                        lost_connection = true;
-                        disconnect();
-                    }
+                    disconnect();
                 };
             }
         }
