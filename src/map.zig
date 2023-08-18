@@ -428,6 +428,7 @@ pub const Player = struct {
     light_radius: f32 = 1.0,
     last_ground_damage: i32 = -1,
     anim_data: assets.AnimPlayerData = undefined,
+    move_multiplier: f32 = 1.0,
 
     pub fn getSquare(self: Player) Square {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -436,7 +437,18 @@ pub const Player = struct {
     }
 
     pub fn moveSpeed(self: Player) f32 {
-        return (0.004 + @as(f32, @floatFromInt(self.speed)) / 100.0 * 0.004) * self.speed_mult;
+        // if (isSlowed()) {
+        //     return min_move_speed * move_multiplier;
+        // }
+
+        var move_speed: f32 = min_move_speed + @as(f32, @floatFromInt(self.speed)) / 75.0 * (max_move_speed - min_move_speed);
+        // if (isSpeedy() || isNinjaSpeedy()) {
+        //     moveSpeed *= 1.5;
+        // }
+        move_speed *= self.move_multiplier;
+        return move_speed;
+
+        // return (0.004 + @as(f32, @floatFromInt(self.speed)) / 100.0 * 0.004) * self.speed_mult;
     }
 
     pub fn addToMap(self: *Player) void {
