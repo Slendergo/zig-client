@@ -778,6 +778,7 @@ pub const Projectile = struct {
     bullet_id: u8 = 0,
     owner_id: i32 = 0,
     damage_players: bool = false,
+    damage: i16 = 0,
     props: game_data.ProjProps,
 
     pub fn getSquare(self: Projectile) Square {

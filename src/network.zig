@@ -213,7 +213,7 @@ pub const Server = struct {
                 .ping => handlePing(self),
                 .play_sound => handlePlaySound(&self.reader),
                 .quest_obj_id => handleQuestObjId(&self.reader),
-                .server_player_shoot => handleServerPlayerShoot(&self.reader),
+                .server_player_shoot => handleServerPlayerShoot(self),
                 .show_effect => handleShowEffect(&self.reader),
                 .text => handleText(&self.reader),
                 .trade_accepted => handleTradeAccepted(&self.reader),
@@ -358,6 +358,7 @@ pub const Server = struct {
             var proj = map.Projectile{ 
                 .x = starting_pos.x,
                 .y = starting_pos.y,
+                .damage = @intCast(damage),
                 .props = proj_props,
                 .angle = current_angle,
                 .start_time = main.current_time,
@@ -416,7 +417,7 @@ pub const Server = struct {
                 player.tick_y = player.y;
             }
         } else {
-            std.log.err("Object id {d} not found while attempting to goto to pos {any}", .{object_id, position});
+            std.log.err("Object id {d} not found while attempting to goto to pos {any}", .{ object_id, position });
         }
 
         self.sendGotoAck(main.last_update) catch |e| {
@@ -620,13 +621,56 @@ pub const Server = struct {
             std.log.debug("Recv - QuestObjId: object_id={d}", .{object_id});
     }
 
-    inline fn handleServerPlayerShoot(reader: *utils.PacketReader) void {
+    inline fn handleServerPlayerShoot(self: *Server) void {
+        var reader = &self.reader;
         const bullet_id = reader.read(u8);
         const owner_id = reader.read(i32);
-        const container_type = reader.read(i32);
+        const container_type = reader.read(u16);
         const starting_pos = reader.read(Position);
         const angle = reader.read(f32);
         const damage = reader.read(i16);
+        const num_shots = 1; // todo
+        const angle_inc = 0.0;
+
+        const needs_ack = owner_id == map.local_player_id;
+        if (map.findPlayer(owner_id)) |player| {
+            _ = player;
+
+            const item_props = game_data.item_type_to_props.get(@intCast(container_type));
+            if (item_props == null or item_props.?.projectile == null)
+                return;
+
+            const proj_props = item_props.?.projectile.?;
+            const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
+            var current_angle = angle - total_angle / 2.0;
+            for (0..num_shots) |i| {
+                // zig fmt: off
+                var proj = map.Projectile{ 
+                    .x = starting_pos.x,
+                    .y = starting_pos.y,
+                    .damage = damage,
+                    .props = proj_props,
+                    .angle = current_angle,
+                    .start_time = main.current_time,
+                    .bullet_id = bullet_id +% @as(u8, @intCast(i)), // this is wrong but whatever
+                    .owner_id = owner_id,
+                };
+                // zig fmt: on
+                proj.addToMap();
+
+                current_angle += angle_inc;
+            }
+
+            if (needs_ack) {
+                self.sendShootAck(main.current_time) catch |e| {
+                    std.log.err("Could not send ShootAck: {any}", .{e});
+                };
+            }
+        } else if (needs_ack) {
+            self.sendShootAck(-1) catch |e| {
+                std.log.err("Could not send ShootAck: {any}", .{e});
+            };
+        }
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
             std.log.debug("Recv - ServerPlayerShoot: bullet_id={d}, owner_id={d}, container_type={d}, x={e}, y={e}, angle={e}, damage={d}", .{ bullet_id, owner_id, container_type, starting_pos.x, starting_pos.y, angle, damage });

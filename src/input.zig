@@ -124,12 +124,14 @@ inline fn mousePress(button: zglfw.MouseButton) void {
     } else if (button == settings.ability.getMouse()) {
         if (main.server) |*server| {
             if (map.findPlayer(map.local_player_id)) |local_player| {
+                const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
+                
                 // zig fmt: off
                 server.sendUseItem(main.current_time, .{
                         .object_id = local_player.obj_id, 
                         .slot_id = 1, 
                         .object_type = @intCast(local_player.inventory[1])
-                    }, .{ .x = local_player.x, .y = local_player.y },  0) catch |e| {
+                    }, .{ .x = world_pos.x, .y = world_pos.y },  0) catch |e| {
                     std.log.err("Could not use item: {any}", .{e});
                 };
                 // zig fmt: on
