@@ -1,27 +1,23 @@
-@group(0) @binding(0) var defaultSampler: sampler;
+@group(0) @binding(0) var default_sampler: sampler;
 @group(0) @binding(1) var medium_tex: texture_2d<f32>;
 @group(0) @binding(2) var medium_italic_tex: texture_2d<f32>;
 @group(0) @binding(3) var bold_tex: texture_2d<f32>;
 @group(0) @binding(4) var bold_italic_tex: texture_2d<f32>;
 
-const mediumTextType = 0.0;
-const mediumItalicTextType = 1.0;
-const boldTextType = 2.0;
-const boldItalicTextType = 3.0;
-
-const shadowOffset = vec2(4.0 / 1024.0, 4.0 / 512.0); // Between 0 and spread / textureSize
-const shadowSmoothing = 0.3; // Between 0 and 0.5
-const shadowColor = vec4(0.0, 0.0, 0.0, 1.0);
+const medium_text_type = 0.0;
+const medium_italic_text_type = 1.0;
+const bold_text_type = 2.0;
+const bold_italic_text_type = 3.0;
 
 struct VertexInput {
   @location(0) pos: vec2<f32>,
   @location(1) uv: vec2<f32>,
   @location(2) color: vec3<f32>,
-  @location(3) textType: f32,
-  @location(4) alphaMult: f32,
-  @location(5) shadowColor: vec3<f32>,
-  @location(6) shadowAlphaMult: f32,
-  @location(7) shadowTexelOffset: vec2<f32>,
+  @location(3) text_type: f32,
+  @location(4) alpha_mult: f32,
+  @location(5) shadow_color: vec3<f32>,
+  @location(6) shadow_alpha_mult: f32,
+  @location(7) shadow_texel_offset: vec2<f32>,
 }
 
 struct VertexOutput {
@@ -29,11 +25,11 @@ struct VertexOutput {
   @location(0) pos: vec2<f32>,
   @location(1) uv: vec2<f32>,
   @location(2) color: vec3<f32>,
-  @location(3) textType: f32,
-  @location(4) alphaMult: f32,
-  @location(5) shadowColor: vec3<f32>,
-  @location(6) shadowAlphaMult: f32,
-  @location(7) shadowTexelOffset: vec2<f32>,
+  @location(3) text_type: f32,
+  @location(4) alpha_mult: f32,
+  @location(5) shadow_color: vec3<f32>,
+  @location(6) shadow_alpha_mult: f32,
+  @location(7) shadow_texel_offset: vec2<f32>,
 }
 
 @vertex
@@ -42,11 +38,11 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     out.position = vec4(in.pos, 0.0, 1.0);
     out.uv = in.uv;
     out.color = in.color;
-    out.textType = in.textType;
-    out.alphaMult = in.alphaMult;
-    out.shadowColor = in.shadowColor;
-    out.shadowAlphaMult = in.shadowAlphaMult;
-    out.shadowTexelOffset = in.shadowTexelOffset;
+    out.text_type = in.text_type;
+    out.alpha_mult = in.alpha_mult;
+    out.shadow_color = in.shadow_color;
+    out.shadow_alpha_mult = in.shadow_alpha_mult;
+    out.shadow_texel_offset = in.shadow_texel_offset;
     return out;
 }
 
@@ -61,31 +57,34 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var tex = vec4(0.0, 0.0, 0.0, 0.0);
     var tex_offset = vec4(0.0, 0.0, 0.0, 0.0);
-    var unitRange = vec2(2.0, 2.0);
-    if in.textType == mediumTextType {
-        tex = textureSampleGrad(medium_tex, defaultSampler, in.uv, dx, dy);
-        tex_offset = textureSampleGrad(medium_tex, defaultSampler, in.uv - shadowOffset, dx, dy);
-        unitRange /= vec2<f32>(textureDimensions(medium_tex, 0));
-    } else if in.textType == mediumItalicTextType {
-        tex = textureSampleGrad(medium_italic_tex, defaultSampler, in.uv, dx, dy);
-        tex_offset = textureSampleGrad(medium_italic_tex, defaultSampler, in.uv - shadowOffset, dx, dy);
-        unitRange /= vec2<f32>(textureDimensions(medium_italic_tex, 0));
-    } else if in.textType == boldTextType {
-        tex = textureSampleGrad(bold_tex, defaultSampler, in.uv, dx, dy);
-        tex_offset = textureSampleGrad(bold_tex, defaultSampler, in.uv - shadowOffset, dx, dy);
-        unitRange /= vec2<f32>(textureDimensions(bold_tex, 0));
-    } else if in.textType == boldItalicTextType {
-        tex = textureSampleGrad(bold_italic_tex, defaultSampler, in.uv, dx, dy);
-        tex_offset = textureSampleGrad(bold_italic_tex, defaultSampler, in.uv - shadowOffset, dx, dy);
-        unitRange /= vec2<f32>(textureDimensions(bold_italic_tex, 0));
+    var tex_size = vec2(1.0, 1.0);
+    if in.text_type == medium_text_type {
+        tex = textureSampleGrad(medium_tex, default_sampler, in.uv, dx, dy);
+        tex_offset = textureSampleGrad(medium_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        tex_size = vec2<f32>(textureDimensions(medium_tex, 0));
+    } else if in.text_type == medium_italic_text_type {
+        tex = textureSampleGrad(medium_italic_tex, default_sampler, in.uv, dx, dy);
+        tex_offset = textureSampleGrad(medium_italic_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        tex_size = vec2<f32>(textureDimensions(medium_italic_tex, 0));
+    } else if in.text_type == bold_text_type {
+        tex = textureSampleGrad(bold_tex, default_sampler, in.uv, dx, dy);
+        tex_offset = textureSampleGrad(bold_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        tex_size = vec2<f32>(textureDimensions(bold_tex, 0));
+    } else if in.text_type == bold_italic_text_type {
+        tex = textureSampleGrad(bold_italic_tex, default_sampler, in.uv, dx, dy);
+        tex_offset = textureSampleGrad(bold_italic_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        tex_size = vec2<f32>(textureDimensions(bold_italic_tex, 0));
     }
 
-    let screenTexSize = vec2(1.0, 1.0) / fwidth(in.uv) / vec2(1.25, 1.25);
-    let screenTexSizeOffset = vec2(1.0, 1.0) / fwidth(in.uv - shadowOffset) / vec2(1.25, 1.25);
-    let screenPxDist = max(0.5 * dot(unitRange, screenTexSize), 1.0) * (median(tex.r, tex.g, tex.b) - 0.5);
-    let screenPxDistOffset = max(0.5 * dot(unitRange, screenTexSizeOffset), 1.0) * (median(tex_offset.r, tex_offset.g, tex_offset.b) - 0.5);
-    let opacity = clamp(screenPxDist + 0.5, 0.0, 1.0) * in.alphaMult;
-    let opacityOffset = clamp(screenPxDistOffset + 0.5, 0.0, 1.0) * in.shadowAlphaMult;
+    let dx_x = dx.x * tex_size.x;
+    let dy_y = dy.y * tex_size.y;
+    let to_pixels = 8.0 * inverseSqrt(dx_x * dx_x + dy_y * dy_y);
+    
+    let sig_dist = median(tex.r, tex.g, tex.b) - 0.5;
+    let opacity = clamp(sig_dist * to_pixels + 0.5, 0.0, 1.0) * in.alpha_mult;
 
-    return mix(vec4(in.shadowColor, opacityOffset), vec4(in.color, opacity), opacity);
+    let offset_sig_dist = median(tex_offset.r, tex_offset.g, tex_offset.b) - 0.5;
+    let offset_opacity = clamp(offset_sig_dist * to_pixels + 0.5, 0.0, 1.0) * in.shadow_alpha_mult;
+
+    return mix(vec4(in.shadow_color, offset_opacity), vec4(in.color, opacity), opacity);
 }
