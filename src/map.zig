@@ -8,6 +8,7 @@ const main = @import("main.zig");
 const utils = @import("utils.zig");
 const assets = @import("assets.zig");
 const ui = @import("ui.zig");
+const attack_period = @import("render.zig").attack_period;
 
 pub const move_threshold: f32 = 0.4;
 pub const min_move_speed: f32 = 0.004;
@@ -529,7 +530,8 @@ pub const Player = struct {
         }
 
         self.attack_angle = angle - camera.angle;
-        self.attack_start = time;
+        if (time >= self.attack_start + attack_period)
+            self.attack_start = time;
     }
 
     pub inline fn update(self: *Player, time: i32, dt: i32) void {

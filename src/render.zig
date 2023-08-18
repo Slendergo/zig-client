@@ -54,7 +54,7 @@ pub const GroundUniformData = extern struct {
     right_bottom_mask_uv: [4]f32,
 };
 
-const attack_period = 300;
+pub const attack_period = 300;
 
 pub var base_pipeline: zgpu.RenderPipelineHandle = .{};
 pub var base_bind_group: zgpu.BindGroupHandle = undefined;
