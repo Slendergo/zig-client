@@ -788,9 +788,6 @@ pub const Projectile = struct {
     }
 
     pub fn addToMap(self: *Projectile) void {
-        while (!proj_lock.tryLock()) {}
-        defer proj_lock.unlock();
-
         const tex_list = self.props.texture_data;
         const tex = tex_list[@as(usize, @intCast(self.obj_id)) % tex_list.len];
         const rect = assets.rects.get(tex.sheet).?[tex.index];
@@ -1027,7 +1024,6 @@ const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
 const day_cycle_ms_half: f32 = @floatFromInt(day_cycle_ms / 2);
 
 pub var object_lock: std.Thread.Mutex = .{};
-pub var proj_lock: std.Thread.Mutex = .{};
 pub var objects: std.ArrayList(GameObject) = undefined;
 pub var players: std.ArrayList(Player) = undefined;
 pub var projectiles: std.ArrayList(Projectile) = undefined;
@@ -1170,25 +1166,18 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
         player.update(time, dt);
     }
 
-    var interactive_set: bool = false;
+    interactive_id = -1;
     for (objects.items) |*obj| {
-        if (!interactive_set and obj.class == .portal) {
+        if (interactive_id != -1 and obj.class == .portal) {
             const dt_x = camera.x - obj.x;
             const dt_y = camera.y - obj.y;
             if (dt_x * dt_x + dt_y * dt_y < 1) {
                 interactive_id = obj.obj_id;
-                interactive_set = true;
             }
         }
 
         obj.update(time, dt);
     }
-
-    if (!interactive_set)
-        interactive_id = -1;
-
-    while (!proj_lock.tryLock()) {}
-    defer proj_lock.unlock();
 
     for (projectiles.items, 0..) |*proj, i| {
         if (!proj.update(time, dt, allocator))

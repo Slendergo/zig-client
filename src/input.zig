@@ -197,7 +197,6 @@ inline fn useAbility() void {
     if (main.server) |*server| {
         if (map.findPlayer(map.local_player_id)) |local_player| {
             const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
-            std.debug.print("world_pos: {any}\n", .{world_pos});
             
             // zig fmt: off
             server.sendUseItem(main.current_time, .{

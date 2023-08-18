@@ -91,8 +91,10 @@ pub inline fn screenToWorld(x_in: f32, y_in: f32) utils.Point {
     const sin_angle = @sin(angle);
     const x_div = x_in / px_per_tile * scale;
     const y_div = y_in / px_per_tile * scale;
+    const left_bound = x - screen_width / 2.0 / px_per_tile * scale;
+    const top_bound = y - screen_height / 2.0 / px_per_tile * scale;
     return utils.Point{
-        .x = x_div * cos_angle + y_div * sin_angle,
-        .y = x_div * -sin_angle + y_div * cos_angle,
+        .x = left_bound + x_div * cos_angle + y_div * sin_angle,
+        .y = top_bound + x_div * -sin_angle + y_div * cos_angle,
     };
 }

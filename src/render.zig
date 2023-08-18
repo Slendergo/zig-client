@@ -1372,9 +1372,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
         }
 
-        while (map.proj_lock.tryLock()) {}
-        defer map.proj_lock.unlock();
-
         for (map.projectiles.items) |proj| {
             if (!camera.visibleInCamera(proj.x, proj.y)) {
                 continue;

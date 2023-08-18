@@ -9,9 +9,9 @@ const camera = @import("camera.zig");
 
 // zig fmt: off
 pub const ObjectSlot = extern struct { 
-    object_id: i32,
-    slot_id: u8, 
-    object_type: u16
+    object_id: i32 align(1),
+    slot_id: u8 align(1), 
+    object_type: u16 align(1),
 };
 
 pub const Position = extern struct { 
@@ -31,10 +31,10 @@ pub const TileData = extern struct {
 };
 
 pub const TradeItem = extern struct { 
-    item: i32, 
-    slot_type: i32, 
-    tradeable: bool,
-    included: bool 
+    item: i32 align(1), 
+    slot_type: i32 align(1), 
+    tradeable: bool align(1),
+    included: bool align(1), 
 };
 
 pub const ARGB = packed struct(u32) { 
