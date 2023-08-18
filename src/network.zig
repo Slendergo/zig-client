@@ -334,7 +334,7 @@ pub const Server = struct {
         const bullet_type = reader.read(u8);
         const starting_pos = reader.read(Position);
         const angle = reader.read(f32);
-        const damage = reader.read(u16);
+        const damage = reader.read(i16);
         const num_shots = reader.read(u8);
         const angle_inc = reader.read(f32);
 
@@ -358,7 +358,7 @@ pub const Server = struct {
             var proj = map.Projectile{ 
                 .x = starting_pos.x,
                 .y = starting_pos.y,
-                .damage = @intCast(damage),
+                .damage = damage,
                 .props = proj_props,
                 .angle = current_angle,
                 .start_time = main.current_time,
