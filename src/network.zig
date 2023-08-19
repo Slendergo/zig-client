@@ -266,7 +266,7 @@ pub const Server = struct {
                     .bullet_id = @intCast(bullet_id),
                     .owner_id = player.obj_id,
                 };
-                proj.addToMap();
+                proj.addToMap(true);
             }
             player.attack_angle = angle - camera.angle;
             player.attack_start = main.current_time;
@@ -367,7 +367,7 @@ pub const Server = struct {
                 .damage_players = true,
             };
             // zig fmt: on
-            proj.addToMap();
+            proj.addToMap(true);
 
             current_angle += angle_inc;
         }
@@ -662,7 +662,7 @@ pub const Server = struct {
                     .owner_id = owner_id,
                 };
                 // zig fmt: on
-                proj.addToMap();
+                proj.addToMap(true);
 
                 current_angle += angle_inc;
             }

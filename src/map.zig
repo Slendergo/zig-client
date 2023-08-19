@@ -556,7 +556,7 @@ pub const Player = struct {
                 .owner_id = self.obj_id,
             };
             // zig fmt: on
-            proj.addToMap();
+            proj.addToMap(false);
 
             if (main.server) |*server| {
                 server.sendPlayerShoot(time, bullet_id, @intCast(weapon), network.Position{ .x = x, .y = y }, current_angle) catch |e| {
@@ -841,7 +841,12 @@ pub const Projectile = struct {
         return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
     }
 
-    pub fn addToMap(self: *Projectile) void {
+    pub fn addToMap(self: *Projectile, needs_lock: bool) void {
+        if (needs_lock) {
+            while (!object_lock.tryLock()) {}
+        }
+        defer if (needs_lock) object_lock.unlock();
+
         const tex_list = self.props.texture_data;
         const tex = tex_list[@as(usize, @intCast(self.obj_id)) % tex_list.len];
         const rect = assets.rects.get(tex.sheet).?[tex.index];
