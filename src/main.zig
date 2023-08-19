@@ -377,8 +377,8 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                                     .{tex.index},
                                 );
                             }
+                            zgui.treePop();
                         }
-                        zgui.treePop();
                     } else {
                         zgui.text("No Player\n", .{});
                     }
