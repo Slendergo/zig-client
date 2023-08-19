@@ -182,7 +182,7 @@ pub fn updateState() void {
     if (map.findPlayer(map.local_player_id)) |local_player| {
         const y_dt = move_down - move_up;
         const x_dt = move_right - move_left;
-        local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan_f32 else std.math.atan2(f32, y_dt, x_dt);
+        local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
         local_player.visual_move_angle = local_player.move_angle;
         local_player.speed_mult = walking;
 

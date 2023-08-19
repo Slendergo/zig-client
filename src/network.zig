@@ -516,7 +516,7 @@ pub const Server = struct {
                     player.tick_y = player.y;
                     const y_dt = position.y - player.y;
                     const x_dt = position.x - player.x;
-                    player.visual_move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan_f32 else std.math.atan2(f32, y_dt, x_dt);
+                    player.visual_move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
                 }
 
                 for (0..stats_len) |_| {
@@ -539,7 +539,7 @@ pub const Server = struct {
                 object.tick_y = object.y;
                 const y_dt = position.y - object.y;
                 const x_dt = position.x - object.x;
-                object.visual_move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan_f32 else std.math.atan2(f32, y_dt, x_dt);
+                object.visual_move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
                 for (0..stats_len) |_| {
                     const stat_id = reader.read(u8);
                     const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
