@@ -887,7 +887,7 @@ pub const Server = struct {
             .size => obj.size = @as(f32, @floatFromInt(reader.read(i32))) / 100.0,
             .level => obj.level = reader.read(i32),
             .defense => obj.defense = reader.read(i32),
-            .condition => obj.condition = reader.read(u64),
+            .condition => obj.condition = reader.read(game_data.Condition),
             .inv_0, .inv_1, .inv_2, .inv_3, .inv_4, .inv_5, .inv_6, .inv_7, .inv_8, .inv_9, .inv_10, .inv_11 => {
                 const inv_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.inv_0);
                 obj.inventory[inv_idx] = reader.read(i32);

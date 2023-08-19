@@ -452,6 +452,7 @@ pub const Condition = packed struct(u29) {
     armor_broken: bool = false,
     hexed: bool = false,
     ninja_speedy: bool = false,
+    _padding: u35 = 0,
 
     pub fn toggle(self: *Condition, cond: ConditionEnum) void {
         switch (cond) {
