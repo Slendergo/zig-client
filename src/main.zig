@@ -308,7 +308,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     .{ gctx.stats.average_cpu_time, gctx.stats.fps },
                 );
 
-                if (zgui.collapsingHeader("World\n", .{})) {
+                if (zgui.collapsingHeader("World\n", .{ .default_open = true })) {
                     zgui.text(
                         "Size: {d}x{d}\n",
                         .{ map.width, map.height },
@@ -335,7 +335,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     }
                 }
 
-                if (zgui.collapsingHeader("Player\n", .{})) {
+                if (zgui.collapsingHeader("Player\n", .{ .default_open = true })) {
                     if (map.findPlayer(map.local_player_id)) |local_player| {
                         zgui.text(
                             "Position: {d:.3}, {d:.3}\n",
@@ -372,7 +372,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                             .{local_player.move_multiplier},
                         );
 
-                        if (zgui.treeNode("Animation\n")) {
+                        if (zgui.treeNodeFlags("Animation\n", .{ .default_open = true })) {
                             zgui.text(
                                 "Direction: {d}\n",
                                 .{local_player.dir},
@@ -397,14 +397,14 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     }
                 }
 
-                if (zgui.collapsingHeader("Mouse\n", .{})) {
+                if (zgui.collapsingHeader("Mouse\n", .{ .default_open = true })) {
                     zgui.text("Screen Position: {d:.3}, {d:.3}\n", .{ input.mouse_x, input.mouse_y });
 
                     const world_pos = camera.screenToWorld(@floatCast(input.mouse_x), @floatCast(input.mouse_y));
                     zgui.text("World Position: {d:.3}, {d:.3}\n", .{ world_pos.x, world_pos.y });
                 }
 
-                if (zgui.collapsingHeader("Chat\n", .{})) {
+                if (zgui.collapsingHeader("Chat\n", .{ .default_open = true })) {
                     const static = struct {
                         var text_buf: [128]u8 = std.mem.zeroes([128]u8);
                     };
