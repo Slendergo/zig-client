@@ -41,6 +41,7 @@ pub const TextVertexData = extern struct {
     shadow_color: [3]f32,
     shadow_alpha_mult: f32,
     shadow_texel_offset: [2]f32,
+    distance_factor: f32,
 };
 
 pub const LightVertexData = extern struct {
@@ -352,6 +353,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
             .{ .format = .float32x3, .offset = @offsetOf(TextVertexData, "shadow_color"), .shader_location = 5 },
             .{ .format = .float32, .offset = @offsetOf(TextVertexData, "shadow_alpha_mult"), .shader_location = 6 },
             .{ .format = .float32x2, .offset = @offsetOf(TextVertexData, "shadow_texel_offset"), .shader_location = 7 },
+            .{ .format = .float32, .offset = @offsetOf(TextVertexData, "distance_factor"), .shader_location = 8 },
         };
         const vertex_buffers = [_]zgpu.wgpu.VertexBufferLayout{.{
             .array_stride = @sizeOf(TextVertexData),
@@ -850,7 +852,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
 
     const shadow_texel_size = [2]f32{ opts.shadow_texel_offset_mult / assets.CharacterData.atlas_w, opts.shadow_texel_offset_mult / assets.CharacterData.atlas_h };
 
-    const size_scale = size / assets.CharacterData.size * camera.scale;
+    const size_scale = size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
     const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
     var idx_new = idx;
@@ -877,6 +879,8 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
 
+        const px_range = 2.0 * assets.CharacterData.padding_mult * 2.0;
+
         // zig fmt: off
         text_vert_data[idx_new] = TextVertexData{
             .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
@@ -887,6 +891,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
             .shadow_color = shadow_rgb,
             .shadow_alpha_mult = opts.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
+            .distance_factor = size_scale * px_range
         };
 
         text_vert_data[idx_new + 1] = TextVertexData{
@@ -898,6 +903,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
             .shadow_color = shadow_rgb,
             .shadow_alpha_mult = opts.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
+            .distance_factor = size_scale * px_range
         };
 
         text_vert_data[idx_new + 2] = TextVertexData{
@@ -909,6 +915,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
             .shadow_color = shadow_rgb,
             .shadow_alpha_mult = opts.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
+            .distance_factor = size_scale * px_range
         };
 
         text_vert_data[idx_new + 3] = TextVertexData{
@@ -920,6 +927,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
             .shadow_color = shadow_rgb,
             .shadow_alpha_mult = opts.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
+            .distance_factor = size_scale * px_range
         };
         // zig fmt: on
         idx_new += 4;
@@ -1156,7 +1164,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             screen_pos.y += player.z * -camera.px_per_tile - (h - size * assets.padding);
 
             player.h = h;
-            player.screen_y = screen_pos.y;
+            player.screen_y = screen_pos.y - 30; // account for name
             player.screen_x = screen_pos.x - x_offset;
 
             if (player.light_color > 0) {
@@ -1337,7 +1345,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             screen_pos.y += bo.z * -camera.px_per_tile - (h - size * assets.padding);
 
             bo.h = h;
-            bo.screen_y = screen_pos.y;
+            bo.screen_y = screen_pos.y - 10;
             bo.screen_x = screen_pos.x - x_offset;
 
             if (bo.light_color > 0) {

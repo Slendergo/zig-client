@@ -67,7 +67,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
 }
 
 pub inline fn textWidth(size: f32, text: []const u8, text_type: f32) f32 {
-    const size_scale = size / assets.CharacterData.size * camera.scale;
+    const size_scale = size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
 
     var x_pointer: f32 = 0.0;
     for (text) |char| {
