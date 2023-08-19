@@ -203,7 +203,7 @@ pub const GameObject = struct {
     max_hp: i32 = 0,
     hp: i32 = 0,
     defense: i32 = 0,
-    condition: u64 = 0,
+    condition: game_data.Condition = game_data.Condition{},
     level: i32 = 0,
     tex_1: i32 = 0,
     tex_2: i32 = 0,
@@ -427,7 +427,7 @@ pub const Player = struct {
     dexterity_bonus: i32 = 0,
     health_stack_count: i32 = 0,
     magic_stack_count: i32 = 0,
-    condition: u64 = 0,
+    condition: game_data.Condition = game_data.Condition{},
     inventory: [20]i32 = [_]i32{-1} ** 20,
     has_backpack: bool = false,
     exp_goal: i32 = 0,
@@ -467,8 +467,8 @@ pub const Player = struct {
         return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
     }
 
-    pub fn on_move(self: Player) void {
-        const square = getSquare(self); // nt sure if i need to pass self or can just call
+    pub fn onMove(self: *Player) void {
+        const square = self.getSquare();
         if (square.sinking) {
             self.sink_level = @min((self.sink_level + 1), max_sink_level);
             self.move_multiplier = (0.1 + ((1 - (self.sink_level / max_sink_level)) * (square.speed - 0.1)));
@@ -478,7 +478,7 @@ pub const Player = struct {
         }
     }
 
-    pub fn move_speed_multiplier(self: Player) f32 {
+    pub fn moveSpeedMultiplier(self: Player) f32 {
         if (self.condition.slowed) {
             return min_move_speed * self.move_multiplier;
         }
@@ -577,7 +577,7 @@ pub const Player = struct {
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
-                const move_speed = self.move_speed_multiplier();
+                const move_speed = self.moveSpeedMultiplier();
                 const total_angle = camera.angle + self.move_angle;
                 const float_dt: f32 = @floatFromInt(dt);
                 const next_x = self.x + move_speed * float_dt * @cos(total_angle);
