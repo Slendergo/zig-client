@@ -1113,9 +1113,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                 const time_dt: f32 = @floatFromInt(time);
                 const float_period: f32 = 3.5 / player.moveSpeed();
-                const anim_idx: f32 = @round(@mod(time_dt, float_period) / float_period);
-
-                rect = player.anim_data.walk_anims[player.dir][@as(u32, @intFromFloat(anim_idx))];
+                const anim_idx: usize = @intFromFloat(@round(@mod(time_dt, float_period) / float_period));
+                rect = player.anim_data.walk_anims[player.dir][anim_idx];
             }
 
             if (time < player.attack_start + player.attack_period) {
@@ -1129,9 +1128,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                 const time_dt: f32 = @floatFromInt(time - player.attack_start);
                 const float_period: f32 = @floatFromInt(player.attack_period);
-                const anim_idx: f32 = @round(@mod(time_dt, float_period) / float_period);
-
-                rect = player.anim_data.attack_anims[player.dir][@as(u32, @intFromFloat(anim_idx))];
+                const anim_idx: usize = @intFromFloat(@round(@mod(time_dt, float_period) / float_period));
+                rect = player.anim_data.attack_anims[player.dir][anim_idx];
 
                 if (anim_idx != 0) {
                     const w = @as(f32, @floatFromInt(rect.w)) * size;
