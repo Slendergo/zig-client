@@ -325,6 +325,14 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                         "Projectiles: {d}\n",
                         .{map.projectiles.items.len},
                     );
+
+                    if (map.findPlayer(map.local_player_id)) |local_player| {
+                        const square = local_player.getSquare();
+                        zgui.text(
+                            "Tile Speed: {d:.3}\n",
+                            .{square.speed},
+                        );
+                    }
                 }
 
                 if (zgui.collapsingHeader("Player\n", .{})) {
@@ -352,6 +360,11 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                         zgui.text(
                             "Move Speed: {d:.3} | {d} speed\n",
                             .{ local_player.moveSpeedMultiplier(), local_player.speed },
+                        );
+
+                        zgui.text(
+                            "Walk Multiplier: {d:.3}\n",
+                            .{local_player.walk_speed_multiplier},
                         );
 
                         zgui.text(

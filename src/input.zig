@@ -14,7 +14,7 @@ var rotate_left: i8 = 0;
 var rotate_right: i8 = 0;
 
 pub var attacking: bool = false;
-pub var walking: f32 = 1.0;
+pub var walking_speed_multiplier: f32 = 1.0;
 pub var rotate: i8 = 0;
 pub var mouse_x: f64 = 0.0;
 pub var mouse_y: f64 = 0.0;
@@ -33,7 +33,7 @@ inline fn keyPress(key: zglfw.Key) void {
     } else if (key == settings.rotate_right.getKey()) {
         rotate_right = 1;
     } else if (key == settings.walk.getKey()) {
-        walking = 0.5;
+        walking_speed_multiplier = 0.5;
     } else if (key == settings.reset_camera.getKey()) {
         camera.angle = 0;
     } else if (key == settings.shoot.getKey()) {
@@ -71,7 +71,7 @@ inline fn keyRelease(key: zglfw.Key) void {
     } else if (key == settings.rotate_right.getKey()) {
         rotate_right = 0;
     } else if (key == settings.walk.getKey()) {
-        walking = 1.0;
+        walking_speed_multiplier = 1.0;
     } else if (key == settings.shoot.getKey()) {
         attacking = false;
     }
@@ -91,7 +91,7 @@ inline fn mousePress(button: zglfw.MouseButton) void {
     } else if (button == settings.rotate_right.getMouse()) {
         rotate_right = 1;
     } else if (button == settings.walk.getMouse()) {
-        walking = 0.5;
+        walking_speed_multiplier = 0.5;
     } else if (button == settings.reset_camera.getMouse()) {
         camera.angle = 0;
     } else if (button == settings.shoot.getMouse()) {
@@ -129,7 +129,7 @@ inline fn mouseRelease(button: zglfw.MouseButton) void {
     } else if (button == settings.rotate_right.getMouse()) {
         rotate_right = 0;
     } else if (button == settings.walk.getMouse()) {
-        walking = 1.0;
+        walking_speed_multiplier = 1.0;
     } else if (button == settings.shoot.getMouse()) {
         attacking = false;
     }
@@ -176,7 +176,7 @@ pub fn updateState() void {
         const x_dt = move_right - move_left;
         local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
         local_player.visual_move_angle = local_player.move_angle;
-        local_player.speed_mult = walking;
+        local_player.walk_speed_multiplier = walking_speed_multiplier;
 
         if (attacking) {
             const y: f32 = @floatCast(mouse_y);

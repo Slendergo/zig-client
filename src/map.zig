@@ -451,7 +451,7 @@ pub const Player = struct {
     next_bullet_id: u8 = 0,
     move_angle: f32 = std.math.nan(f32),
     visual_move_angle: f32 = std.math.nan(f32),
-    speed_mult: f32 = 1.0,
+    walk_speed_multiplier: f32 = 1.0,
     dir: u8 = assets.left_dir,
     light_color: i32 = -1,
     light_intensity: f32 = 0.1,
@@ -480,15 +480,14 @@ pub const Player = struct {
 
     pub fn moveSpeedMultiplier(self: Player) f32 {
         if (self.condition.slowed) {
-            return min_move_speed * self.move_multiplier;
+            return min_move_speed * self.move_multiplier * self.walk_speed_multiplier;
         }
 
         var move_speed: f32 = min_move_speed + @as(f32, @floatFromInt(self.speed)) / 75.0 * (max_move_speed - min_move_speed);
         if (self.condition.speedy or self.condition.ninja_speedy) {
             move_speed *= 1.5;
         }
-        move_speed *= self.move_multiplier;
-        return move_speed;
+        return move_speed * self.move_multiplier * self.walk_speed_multiplier;
     }
 
     pub fn addToMap(self: *Player) void {
