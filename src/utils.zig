@@ -8,7 +8,7 @@ pub const Point = struct {
 };
 
 pub const Random = struct {
-    var seed: u32 = 1;
+    seed: u32,
 
     pub fn init(mySeed: u32) Random {
         return Random{ .seed = mySeed };
