@@ -457,7 +457,7 @@ pub const Server = struct {
         map.setWH(width, height, allocator);
         map.name = reader.read([]u8);
         const display_name = reader.read([]u8);
-        const seed = reader.read(u32);
+        map.seed = reader.read(u32);
         const difficulty = reader.read(i32);
         const background = reader.read(i32);
         const allow_player_teleport = reader.read(bool);
@@ -471,12 +471,13 @@ pub const Server = struct {
             map.night_light_intensity = reader.read(f32);
             map.server_time_offset = reader.read(i32) - main.current_time;
         }
+        map.random = utils.Random{ .seed = map.seed };
 
         main.clear();
         main.tick_frame = true;
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-            std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, seed={d}, difficulty={d}, background={d}, allow_player_teleport={any}, show_displays={any}, bg_light_color={d}, bg_light_intensity={e}, day_and_night={any}", .{ width, height, map.name, display_name, seed, difficulty, background, allow_player_teleport, show_displays, map.bg_light_color, map.bg_light_intensity, uses_day_night });
+            std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, seed={d}, difficulty={d}, background={d}, allow_player_teleport={any}, show_displays={any}, bg_light_color={d}, bg_light_intensity={e}, day_and_night={any}", .{ width, height, map.name, display_name, map.seed, difficulty, background, allow_player_teleport, show_displays, map.bg_light_color, map.bg_light_intensity, uses_day_night });
     }
 
     inline fn handleNameResult(reader: *utils.PacketReader) void {
