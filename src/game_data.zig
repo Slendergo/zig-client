@@ -420,7 +420,7 @@ pub const ConditionEnum = enum(u8) {
     }
 };
 
-pub const Condition = packed struct(u32) {
+pub const Condition = packed struct(u64) {
     dead: bool = false,
     quiet: bool = false,
     weak: bool = false,
