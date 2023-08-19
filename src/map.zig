@@ -16,6 +16,7 @@ pub const min_attack_freq: f32 = 0.0015;
 pub const max_attack_freq: f32 = 0.008;
 pub const min_attack_mult: f32 = 0.5;
 pub const max_attack_mult: f32 = 2;
+pub const max_sink_level: u32 = 18;
 
 pub const Square = struct {
     tile_type: u16 = 0xFFFF,
@@ -34,6 +35,8 @@ pub const Square = struct {
     bottom_blend_u: f32 = -1.0,
     bottom_blend_v: f32 = -1.0,
     sink: f32 = 0.0,
+    speed: f32 = 1.0,
+    sinking: bool = false,
     has_wall: bool = false,
     light_color: i32 = -1,
     light_intensity: f32 = 0.1,
@@ -442,7 +445,6 @@ pub const Player = struct {
     guild: []u8 = &[0]u8{},
     guild_rank: i32 = 0,
     oxygen_bar: i32 = 0,
-    sink_offset: i32 = 0,
     attack_start: i32 = 0,
     attack_period: i32 = 0,
     attack_angle: f32 = 0,
@@ -457,6 +459,7 @@ pub const Player = struct {
     last_ground_damage: i32 = -1,
     anim_data: assets.AnimPlayerData = undefined,
     move_multiplier: f32 = 1.0,
+    sink_level: u32 = 0,
 
     pub fn getSquare(self: Player) Square {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -464,19 +467,28 @@ pub const Player = struct {
         return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
     }
 
-    pub fn moveSpeed(self: Player) f32 {
-        // if (isSlowed()) {
-        //     return min_move_speed * move_multiplier;
-        // }
+    pub fn on_move(self: Player) void {
+        const square = getSquare(self); // nt sure if i need to pass self or can just call
+        if (square.sinking) {
+            self.sink_level = @min((self.sink_level + 1), max_sink_level);
+            self.move_multiplier = (0.1 + ((1 - (self.sink_level / max_sink_level)) * (square.speed - 0.1)));
+        } else {
+            self.sink_level = 0;
+            self.move_multiplier = square.speed;
+        }
+    }
+
+    pub fn move_speed_multiplier(self: Player) f32 {
+        if (self.condition.slowed) {
+            return min_move_speed * self.move_multiplier;
+        }
 
         var move_speed: f32 = min_move_speed + @as(f32, @floatFromInt(self.speed)) / 75.0 * (max_move_speed - min_move_speed);
-        // if (isSpeedy() || isNinjaSpeedy()) {
-        //     moveSpeed *= 1.5;
-        // }
+        if (self.condition.speedy or self.condition.ninja_speedy) {
+            move_speed *= 1.5;
+        }
         move_speed *= self.move_multiplier;
         return move_speed;
-
-        // return (0.004 + @as(f32, @floatFromInt(self.speed)) / 100.0 * 0.004) * self.speed_mult;
     }
 
     pub fn addToMap(self: *Player) void {
@@ -565,7 +577,7 @@ pub const Player = struct {
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
-                const move_speed = self.moveSpeed();
+                const move_speed = self.move_speed_multiplier();
                 const total_angle = camera.angle + self.move_angle;
                 const float_dt: f32 = @floatFromInt(dt);
                 const next_x = self.x + move_speed * float_dt * @cos(total_angle);
@@ -1305,6 +1317,8 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
     const props = game_data.ground_type_to_props.get(tile_type);
     if (props != null) {
         square.sink = if (props.?.sink) 0.6 else 0.0;
+        square.sinking = props.?.sinking;
+        square.speed = props.?.speed;
         square.light_color = props.?.light_color;
         square.light_intensity = props.?.light_intensity;
         square.light_radius = props.?.light_radius;

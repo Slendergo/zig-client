@@ -1120,7 +1120,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 }
 
                 const time_dt: f32 = @floatFromInt(time);
-                const float_period: f32 = 3.5 / player.moveSpeed();
+                const float_period: f32 = 3.5 / player.move_speed_multiplier();
                 const anim_idx: usize = @intFromFloat(@round(@mod(time_dt, float_period) / float_period));
                 rect = player.anim_data.walk_anims[player.dir][anim_idx];
             }

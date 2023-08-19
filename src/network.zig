@@ -834,7 +834,7 @@ pub const Server = struct {
             .dexterity => plr.dexterity = reader.read(i32),
             .vitality => plr.vitality = reader.read(i32),
             .wisdom => plr.wisdom = reader.read(i32),
-            .condition => plr.condition = reader.read(u64),
+            .condition => plr.condition = reader.read(game_data.Condition),
             .inv_0, .inv_1, .inv_2, .inv_3, .inv_4, .inv_5, .inv_6, .inv_7, .inv_8, .inv_9, .inv_10, .inv_11 => {
                 const inv_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.inv_0);
                 plr.inventory[inv_idx] = reader.read(i32);
@@ -858,7 +858,7 @@ pub const Server = struct {
             .fame => plr.fame = reader.read(i32),
             .fame_goal => plr.fame_goal = reader.read(i32),
             .glow => plr.glow = reader.read(i32),
-            .sink_offset => plr.sink_offset = reader.read(i32),
+            .sink_level => plr.sink_level = reader.read(i32),
             .guild => plr.guild = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
             .guild_rank => plr.guild_rank = reader.read(i32),
             .oxygen_bar => plr.oxygen_bar = reader.read(i32),
@@ -1244,6 +1244,10 @@ pub const Server = struct {
 
         try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
         self.writer.index = 0;
+
+        if (map.findPlayer(map.local_player_id)) |player| {
+            player.on_move();
+        }
     }
 
     pub fn sendOtherHit(self: *Server, time: i32, bullet_id: u8, object_id: i32, target_id: i32) !void {
