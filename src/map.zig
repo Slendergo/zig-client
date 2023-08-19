@@ -1111,7 +1111,7 @@ pub var night_light_intensity: f32 = 0.0;
 pub var server_time_offset: i32 = 0;
 pub var move_records: std.ArrayList(network.TimedPosition) = undefined;
 pub var last_records_clear_time: i32 = 0;
-pub var random: utils.Random = utils.Random{ .seed = 0 };
+pub var random: utils.Random = utils.Random{ .seed = 1 };
 
 pub fn init(allocator: std.mem.Allocator) void {
     objects = std.ArrayList(GameObject).init(allocator);
