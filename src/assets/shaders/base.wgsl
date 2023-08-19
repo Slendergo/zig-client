@@ -1,24 +1,24 @@
-@group(0) @binding(0) var defaultSampler: sampler;
+@group(0) @binding(0) var default_sampler: sampler;
 @group(0) @binding(1) var tex: texture_2d<f32>;
 
 struct VertexInput {
   @location(0) pos: vec2<f32>, 
   @location(1) uv: vec2<f32>, 
-  @location(2) texelSize: vec2<f32>, 
-  @location(3) flashColor: vec3<f32>,
-  @location(4) flashStrength: f32,
-  @location(5) glowColor: vec3<f32>,
-  @location(6) alphaMult: f32,
+  @location(2) texel_size: vec2<f32>, 
+  @location(3) flash_color: vec3<f32>,
+  @location(4) flash_strength: f32,
+  @location(5) glow_color: vec3<f32>,
+  @location(6) alpha_mult: f32,
 }
 
 struct VertexOutput {
   @builtin(position) position : vec4<f32>,
   @location(0) uv : vec2<f32>,
-  @location(1) texelSize: vec2<f32>,
-  @location(2) flashColor: vec3<f32>,
-  @location(3) flashStrength: f32,
-  @location(4) glowColor: vec3<f32>,
-  @location(5) alphaMult: f32,
+  @location(1) texel_size: vec2<f32>,
+  @location(2) flash_color: vec3<f32>,
+  @location(3) flash_strength: f32,
+  @location(4) glow_color: vec3<f32>,
+  @location(5) alpha_mult: f32,
 }
 
 @vertex
@@ -26,11 +26,11 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     out.position = vec4(in.pos, 0.0, 1.0);
     out.uv = in.uv;
-    out.texelSize = in.texelSize;
-    out.flashColor = in.flashColor;
-    out.glowColor = in.glowColor;
-    out.flashStrength = in.flashStrength;
-    out.alphaMult = in.alphaMult;
+    out.texel_size = in.texel_size;
+    out.flash_color = in.flash_color;
+    out.glow_color = in.glow_color;
+    out.flash_strength = in.flash_strength;
+    out.alpha_mult = in.alpha_mult;
     return out;
 }
 
@@ -38,51 +38,51 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
   let dx = dpdx(in.uv);
   let dy = dpdy(in.uv);
-  var pixel = textureSampleGrad(tex, defaultSampler, in.uv, dx, dy);
-  if in.alphaMult >= 0.0 {
-    pixel.a *= in.alphaMult;
+  var pixel = textureSampleGrad(tex, default_sampler, in.uv, dx, dy);
+  if in.alpha_mult >= 0.0 {
+    pixel.a *= in.alpha_mult;
   }
 
   if pixel.a == 0.0 {
-    if in.texelSize.x != 0.0 {
-      var alpha = textureSampleGrad(tex, defaultSampler, in.uv - in.texelSize, dx, dy).a;
-      alpha += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x - in.texelSize.x, in.uv.y + in.texelSize.y), dx, dy).a;
-      alpha += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x + in.texelSize.x, in.uv.y - in.texelSize.y), dx, dy).a;
-      alpha += textureSampleGrad(tex, defaultSampler, in.uv + in.texelSize, dx, dy).a;
+    if in.texel_size.x != 0.0 {
+      var alpha = textureSampleGrad(tex, default_sampler, in.uv - in.texel_size, dx, dy).a;
+      alpha += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - in.texel_size.x, in.uv.y + in.texel_size.y), dx, dy).a;
+      alpha += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + in.texel_size.x, in.uv.y - in.texel_size.y), dx, dy).a;
+      alpha += textureSampleGrad(tex, default_sampler, in.uv + in.texel_size, dx, dy).a;
 
       if alpha > 0.0 {
-        pixel = vec4(in.glowColor, 1.0);
-      } else if in.alphaMult != -2.0 { // turbo hacky
+        pixel = vec4(in.glow_color, 1.0);
+      } else if in.alpha_mult != -2.0 { // turbo hacky
           var sum = 0.0;
           for (var i = 0.0; i < 7.0; i += 1.0) {
-              let uvY = in.uv.y + in.texelSize.y * (i - 3.5);
-              let texX2 = in.texelSize.x * 2.0;
-              let texX3 = in.texelSize.x * 3.0;
-              let texX4 = in.texelSize.x * 4.0;
-              sum += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x - texX4, uvY), dx, dy).a;
-              sum += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x - texX3, uvY), dx, dy).a;
-              sum += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x - texX2, uvY), dx, dy).a;
-              sum += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x - in.texelSize.x, uvY), dx, dy).a;
-              sum += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x, uvY), dx, dy).a;
-              sum += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x + in.texelSize.x, uvY), dx, dy).a;
-              sum += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x + texX2, uvY), dx, dy).a;
-              sum += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x + texX3, uvY), dx, dy).a;
-              sum += textureSampleGrad(tex, defaultSampler, vec2(in.uv.x + texX4, uvY), dx, dy).a;
+              let uv_y = in.uv.y + in.texel_size.y * (i - 3.5);
+              let tex_x_2 = in.texel_size.x * 2.0;
+              let tex_x_3 = in.texel_size.x * 3.0;
+              let tex_x_4 = in.texel_size.x * 4.0;
+              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - tex_x_4, uv_y), dx, dy).a;
+              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - tex_x_3, uv_y), dx, dy).a;
+              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - tex_x_2, uv_y), dx, dy).a;
+              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - in.texel_size.x, uv_y), dx, dy).a;
+              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x, uv_y), dx, dy).a;
+              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + in.texel_size.x, uv_y), dx, dy).a;
+              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + tex_x_2, uv_y), dx, dy).a;
+              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + tex_x_3, uv_y), dx, dy).a;
+              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + tex_x_4, uv_y), dx, dy).a;
           }
       
           if sum == 0.0 {
             discard;
           } else {
-            pixel = vec4(in.glowColor, sum / 81.0);
+            pixel = vec4(in.glow_color, sum / 81.0);
           }
       }
     } 
   } else {
-    if in.flashColor.r >= 0.0 {
-      let flashStrengthInv = 1.0 - in.flashStrength;
-      pixel = vec4(in.flashColor.r * in.flashStrength + pixel.r * flashStrengthInv,
-                  in.flashColor.g * in.flashStrength + pixel.g * flashStrengthInv, 
-                  in.flashColor.b * in.flashStrength + pixel.b * flashStrengthInv, pixel.a);
+    if in.flash_color.r >= 0.0 {
+      let flash_strength_inv = 1.0 - in.flash_strength;
+      pixel = vec4(in.flash_color.r * in.flash_strength + pixel.r * flash_strength_inv,
+                  in.flash_color.g * in.flash_strength + pixel.g * flash_strength_inv, 
+                  in.flash_color.b * in.flash_strength + pixel.b * flash_strength_inv, pixel.a);
     }
   }
 

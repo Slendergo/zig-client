@@ -385,7 +385,10 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 }
 
                 if (zgui.collapsingHeader("Mouse\n", .{})) {
-                    zgui.text("Position: {d:.3}, {d:.3}\n", .{ input.mouse_x, input.mouse_y });
+                    zgui.text("Screen Position: {d:.3}, {d:.3}\n", .{ input.mouse_x, input.mouse_y });
+
+                    const world_pos = camera.screenToWorld(@floatCast(input.mouse_x), @floatCast(input.mouse_y));
+                    zgui.text("World Position: {d:.3}, {d:.3}\n", .{ world_pos.x, world_pos.y });
                 }
 
                 if (zgui.collapsingHeader("Chat\n", .{})) {

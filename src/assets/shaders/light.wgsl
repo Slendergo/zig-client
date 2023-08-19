@@ -1,4 +1,4 @@
-@group(0) @binding(0) var defaultSampler: sampler;
+@group(0) @binding(0) var default_sampler: sampler;
 @group(0) @binding(1) var light_tex: texture_2d<f32>;
 
 struct VertexInput {
@@ -28,7 +28,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {  
-  var pixel = textureSample(light_tex, defaultSampler, in.uv);
+  var pixel = textureSample(light_tex, default_sampler, in.uv);
   if pixel.a == 0.0 {
     discard;
   }

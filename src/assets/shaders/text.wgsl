@@ -84,7 +84,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let opacity = clamp(sig_dist * to_pixels + 0.5, 0.0, 1.0) * in.alpha_mult;
 
     let offset_sig_dist = median(tex_offset.r, tex_offset.g, tex_offset.b) - 0.5;
-    let offset_opacity = clamp(offset_sig_dist * to_pixels + 0.5, 0.0, 1.0) * in.shadow_alpha_mult;
+    let offset_opacity = clamp(offset_sig_dist * to_pixels + 0.5, 0.0, 1.0) * in.shadow_alpha_mult * in.alpha_mult;
 
     return mix(vec4(in.shadow_color, offset_opacity), vec4(in.color, opacity), opacity);
 }
