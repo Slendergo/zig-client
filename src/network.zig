@@ -858,7 +858,7 @@ pub const Server = struct {
             .fame => plr.fame = reader.read(i32),
             .fame_goal => plr.fame_goal = reader.read(i32),
             .glow => plr.glow = reader.read(i32),
-            .sink_level => plr.sink_level = reader.read(u32),
+            .sink_level => plr.sink_level = reader.read(u16),
             .guild => plr.guild = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
             .guild_rank => plr.guild_rank = reader.read(i32),
             .oxygen_bar => plr.oxygen_bar = reader.read(i32),
@@ -1246,7 +1246,7 @@ pub const Server = struct {
         self.writer.index = 0;
 
         if (map.findPlayer(map.local_player_id)) |player| {
-            player.on_move();
+            player.onMove();
         }
     }
 

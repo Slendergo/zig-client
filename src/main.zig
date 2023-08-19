@@ -351,7 +351,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
 
                         zgui.text(
                             "Move Speed: {d:.3} | {d} speed\n",
-                            .{ local_player.moveSpeed(), local_player.speed },
+                            .{ local_player.moveSpeedMultiplier(), local_player.speed },
                         );
 
                         zgui.text(
