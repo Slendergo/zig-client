@@ -10,6 +10,8 @@ const zstbrp = @import("zstbrp");
 const zstbi = @import("zstbi");
 const ui = @import("ui.zig");
 
+pub const attack_period: u32 = 300;
+
 pub const BaseVertexData = extern struct {
     pos: [2]f32,
     uv: [2]f32,
@@ -53,8 +55,6 @@ pub const GroundUniformData = extern struct {
     left_top_mask_uv: [4]f32,
     right_bottom_mask_uv: [4]f32,
 };
-
-pub const attack_period = 300;
 
 pub var base_pipeline: zgpu.RenderPipelineHandle = .{};
 pub var base_bind_group: zgpu.BindGroupHandle = undefined;
@@ -1111,11 +1111,14 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     player.dir = assets.down_dir;
                 }
 
-                const anim_idx: usize = @intCast(@divFloor(@mod(time, 500), 250));
-                rect = player.anim_data.walk_anims[player.dir][anim_idx];
+                const time_dt: f32 = @floatFromInt(time);
+                const float_period: f32 = 3.5 / player.moveSpeed();
+                const anim_idx: f32 = @round(@mod(time_dt, float_period) / float_period);
+
+                rect = player.anim_data.walk_anims[player.dir][@as(u32, @intFromFloat(anim_idx))];
             }
 
-            if (time < player.attack_start + attack_period) {
+            if (time < player.attack_start + player.attack_period) {
                 player.dir = @intFromFloat(@mod(@divFloor(player.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
                 // bad hack
                 if (player.dir == assets.down_dir) {
@@ -1124,8 +1127,11 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     player.dir = assets.down_dir;
                 }
 
-                const anim_idx: usize = @intCast(@divFloor(@mod(time - player.attack_start, 300), 150));
-                rect = player.anim_data.attack_anims[player.dir][anim_idx];
+                const time_dt: f32 = @floatFromInt(time - player.attack_start);
+                const float_period: f32 = @floatFromInt(player.attack_period);
+                const anim_idx: f32 = @round(@mod(time_dt, float_period) / float_period);
+
+                rect = player.anim_data.attack_anims[player.dir][@as(u32, @intFromFloat(anim_idx))];
 
                 if (anim_idx != 0) {
                     const w = @as(f32, @floatFromInt(rect.w)) * size;

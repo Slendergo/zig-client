@@ -140,10 +140,6 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
     _ = scancode;
     _ = mods;
 
-    if (zgui.io.getWantCaptureKeyboard()) {
-        return;
-    }
-
     if (main.current_screen != .in_game)
         return;
 
@@ -159,10 +155,6 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
 pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
     _ = window;
     _ = mods;
-
-    if (zgui.io.getWantCaptureMouse()) {
-        return;
-    }
 
     if (main.current_screen != .in_game)
         return;

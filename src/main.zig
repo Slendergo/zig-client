@@ -134,6 +134,7 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
         .{ .texture_filter_mode = .linear, .pipeline_multisample_count = 1 },
     );
 
+    zgui.io.setConfigWindowsMoveFromTitleBarOnly(true);
     zgui.io.setDefaultFont(font_normal);
 
     const style = zgui.getStyle();

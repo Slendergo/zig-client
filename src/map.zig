@@ -8,7 +8,6 @@ const main = @import("main.zig");
 const utils = @import("utils.zig");
 const assets = @import("assets.zig");
 const ui = @import("ui.zig");
-const attack_period = @import("render.zig").attack_period;
 
 pub const move_threshold: f32 = 0.4;
 pub const min_move_speed: f32 = 0.004;
@@ -211,6 +210,7 @@ pub const GameObject = struct {
     merchant_obj_type: u16 = 0,
     merchant_rem_count: i32 = 0,
     merchant_rem_minute: i32 = 0,
+    merchant_discount: i32 = 0,
     sellable_price: i32 = 0,
     sellable_currency: game_data.Currency = game_data.Currency.Gold,
     sellable_rank_req: i32 = 0,
@@ -357,6 +357,32 @@ pub const GameObject = struct {
                 self.y = scale_dt * self.target_y + (1.0 - scale_dt) * self.tick_y;
             }
         }
+
+        merchantBlock: {
+            // this may not be good idea for merchants every frame lols
+            // todo move it into a fn call that will only be set on merchant_obj_type set
+            // this is temporary
+
+            const tex_list = game_data.obj_type_to_tex_data.get(self.merchant_obj_type);
+            if (tex_list == null or tex_list.?.len > 0) {
+                break :merchantBlock;
+            }
+
+            const tex = tex_list.?[@as(usize, @intCast(self.obj_id)) % tex_list.?.len];
+
+            const rect_sheet = assets.rects.get(tex.sheet);
+            var rect: zstbrp.PackRect = undefined;
+            if (rect_sheet != null) {
+                rect = rect_sheet.?[tex.index];
+            } else {
+                rect = assets.error_rect;
+            }
+
+            self.tex_u = @floatFromInt(rect.x);
+            self.tex_v = @floatFromInt(rect.y);
+            self.tex_w = @floatFromInt(rect.w);
+            self.tex_h = @floatFromInt(rect.h);
+        }
     }
 };
 
@@ -418,6 +444,7 @@ pub const Player = struct {
     oxygen_bar: i32 = 0,
     sink_offset: i32 = 0,
     attack_start: i32 = 0,
+    attack_period: i32 = 0,
     attack_angle: f32 = 0,
     next_bullet_id: u8 = 0,
     move_angle: f32 = std.math.nan(f32),
@@ -529,9 +556,9 @@ pub const Player = struct {
             current_angle += arc_gap;
         }
 
+        self.attack_period = attack_delay;
         self.attack_angle = angle - camera.angle;
-        if (time >= self.attack_start + attack_period)
-            self.attack_start = time;
+        self.attack_start = time;
     }
 
     pub inline fn update(self: *Player, time: i32, dt: i32) void {
