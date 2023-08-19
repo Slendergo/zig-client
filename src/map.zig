@@ -988,16 +988,18 @@ pub const Projectile = struct {
                         std.log.err("Could not send player hit: {any}", .{e});
                     };
 
-                if (self.props.min_damage > 0) {
+                if (self.props.damage > 0 or self.props.min_damage > 0) {
+                    const damageValue = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
+
                     // zig fmt: off
                     ui.status_texts.append(ui.StatusText{
                         .ref_x = &player.?.screen_x,
                         .ref_y = &player.?.screen_y,
                         .start_time = time,
                         .color = 0xB02020,
-                        .text = std.fmt.allocPrint(allocator, "-{d}", .{self.props.min_damage}) catch unreachable
+                        .text = std.fmt.allocPrint(allocator, "-{d}", .{damageValue}) catch unreachable
                     }) catch |e| {
-                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{self.props.min_damage, e});
+                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{damageValue, e});
                     };
                     // zig fmt: on
                 }
@@ -1015,15 +1017,24 @@ pub const Projectile = struct {
                     };
 
                 if (self.props.min_damage > 0) {
+                    const piercing: bool = self.props.piercing;
+                    var damageColor: u32 = 0x000000;
+                    if (piercing) damageColor = 0x890AFF else damageColor = 0xB02020;
                     // zig fmt: off
+                    const damage = @as(i32, calculateDamage(
+                        self,
+                        object.?.obj_id,
+                        self.owner_id,
+                        piercing
+                    ));
                     ui.status_texts.append(ui.StatusText{
                         .ref_x = &object.?.screen_x,
                         .ref_y = &object.?.screen_y,
                         .start_time = time,
                         .color = 0xB02020,
-                        .text = std.fmt.allocPrint(allocator, "-{d}", .{self.props.min_damage}) catch unreachable
+                        .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable
                     }) catch |e| {
-                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{self.props.min_damage, e});
+                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{damage, e});
                     };
                     // zig fmt: on
                 }
@@ -1172,6 +1183,24 @@ pub fn removeProj(obj_id: i32) ?Projectile {
     }
 
     return null;
+}
+
+pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, piercing: bool) i32 {
+    if (findObject(object_id)) |object| {
+        _ = player_id;
+        std.log.debug("mindamage - {d} maxdamage - {d}", .{ proj.props.min_damage, proj.props.max_damage });
+        var minDamage: u64 = @intCast(proj.props.min_damage);
+        var maxDamage: u64 = @intCast(proj.props.max_damage);
+        var damage = minDamage + utils.rng.next() % (maxDamage - minDamage + 1);
+
+        if (piercing) {} else damage -= @intCast(object.defense);
+        // todo player buffs and mult
+        // if (findPlayer(player_id)) |player| {
+        // }
+        std.log.debug("damage after def - {d}", .{damage});
+        return @intCast(damage);
+    }
+    return -1;
 }
 
 pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
