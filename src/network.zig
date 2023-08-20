@@ -593,7 +593,7 @@ pub const Server = struct {
     inline fn handleNotification(reader: *utils.PacketReader, allocator: std.mem.Allocator) void {
         const object_id = reader.read(i32);
         const message = reader.read([]u8);
-        const color = reader.read(ARGB);
+        const color = @byteSwap(@as(u32, @bitCast(reader.read(ARGB))));
 
         // zig fmt: off
         if (map.findEntity(object_id)) |en| {
@@ -603,7 +603,7 @@ pub const Server = struct {
                         .ref_x = &player.screen_x,
                         .ref_y = &player.screen_y,
                         .start_time = main.current_time,
-                        .color = @bitCast(color),
+                        .color = color,
                         .lifetime = 2000,
                         .text = allocator.dupe(u8, message) catch unreachable, // not really unreachable is it now?
                     }) catch unreachable; 
@@ -613,7 +613,7 @@ pub const Server = struct {
                         .ref_x = &obj.screen_x,
                         .ref_y = &obj.screen_y,
                         .start_time = main.current_time,
-                        .color = @bitCast(color),
+                        .color = color,
                         .lifetime = 2000,
                         .text = allocator.dupe(u8, message) catch unreachable,
                     }) catch unreachable;
@@ -719,7 +719,7 @@ pub const Server = struct {
         const target_object_id = reader.read(i32);
         const pos1 = reader.read(Position);
         const pos2 = reader.read(Position);
-        const color = reader.read(ARGB);
+        const color = @byteSwap(@as(u32, @bitCast(reader.read(ARGB))));
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
             std.log.debug("Recv - ShowEffect: effect_type={any}, target_object_id={d}, x1={e}, y1={e}, x2={e}, y2={e}, color={any}", .{ effect_type, target_object_id, pos1.x, pos1.y, pos2.x, pos2.y, color });

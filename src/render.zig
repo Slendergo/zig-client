@@ -713,16 +713,16 @@ inline fn drawQuadVerts(
 ) void {
     var flash_rgb = [3]f32{ -1.0, -1.0, -1.0 };
     if (flash_color != -1) {
-        flash_rgb[0] = @as(f32, @floatFromInt((flash_color >> 16) & 0xFF)) / 255.0;
-        flash_rgb[1] = @as(f32, @floatFromInt((flash_color >> 8) & 0xFF)) / 255.0;
-        flash_rgb[2] = @as(f32, @floatFromInt(flash_color & 0xFF)) / 255.0;
+        flash_rgb[0] = @as(f32, @floatFromInt((flash_color & 0x00FF0000) >> 16)) / 255.0;
+        flash_rgb[1] = @as(f32, @floatFromInt((flash_color & 0x0000FF00) >> 8)) / 255.0;
+        flash_rgb[2] = @as(f32, @floatFromInt((flash_color & 0x000000FF) >> 0)) / 255.0;
     }
 
     var glow_rgb = [3]f32{ 0.0, 0.0, 0.0 };
     if (glow_color != -1) {
-        glow_rgb[0] = @as(f32, @floatFromInt((glow_color >> 16) & 0xFF)) / 255.0;
-        glow_rgb[1] = @as(f32, @floatFromInt((glow_color >> 8) & 0xFF)) / 255.0;
-        glow_rgb[2] = @as(f32, @floatFromInt(glow_color & 0xFF)) / 255.0;
+        glow_rgb[0] = @as(f32, @floatFromInt((glow_color & 0x00FF0000) >> 16)) / 255.0;
+        glow_rgb[1] = @as(f32, @floatFromInt((glow_color & 0x0000FF00) >> 8)) / 255.0;
+        glow_rgb[2] = @as(f32, @floatFromInt((glow_color & 0x000000FF) >> 0)) / 255.0;
     }
 
     const texel_w = assets.base_texel_w * texel_mult;
@@ -840,14 +840,14 @@ const TextOptions = struct {
 };
 
 inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color: u32, alpha_mult: f32, text_type: f32, opts: TextOptions) u16 {
-    const r: f32 = @as(f32, @floatFromInt((color >> 16) & 0xFF)) / 255.0;
-    const g: f32 = @as(f32, @floatFromInt((color >> 8) & 0xFF)) / 255.0;
-    const b: f32 = @as(f32, @floatFromInt(color & 0xFF)) / 255.0;
+    const r: f32 = @as(f32, @floatFromInt((color & 0x00FF0000) >> 16)) / 255.0;
+    const g: f32 = @as(f32, @floatFromInt((color & 0x0000FF00) >> 8)) / 255.0;
+    const b: f32 = @as(f32, @floatFromInt((color & 0x000000FF) >> 0)) / 255.0;
     const rgb = [3]f32{ r, g, b };
 
-    const shadow_r: f32 = @as(f32, @floatFromInt((opts.shadow_color >> 16) & 0xFF)) / 255.0;
-    const shadow_g: f32 = @as(f32, @floatFromInt((opts.shadow_color >> 8) & 0xFF)) / 255.0;
-    const shadow_b: f32 = @as(f32, @floatFromInt(opts.shadow_color & 0xFF)) / 255.0;
+    const shadow_r: f32 = @as(f32, @floatFromInt((opts.shadow_color & 0x00FF0000) >> 16)) / 255.0;
+    const shadow_g: f32 = @as(f32, @floatFromInt((opts.shadow_color & 0x0000FF00) >> 8)) / 255.0;
+    const shadow_b: f32 = @as(f32, @floatFromInt((opts.shadow_color & 0x000000FF) >> 0)) / 255.0;
     const shadow_rgb = [3]f32{ shadow_r, shadow_g, shadow_b };
 
     const shadow_texel_size = [2]f32{ opts.shadow_texel_offset_mult / assets.CharacterData.atlas_w, opts.shadow_texel_offset_mult / assets.CharacterData.atlas_h };
@@ -939,9 +939,9 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
 }
 
 inline fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: i32, intensity: f32) void {
-    const r: f32 = @as(f32, @floatFromInt((color >> 16) & 0xFF)) / 255.0;
-    const g: f32 = @as(f32, @floatFromInt((color >> 8) & 0xFF)) / 255.0;
-    const b: f32 = @as(f32, @floatFromInt(color & 0xFF)) / 255.0;
+    const r: f32 = @as(f32, @floatFromInt((color & 0x00FF0000) >> 16)) / 255.0;
+    const g: f32 = @as(f32, @floatFromInt((color & 0x0000FF00) >> 8)) / 255.0;
+    const b: f32 = @as(f32, @floatFromInt((color & 0x000000FF) >> 0)) / 255.0;
     const rgb = [3]f32{ r, g, b };
 
     // 2x given size
@@ -1131,7 +1131,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             5 => assets.down_dir,
                             6 => assets.down_dir,
                             7 => assets.left_dir,
-                            else => assets.left_dir
+                            else => assets.left_dir,
                         };
 
                         var float_time: f32 = @floatFromInt(time);
