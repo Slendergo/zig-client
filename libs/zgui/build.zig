@@ -62,6 +62,8 @@ pub fn package(
             lib.defineCMacro("ZGUI_API", "__declspec(dllexport)");
         }
 
+        lib.defineCMacro("NDEBUG", null);
+
         break :blk lib;
     } else b.addStaticLibrary(.{
         .name = "zgui",
