@@ -14,6 +14,11 @@ pub const atlas_height: u32 = 4096;
 pub const base_texel_w: f32 = 1.0 / 4096.0;
 pub const base_texel_h: f32 = 1.0 / 4096.0;
 
+// todo turn into enum in future
+pub const stand_action: u8 = 0;
+pub const walk_action: u8 = 1;
+pub const attack_action: u8 = 2;
+
 pub const right_dir: u8 = 0;
 pub const left_dir: u8 = 1;
 pub const down_dir: u8 = 2;
@@ -199,6 +204,7 @@ inline fn addAnimEnemy(comptime sheet_name: []const u8, comptime image_name: []c
                 } else {
                     enemy_data[set_idx].walk_anims[i][frame_idx] = rect;
                 }
+
                 const cur_atlas_x = rect.x + padding;
                 const cur_atlas_y = rect.y + padding;
                 const cur_src_x = frame_idx * cut_width;

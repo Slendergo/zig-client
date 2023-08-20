@@ -310,14 +310,8 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 );
 
                 if (zgui.collapsingHeader("World\n", .{ .default_open = true })) {
-                    zgui.text(
-                        "Size: {d}x{d}\n",
-                        .{ map.width, map.height },
-                    );
-                    zgui.text(
-                        "Entities: {d}\n",
-                        .{map.entities.items.len},
-                    );
+                    zgui.text("Size: {d}x{d}\n", .{ map.width, map.height });
+                    zgui.text("Entities: {d}\n", .{map.entities.items.len});
 
                     while (!map.object_lock.tryLock()) {}
                     defer map.object_lock.unlock();
@@ -344,6 +338,11 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                         switch (en.*) {
                             .player => |local_player| {
                                 zgui.text(
+                                    "Attack Angle: {d:.3}\n",
+                                    .{local_player.attack_angle},
+                                );
+
+                                zgui.text(
                                     "Position: {d:.3}, {d:.3}\n",
                                     .{ local_player.x, local_player.x },
                                 );
@@ -355,11 +354,6 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                                 zgui.text(
                                     "Move Angle: {d:.3}\n",
                                     .{local_player.move_angle},
-                                );
-
-                                zgui.text(
-                                    "Visual Move: {d:.3}\n",
-                                    .{local_player.visual_move_angle},
                                 );
 
                                 zgui.text(
@@ -383,11 +377,6 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                                 );
 
                                 if (zgui.treeNodeFlags("Animation\n", .{ .default_open = true })) {
-                                    zgui.text(
-                                        "Direction: {d}\n",
-                                        .{local_player.dir},
-                                    );
-
                                     const tex_list = game_data.obj_type_to_tex_data.get(local_player.obj_type);
                                     if (tex_list != null) {
                                         const tex = tex_list.?[@as(usize, @intCast(local_player.obj_id)) % tex_list.?.len];
