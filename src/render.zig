@@ -1117,41 +1117,25 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     var rect = player.anim_data.walk_anims[0][0];
                     if (!std.math.isNan(player.facing)) {
-                        var a: f32 = utils.boundToPI(player.facing - camera.angle);
+                        var a: f32 = utils.halfBound(player.facing - camera.angle);
                         var sec: u8 = @as(u8, @intFromFloat(@divFloor(a, std.math.pi / 4.0) + 4)) % 8;
 
                         player.dir = sec;
 
-                        switch (sec) {
-                            0 => {
-                                sec = assets.left_dir;
-                            },
-                            1 => {
-                                sec = assets.up_dir;
-                            },
-                            2 => {
-                                sec = assets.up_dir;
-                            },
-                            3 => {
-                                sec = assets.right_dir;
-                            },
-                            4 => {
-                                sec = assets.right_dir;
-                            },
-                            5 => {
-                                sec = assets.down_dir;
-                            },
-                            6 => {
-                                sec = assets.down_dir;
-                            },
-                            7 => {
-                                sec = assets.left_dir;
-                            },
-                            else => {},
-                        }
+                        sec = switch (sec) {
+                            0 => assets.left_dir,
+                            1 => assets.up_dir,
+                            2 => assets.up_dir,
+                            3 => assets.right_dir,
+                            4 => assets.right_dir,
+                            5 => assets.down_dir,
+                            6 => assets.down_dir,
+                            7 => assets.left_dir,
+                            else => assets.left_dir
+                        };
 
-                        var time_dt: f32 = @floatFromInt(time);
-                        var anim_idx: usize = @intFromFloat(@max(0, @min(0.99999, @round(@mod(time_dt, float_period) / float_period))));
+                        var float_time: f32 = @floatFromInt(time);
+                        var anim_idx: usize = @intFromFloat(@max(0, @min(0.99999, @round(@mod(float_time, float_period) / float_period))));
 
                         // const p = @round(@mod(time_dt, float_period) / float_period);
                         // const anim_idx: usize = @intFromFloat(@max(0, @min(0.99999, p)));
@@ -1161,7 +1145,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     var x_offset: f32 = 0.0;
                     if (time < player.attack_start + player.attack_period) {
-                        player.dir = @intFromFloat(@mod(@divFloor(layer.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
+                        player.dir = @intFromFloat(@mod(@divFloor(player.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
                         // bad hack
                         if (player.dir == assets.down_dir) {
                             player.dir = assets.left_dir;
