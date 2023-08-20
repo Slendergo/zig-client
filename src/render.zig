@@ -1192,10 +1192,11 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     if (time < player.attack_start + player.attack_period) {
                         player.facing = player.attack_angle;
                         const time_dt: f32 = @floatFromInt(time - player.attack_start);
+                        float_period = @floatFromInt(player.attack_period);
                         float_period = @mod(time_dt, float_period) / float_period;
                         action = assets.attack_action;
                     } else if (!std.math.isNan(player.move_angle)) {
-                        const walk_period: f32 = 3.5 / player.moveSpeedMultiplier();
+                        const walk_period = 3.5 / player.moveSpeedMultiplier();
                         const time_dt: f32 = @floatFromInt(time - player.attack_start);
                         float_period = @mod(time_dt, walk_period) / walk_period;
                         player.facing = player.move_angle;
@@ -1204,9 +1205,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     // todo remove the double bounds see if it helps
 
-                    var angle: f32 = utils.halfBound(player.facing - camera.angle);
-                    var pi_over_4: f32 = std.math.pi / 4.0;
-                    var angle_div: f32 = @divFloor(angle, pi_over_4);
+                    const angle = utils.halfBound(player.facing);
+                    const pi_over_4 = std.math.pi / 4.0;
+                    const angle_div = @divFloor(angle, pi_over_4);
 
                     var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(angle_div + 4)) % 8;
 
@@ -1230,7 +1231,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         5 => assets.down_dir,
                         6 => assets.down_dir,
                         7 => assets.left_dir,
-                        else => 0, // this should never happen as we are wrapping @ 8
+                        else => unreachable,
                     };
 
                     // 2 frames so multiply by 2

@@ -486,6 +486,9 @@ fn networkTick(allocator: std.mem.Allocator) void {
 
                 server.?.accept(allocator) catch |e| {
                     std.log.err("Error while accepting server packets: {any}\n", .{e});
+                    server = null;
+                    selected_server = null;
+                    sent_hello = false;
                     disconnect();
                 };
             }
