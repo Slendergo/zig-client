@@ -879,7 +879,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
 
-        const px_range = 2.0 * assets.CharacterData.padding_mult * 2.0;
+        const px_range = 2.0 * assets.CharacterData.padding_mult;
 
         // zig fmt: off
         text_vert_data[idx_new] = TextVertexData{
@@ -1183,7 +1183,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         // zig fmt: off
                         text_idx += drawText(text_idx, 
                             screen_pos.x - x_offset - text_width / 2,
-                            screen_pos.y - 15, 
+                            screen_pos.y - 16 * assets.CharacterData.padding_mult, 
                             16, name, 0xFCDF00, 1.0, ui.medium_text_type, .{});
                         // zig fmt: on
                     }
