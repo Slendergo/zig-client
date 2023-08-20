@@ -43,6 +43,20 @@ pub fn strlen(str: []const u8) usize {
     return i;
 }
 
+pub fn boundToPI(x: f32) f32 {
+    var new = x;
+    if (x < -std.math.pi) {
+        var a: i32 = @as(i32, @intFromFloat(x / -std.math.pi)) + 1;
+        var v: i32 = @divFloor(a, 2);
+        new += @as(f32, @floatFromInt(v)) * 2.0 * std.math.pi;
+    } else if (x > std.math.pi) {
+        var a: i32 = @as(i32, @intFromFloat(x / std.math.pi)) + 1;
+        var v: i32 = @divFloor(a, 2);
+        new -= @as(f32, @floatFromInt(v)) * 2.0 * std.math.pi;
+    }
+    return new;
+}
+
 pub fn halfBound(angle: f32) f32 {
     var new_angle = angle;
     new_angle = @mod(new_angle, std.math.tau);

@@ -339,7 +339,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 if (zgui.collapsingHeader("Player\n", .{ .default_open = true })) {
                     while (!map.object_lock.tryLock()) {}
                     defer map.object_lock.unlock();
-                    
+
                     if (map.findEntity(map.local_player_id)) |en| {
                         switch (en.*) {
                             .player => |local_player| {
@@ -348,6 +348,10 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                                     .{ local_player.x, local_player.x },
                                 );
 
+                                zgui.text(
+                                    "Facing Angle: {d:.3}\n",
+                                    .{local_player.facing},
+                                );
                                 zgui.text(
                                     "Move Angle: {d:.3}\n",
                                     .{local_player.move_angle},

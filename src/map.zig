@@ -456,6 +456,7 @@ pub const Player = struct {
     attack_angle: f32 = 0,
     next_bullet_id: u8 = 0,
     move_angle: f32 = std.math.nan(f32),
+    facing: f32 = std.math.nan(f32),
     visual_move_angle: f32 = std.math.nan(f32),
     walk_speed_multiplier: f32 = 1.0,
     dir: u8 = assets.left_dir,
@@ -589,6 +590,7 @@ pub const Player = struct {
                 const float_dt: f32 = @floatFromInt(dt);
                 const next_x = self.x + move_speed * float_dt * @cos(total_angle);
                 const next_y = self.y + move_speed * float_dt * @sin(total_angle);
+
                 modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
 
@@ -1267,9 +1269,9 @@ pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, pierci
             .object => |object| {
                 var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
 
-                if (!piercing) 
+                if (!piercing)
                     damage -= @intCast(object.defense);
-                
+
                 // todo player buffs and mult
                 // if (findPlayer(player_id)) |player| {
                 // }

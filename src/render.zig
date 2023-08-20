@@ -1109,26 +1109,59 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     const size = camera.size_mult * camera.scale * player.size;
 
-                    var rect = player.anim_data.walk_anims[player.dir][0];
-                    var x_offset: f32 = 0.0;
-
-                    if (!std.math.isNan(player.visual_move_angle)) {
-                        player.dir = @intFromFloat(@mod(@divFloor(player.visual_move_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
-                        // bad hack todo
-                        if (player.dir == assets.down_dir) {
-                            player.dir = assets.left_dir;
-                        } else if (player.dir == assets.left_dir) {
-                            player.dir = assets.down_dir;
-                        }
-
-                        const time_dt: f32 = @floatFromInt(time);
-                        const float_period: f32 = 3.5 / player.moveSpeedMultiplier();
-                        const anim_idx: usize = @intFromFloat(@round(@mod(time_dt, float_period) / float_period));
-                        rect = player.anim_data.walk_anims[player.dir][anim_idx];
+                    var float_period: f32 = 0.0;
+                    if (!std.math.isNan(player.move_angle)) {
+                        float_period = 3.5 / player.moveSpeedMultiplier();
+                        player.facing = player.move_angle;
                     }
 
+                    var rect = player.anim_data.walk_anims[0][0];
+                    if (!std.math.isNan(player.facing)) {
+                        var a: f32 = utils.boundToPI(player.facing - camera.angle);
+                        var sec: u8 = @as(u8, @intFromFloat(@divFloor(a, std.math.pi / 4.0) + 4)) % 8;
+
+                        player.dir = sec;
+
+                        switch (sec) {
+                            0 => {
+                                sec = assets.left_dir;
+                            },
+                            1 => {
+                                sec = assets.up_dir;
+                            },
+                            2 => {
+                                sec = assets.up_dir;
+                            },
+                            3 => {
+                                sec = assets.right_dir;
+                            },
+                            4 => {
+                                sec = assets.right_dir;
+                            },
+                            5 => {
+                                sec = assets.down_dir;
+                            },
+                            6 => {
+                                sec = assets.down_dir;
+                            },
+                            7 => {
+                                sec = assets.left_dir;
+                            },
+                            else => {},
+                        }
+
+                        var time_dt: f32 = @floatFromInt(time);
+                        var anim_idx: usize = @intFromFloat(@max(0, @min(0.99999, @round(@mod(time_dt, float_period) / float_period))));
+
+                        // const p = @round(@mod(time_dt, float_period) / float_period);
+                        // const anim_idx: usize = @intFromFloat(@max(0, @min(0.99999, p)));
+
+                        rect = player.anim_data.walk_anims[sec][anim_idx];
+                    }
+
+                    var x_offset: f32 = 0.0;
                     if (time < player.attack_start + player.attack_period) {
-                        player.dir = @intFromFloat(@mod(@divFloor(player.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
+                        player.dir = @intFromFloat(@mod(@divFloor(layer.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
                         // bad hack
                         if (player.dir == assets.down_dir) {
                             player.dir = assets.left_dir;
@@ -1137,8 +1170,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         }
 
                         const time_dt: f32 = @floatFromInt(time - player.attack_start);
-                        const float_period: f32 = @floatFromInt(player.attack_period);
+                        float_period = @floatFromInt(player.attack_period);
                         const anim_idx: usize = @intFromFloat(@round(@mod(time_dt, float_period) / float_period));
+
                         rect = player.anim_data.attack_anims[player.dir][anim_idx];
 
                         if (anim_idx != 0) {
