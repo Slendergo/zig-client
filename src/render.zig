@@ -714,16 +714,16 @@ inline fn drawQuadVerts(
 ) void {
     var flash_rgb = [3]f32{ -1.0, -1.0, -1.0 };
     if (flash_color != -1) {
-        flash_rgb[0] = @as(f32, @floatFromInt((flash_color >> 16) & 0xFF)) / 255.0;
-        flash_rgb[1] = @as(f32, @floatFromInt((flash_color >> 8) & 0xFF)) / 255.0;
-        flash_rgb[2] = @as(f32, @floatFromInt(flash_color & 0xFF)) / 255.0;
+        flash_rgb[0] = @as(f32, @floatFromInt((flash_color & 0x00FF0000) >> 16)) / 255.0;
+        flash_rgb[1] = @as(f32, @floatFromInt((flash_color & 0x0000FF00) >> 8)) / 255.0;
+        flash_rgb[2] = @as(f32, @floatFromInt((flash_color & 0x000000FF) >> 0)) / 255.0;
     }
 
     var glow_rgb = [3]f32{ 0.0, 0.0, 0.0 };
     if (glow_color != -1) {
-        glow_rgb[0] = @as(f32, @floatFromInt((glow_color >> 16) & 0xFF)) / 255.0;
-        glow_rgb[1] = @as(f32, @floatFromInt((glow_color >> 8) & 0xFF)) / 255.0;
-        glow_rgb[2] = @as(f32, @floatFromInt(glow_color & 0xFF)) / 255.0;
+        glow_rgb[0] = @as(f32, @floatFromInt((glow_color & 0x00FF0000) >> 16)) / 255.0;
+        glow_rgb[1] = @as(f32, @floatFromInt((glow_color & 0x0000FF00) >> 8)) / 255.0;
+        glow_rgb[2] = @as(f32, @floatFromInt((glow_color & 0x000000FF) >> 0)) / 255.0;
     }
 
     const texel_w = assets.base_texel_w * texel_mult;
@@ -841,14 +841,14 @@ const TextOptions = struct {
 };
 
 inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color: u32, alpha_mult: f32, text_type: f32, opts: TextOptions) u16 {
-    const r: f32 = @as(f32, @floatFromInt((color >> 16) & 0xFF)) / 255.0;
-    const g: f32 = @as(f32, @floatFromInt((color >> 8) & 0xFF)) / 255.0;
-    const b: f32 = @as(f32, @floatFromInt(color & 0xFF)) / 255.0;
+    const r: f32 = @as(f32, @floatFromInt((color & 0x00FF0000) >> 16)) / 255.0;
+    const g: f32 = @as(f32, @floatFromInt((color & 0x0000FF00) >> 8)) / 255.0;
+    const b: f32 = @as(f32, @floatFromInt((color & 0x000000FF) >> 0)) / 255.0;
     const rgb = [3]f32{ r, g, b };
 
-    const shadow_r: f32 = @as(f32, @floatFromInt((opts.shadow_color >> 16) & 0xFF)) / 255.0;
-    const shadow_g: f32 = @as(f32, @floatFromInt((opts.shadow_color >> 8) & 0xFF)) / 255.0;
-    const shadow_b: f32 = @as(f32, @floatFromInt(opts.shadow_color & 0xFF)) / 255.0;
+    const shadow_r: f32 = @as(f32, @floatFromInt((opts.shadow_color & 0x00FF0000) >> 16)) / 255.0;
+    const shadow_g: f32 = @as(f32, @floatFromInt((opts.shadow_color & 0x0000FF00) >> 8)) / 255.0;
+    const shadow_b: f32 = @as(f32, @floatFromInt((opts.shadow_color & 0x000000FF) >> 0)) / 255.0;
     const shadow_rgb = [3]f32{ shadow_r, shadow_g, shadow_b };
 
     const shadow_texel_size = [2]f32{ opts.shadow_texel_offset_mult / assets.CharacterData.atlas_w, opts.shadow_texel_offset_mult / assets.CharacterData.atlas_h };
@@ -880,7 +880,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
 
-        const px_range = 2.0 * assets.CharacterData.padding_mult;
+        const px_range = 2.0 * assets.CharacterData.padding_mult / camera.scale;
 
         // zig fmt: off
         text_vert_data[idx_new] = TextVertexData{
@@ -940,9 +940,9 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
 }
 
 inline fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: i32, intensity: f32) void {
-    const r: f32 = @as(f32, @floatFromInt((color >> 16) & 0xFF)) / 255.0;
-    const g: f32 = @as(f32, @floatFromInt((color >> 8) & 0xFF)) / 255.0;
-    const b: f32 = @as(f32, @floatFromInt(color & 0xFF)) / 255.0;
+    const r: f32 = @as(f32, @floatFromInt((color & 0x00FF0000) >> 16)) / 255.0;
+    const g: f32 = @as(f32, @floatFromInt((color & 0x0000FF00) >> 8)) / 255.0;
+    const b: f32 = @as(f32, @floatFromInt((color & 0x000000FF) >> 0)) / 255.0;
     const rgb = [3]f32{ r, g, b };
 
     // 2x given size
@@ -1006,6 +1006,26 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
     const ib_info = gctx.lookupResourceInfo(index_buffer) orelse return;
 
+    const clear_color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
+        .view = back_buffer,
+        .load_op = .clear,
+        .store_op = .store,
+    }};
+    const clear_render_pass_info = zgpu.wgpu.RenderPassDescriptor{
+        .color_attachment_count = clear_color_attachments.len,
+        .color_attachments = &clear_color_attachments,
+    };
+
+    const load_color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
+        .view = back_buffer,
+        .load_op = .load,
+        .store_op = .store,
+    }};
+    const load_render_pass_info = zgpu.wgpu.RenderPassDescriptor{
+        .color_attachment_count = load_color_attachments.len,
+        .color_attachments = &load_color_attachments,
+    };
+
     var light_idx: u16 = 0;
     var text_idx: u16 = 0;
 
@@ -1013,15 +1033,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         const vb_info = gctx.lookupResourceInfo(ground_vb) orelse break :groundPass;
         const pipeline = gctx.lookupResource(ground_pipeline) orelse break :groundPass;
         const bind_group = gctx.lookupResource(ground_bind_group) orelse break :groundPass;
-        const color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
-            .view = back_buffer,
-            .load_op = .clear,
-            .store_op = .store,
-        }};
-        const render_pass_info = zgpu.wgpu.RenderPassDescriptor{
-            .color_attachment_count = color_attachments.len,
-            .color_attachments = &color_attachments,
-        };
 
         const mem = gctx.uniformsAllocate(GroundUniformData, 1);
         mem.slice[0] = .{
@@ -1029,9 +1040,31 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             .right_bottom_mask_uv = assets.right_bottom_mask_uv,
         };
 
+        var first: bool = false;
         var square_idx: u16 = 0;
         for (camera.min_y..camera.max_y) |y| {
             for (camera.min_x..camera.max_x) |x| {
+                if (square_idx == 4000) {
+                    encoder.writeBuffer(
+                        gctx.lookupResource(ground_vb).?,
+                        0,
+                        GroundVertexData,
+                        ground_vert_data[0..4000],
+                    );
+                    endDraw(
+                        encoder,
+                        if (first) clear_render_pass_info else load_render_pass_info,
+                        vb_info,
+                        ib_info,
+                        pipeline,
+                        bind_group,
+                        6000,
+                        &.{mem.offset},
+                    );
+                    square_idx = 0;
+                    first = false;
+                }
+
                 const dx = camera.x - @as(f32, @floatFromInt(x)) - 0.5;
                 const dy = camera.y - @as(f32, @floatFromInt(y)) - 0.5;
                 if (dx * dx + dy * dy > camera.max_dist_sq)
@@ -1047,36 +1080,64 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 const screen_y = -(screen_pos.y - camera.screen_height / 2.0);
 
                 if (square.light_color > 0) {
-                    // zig fmt: off
-                    drawLight(light_idx,
-                        camera.px_per_tile * square.light_radius, 
+                    drawLight(
+                        light_idx,
                         camera.px_per_tile * square.light_radius,
-                        screen_pos.x, screen_pos.y, square.light_color, square.light_intensity);
-                    // zig fmt: on
+                        camera.px_per_tile * square.light_radius,
+                        screen_pos.x,
+                        screen_pos.y,
+                        square.light_color,
+                        square.light_intensity,
+                    );
                     light_idx += 4;
                 }
 
                 const cos_half = camera.cos / 2.0;
                 const sin_half = camera.sin / 2.0;
-                // zig fmt: off
-                drawSquare(square_idx, 
-                    (cos_half + sin_half + screen_x) * camera.clip_scale_x, (sin_half - cos_half + screen_y) * camera.clip_scale_y,
-                    (-cos_half + sin_half + screen_x) * camera.clip_scale_x, (-sin_half - cos_half + screen_y) * camera.clip_scale_y,
-                    (-cos_half - sin_half + screen_x) * camera.clip_scale_x, (-sin_half + cos_half + screen_y) * camera.clip_scale_y,
-                    (cos_half - sin_half + screen_x) * camera.clip_scale_x, (sin_half + cos_half + screen_y) * camera.clip_scale_y,
-                    square.tex_u, square.tex_v, square.tex_w, square.tex_h,
-                    square.left_blend_u, square.left_blend_v, 
-                    square.top_blend_u, square.top_blend_v,
-                    square.right_blend_u, square.right_blend_v,
-                    square.bottom_blend_u, square.bottom_blend_v);
-                // zig fmt: on
+                drawSquare(
+                    square_idx,
+                    (cos_half + sin_half + screen_x) * camera.clip_scale_x,
+                    (sin_half - cos_half + screen_y) * camera.clip_scale_y,
+                    (-cos_half + sin_half + screen_x) * camera.clip_scale_x,
+                    (-sin_half - cos_half + screen_y) * camera.clip_scale_y,
+                    (-cos_half - sin_half + screen_x) * camera.clip_scale_x,
+                    (-sin_half + cos_half + screen_y) * camera.clip_scale_y,
+                    (cos_half - sin_half + screen_x) * camera.clip_scale_x,
+                    (sin_half + cos_half + screen_y) * camera.clip_scale_y,
+                    square.tex_u,
+                    square.tex_v,
+                    square.tex_w,
+                    square.tex_h,
+                    square.left_blend_u,
+                    square.left_blend_v,
+                    square.top_blend_u,
+                    square.top_blend_v,
+                    square.right_blend_u,
+                    square.right_blend_v,
+                    square.bottom_blend_u,
+                    square.bottom_blend_v,
+                );
                 square_idx += 4;
             }
         }
 
         if (square_idx > 0) {
-            encoder.writeBuffer(gctx.lookupResource(ground_vb).?, 0, GroundVertexData, ground_vert_data[0..square_idx]);
-            endDraw(encoder, render_pass_info, vb_info, ib_info, pipeline, bind_group, @divFloor(square_idx, 4) * 6, &.{mem.offset});
+            encoder.writeBuffer(
+                gctx.lookupResource(ground_vb).?,
+                0,
+                GroundVertexData,
+                ground_vert_data[0..square_idx],
+            );
+            endDraw(
+                encoder,
+                if (first) clear_render_pass_info else load_render_pass_info,
+                vb_info,
+                ib_info,
+                pipeline,
+                bind_group,
+                @divFloor(square_idx, 4) * 6,
+                &.{mem.offset},
+            );
         }
     }
 
@@ -1090,18 +1151,29 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         const vb_info = gctx.lookupResourceInfo(base_vb) orelse break :normalPass;
         const pipeline = gctx.lookupResource(base_pipeline) orelse break :normalPass;
         const bind_group = gctx.lookupResource(base_bind_group) orelse break :normalPass;
-        const color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
-            .view = back_buffer,
-            .load_op = .load,
-            .store_op = .store,
-        }};
-        const render_pass_info = zgpu.wgpu.RenderPassDescriptor{
-            .color_attachment_count = color_attachments.len,
-            .color_attachments = &color_attachments,
-        };
 
         var idx: u16 = 0;
         for (map.entities.items) |*en| {
+            if (idx == 4000) {
+                encoder.writeBuffer(
+                    gctx.lookupResource(base_vb).?,
+                    0,
+                    BaseVertexData,
+                    base_vert_data[0..4000],
+                );
+                endDraw(
+                    encoder,
+                    load_render_pass_info,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                    6000,
+                    null,
+                );
+                idx = 0;
+            }
+
             switch (en.*) {
                 .player => |*player| {
                     if (!camera.visibleInCamera(player.x, player.y)) {
@@ -1224,32 +1296,46 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     player.screen_x = screen_pos.x - x_offset;
 
                     if (player.light_color > 0) {
-                        // zig fmt: off
-                        drawLight(light_idx, w * player.light_radius, h * player.light_radius, 
-                            screen_pos.x, screen_pos.y, player.light_color, player.light_intensity);
-                        // zig fmt: on
+                        drawLight(
+                            light_idx,
+                            w * player.light_radius,
+                            h * player.light_radius,
+                            screen_pos.x,
+                            screen_pos.y,
+                            player.light_color,
+                            player.light_intensity,
+                        );
                         light_idx += 4;
                     }
 
                     const name = if (player.name_override.len > 0) player.name_override else player.name;
                     if (name.len > 0) {
                         const text_width = ui.textWidth(16, name, ui.medium_text_type);
-                        // zig fmt: off
-                        text_idx += drawText(text_idx, 
+                        text_idx += drawText(
+                            text_idx,
                             screen_pos.x - x_offset - text_width / 2,
-                            screen_pos.y - 16 * assets.CharacterData.padding_mult, 
-                            16, name, 0xFCDF00, 1.0, ui.medium_text_type, .{});
-                        // zig fmt: on
+                            screen_pos.y - 16 * assets.CharacterData.padding_mult / camera.scale,
+                            16,
+                            name,
+                            0xFCDF00,
+                            1.0,
+                            ui.medium_text_type,
+                            .{},
+                        );
                     }
 
-                    // zig fmt: off
-                    drawQuad(idx, screen_pos.x - w / 2.0, screen_pos.y, w, h,
-                        @as(f32, @floatFromInt(rect.x)) * assets.base_texel_w, 
-                        @as(f32, @floatFromInt(rect.y)) * assets.base_texel_h, 
-                        @as(f32, @floatFromInt(rect.w)) * assets.base_texel_w, 
+                    drawQuad(
+                        idx,
+                        screen_pos.x - w / 2.0,
+                        screen_pos.y,
+                        w,
+                        h,
+                        @as(f32, @floatFromInt(rect.x)) * assets.base_texel_w,
+                        @as(f32, @floatFromInt(rect.y)) * assets.base_texel_h,
+                        @as(f32, @floatFromInt(rect.w)) * assets.base_texel_w,
                         @as(f32, @floatFromInt(rect.h)) * assets.base_texel_h / sink,
-                        .{ .texel_mult = 2.0 / size });
-                    // zig fmt: on
+                        .{ .texel_mult = 2.0 / size },
+                    );
                     idx += 4;
 
                     var y_pos: f32 = 5.0 + if (sink != 0) @as(f32, 5.0) else @as(f32, 0.0);
@@ -1263,28 +1349,36 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
                         const hp_bar_y = screen_pos.y + h + y_pos;
 
-                        // zig fmt: off
-                        drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w, hp_bar_h,
-                            assets.empty_bar_rect.x, 
-                            assets.empty_bar_rect.y, 
-                            assets.empty_bar_rect.w, 
+                        drawQuad(
+                            idx,
+                            screen_pos.x - x_offset - hp_bar_w / 2.0,
+                            hp_bar_y,
+                            hp_bar_w,
+                            hp_bar_h,
+                            assets.empty_bar_rect.x,
+                            assets.empty_bar_rect.y,
+                            assets.empty_bar_rect.w,
                             assets.empty_bar_rect.h,
-                            .{ .texel_mult = 0.5 });
-                        // zig fmt: on
+                            .{ .texel_mult = 0.5 },
+                        );
                         idx += 4;
 
                         const float_hp: f32 = @floatFromInt(player.hp);
                         const float_max_hp: f32 = @floatFromInt(player.max_hp);
                         const hp_perc = 1.0 / (float_hp / float_max_hp);
 
-                        // zig fmt: off
-                        drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w / hp_perc, hp_bar_h,
-                            assets.hp_bar_rect.x, 
-                            assets.hp_bar_rect.y, 
-                            assets.hp_bar_rect.w / hp_perc, 
+                        drawQuad(
+                            idx,
+                            screen_pos.x - x_offset - hp_bar_w / 2.0,
+                            hp_bar_y,
+                            hp_bar_w / hp_perc,
+                            hp_bar_h,
+                            assets.hp_bar_rect.x,
+                            assets.hp_bar_rect.y,
+                            assets.hp_bar_rect.w / hp_perc,
                             assets.hp_bar_rect.h,
-                            .{ .texel_mult = 0.5 });
-                        // zig fmt: on
+                            .{ .texel_mult = 0.5 },
+                        );
                         idx += 4;
 
                         y_pos += 20.0;
@@ -1295,28 +1389,36 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         const mp_bar_h = assets.mp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
                         const mp_bar_y = screen_pos.y + h + y_pos;
 
-                        // zig fmt: off
-                        drawQuad(idx, screen_pos.x - x_offset - mp_bar_w / 2.0, mp_bar_y, mp_bar_w, mp_bar_h,
-                            assets.empty_bar_rect.x, 
-                            assets.empty_bar_rect.y, 
-                            assets.empty_bar_rect.w, 
+                        drawQuad(
+                            idx,
+                            screen_pos.x - x_offset - mp_bar_w / 2.0,
+                            mp_bar_y,
+                            mp_bar_w,
+                            mp_bar_h,
+                            assets.empty_bar_rect.x,
+                            assets.empty_bar_rect.y,
+                            assets.empty_bar_rect.w,
                             assets.empty_bar_rect.h,
-                            .{ .texel_mult = 0.5 });
-                        // zig fmt: on
+                            .{ .texel_mult = 0.5 },
+                        );
                         idx += 4;
 
                         const float_mp: f32 = @floatFromInt(player.mp);
                         const float_max_mp: f32 = @floatFromInt(player.max_mp);
                         const mp_perc = 1.0 / (float_mp / float_max_mp);
 
-                        // zig fmt: off
-                        drawQuad(idx, screen_pos.x - x_offset - mp_bar_w / 2.0, mp_bar_y, mp_bar_w / mp_perc, mp_bar_h,
-                            assets.mp_bar_rect.x, 
-                            assets.mp_bar_rect.y, 
-                            assets.mp_bar_rect.w / mp_perc, 
+                        drawQuad(
+                            idx,
+                            screen_pos.x - x_offset - mp_bar_w / 2.0,
+                            mp_bar_y,
+                            mp_bar_w / mp_perc,
+                            mp_bar_h,
+                            assets.mp_bar_rect.x,
+                            assets.mp_bar_rect.y,
+                            assets.mp_bar_rect.w / mp_perc,
                             assets.mp_bar_rect.h,
-                            .{ .texel_mult = 0.5 });
-                        // zig fmt: on
+                            .{ .texel_mult = 0.5 },
+                        );
                         idx += 4;
 
                         y_pos += 20.0;
@@ -1336,17 +1438,18 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     const square = bo.getSquare();
                     if (bo.draw_on_ground) {
-                        // zig fmt: off
                         drawQuad(
-                            idx, screen_pos.x - camera.px_per_tile / 2 * camera.scale,
-                            screen_pos.y - camera.px_per_tile / 2 * camera.scale, 
-                            camera.px_per_tile * camera.scale, camera.px_per_tile * camera.scale,
+                            idx,
+                            screen_pos.x - camera.px_per_tile / 2 * camera.scale,
+                            screen_pos.y - camera.px_per_tile / 2 * camera.scale,
+                            camera.px_per_tile * camera.scale,
+                            camera.px_per_tile * camera.scale,
                             tex_u * assets.base_texel_w,
                             tex_v * assets.base_texel_h,
                             tex_w * assets.base_texel_w,
                             tex_h * assets.base_texel_h,
-                            .{ .rotation = camera.angle });
-                        // zig fmt: on
+                            .{ .rotation = camera.angle },
+                        );
                         idx += 4;
                         continue;
                     }
@@ -1404,10 +1507,15 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     bo.screen_x = screen_pos.x - x_offset;
 
                     if (bo.light_color > 0) {
-                        // zig fmt: off
-                        drawLight(light_idx, w * bo.light_radius, h * bo.light_radius,
-                            screen_pos.x, screen_pos.y + h / 2.0, bo.light_color, bo.light_intensity);
-                        // zig fmt: on
+                        drawLight(
+                            light_idx,
+                            w * bo.light_radius,
+                            h * bo.light_radius,
+                            screen_pos.x,
+                            screen_pos.y + h / 2.0,
+                            bo.light_color,
+                            bo.light_intensity,
+                        );
                         light_idx += 4;
                     }
 
@@ -1415,32 +1523,46 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     const name = if (bo.name_override.len > 0) bo.name_override else bo.name;
                     if (name.len > 0 and (bo.show_name or is_portal)) {
                         const text_width = ui.textWidth(16, name, ui.medium_text_type);
-                        // zig fmt: off
-                        text_idx += drawText(text_idx,
+                        text_idx += drawText(
+                            text_idx,
                             screen_pos.x - x_offset - text_width / 2,
-                            screen_pos.y - 15,
-                            16, name, 0xFFFFFF, 1.0, ui.medium_text_type, .{});
-                        // zig fmt: on
+                            screen_pos.y - 16 * assets.CharacterData.padding_mult / camera.scale,
+                            16,
+                            name,
+                            0xFFFFFF,
+                            1.0,
+                            ui.medium_text_type,
+                            .{},
+                        );
 
                         if (is_portal and map.interactive_id == bo.obj_id) {
                             const enter_text_width = ui.textWidth(16, "Enter", ui.medium_text_type);
-                            // zig fmt: off
-                            text_idx += drawText(text_idx,
+                            text_idx += drawText(
+                                text_idx,
                                 screen_pos.x - x_offset - enter_text_width / 2,
                                 screen_pos.y + h + 5,
-                                16, "Enter", 0xFFFFFF, 1.0, ui.medium_text_type, .{});
-                            // zig fmt: on
+                                16,
+                                "Enter",
+                                0xFFFFFF,
+                                1.0,
+                                ui.medium_text_type,
+                                .{},
+                            );
                         }
                     }
 
-                    // zig fmt: off
-                    drawQuad(idx, screen_pos.x - w / 2.0, screen_pos.y, w, h,
+                    drawQuad(
+                        idx,
+                        screen_pos.x - w / 2.0,
+                        screen_pos.y,
+                        w,
+                        h,
                         tex_u * assets.base_texel_w,
                         tex_v * assets.base_texel_h,
                         tex_w * assets.base_texel_w,
                         tex_h * assets.base_texel_h / sink,
-                        .{ .texel_mult = 2.0 / size });
-                    // zig fmt: on
+                        .{ .texel_mult = 2.0 / size },
+                    );
                     idx += 4;
 
                     if (!bo.is_enemy)
@@ -1457,28 +1579,36 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
                         const hp_bar_y = screen_pos.y + h + y_pos;
 
-                        // zig fmt: off
-                        drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w, hp_bar_h,
-                            assets.empty_bar_rect.x, 
-                            assets.empty_bar_rect.y, 
-                            assets.empty_bar_rect.w, 
+                        drawQuad(
+                            idx,
+                            screen_pos.x - x_offset - hp_bar_w / 2.0,
+                            hp_bar_y,
+                            hp_bar_w,
+                            hp_bar_h,
+                            assets.empty_bar_rect.x,
+                            assets.empty_bar_rect.y,
+                            assets.empty_bar_rect.w,
                             assets.empty_bar_rect.h,
-                            .{ .texel_mult = 0.5 });
-                        // zig fmt: on
+                            .{ .texel_mult = 0.5 },
+                        );
                         idx += 4;
 
                         const float_hp: f32 = @floatFromInt(bo.hp);
                         const float_max_hp: f32 = @floatFromInt(bo.max_hp);
                         const hp_perc = 1.0 / (float_hp / float_max_hp);
 
-                        // zig fmt: off
-                        drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w / hp_perc, hp_bar_h,
-                            assets.hp_bar_rect.x, 
-                            assets.hp_bar_rect.y, 
-                            assets.hp_bar_rect.w / hp_perc, 
+                        drawQuad(
+                            idx,
+                            screen_pos.x - x_offset - hp_bar_w / 2.0,
+                            hp_bar_y,
+                            hp_bar_w / hp_perc,
+                            hp_bar_h,
+                            assets.hp_bar_rect.x,
+                            assets.hp_bar_rect.y,
+                            assets.hp_bar_rect.w / hp_perc,
                             assets.hp_bar_rect.h,
-                            .{ .texel_mult = 0.5 });
-                        // zig fmt: on
+                            .{ .texel_mult = 0.5 },
+                        );
                         idx += 4;
 
                         y_pos += 20.0;
@@ -1495,32 +1625,57 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     var screen_pos = camera.rotateAroundCamera(proj.x, proj.y);
                     screen_pos.y += proj.z * -camera.px_per_tile - (h - size * assets.padding);
                     const rotation = proj.props.rotation;
-                    // zig fmt: off
-                    const angle = -(proj.visual_angle + proj.props.angle_correction + 
+                    const angle = -(proj.visual_angle + proj.props.angle_correction +
                         (if (rotation == 0) 0 else @as(f32, @floatFromInt(time)) / rotation) - camera.angle);
 
-                    drawQuad(idx, screen_pos.x - w / 2.0, screen_pos.y, w, h,
-                        proj.tex_u, proj.tex_v, proj.tex_w, proj.tex_h,
-                        .{ .texel_mult = 2.0 / size, .rotation = angle });
-                    // zig fmt: on
+                    drawQuad(
+                        idx,
+                        screen_pos.x - w / 2.0,
+                        screen_pos.y,
+                        w,
+                        h,
+                        proj.tex_u,
+                        proj.tex_v,
+                        proj.tex_w,
+                        proj.tex_h,
+                        .{ .texel_mult = 2.0 / size, .rotation = angle },
+                    );
                     idx += 4;
                 },
             }
         }
 
-        // zig fmt: off
         // horrible hack for bg light
-        drawQuad(idx, 0, 0, camera.screen_width, camera.screen_height,
-            assets.wall_backface_uv[0], 
-            assets.wall_backface_uv[1], 
+        drawQuad(
+            idx,
+            0,
+            0,
+            camera.screen_width,
+            camera.screen_height,
+            assets.wall_backface_uv[0],
+            assets.wall_backface_uv[1],
             8.0 * assets.base_texel_w,
             8.0 * assets.base_texel_h,
-            .{ .flash_color = map.bg_light_color, .flash_strength = 1.0, .alpha_mult = map.getLightIntensity(time) });
-        // zig fmt: on
+            .{ .flash_color = map.bg_light_color, .flash_strength = 1.0, .alpha_mult = map.getLightIntensity(time) },
+        );
         idx += 4;
 
-        encoder.writeBuffer(gctx.lookupResource(base_vb).?, 0, BaseVertexData, base_vert_data[0..idx]);
-        endDraw(encoder, render_pass_info, vb_info, ib_info, pipeline, bind_group, @divFloor(idx, 4) * 6, null);
+        encoder.writeBuffer(
+            gctx.lookupResource(base_vb).?,
+            0,
+            BaseVertexData,
+            base_vert_data[0..idx],
+        );
+        endDraw(
+            encoder,
+            load_render_pass_info,
+            vb_info,
+            ib_info,
+            pipeline,
+            bind_group,
+            @divFloor(idx, 4) * 6,
+            null,
+        );
     }
 
     if (text_idx != 0) {
@@ -1528,15 +1683,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             const vb_info = gctx.lookupResourceInfo(text_vb) orelse break :textPass;
             const pipeline = gctx.lookupResource(text_pipeline) orelse break :textPass;
             const bind_group = gctx.lookupResource(text_bind_group) orelse break :textPass;
-            const color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
-                .view = back_buffer,
-                .load_op = .load,
-                .store_op = .store,
-            }};
-            const render_pass_info = zgpu.wgpu.RenderPassDescriptor{
-                .color_attachment_count = color_attachments.len,
-                .color_attachments = &color_attachments,
-            };
 
             for (ui.status_texts.items) |text| {
                 // zig fmt: off
@@ -1545,8 +1691,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 // zig fmt: on
             }
 
-            encoder.writeBuffer(gctx.lookupResource(text_vb).?, 0, TextVertexData, text_vert_data[0..text_idx]);
-            endDraw(encoder, render_pass_info, vb_info, ib_info, pipeline, bind_group, @divFloor(text_idx, 4) * 6, null);
+            encoder.writeBuffer(
+                gctx.lookupResource(text_vb).?,
+                0,
+                TextVertexData,
+                text_vert_data[0..text_idx],
+            );
+            endDraw(
+                encoder,
+                load_render_pass_info,
+                vb_info,
+                ib_info,
+                pipeline,
+                bind_group,
+                @divFloor(text_idx, 4) * 6,
+                null,
+            );
         }
     }
 
@@ -1555,18 +1715,23 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             const vb_info = gctx.lookupResourceInfo(light_vb) orelse break :lightPass;
             const pipeline = gctx.lookupResource(light_pipeline) orelse break :lightPass;
             const bind_group = gctx.lookupResource(light_bind_group) orelse break :lightPass;
-            const color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
-                .view = back_buffer,
-                .load_op = .load,
-                .store_op = .store,
-            }};
-            const render_pass_info = zgpu.wgpu.RenderPassDescriptor{
-                .color_attachment_count = color_attachments.len,
-                .color_attachments = &color_attachments,
-            };
 
-            encoder.writeBuffer(gctx.lookupResource(light_vb).?, 0, LightVertexData, light_vert_data[0..light_idx]);
-            endDraw(encoder, render_pass_info, vb_info, ib_info, pipeline, bind_group, @divFloor(light_idx, 4) * 6, null);
+            encoder.writeBuffer(
+                gctx.lookupResource(light_vb).?,
+                0,
+                LightVertexData,
+                light_vert_data[0..light_idx],
+            );
+            endDraw(
+                encoder,
+                load_render_pass_info,
+                vb_info,
+                ib_info,
+                pipeline,
+                bind_group,
+                @divFloor(light_idx, 4) * 6,
+                null,
+            );
         }
     }
 }

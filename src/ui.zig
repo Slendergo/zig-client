@@ -9,8 +9,8 @@ pub const StatusText = struct {
     // the texts' internal x/y
     screen_x: f32 = 0.0,
     screen_y: f32 = 0.0,
-    size: f32 = 28.0,
-    initial_size: f32 = 28.0,
+    size: f32 = 22.0,
+    initial_size: f32 = 22.0,
     lifetime: i32 = 500,
     color: u32 = 0xFFFFFF,
     start_time: i32 = 0,
