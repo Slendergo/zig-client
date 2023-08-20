@@ -1243,40 +1243,15 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         else => player.anim_data.walk_anims[sec][0], // assume were standing only 3 cases and the last is that
                     };
 
-                    // const capped_period = @max(0, @min(0.99999, float_period));
-                    // const val = @as(i32, @intFromFloat(capped_period));
-                    // const anim_idx: usize = @intCast(val);
-
-                    // std.log.err("anim_idx: {d:.3} | val: {d:.3}", .{ anim_idx, float_period });
-
-                    // var rect = player.anim_data.walk_anims[action][anim_idx];
-
                     var x_offset: f32 = 0.0;
-                    // if (time < player.attack_start + player.attack_period) {
-                    //     player.dir = @intFromFloat(@mod(@divFloor(player.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
-                    //     // bad hack
-                    //     if (player.dir == assets.down_dir) {
-                    //         player.dir = assets.left_dir;
-                    //     } else if (player.dir == assets.left_dir) {
-                    //         player.dir = assets.down_dir;
-                    //     }
-
-                    //     const time_dt: f32 = @floatFromInt(time - player.attack_start);
-                    //     float_period = @floatFromInt(player.attack_period);
-                    //     const anim_idx: usize = @intFromFloat(@round(@mod(time_dt, float_period) / float_period));
-
-                    //     rect = player.anim_data.attack_anims[player.dir][anim_idx];
-
-                    //     if (anim_idx != 0) {
-                    //         const w = @as(f32, @floatFromInt(rect.w)) * size;
-
-                    //         if (player.dir == assets.left_dir) {
-                    //             x_offset = -assets.padding * size;
-                    //         } else {
-                    //             x_offset = w / 4.0;
-                    //         }
-                    //     }
-                    // }
+                    if (action == assets.attack_action) {
+                        const w = @as(f32, @floatFromInt(rect.w)) * size;
+                        if (sec == assets.left_dir) {
+                            x_offset = -assets.padding * size;
+                        } else {
+                            x_offset = w / 4.0;
+                        }
+                    }
 
                     const square = player.getSquare();
                     var sink: f32 = 1.0;
