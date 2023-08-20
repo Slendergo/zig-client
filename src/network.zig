@@ -795,6 +795,17 @@ pub const Server = struct {
             if (map.removeEntity(drop)) |en| {
                 switch (en) {
                     .object => |obj| {
+                        if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
+                            if (class_props == .wall) {
+                                const floor_y: u32 = @intFromFloat(@floor(obj.y));
+                                const floor_x: u32 = @intFromFloat(@floor(obj.x));
+                                if (map.validPos(floor_x, floor_y)) {
+                                    map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x].has_wall = false;
+                                    map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x].blocking = false;
+                                }
+                            }
+                        }
+
                         allocator.free(obj.name_override);
                         continue;
                     },
@@ -803,7 +814,7 @@ pub const Server = struct {
                         allocator.free(player.guild);
                         continue;
                     },
-                    else => {}
+                    else => {},
                 }
             }
 
