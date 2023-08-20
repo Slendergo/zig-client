@@ -520,10 +520,13 @@ pub const Player = struct {
     }
 
     pub fn attackFrequency(self: *const Player) f32 {
-        // if(isDazed()) return MIN_ATTACK_FREQ;
-        const frequency = (min_attack_freq + ((@as(f32, @floatFromInt(self.dexterity)) / 75.0) * (max_attack_freq - min_attack_freq)));
-        // if(isBerserk())
-        //     return frequency * 1.5;
+        if (self.condition.dazed)
+            return min_attack_freq;
+
+        var frequency = (min_attack_freq + ((@as(f32, @floatFromInt(self.dexterity)) / 75.0) * (max_attack_freq - min_attack_freq)));
+        if (self.condition.berserk)
+            frequency *= 1.5;
+
         return frequency;
     }
 
