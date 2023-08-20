@@ -171,18 +171,23 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
 pub fn updateState() void {
     rotate = rotate_right - rotate_left;
 
-    if (map.findPlayer(map.local_player_id)) |local_player| {
-        const y_dt = move_down - move_up;
-        const x_dt = move_right - move_left;
-        local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
-        local_player.visual_move_angle = local_player.move_angle;
-        local_player.walk_speed_multiplier = walking_speed_multiplier;
+    if (map.findEntity(map.local_player_id)) |en| {
+        switch (en.*) {
+            .player => |*local_player| {
+                const y_dt = move_down - move_up;
+                const x_dt = move_right - move_left;
+                local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
+                local_player.visual_move_angle = local_player.move_angle;
+                local_player.walk_speed_multiplier = walking_speed_multiplier;
 
-        if (attacking) {
-            const y: f32 = @floatCast(mouse_y);
-            const x: f32 = @floatCast(mouse_x);
-            const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-            local_player.shoot(shoot_angle, main.current_time);
+                if (attacking) {
+                    const y: f32 = @floatCast(mouse_y);
+                    const x: f32 = @floatCast(mouse_x);
+                    const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
+                    local_player.shoot(shoot_angle, main.current_time);
+                }
+            },
+            else => {},
         }
     }
 }
@@ -196,18 +201,23 @@ pub fn mouseMoveEvent(window: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) 
 
 inline fn useAbility() void {
     if (main.server) |*server| {
-        if (map.findPlayer(map.local_player_id)) |local_player| {
-            const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
+        if (map.findEntity(map.local_player_id)) |en| {
+            switch (en.*) {
+                .player => |local_player| {
+                    const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
 
-            // zig fmt: off
-            server.sendUseItem(main.current_time, .{
-                    .object_id = local_player.obj_id, 
-                    .slot_id = 1, 
-                    .object_type = @intCast(local_player.inventory[1])
-                }, .{ .x = world_pos.x, .y = world_pos.y },  0) catch |e| {
-                std.log.err("Could not use item: {any}", .{e});
-            };
-            // zig fmt: on
+                    // zig fmt: off
+                    server.sendUseItem(main.current_time, .{
+                        .object_id = local_player.obj_id, 
+                        .slot_id = 1, 
+                        .object_type = @intCast(local_player.inventory[1])
+                    }, .{ .x = world_pos.x, .y = world_pos.y },  0) catch |e| {
+                        std.log.err("Could not use item: {any}", .{e});
+                    };
+                    // zig fmt: on
+                },
+                else => {},
+            }
         }
     }
 }

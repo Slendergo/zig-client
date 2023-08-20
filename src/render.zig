@@ -1080,7 +1080,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     }
 
     normalPass: {
-        if (map.objects.items.len + map.players.items.len + map.projectiles.items.len <= 0)
+        if (map.entities.items.len <= 0)
             break :normalPass;
 
         while (!map.object_lock.tryLock()) {}
@@ -1100,356 +1100,358 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         };
 
         var idx: u16 = 0;
-        for (map.players.items) |*player| {
-            if (!camera.visibleInCamera(player.x, player.y)) {
-                continue;
-            }
-
-            const size = camera.size_mult * camera.scale * player.size;
-
-            var rect = player.anim_data.walk_anims[player.dir][0];
-            var x_offset: f32 = 0.0;
-
-            if (!std.math.isNan(player.visual_move_angle)) {
-                player.dir = @intFromFloat(@mod(@divFloor(player.visual_move_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
-                // bad hack todo
-                if (player.dir == assets.down_dir) {
-                    player.dir = assets.left_dir;
-                } else if (player.dir == assets.left_dir) {
-                    player.dir = assets.down_dir;
-                }
-
-                const time_dt: f32 = @floatFromInt(time);
-                const float_period: f32 = 3.5 / player.moveSpeedMultiplier();
-                const anim_idx: usize = @intFromFloat(@round(@mod(time_dt, float_period) / float_period));
-                rect = player.anim_data.walk_anims[player.dir][anim_idx];
-            }
-
-            if (time < player.attack_start + player.attack_period) {
-                player.dir = @intFromFloat(@mod(@divFloor(player.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
-                // bad hack
-                if (player.dir == assets.down_dir) {
-                    player.dir = assets.left_dir;
-                } else if (player.dir == assets.left_dir) {
-                    player.dir = assets.down_dir;
-                }
-
-                const time_dt: f32 = @floatFromInt(time - player.attack_start);
-                const float_period: f32 = @floatFromInt(player.attack_period);
-                const anim_idx: usize = @intFromFloat(@round(@mod(time_dt, float_period) / float_period));
-                rect = player.anim_data.attack_anims[player.dir][anim_idx];
-
-                if (anim_idx != 0) {
-                    const w = @as(f32, @floatFromInt(rect.w)) * size;
-
-                    if (player.dir == assets.left_dir) {
-                        x_offset = -assets.padding * size;
-                    } else {
-                        x_offset = w / 4.0;
+        for (map.entities.items) |*en| {
+            switch (en.*) {
+                .player => |*player| {
+                    if (!camera.visibleInCamera(player.x, player.y)) {
+                        continue;
                     }
-                }
-            }
 
-            const square = player.getSquare();
-            var sink: f32 = 1.0;
-            if (square.tile_type != 0xFFFF) {
-                sink += square.sink;
-            }
+                    const size = camera.size_mult * camera.scale * player.size;
 
-            const w = @as(f32, @floatFromInt(rect.w)) * size;
-            const h = @as(f32, @floatFromInt(rect.h)) * size / sink;
+                    var rect = player.anim_data.walk_anims[player.dir][0];
+                    var x_offset: f32 = 0.0;
 
-            var screen_pos = camera.rotateAroundCamera(player.x, player.y);
-            screen_pos.x += x_offset;
-            screen_pos.y += player.z * -camera.px_per_tile - (h - size * assets.padding);
+                    if (!std.math.isNan(player.visual_move_angle)) {
+                        player.dir = @intFromFloat(@mod(@divFloor(player.visual_move_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
+                        // bad hack todo
+                        if (player.dir == assets.down_dir) {
+                            player.dir = assets.left_dir;
+                        } else if (player.dir == assets.left_dir) {
+                            player.dir = assets.down_dir;
+                        }
 
-            player.h = h;
-            player.screen_y = screen_pos.y - 30; // account for name
-            player.screen_x = screen_pos.x - x_offset;
+                        const time_dt: f32 = @floatFromInt(time);
+                        const float_period: f32 = 3.5 / player.moveSpeedMultiplier();
+                        const anim_idx: usize = @intFromFloat(@round(@mod(time_dt, float_period) / float_period));
+                        rect = player.anim_data.walk_anims[player.dir][anim_idx];
+                    }
 
-            if (player.light_color > 0) {
-                // zig fmt: off
-                drawLight(light_idx, w * player.light_radius, h * player.light_radius, 
-                    screen_pos.x, screen_pos.y, player.light_color, player.light_intensity);
-                // zig fmt: on
-                light_idx += 4;
-            }
+                    if (time < player.attack_start + player.attack_period) {
+                        player.dir = @intFromFloat(@mod(@divFloor(player.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 4.0));
+                        // bad hack
+                        if (player.dir == assets.down_dir) {
+                            player.dir = assets.left_dir;
+                        } else if (player.dir == assets.left_dir) {
+                            player.dir = assets.down_dir;
+                        }
 
-            const name = if (player.name_override.len > 0) player.name_override else player.name;
-            if (name.len > 0) {
-                const text_width = ui.textWidth(16, name, ui.medium_text_type);
-                // zig fmt: off
-                text_idx += drawText(text_idx, 
-                    screen_pos.x - x_offset - text_width / 2,
-                    screen_pos.y - 15, 
-                    16, name, 0xFCDF00, 1.0, ui.medium_text_type, .{});
-                // zig fmt: on
-            }
+                        const time_dt: f32 = @floatFromInt(time - player.attack_start);
+                        const float_period: f32 = @floatFromInt(player.attack_period);
+                        const anim_idx: usize = @intFromFloat(@round(@mod(time_dt, float_period) / float_period));
+                        rect = player.anim_data.attack_anims[player.dir][anim_idx];
 
-            // zig fmt: off
-            drawQuad(idx, screen_pos.x - w / 2.0, screen_pos.y, w, h,
-                @as(f32, @floatFromInt(rect.x)) * assets.base_texel_w, 
-                @as(f32, @floatFromInt(rect.y)) * assets.base_texel_h, 
-                @as(f32, @floatFromInt(rect.w)) * assets.base_texel_w, 
-                @as(f32, @floatFromInt(rect.h)) * assets.base_texel_h / sink,
-                .{ .texel_mult = 2.0 / size });
-            // zig fmt: on
-            idx += 4;
+                        if (anim_idx != 0) {
+                            const w = @as(f32, @floatFromInt(rect.w)) * size;
 
-            var y_pos: f32 = 5.0 + if (sink != 0) @as(f32, 5.0) else @as(f32, 0.0);
-
-            // this should be the server's job...
-            if (player.hp > player.max_hp)
-                player.max_hp = player.hp;
-
-            if (player.hp >= 0 and player.hp < player.max_hp) {
-                const hp_bar_w = assets.hp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
-                const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
-                const hp_bar_y = screen_pos.y + h + y_pos;
-
-                // zig fmt: off
-                drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w, hp_bar_h,
-                    assets.empty_bar_rect.x, 
-                    assets.empty_bar_rect.y, 
-                    assets.empty_bar_rect.w, 
-                    assets.empty_bar_rect.h,
-                    .{ .texel_mult = 0.5 });
-                // zig fmt: on
-                idx += 4;
-
-                const float_hp: f32 = @floatFromInt(player.hp);
-                const float_max_hp: f32 = @floatFromInt(player.max_hp);
-                const hp_perc = 1.0 / (float_hp / float_max_hp);
-
-                // zig fmt: off
-                drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w / hp_perc, hp_bar_h,
-                    assets.hp_bar_rect.x, 
-                    assets.hp_bar_rect.y, 
-                    assets.hp_bar_rect.w / hp_perc, 
-                    assets.hp_bar_rect.h,
-                    .{ .texel_mult = 0.5 });
-                // zig fmt: on
-                idx += 4;
-
-                y_pos += 20.0;
-            }
-
-            if (player.mp >= 0 and player.mp < player.max_mp) {
-                const mp_bar_w = assets.mp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
-                const mp_bar_h = assets.mp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
-                const mp_bar_y = screen_pos.y + h + y_pos;
-
-                // zig fmt: off
-                drawQuad(idx, screen_pos.x - x_offset - mp_bar_w / 2.0, mp_bar_y, mp_bar_w, mp_bar_h,
-                    assets.empty_bar_rect.x, 
-                    assets.empty_bar_rect.y, 
-                    assets.empty_bar_rect.w, 
-                    assets.empty_bar_rect.h,
-                    .{ .texel_mult = 0.5 });
-                // zig fmt: on
-                idx += 4;
-
-                const float_mp: f32 = @floatFromInt(player.mp);
-                const float_max_mp: f32 = @floatFromInt(player.max_mp);
-                const mp_perc = 1.0 / (float_mp / float_max_mp);
-
-                // zig fmt: off
-                drawQuad(idx, screen_pos.x - x_offset - mp_bar_w / 2.0, mp_bar_y, mp_bar_w / mp_perc, mp_bar_h,
-                    assets.mp_bar_rect.x, 
-                    assets.mp_bar_rect.y, 
-                    assets.mp_bar_rect.w / mp_perc, 
-                    assets.mp_bar_rect.h,
-                    .{ .texel_mult = 0.5 });
-                // zig fmt: on
-                idx += 4;
-
-                y_pos += 20.0;
-            }
-        }
-
-        for (map.objects.items) |*bo| {
-            if (!camera.visibleInCamera(bo.x, bo.y)) {
-                continue;
-            }
-
-            var tex_u = bo.tex_u;
-            var tex_v = bo.tex_v;
-            var tex_w = bo.tex_w;
-            var tex_h = bo.tex_h;
-            var screen_pos = camera.rotateAroundCamera(bo.x, bo.y);
-            const size = camera.size_mult * camera.scale * bo.size;
-
-            const square = bo.getSquare();
-            if (bo.draw_on_ground) {
-                // zig fmt: off
-                drawQuad(
-                    idx, screen_pos.x - camera.px_per_tile / 2 * camera.scale,
-                    screen_pos.y - camera.px_per_tile / 2 * camera.scale, 
-                    camera.px_per_tile * camera.scale, camera.px_per_tile * camera.scale,
-                    tex_u * assets.base_texel_w,
-                    tex_v * assets.base_texel_h,
-                    tex_w * assets.base_texel_w,
-                    tex_h * assets.base_texel_h,
-                    .{ .rotation = camera.angle });
-                // zig fmt: on
-                idx += 4;
-                continue;
-            }
-
-            if (bo.is_wall) {
-                idx += drawWall(idx, bo.x, bo.y, bo.tex_u, bo.tex_v, bo.top_tex_u, bo.top_tex_v);
-                continue;
-            }
-
-            var x_offset: f32 = 0.0;
-            if (bo.anim_data) |anim_data| {
-                var rect = anim_data.walk_anims[bo.dir][0];
-
-                if (!std.math.isNan(bo.visual_move_angle)) {
-                    bo.dir = @intFromFloat(@mod(@divFloor(bo.visual_move_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 2.0));
-                    const anim_idx: usize = @intCast(@divFloor(@mod(time, 500), 250));
-                    rect = anim_data.walk_anims[bo.dir][anim_idx];
-                }
-
-                if (time < bo.attack_start + attack_period) {
-                    bo.dir = @intFromFloat(@mod(@divFloor(bo.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 2.0));
-                    const anim_idx: usize = @intCast(@divFloor(@mod(time - bo.attack_start, 300), 150));
-                    rect = anim_data.attack_anims[bo.dir][anim_idx];
-
-                    if (anim_idx != 0) {
-                        const w = @as(f32, @floatFromInt(rect.w)) * size;
-
-                        if (bo.dir == assets.left_dir) {
-                            x_offset = -assets.padding * size;
-                        } else {
-                            x_offset = w / 4.0;
+                            if (player.dir == assets.left_dir) {
+                                x_offset = -assets.padding * size;
+                            } else {
+                                x_offset = w / 4.0;
+                            }
                         }
                     }
-                }
 
-                tex_u = @floatFromInt(rect.x);
-                tex_v = @floatFromInt(rect.y);
-                tex_w = @floatFromInt(rect.w);
-                tex_h = @floatFromInt(rect.h);
-            }
+                    const square = player.getSquare();
+                    var sink: f32 = 1.0;
+                    if (square.tile_type != 0xFFFF) {
+                        sink += square.sink;
+                    }
 
-            var sink: f32 = 1.0;
-            if (square.tile_type != 0xFFFF) {
-                sink += square.sink;
-            }
+                    const w = @as(f32, @floatFromInt(rect.w)) * size;
+                    const h = @as(f32, @floatFromInt(rect.h)) * size / sink;
 
-            const w = tex_w * size;
-            const h = tex_h * size / sink;
+                    var screen_pos = camera.rotateAroundCamera(player.x, player.y);
+                    screen_pos.x += x_offset;
+                    screen_pos.y += player.z * -camera.px_per_tile - (h - size * assets.padding);
 
-            screen_pos.x += x_offset;
-            screen_pos.y += bo.z * -camera.px_per_tile - (h - size * assets.padding);
+                    player.h = h;
+                    player.screen_y = screen_pos.y - 30; // account for name
+                    player.screen_x = screen_pos.x - x_offset;
 
-            bo.h = h;
-            bo.screen_y = screen_pos.y - 10;
-            bo.screen_x = screen_pos.x - x_offset;
+                    if (player.light_color > 0) {
+                        // zig fmt: off
+                        drawLight(light_idx, w * player.light_radius, h * player.light_radius, 
+                            screen_pos.x, screen_pos.y, player.light_color, player.light_intensity);
+                        // zig fmt: on
+                        light_idx += 4;
+                    }
 
-            if (bo.light_color > 0) {
-                // zig fmt: off
-                drawLight(light_idx, w * bo.light_radius, h * bo.light_radius,
-                    screen_pos.x, screen_pos.y + h / 2.0, bo.light_color, bo.light_intensity);
-                // zig fmt: on
-                light_idx += 4;
-            }
+                    const name = if (player.name_override.len > 0) player.name_override else player.name;
+                    if (name.len > 0) {
+                        const text_width = ui.textWidth(16, name, ui.medium_text_type);
+                        // zig fmt: off
+                        text_idx += drawText(text_idx, 
+                            screen_pos.x - x_offset - text_width / 2,
+                            screen_pos.y - 15, 
+                            16, name, 0xFCDF00, 1.0, ui.medium_text_type, .{});
+                        // zig fmt: on
+                    }
 
-            const is_portal = bo.class == .portal;
-            const name = if (bo.name_override.len > 0) bo.name_override else bo.name;
-            if (name.len > 0 and (bo.show_name or is_portal)) {
-                const text_width = ui.textWidth(16, name, ui.medium_text_type);
-                // zig fmt: off
-                text_idx += drawText(text_idx,
-                    screen_pos.x - x_offset - text_width / 2,
-                    screen_pos.y - 15,
-                    16, name, 0xFFFFFF, 1.0, ui.medium_text_type, .{});
-                // zig fmt: on
-
-                if (is_portal and map.interactive_id == bo.obj_id) {
-                    const enter_text_width = ui.textWidth(16, "Enter", ui.medium_text_type);
                     // zig fmt: off
-                    text_idx += drawText(text_idx,
-                        screen_pos.x - x_offset - enter_text_width / 2,
-                        screen_pos.y + h + 5,
-                        16, "Enter", 0xFFFFFF, 1.0, ui.medium_text_type, .{});
+                    drawQuad(idx, screen_pos.x - w / 2.0, screen_pos.y, w, h,
+                        @as(f32, @floatFromInt(rect.x)) * assets.base_texel_w, 
+                        @as(f32, @floatFromInt(rect.y)) * assets.base_texel_h, 
+                        @as(f32, @floatFromInt(rect.w)) * assets.base_texel_w, 
+                        @as(f32, @floatFromInt(rect.h)) * assets.base_texel_h / sink,
+                        .{ .texel_mult = 2.0 / size });
                     // zig fmt: on
-                }
+                    idx += 4;
+
+                    var y_pos: f32 = 5.0 + if (sink != 0) @as(f32, 5.0) else @as(f32, 0.0);
+
+                    // this should be the server's job...
+                    if (player.hp > player.max_hp)
+                        player.max_hp = player.hp;
+
+                    if (player.hp >= 0 and player.hp < player.max_hp) {
+                        const hp_bar_w = assets.hp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
+                        const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
+                        const hp_bar_y = screen_pos.y + h + y_pos;
+
+                        // zig fmt: off
+                        drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w, hp_bar_h,
+                            assets.empty_bar_rect.x, 
+                            assets.empty_bar_rect.y, 
+                            assets.empty_bar_rect.w, 
+                            assets.empty_bar_rect.h,
+                            .{ .texel_mult = 0.5 });
+                        // zig fmt: on
+                        idx += 4;
+
+                        const float_hp: f32 = @floatFromInt(player.hp);
+                        const float_max_hp: f32 = @floatFromInt(player.max_hp);
+                        const hp_perc = 1.0 / (float_hp / float_max_hp);
+
+                        // zig fmt: off
+                        drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w / hp_perc, hp_bar_h,
+                            assets.hp_bar_rect.x, 
+                            assets.hp_bar_rect.y, 
+                            assets.hp_bar_rect.w / hp_perc, 
+                            assets.hp_bar_rect.h,
+                            .{ .texel_mult = 0.5 });
+                        // zig fmt: on
+                        idx += 4;
+
+                        y_pos += 20.0;
+                    }
+
+                    if (player.mp >= 0 and player.mp < player.max_mp) {
+                        const mp_bar_w = assets.mp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
+                        const mp_bar_h = assets.mp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
+                        const mp_bar_y = screen_pos.y + h + y_pos;
+
+                        // zig fmt: off
+                        drawQuad(idx, screen_pos.x - x_offset - mp_bar_w / 2.0, mp_bar_y, mp_bar_w, mp_bar_h,
+                            assets.empty_bar_rect.x, 
+                            assets.empty_bar_rect.y, 
+                            assets.empty_bar_rect.w, 
+                            assets.empty_bar_rect.h,
+                            .{ .texel_mult = 0.5 });
+                        // zig fmt: on
+                        idx += 4;
+
+                        const float_mp: f32 = @floatFromInt(player.mp);
+                        const float_max_mp: f32 = @floatFromInt(player.max_mp);
+                        const mp_perc = 1.0 / (float_mp / float_max_mp);
+
+                        // zig fmt: off
+                        drawQuad(idx, screen_pos.x - x_offset - mp_bar_w / 2.0, mp_bar_y, mp_bar_w / mp_perc, mp_bar_h,
+                            assets.mp_bar_rect.x, 
+                            assets.mp_bar_rect.y, 
+                            assets.mp_bar_rect.w / mp_perc, 
+                            assets.mp_bar_rect.h,
+                            .{ .texel_mult = 0.5 });
+                        // zig fmt: on
+                        idx += 4;
+
+                        y_pos += 20.0;
+                    }
+                },
+                .object => |*bo| {
+                    if (!camera.visibleInCamera(bo.x, bo.y)) {
+                        continue;
+                    }
+
+                    var tex_u = bo.tex_u;
+                    var tex_v = bo.tex_v;
+                    var tex_w = bo.tex_w;
+                    var tex_h = bo.tex_h;
+                    var screen_pos = camera.rotateAroundCamera(bo.x, bo.y);
+                    const size = camera.size_mult * camera.scale * bo.size;
+
+                    const square = bo.getSquare();
+                    if (bo.draw_on_ground) {
+                        // zig fmt: off
+                        drawQuad(
+                            idx, screen_pos.x - camera.px_per_tile / 2 * camera.scale,
+                            screen_pos.y - camera.px_per_tile / 2 * camera.scale, 
+                            camera.px_per_tile * camera.scale, camera.px_per_tile * camera.scale,
+                            tex_u * assets.base_texel_w,
+                            tex_v * assets.base_texel_h,
+                            tex_w * assets.base_texel_w,
+                            tex_h * assets.base_texel_h,
+                            .{ .rotation = camera.angle });
+                        // zig fmt: on
+                        idx += 4;
+                        continue;
+                    }
+
+                    if (bo.is_wall) {
+                        idx += drawWall(idx, bo.x, bo.y, bo.tex_u, bo.tex_v, bo.top_tex_u, bo.top_tex_v);
+                        continue;
+                    }
+
+                    var x_offset: f32 = 0.0;
+                    if (bo.anim_data) |anim_data| {
+                        var rect = anim_data.walk_anims[bo.dir][0];
+
+                        if (!std.math.isNan(bo.visual_move_angle)) {
+                            bo.dir = @intFromFloat(@mod(@divFloor(bo.visual_move_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 2.0));
+                            const anim_idx: usize = @intCast(@divFloor(@mod(time, 500), 250));
+                            rect = anim_data.walk_anims[bo.dir][anim_idx];
+                        }
+
+                        if (time < bo.attack_start + attack_period) {
+                            bo.dir = @intFromFloat(@mod(@divFloor(bo.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 2.0));
+                            const anim_idx: usize = @intCast(@divFloor(@mod(time - bo.attack_start, 300), 150));
+                            rect = anim_data.attack_anims[bo.dir][anim_idx];
+
+                            if (anim_idx != 0) {
+                                const w = @as(f32, @floatFromInt(rect.w)) * size;
+
+                                if (bo.dir == assets.left_dir) {
+                                    x_offset = -assets.padding * size;
+                                } else {
+                                    x_offset = w / 4.0;
+                                }
+                            }
+                        }
+
+                        tex_u = @floatFromInt(rect.x);
+                        tex_v = @floatFromInt(rect.y);
+                        tex_w = @floatFromInt(rect.w);
+                        tex_h = @floatFromInt(rect.h);
+                    }
+
+                    var sink: f32 = 1.0;
+                    if (square.tile_type != 0xFFFF) {
+                        sink += square.sink;
+                    }
+
+                    const w = tex_w * size;
+                    const h = tex_h * size / sink;
+
+                    screen_pos.x += x_offset;
+                    screen_pos.y += bo.z * -camera.px_per_tile - (h - size * assets.padding);
+
+                    bo.h = h;
+                    bo.screen_y = screen_pos.y - 10;
+                    bo.screen_x = screen_pos.x - x_offset;
+
+                    if (bo.light_color > 0) {
+                        // zig fmt: off
+                        drawLight(light_idx, w * bo.light_radius, h * bo.light_radius,
+                            screen_pos.x, screen_pos.y + h / 2.0, bo.light_color, bo.light_intensity);
+                        // zig fmt: on
+                        light_idx += 4;
+                    }
+
+                    const is_portal = bo.class == .portal;
+                    const name = if (bo.name_override.len > 0) bo.name_override else bo.name;
+                    if (name.len > 0 and (bo.show_name or is_portal)) {
+                        const text_width = ui.textWidth(16, name, ui.medium_text_type);
+                        // zig fmt: off
+                        text_idx += drawText(text_idx,
+                            screen_pos.x - x_offset - text_width / 2,
+                            screen_pos.y - 15,
+                            16, name, 0xFFFFFF, 1.0, ui.medium_text_type, .{});
+                        // zig fmt: on
+
+                        if (is_portal and map.interactive_id == bo.obj_id) {
+                            const enter_text_width = ui.textWidth(16, "Enter", ui.medium_text_type);
+                            // zig fmt: off
+                            text_idx += drawText(text_idx,
+                                screen_pos.x - x_offset - enter_text_width / 2,
+                                screen_pos.y + h + 5,
+                                16, "Enter", 0xFFFFFF, 1.0, ui.medium_text_type, .{});
+                            // zig fmt: on
+                        }
+                    }
+
+                    // zig fmt: off
+                    drawQuad(idx, screen_pos.x - w / 2.0, screen_pos.y, w, h,
+                        tex_u * assets.base_texel_w,
+                        tex_v * assets.base_texel_h,
+                        tex_w * assets.base_texel_w,
+                        tex_h * assets.base_texel_h / sink,
+                        .{ .texel_mult = 2.0 / size });
+                    // zig fmt: on
+                    idx += 4;
+
+                    if (!bo.is_enemy)
+                        continue;
+
+                    var y_pos: f32 = 5.0 + if (sink != 0) @as(f32, 5.0) else @as(f32, 0.0);
+
+                    // this should be the server's job...
+                    if (bo.hp > bo.max_hp)
+                        bo.max_hp = bo.hp;
+
+                    if (bo.hp >= 0 and bo.hp < bo.max_hp) {
+                        const hp_bar_w = assets.hp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
+                        const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
+                        const hp_bar_y = screen_pos.y + h + y_pos;
+
+                        // zig fmt: off
+                        drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w, hp_bar_h,
+                            assets.empty_bar_rect.x, 
+                            assets.empty_bar_rect.y, 
+                            assets.empty_bar_rect.w, 
+                            assets.empty_bar_rect.h,
+                            .{ .texel_mult = 0.5 });
+                        // zig fmt: on
+                        idx += 4;
+
+                        const float_hp: f32 = @floatFromInt(bo.hp);
+                        const float_max_hp: f32 = @floatFromInt(bo.max_hp);
+                        const hp_perc = 1.0 / (float_hp / float_max_hp);
+
+                        // zig fmt: off
+                        drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w / hp_perc, hp_bar_h,
+                            assets.hp_bar_rect.x, 
+                            assets.hp_bar_rect.y, 
+                            assets.hp_bar_rect.w / hp_perc, 
+                            assets.hp_bar_rect.h,
+                            .{ .texel_mult = 0.5 });
+                        // zig fmt: on
+                        idx += 4;
+
+                        y_pos += 20.0;
+                    }
+                },
+                .projectile => |proj| {
+                    if (!camera.visibleInCamera(proj.x, proj.y)) {
+                        continue;
+                    }
+
+                    const size = camera.size_mult * camera.scale * proj.props.size;
+                    const w = proj.tex_w * assets.atlas_width * size;
+                    const h = proj.tex_h * assets.atlas_height * size;
+                    var screen_pos = camera.rotateAroundCamera(proj.x, proj.y);
+                    screen_pos.y += proj.z * -camera.px_per_tile - (h - size * assets.padding);
+                    const rotation = proj.props.rotation;
+                    // zig fmt: off
+                    const angle = -(proj.visual_angle + proj.props.angle_correction + 
+                        (if (rotation == 0) 0 else @as(f32, @floatFromInt(time)) / rotation) - camera.angle);
+
+                    drawQuad(idx, screen_pos.x - w / 2.0, screen_pos.y, w, h,
+                        proj.tex_u, proj.tex_v, proj.tex_w, proj.tex_h,
+                        .{ .texel_mult = 2.0 / size, .rotation = angle });
+                    // zig fmt: on
+                    idx += 4;
+                },
             }
-
-            // zig fmt: off
-            drawQuad(idx, screen_pos.x - w / 2.0, screen_pos.y, w, h,
-                tex_u * assets.base_texel_w,
-                tex_v * assets.base_texel_h,
-                tex_w * assets.base_texel_w,
-                tex_h * assets.base_texel_h / sink,
-                .{ .texel_mult = 2.0 / size });
-            // zig fmt: on
-            idx += 4;
-
-            if (!bo.is_enemy)
-                continue;
-
-            var y_pos: f32 = 5.0 + if (sink != 0) @as(f32, 5.0) else @as(f32, 0.0);
-
-            // this should be the server's job...
-            if (bo.hp > bo.max_hp)
-                bo.max_hp = bo.hp;
-
-            if (bo.hp >= 0 and bo.hp < bo.max_hp) {
-                const hp_bar_w = assets.hp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
-                const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
-                const hp_bar_y = screen_pos.y + h + y_pos;
-
-                // zig fmt: off
-                drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w, hp_bar_h,
-                    assets.empty_bar_rect.x, 
-                    assets.empty_bar_rect.y, 
-                    assets.empty_bar_rect.w, 
-                    assets.empty_bar_rect.h,
-                    .{ .texel_mult = 0.5 });
-                // zig fmt: on
-                idx += 4;
-
-                const float_hp: f32 = @floatFromInt(bo.hp);
-                const float_max_hp: f32 = @floatFromInt(bo.max_hp);
-                const hp_perc = 1.0 / (float_hp / float_max_hp);
-
-                // zig fmt: off
-                drawQuad(idx, screen_pos.x - x_offset - hp_bar_w / 2.0, hp_bar_y, hp_bar_w / hp_perc, hp_bar_h,
-                    assets.hp_bar_rect.x, 
-                    assets.hp_bar_rect.y, 
-                    assets.hp_bar_rect.w / hp_perc, 
-                    assets.hp_bar_rect.h,
-                    .{ .texel_mult = 0.5 });
-                // zig fmt: on
-                idx += 4;
-
-                y_pos += 20.0;
-            }
-        }
-
-        for (map.projectiles.items) |proj| {
-            if (!camera.visibleInCamera(proj.x, proj.y)) {
-                continue;
-            }
-
-            const size = camera.size_mult * camera.scale * proj.props.size;
-            const w = proj.tex_w * assets.atlas_width * size;
-            const h = proj.tex_h * assets.atlas_height * size;
-            var screen_pos = camera.rotateAroundCamera(proj.x, proj.y);
-            screen_pos.y += proj.z * -camera.px_per_tile - (h - size * assets.padding);
-            const rotation = proj.props.rotation;
-            // zig fmt: off
-            const angle = -(proj.visual_angle + proj.props.angle_correction + 
-                (if (rotation == 0) 0 else @as(f32, @floatFromInt(time)) / rotation) - camera.angle);
-
-            drawQuad(idx, screen_pos.x - w / 2.0, screen_pos.y, w, h,
-                proj.tex_u, proj.tex_v, proj.tex_w, proj.tex_h,
-                .{ .texel_mult = 2.0 / size, .rotation = angle });
-            // zig fmt: on
-            idx += 4;
         }
 
         // zig fmt: off

@@ -314,86 +314,86 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                         .{ map.width, map.height },
                     );
                     zgui.text(
-                        "Players: {d}\n",
-                        .{map.players.items.len},
-                    );
-                    zgui.text(
                         "Entities: {d}\n",
-                        .{map.objects.items.len},
-                    );
-                    zgui.text(
-                        "Projectiles: {d}\n",
-                        .{map.projectiles.items.len},
+                        .{map.entities.items.len},
                     );
 
-                    if (map.findPlayer(map.local_player_id)) |local_player| {
-                        const square = local_player.getSquare();
-                        zgui.text(
-                            "Tile Speed: {d:.3}\n",
-                            .{square.speed},
-                        );
+                    if (map.findEntity(map.local_player_id)) |en| {
+                        switch (en.*) {
+                            .player => |local_player| {
+                                const square = local_player.getSquare();
+                                zgui.text(
+                                    "Tile Speed: {d:.3}\n",
+                                    .{square.speed},
+                                );
+                            },
+                            else => {},
+                        }
                     }
                 }
 
                 if (zgui.collapsingHeader("Player\n", .{ .default_open = true })) {
-                    if (map.findPlayer(map.local_player_id)) |local_player| {
-                        zgui.text(
-                            "Position: {d:.3}, {d:.3}\n",
-                            .{ local_player.x, local_player.x },
-                        );
-
-                        zgui.text(
-                            "Move Angle: {d:.3}\n",
-                            .{local_player.move_angle},
-                        );
-
-                        zgui.text(
-                            "Visual Move: {d:.3}\n",
-                            .{local_player.visual_move_angle},
-                        );
-
-                        zgui.text(
-                            "Attack Frequency: {d:.3} | {d} dexterity\n",
-                            .{ local_player.attackFrequency(), local_player.dexterity },
-                        );
-
-                        zgui.text(
-                            "Move Speed: {d:.3} | {d} speed\n",
-                            .{ local_player.moveSpeedMultiplier(), local_player.speed },
-                        );
-
-                        zgui.text(
-                            "Walk Multiplier: {d:.3}\n",
-                            .{local_player.walk_speed_multiplier},
-                        );
-
-                        zgui.text(
-                            "Move Multiplier: {d:.3}\n",
-                            .{local_player.move_multiplier},
-                        );
-
-                        if (zgui.treeNodeFlags("Animation\n", .{ .default_open = true })) {
-                            zgui.text(
-                                "Direction: {d}\n",
-                                .{local_player.dir},
-                            );
-
-                            const tex_list = game_data.obj_type_to_tex_data.get(local_player.obj_type);
-                            if (tex_list != null) {
-                                const tex = tex_list.?[@as(usize, @intCast(local_player.obj_id)) % tex_list.?.len];
+                    if (map.findEntity(map.local_player_id)) |en| {
+                        switch (en.*) {
+                            .player => |local_player| {
                                 zgui.text(
-                                    "Texture Sheet: {s}\n",
-                                    .{tex.sheet},
+                                    "Position: {d:.3}, {d:.3}\n",
+                                    .{ local_player.x, local_player.x },
                                 );
+
                                 zgui.text(
-                                    "Texture Index: {d}\n",
-                                    .{tex.index},
+                                    "Move Angle: {d:.3}\n",
+                                    .{local_player.move_angle},
                                 );
-                            }
-                            zgui.treePop();
+
+                                zgui.text(
+                                    "Visual Move: {d:.3}\n",
+                                    .{local_player.visual_move_angle},
+                                );
+
+                                zgui.text(
+                                    "Attack Frequency: {d:.3} | {d} dexterity\n",
+                                    .{ local_player.attackFrequency(), local_player.dexterity },
+                                );
+
+                                zgui.text(
+                                    "Move Speed: {d:.3} | {d} speed\n",
+                                    .{ local_player.moveSpeedMultiplier(), local_player.speed },
+                                );
+
+                                zgui.text(
+                                    "Walk Multiplier: {d:.3}\n",
+                                    .{local_player.walk_speed_multiplier},
+                                );
+
+                                zgui.text(
+                                    "Move Multiplier: {d:.3}\n",
+                                    .{local_player.move_multiplier},
+                                );
+
+                                if (zgui.treeNodeFlags("Animation\n", .{ .default_open = true })) {
+                                    zgui.text(
+                                        "Direction: {d}\n",
+                                        .{local_player.dir},
+                                    );
+
+                                    const tex_list = game_data.obj_type_to_tex_data.get(local_player.obj_type);
+                                    if (tex_list != null) {
+                                        const tex = tex_list.?[@as(usize, @intCast(local_player.obj_id)) % tex_list.?.len];
+                                        zgui.text(
+                                            "Texture Sheet: {s}\n",
+                                            .{tex.sheet},
+                                        );
+                                        zgui.text(
+                                            "Texture Index: {d}\n",
+                                            .{tex.index},
+                                        );
+                                    }
+                                    zgui.treePop();
+                                }
+                            },
+                            else => {},
                         }
-                    } else {
-                        zgui.text("No Player\n", .{});
                     }
                 }
 
@@ -507,9 +507,7 @@ pub fn clear() void {
     map.local_player_id = -1;
     map.interactive_id = -1;
     map.dispose(_allocator);
-    map.objects.clearRetainingCapacity();
-    map.projectiles.clearRetainingCapacity();
-    map.players.clearRetainingCapacity();
+    map.entities.clearRetainingCapacity();
 }
 
 pub fn disconnect() void {

@@ -329,7 +329,7 @@ pub const GameObject = struct {
 
         self.class = game_data.obj_type_to_class.get(self.obj_type) orelse .game_object;
 
-        objects.append(self.*) catch |e| {
+        entities.append(.{ .object = self.* }) catch |e| {
             std.log.err("Could not add object to map (obj_id={d}, obj_type={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.obj_type, self.x, self.y, e });
         };
     }
@@ -508,13 +508,12 @@ pub const Player = struct {
             self.light_radius = obj_props.light_radius;
         }
 
-        players.append(self.*) catch |e| {
+        entities.append(.{ .player = self.* }) catch |e| {
             std.log.err("Could not add player to map (obj_id={d}, obj_type={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.obj_type, self.x, self.y, e });
         };
     }
 
-    pub fn attackFrequency(self: *Player) f32 {
-
+    pub fn attackFrequency(self: *const Player) f32 {
         // if(isDazed()) return MIN_ATTACK_FREQ;
         const frequency = (min_attack_freq + ((@as(f32, @floatFromInt(self.dexterity)) / 75.0) * (max_attack_freq - min_attack_freq)));
         // if(isBerserk())
@@ -858,7 +857,7 @@ pub const Projectile = struct {
         self.obj_id = Projectile.next_obj_id + 1;
         Projectile.next_obj_id += 1;
 
-        projectiles.append(self.*) catch |e| {
+        entities.append(.{ .projectile = self.* }) catch |e| {
             std.log.err("Could not add projectile to map (obj_id={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.x, self.y, e });
         };
     }
@@ -866,13 +865,18 @@ pub const Projectile = struct {
     inline fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?*GameObject {
         var min_dist = std.math.floatMax(f32);
         var target: ?*GameObject = null;
-        for (objects.items) |*obj| {
-            if (obj.is_enemy) {
-                const dist_sqr = utils.distSqr(obj.x, obj.y, x, y);
-                if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
-                    min_dist = dist_sqr;
-                    target = obj;
-                }
+        for (entities.items) |*en| {
+            switch (en.*) {
+                .object => |*obj| {
+                    if (obj.is_enemy) {
+                        const dist_sqr = utils.distSqr(obj.x, obj.y, x, y);
+                        if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
+                            min_dist = dist_sqr;
+                            target = obj;
+                        }
+                    }
+                },
+                else => {},
             }
         }
 
@@ -882,11 +886,16 @@ pub const Projectile = struct {
     inline fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?*Player {
         var min_dist = std.math.floatMax(f32);
         var target: ?*Player = null;
-        for (players.items) |*player| {
-            const dist_sqr = utils.distSqr(player.x, player.y, x, y);
-            if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
-                min_dist = dist_sqr;
-                target = player;
+        for (entities.items) |*en| {
+            switch (en.*) {
+                .player => |*player| {
+                    const dist_sqr = utils.distSqr(player.x, player.y, x, y);
+                    if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
+                        min_dist = dist_sqr;
+                        target = player;
+                    }
+                },
+                else => {},
             }
         }
 
@@ -1093,14 +1102,51 @@ pub const Projectile = struct {
     }
 };
 
+fn lessThan(_: void, lhs: Entity, rhs: Entity) bool {
+    var lhs_sort_val: f32 = 0;
+    var rhs_sort_val: f32 = 0;
+
+    switch (lhs) {
+        .object => |object| {
+            if (object.draw_on_ground) {
+                lhs_sort_val = -1;
+            } else {
+                lhs_sort_val = camera.rotateAroundCamera(object.x, object.y).y + object.z * -camera.px_per_tile;
+            }
+        },
+        inline else => |en| {
+            lhs_sort_val = camera.rotateAroundCamera(en.x, en.y).y + en.z * -camera.px_per_tile;
+        },
+    }
+
+    switch (rhs) {
+        .object => |object| {
+            if (object.draw_on_ground) {
+                rhs_sort_val = -1;
+            } else {
+                rhs_sort_val = camera.rotateAroundCamera(object.x, object.y).y + object.z * -camera.px_per_tile;
+            }
+        },
+        inline else => |en| {
+            rhs_sort_val = camera.rotateAroundCamera(en.x, en.y).y + en.z * -camera.px_per_tile;
+        },
+    }
+
+    return lhs_sort_val < rhs_sort_val;
+}
+
+pub const Entity = union(enum) {
+    player: Player,
+    object: GameObject,
+    projectile: Projectile,
+};
+
 const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
 const day_cycle_ms_half: f32 = @floatFromInt(day_cycle_ms / 2);
 
 pub var object_lock: std.Thread.Mutex = .{};
-pub var objects: std.ArrayList(GameObject) = undefined;
-pub var players: std.ArrayList(Player) = undefined;
-pub var projectiles: std.ArrayList(Projectile) = undefined;
-pub var proj_indices_to_remove: std.ArrayList(usize) = undefined;
+pub var entities: std.ArrayList(Entity) = undefined;
+pub var entity_indices_to_remove: std.ArrayList(usize) = undefined;
 pub var last_tick_time: i32 = 0;
 pub var local_player_id: i32 = -1;
 pub var interactive_id: i32 = -1;
@@ -1119,21 +1165,23 @@ pub var last_records_clear_time: i32 = 0;
 pub var random: utils.Random = utils.Random{ .seed = 1 };
 
 pub fn init(allocator: std.mem.Allocator) void {
-    objects = std.ArrayList(GameObject).init(allocator);
-    players = std.ArrayList(Player).init(allocator);
-    projectiles = std.ArrayList(Projectile).init(allocator);
-    proj_indices_to_remove = std.ArrayList(usize).init(allocator);
+    entities = std.ArrayList(Entity).init(allocator);
+    entity_indices_to_remove = std.ArrayList(usize).init(allocator);
     move_records = std.ArrayList(network.TimedPosition).init(allocator);
 }
 
 pub fn dispose(allocator: std.mem.Allocator) void {
-    for (objects.items) |obj| {
-        allocator.free(obj.name_override);
-    }
-
-    for (players.items) |player| {
-        allocator.free(player.name_override);
-        allocator.free(player.guild);
+    for (entities.items) |en| {
+        switch (en) {
+            .object => |obj| {
+                allocator.free(obj.name_override);
+            },
+            .player => |player| {
+                allocator.free(player.name_override);
+                allocator.free(player.guild);
+            },
+            else => {},
+        }
     }
 }
 
@@ -1144,10 +1192,8 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 
     dispose(allocator);
 
-    objects.deinit();
-    players.deinit();
-    projectiles.deinit();
-    proj_indices_to_remove.deinit();
+    entities.deinit();
+    entity_indices_to_remove.deinit();
     move_records.deinit();
 }
 
@@ -1176,57 +1222,29 @@ pub fn setWH(w: isize, h: isize, allocator: std.mem.Allocator) void {
     }
 }
 
-pub fn findPlayer(obj_id: i32) ?*Player {
-    for (players.items) |*player| {
-        if (player.obj_id == obj_id)
-            return player;
-    }
-
-    return null;
-}
-
-pub fn findObject(obj_id: i32) ?*GameObject {
-    for (objects.items) |*obj| {
-        if (obj.obj_id == obj_id)
-            return obj;
-    }
-
-    return null;
-}
-
-pub fn findProj(obj_id: i32) ?*Projectile {
-    for (projectiles.items) |*proj| {
-        if (proj.obj_id == obj_id)
-            return proj;
-    }
-
-    return null;
-}
-
-pub fn removePlayer(obj_id: i32) ?Player {
-    for (players.items, 0..) |player, i| {
-        if (player.obj_id == obj_id) {
-            return players.orderedRemove(i);
+pub fn findEntity(obj_id: i32) ?*Entity {
+    for (entities.items) |*en| {
+        switch (en.*) {
+            inline else => |*obj| {
+                if (obj.obj_id == obj_id)
+                    return en;
+            },
         }
     }
 
     return null;
 }
 
-pub fn removeObject(obj_id: i32) ?GameObject {
-    for (objects.items, 0..) |object, i| {
-        if (object.obj_id == obj_id) {
-            return objects.orderedRemove(i);
-        }
-    }
+pub fn removeEntity(obj_id: i32) ?Entity {
+    while (!object_lock.tryLock()) {}
+    defer object_lock.unlock();
 
-    return null;
-}
-
-pub fn removeProj(obj_id: i32) ?Projectile {
-    for (projectiles.items, 0..) |proj, i| {
-        if (proj.obj_id == obj_id) {
-            return projectiles.orderedRemove(i);
+    for (entities.items, 0..) |*en, i| {
+        switch (en.*) {
+            inline else => |*obj| {
+                if (obj.obj_id == obj_id)
+                    return entities.orderedRemove(i);
+            },
         }
     }
 
@@ -1234,15 +1252,20 @@ pub fn removeProj(obj_id: i32) ?Projectile {
 }
 
 pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, piercing: bool) i32 {
-    if (findObject(object_id)) |object| {
-        _ = player_id;
-        var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
+    if (findEntity(object_id)) |en| {
+        switch (en.*) {
+            .object => |object| {
+                var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
 
-        if (piercing) {} else damage -= @intCast(object.defense);
-        // todo player buffs and mult
-        // if (findPlayer(player_id)) |player| {
-        // }
-        return @intCast(damage);
+                if (piercing) {} else damage -= @intCast(object.defense);
+                // todo player buffs and mult
+                // if (findPlayer(player_id)) |player| {
+                // }
+                return @intCast(damage);
+            },
+            else => {},
+        }
+        _ = player_id;
     }
     return -1;
 }
@@ -1251,47 +1274,55 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
     while (!object_lock.tryLock()) {}
     defer object_lock.unlock();
 
-    if (findPlayer(local_player_id)) |local_player| {
-        camera.update(local_player.x, local_player.y, dt, input.rotate);
-        if (input.attacking) {
-            const y: f32 = @floatCast(input.mouse_y);
-            const x: f32 = @floatCast(input.mouse_x);
-            const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-            local_player.shoot(shoot_angle, time);
+    if (findEntity(local_player_id)) |en| {
+        switch (en.*) {
+            .player => |*local_player| {
+                camera.update(local_player.x, local_player.y, dt, input.rotate);
+                if (input.attacking) {
+                    const y: f32 = @floatCast(input.mouse_y);
+                    const x: f32 = @floatCast(input.mouse_x);
+                    const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
+                    local_player.shoot(shoot_angle, time);
+                }
+            },
+            else => {},
         }
-    }
-
-    for (players.items) |*player| {
-        player.update(time, dt);
     }
 
     interactive_id = -1;
-    for (objects.items) |*obj| {
-        if (interactive_id == -1 and obj.class == .portal) {
-            const dt_x = camera.x - obj.x;
-            const dt_y = camera.y - obj.y;
-            if (dt_x * dt_x + dt_y * dt_y < 1) {
-                interactive_id = obj.obj_id;
-            }
+
+    for (entities.items, 0..) |*en, i| {
+        switch (en.*) {
+            .object => |*obj| {
+                if (interactive_id == -1 and obj.class == .portal) {
+                    const dt_x = camera.x - obj.x;
+                    const dt_y = camera.y - obj.y;
+                    if (dt_x * dt_x + dt_y * dt_y < 1) {
+                        interactive_id = obj.obj_id;
+                    }
+                }
+
+                obj.update(time, dt);
+            },
+            .player => |*player| player.update(time, dt),
+            .projectile => |*proj| {
+                if (!proj.update(time, dt, allocator))
+                    entity_indices_to_remove.append(i) catch |e| {
+                        std.log.err("Out of memory: {any}", .{e});
+                    };
+            },
         }
-
-        obj.update(time, dt);
     }
 
-    for (projectiles.items, 0..) |*proj, i| {
-        if (!proj.update(time, dt, allocator))
-            proj_indices_to_remove.append(i) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
-            };
+    std.mem.reverse(usize, entity_indices_to_remove.items);
+
+    for (entity_indices_to_remove.items) |idx| {
+        _ = entities.orderedRemove(idx);
     }
 
-    std.mem.reverse(usize, proj_indices_to_remove.items);
+    entity_indices_to_remove.clearRetainingCapacity();
 
-    for (proj_indices_to_remove.items) |idx| {
-        _ = projectiles.orderedRemove(idx);
-    }
-
-    proj_indices_to_remove.clearRetainingCapacity();
+    std.sort.pdq(Entity, entities.items, {}, lessThan);
 }
 
 pub inline fn validPos(x: isize, y: isize) bool {

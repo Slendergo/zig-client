@@ -251,25 +251,30 @@ pub const Server = struct {
         const container_type = reader.read(u16);
         const angle = reader.read(f32);
 
-        if (map.findPlayer(owner_id)) |player| {
-            const weapon = player.inventory[0];
-            const item_props = game_data.item_type_to_props.get(@intCast(weapon));
-            const proj_props = item_props.?.projectile.?;
-            const projs_len = item_props.?.num_projectiles;
-            for (0..projs_len) |_| {
-                var proj = map.Projectile{
-                    .x = player.x,
-                    .y = player.y,
-                    .props = proj_props,
-                    .angle = angle,
-                    .start_time = main.current_time,
-                    .bullet_id = @intCast(bullet_id),
-                    .owner_id = player.obj_id,
-                };
-                proj.addToMap(true);
+        if (map.findEntity(owner_id)) |en| {
+            switch (en.*) {
+                .player => |*player| {
+                    const weapon = player.inventory[0];
+                    const item_props = game_data.item_type_to_props.get(@intCast(weapon));
+                    const proj_props = item_props.?.projectile.?;
+                    const projs_len = item_props.?.num_projectiles;
+                    for (0..projs_len) |_| {
+                        var proj = map.Projectile{
+                            .x = player.x,
+                            .y = player.y,
+                            .props = proj_props,
+                            .angle = angle,
+                            .start_time = main.current_time,
+                            .bullet_id = @intCast(bullet_id),
+                            .owner_id = player.obj_id,
+                        };
+                        proj.addToMap(true);
+                    }
+                    player.attack_angle = angle - camera.angle;
+                    player.attack_start = main.current_time;
+                },
+                else => {},
             }
-            player.attack_angle = angle - camera.angle;
-            player.attack_start = main.current_time;
         }
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
@@ -342,7 +347,14 @@ pub const Server = struct {
         if (num_shots == 0)
             return;
 
-        const owner = map.findObject(owner_id);
+        var owner: ?map.GameObject = null;
+        if (map.findEntity(owner_id)) |en| {
+            switch (en.*) {
+                .object => |object| owner = object,
+                else => {},
+            }
+        }
+
         if (owner == null)
             return;
 
@@ -406,15 +418,20 @@ pub const Server = struct {
         const object_id = reader.read(i32);
         const position = reader.read(Position);
 
-        if (map.findPlayer(object_id)) |player| {
-            if (object_id == map.local_player_id) {
-                player.x = position.x;
-                player.y = position.y;
-            } else {
-                player.target_x = position.x;
-                player.target_y = position.y;
-                player.tick_x = player.x;
-                player.tick_y = player.y;
+        if (map.findEntity(object_id)) |en| {
+            switch (en.*) {
+                .player => |*player| {
+                    if (object_id == map.local_player_id) {
+                        player.x = position.x;
+                        player.y = position.y;
+                    } else {
+                        player.target_x = position.x;
+                        player.target_y = position.y;
+                        player.tick_x = player.x;
+                        player.tick_y = player.y;
+                    }
+                },
+                else => {},
             }
         } else {
             std.log.err("Object id {d} not found while attempting to goto to pos {any}", .{ object_id, position });
@@ -495,10 +512,15 @@ pub const Server = struct {
 
         defer {
             if (main.tick_frame) {
-                if (map.findPlayer(map.local_player_id)) |player| {
-                    self.sendMove(tick_id, main.last_update, player.x, player.y, map.move_records.items) catch |e| {
-                        std.log.err("Could not send Move: {any}", .{e});
-                    };
+                if (map.findEntity(map.local_player_id)) |en| {
+                    switch (en.*) {
+                        .player => |player| {
+                            self.sendMove(tick_id, main.last_update, player.x, player.y, map.move_records.items) catch |e| {
+                                std.log.err("Could not send Move: {any}", .{e});
+                            };
+                        },
+                        else => {},
+                    }
                 }
             }
         }
@@ -509,49 +531,53 @@ pub const Server = struct {
             const position = reader.read(Position);
 
             const stats_len = reader.read(u16);
-            if (map.findPlayer(obj_id)) |player| {
-                if (player.obj_id != map.local_player_id) {
-                    player.target_x = position.x;
-                    player.target_y = position.y;
-                    player.tick_x = player.x;
-                    player.tick_y = player.y;
-                    const y_dt = position.y - player.y;
-                    const x_dt = position.x - player.x;
-                    player.visual_move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
+            if (map.findEntity(obj_id)) |en| {
+                switch (en.*) {
+                    .player => |*player| {
+                        if (player.obj_id != map.local_player_id) {
+                            player.target_x = position.x;
+                            player.target_y = position.y;
+                            player.tick_x = player.x;
+                            player.tick_y = player.y;
+                            const y_dt = position.y - player.y;
+                            const x_dt = position.x - player.x;
+                            player.visual_move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
+                        }
+
+                        for (0..stats_len) |_| {
+                            const stat_id = reader.read(u8);
+                            const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
+                                std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
+                                return;
+                            };
+                            if (!parsePlrStatData(reader, &player.*, stat, allocator))
+                                return;
+                        }
+
+                        continue;
+                    },
+                    .object => |*object| {
+                        object.target_x = position.x;
+                        object.target_y = position.y;
+                        object.tick_x = object.x;
+                        object.tick_y = object.y;
+                        const y_dt = position.y - object.y;
+                        const x_dt = position.x - object.x;
+                        object.visual_move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
+                        for (0..stats_len) |_| {
+                            const stat_id = reader.read(u8);
+                            const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
+                                std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
+                                return;
+                            };
+                            if (!parseObjStatData(reader, &object.*, stat, allocator))
+                                return;
+                        }
+
+                        continue;
+                    },
+                    else => {},
                 }
-
-                for (0..stats_len) |_| {
-                    const stat_id = reader.read(u8);
-                    const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
-                        std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
-                        return;
-                    };
-                    if (!parsePlrStatData(reader, &player.*, stat, allocator))
-                        return;
-                }
-
-                continue;
-            }
-
-            if (map.findObject(obj_id)) |object| {
-                object.target_x = position.x;
-                object.target_y = position.y;
-                object.tick_x = object.x;
-                object.tick_y = object.y;
-                const y_dt = position.y - object.y;
-                const x_dt = position.x - object.x;
-                object.visual_move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
-                for (0..stats_len) |_| {
-                    const stat_id = reader.read(u8);
-                    const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
-                        std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
-                        return;
-                    };
-                    if (!parseObjStatData(reader, &object.*, stat, allocator))
-                        return;
-                }
-
-                continue;
             }
 
             std.log.err("Could not find object in NewTick (obj_id={d}, x={d}, y={d})", .{ obj_id, position.x, position.y });
@@ -570,26 +596,30 @@ pub const Server = struct {
         const color = reader.read(ARGB);
 
         // zig fmt: off
-        if (map.findPlayer(object_id)) |player| {
-            ui.status_texts.append(ui.StatusText{
-                .ref_x = &player.screen_x,
-                .ref_y = &player.screen_y,
-                .start_time = main.current_time,
-                .color = @bitCast(color),
-                .lifetime = 2000,
-                .text = allocator.dupe(u8, message) catch unreachable, // not really unreachable is it now?
-            }) catch unreachable; 
-        }
-
-        if (map.findObject(object_id)) |obj| {
-            ui.status_texts.append(ui.StatusText{
-                .ref_x = &obj.screen_x,
-                .ref_y = &obj.screen_y,
-                .start_time = main.current_time,
-                .color = @bitCast(color),
-                .lifetime = 2000,
-                .text = allocator.dupe(u8, message) catch unreachable,
-            }) catch unreachable;
+        if (map.findEntity(object_id)) |en| {
+            switch (en.*) {
+                .player => |*player| {
+                     ui.status_texts.append(ui.StatusText{
+                        .ref_x = &player.screen_x,
+                        .ref_y = &player.screen_y,
+                        .start_time = main.current_time,
+                        .color = @bitCast(color),
+                        .lifetime = 2000,
+                        .text = allocator.dupe(u8, message) catch unreachable, // not really unreachable is it now?
+                    }) catch unreachable; 
+                },
+                .object => |*obj| {
+                    ui.status_texts.append(ui.StatusText{
+                        .ref_x = &obj.screen_x,
+                        .ref_y = &obj.screen_y,
+                        .start_time = main.current_time,
+                        .color = @bitCast(color),
+                        .lifetime = 2000,
+                        .text = allocator.dupe(u8, message) catch unreachable,
+                    }) catch unreachable;
+                },
+                else => {},
+            }
         }
         // zig fmt: on
 
@@ -639,43 +669,48 @@ pub const Server = struct {
             std.log.debug("Recv - ServerPlayerShoot: bullet_id={d}, owner_id={d}, container_type={d}, x={e}, y={e}, angle={e}, damage={d}", .{ bullet_id, owner_id, container_type, starting_pos.x, starting_pos.y, angle, damage });
 
         const needs_ack = owner_id == map.local_player_id;
-        if (map.findPlayer(owner_id)) |player| {
-            _ = player;
+        if (map.findEntity(owner_id)) |en| {
+            switch (en.*) {
+                .player => {
+                    const item_props = game_data.item_type_to_props.get(@intCast(container_type));
+                    if (item_props == null or item_props.?.projectile == null)
+                        return;
 
-            const item_props = game_data.item_type_to_props.get(@intCast(container_type));
-            if (item_props == null or item_props.?.projectile == null)
-                return;
+                    const proj_props = item_props.?.projectile.?;
+                    const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
+                    var current_angle = angle - total_angle / 2.0;
+                    for (0..num_shots) |i| {
+                        // zig fmt: off
+                        var proj = map.Projectile{ 
+                            .x = starting_pos.x,
+                            .y = starting_pos.y,
+                            .damage = damage,
+                            .props = proj_props,
+                            .angle = current_angle,
+                            .start_time = main.current_time,
+                            .bullet_id = bullet_id +% @as(u8, @intCast(i)), // this is wrong but whatever
+                            .owner_id = owner_id,
+                        };
+                        // zig fmt: on
+                        proj.addToMap(true);
 
-            const proj_props = item_props.?.projectile.?;
-            const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
-            var current_angle = angle - total_angle / 2.0;
-            for (0..num_shots) |i| {
-                // zig fmt: off
-                var proj = map.Projectile{ 
-                    .x = starting_pos.x,
-                    .y = starting_pos.y,
-                    .damage = damage,
-                    .props = proj_props,
-                    .angle = current_angle,
-                    .start_time = main.current_time,
-                    .bullet_id = bullet_id +% @as(u8, @intCast(i)), // this is wrong but whatever
-                    .owner_id = owner_id,
-                };
-                // zig fmt: on
-                proj.addToMap(true);
+                        current_angle += angle_inc;
+                    }
 
-                current_angle += angle_inc;
+                    if (needs_ack) {
+                        self.sendShootAck(main.current_time) catch |e| {
+                            std.log.err("Could not send ShootAck: {any}", .{e});
+                        };
+                    }
+                },
+                else => {
+                    if (needs_ack) {
+                        self.sendShootAck(-1) catch |e| {
+                            std.log.err("Could not send ShootAck: {any}", .{e});
+                        };
+                    }
+                },
             }
-
-            if (needs_ack) {
-                self.sendShootAck(main.current_time) catch |e| {
-                    std.log.err("Could not send ShootAck: {any}", .{e});
-                };
-            }
-        } else if (needs_ack) {
-            self.sendShootAck(-1) catch |e| {
-                std.log.err("Could not send ShootAck: {any}", .{e});
-            };
         }
     }
 
@@ -757,15 +792,19 @@ pub const Server = struct {
 
         const drops = reader.read([]i32);
         for (drops) |drop| {
-            if (map.removeObject(drop)) |obj| {
-                allocator.free(obj.name_override);
-                continue;
-            }
-
-            if (map.removePlayer(drop)) |player| {
-                allocator.free(player.name_override);
-                allocator.free(player.guild);
-                continue;
+            if (map.removeEntity(drop)) |en| {
+                switch (en) {
+                    .object => |obj| {
+                        allocator.free(obj.name_override);
+                        continue;
+                    },
+                    .player => |player| {
+                        allocator.free(player.name_override);
+                        allocator.free(player.guild);
+                        continue;
+                    },
+                    else => {}
+                }
             }
 
             std.log.err("Could not remove object with id {d}\n", .{drop});
@@ -1245,8 +1284,11 @@ pub const Server = struct {
         try self.stream.writer().writeAll(self.writer.buffer[0..self.writer.index]);
         self.writer.index = 0;
 
-        if (map.findPlayer(map.local_player_id)) |player| {
-            player.onMove();
+        if (map.findEntity(map.local_player_id)) |en| {
+            switch (en.*) {
+                .player => |*player| player.onMove(),
+                else => {},
+            }
         }
     }
 
