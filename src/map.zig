@@ -633,11 +633,11 @@ pub const Player = struct {
     }
 
     fn modifyMove(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
-        // if (isParalyzed() OR isPetrified()) {
-        //     target_x.* = self.x;
-        //     target_y.* = self.y;
-        //     return;
-        // }
+        if (self.condition.paralyzed) {
+            target_x.* = self.x;
+            target_y.* = self.y;
+            return;
+        }
 
         const dx = x - self.x;
         const dy = y - self.y;
@@ -1267,7 +1267,9 @@ pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, pierci
             .object => |object| {
                 var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
 
-                if (piercing) {} else damage -= @intCast(object.defense);
+                if (!piercing) 
+                    damage -= @intCast(object.defense);
+                
                 // todo player buffs and mult
                 // if (findPlayer(player_id)) |player| {
                 // }
