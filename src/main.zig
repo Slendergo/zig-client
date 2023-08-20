@@ -19,6 +19,7 @@ const camera = @import("camera.zig");
 const map = @import("map.zig");
 const ui = @import("ui.zig");
 const render = @import("render.zig");
+const ztracy = @import("ztracy");
 
 pub const ServerData = struct {
     name: [:0]const u8 = "",
@@ -529,6 +530,12 @@ pub fn disconnect() void {
 }
 
 pub fn main() !void {
+    if (settings.enable_tracy) {
+        // needed for tracy to register
+        const main_zone = ztracy.ZoneNC(@src(), "Main Zone", 0x00FF0000);
+        defer main_zone.End();
+    }
+
     const start_time = std.time.milliTimestamp();
     utils.rng.seed(@as(u64, @intCast(start_time)));
 

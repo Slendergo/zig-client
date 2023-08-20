@@ -8,10 +8,10 @@ pub const Point = struct {
 };
 
 pub const Random = struct {
-    seed: u32,
+    seed: u32 = 1,
 
-    pub fn init(mySeed: u32) Random {
-        return Random{ .seed = mySeed };
+    pub fn init(seed: u32) Random {
+        return Random{ .seed = seed };
     }
 
     pub fn nextIntRange(self: *Random, min: u32, max: u32) u32 {

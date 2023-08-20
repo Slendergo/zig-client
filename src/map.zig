@@ -210,6 +210,7 @@ pub const GameObject = struct {
     alt_texture_index: i32 = 0,
     inventory: [8]i32 = [_]i32{-1} ** 8,
     owner_acc_id: i32 = -1,
+    last_merch_type: u16 = 0,
     merchant_obj_type: u16 = 0,
     merchant_rem_count: i32 = 0,
     merchant_rem_minute: i32 = 0,
@@ -362,6 +363,9 @@ pub const GameObject = struct {
         }
 
         merchantBlock: {
+            if (self.last_merch_type == self.merchant_obj_type)
+                break :merchantBlock;
+
             // this may not be good idea for merchants every frame lols
             // todo move it into a fn call that will only be set on merchant_obj_type set
             // this is temporary
@@ -385,6 +389,8 @@ pub const GameObject = struct {
             self.tex_v = @floatFromInt(rect.y);
             self.tex_w = @floatFromInt(rect.w);
             self.tex_h = @floatFromInt(rect.h);
+
+            self.last_merch_type = self.merchant_obj_type;
         }
     }
 };
@@ -1162,7 +1168,8 @@ pub var night_light_intensity: f32 = 0.0;
 pub var server_time_offset: i32 = 0;
 pub var move_records: std.ArrayList(network.TimedPosition) = undefined;
 pub var last_records_clear_time: i32 = 0;
-pub var random: utils.Random = utils.Random{ .seed = 1 };
+pub var random: utils.Random = utils.Random{};
+var last_sort: i32 = -1;
 
 pub fn init(allocator: std.mem.Allocator) void {
     entities = std.ArrayList(Entity).init(allocator);
@@ -1274,27 +1281,12 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
     while (!object_lock.tryLock()) {}
     defer object_lock.unlock();
 
-    if (findEntity(local_player_id)) |en| {
-        switch (en.*) {
-            .player => |*local_player| {
-                camera.update(local_player.x, local_player.y, dt, input.rotate);
-                if (input.attacking) {
-                    const y: f32 = @floatCast(input.mouse_y);
-                    const x: f32 = @floatCast(input.mouse_x);
-                    const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-                    local_player.shoot(shoot_angle, time);
-                }
-            },
-            else => {},
-        }
-    }
-
     interactive_id = -1;
 
     for (entities.items, 0..) |*en, i| {
         switch (en.*) {
             .object => |*obj| {
-                if (interactive_id == -1 and obj.class == .portal) {
+                if (obj.class == .portal) {
                     const dt_x = camera.x - obj.x;
                     const dt_y = camera.y - obj.y;
                     if (dt_x * dt_x + dt_y * dt_y < 1) {
@@ -1304,7 +1296,19 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
 
                 obj.update(time, dt);
             },
-            .player => |*player| player.update(time, dt),
+            .player => |*player| {
+                if (player.obj_id == local_player_id) {
+                    camera.update(player.x, player.y, dt, input.rotate);
+                    if (input.attacking) {
+                        const y: f32 = @floatCast(input.mouse_y);
+                        const x: f32 = @floatCast(input.mouse_x);
+                        const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
+                        player.shoot(shoot_angle, time);
+                    }
+                }
+
+                player.update(time, dt);
+            },
             .projectile => |*proj| {
                 if (!proj.update(time, dt, allocator))
                     entity_indices_to_remove.append(i) catch |e| {
@@ -1322,7 +1326,11 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
 
     entity_indices_to_remove.clearRetainingCapacity();
 
-    std.sort.pdq(Entity, entities.items, {}, lessThan);
+    // hack
+    if (time - last_sort > 7) {
+        std.sort.pdq(Entity, entities.items, {}, lessThan);
+        last_sort = time;
+    }
 }
 
 pub inline fn validPos(x: isize, y: isize) bool {

@@ -37,6 +37,7 @@ pub const app_engine_url = "http://127.0.0.1:8080/";
 pub const log_packets = LogType.all;
 pub const print_atlas = false;
 pub const rotate_speed = 0.002;
+pub const enable_tracy = false;
 
 pub var move_left: Button = .{ .key = zglfw.Key.a };
 pub var move_right: Button = .{ .key = zglfw.Key.d };
