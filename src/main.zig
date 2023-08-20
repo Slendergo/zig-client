@@ -319,6 +319,9 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                         .{map.entities.items.len},
                     );
 
+                    while (!map.object_lock.tryLock()) {}
+                    defer map.object_lock.unlock();
+
                     if (map.findEntity(map.local_player_id)) |en| {
                         switch (en.*) {
                             .player => |local_player| {
@@ -334,6 +337,9 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 }
 
                 if (zgui.collapsingHeader("Player\n", .{ .default_open = true })) {
+                    while (!map.object_lock.tryLock()) {}
+                    defer map.object_lock.unlock();
+                    
                     if (map.findEntity(map.local_player_id)) |en| {
                         switch (en.*) {
                             .player => |local_player| {

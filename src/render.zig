@@ -1044,8 +1044,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 const screen_pos = camera.rotateAroundCamera(square.x, square.y);
                 const screen_x = screen_pos.x - camera.screen_width / 2.0;
                 const screen_y = -(screen_pos.y - camera.screen_height / 2.0);
-                const clip_x = screen_x * camera.clip_scale_x;
-                const clip_y = screen_y * camera.clip_scale_y;
 
                 if (square.light_color > 0) {
                     // zig fmt: off
@@ -1057,12 +1055,14 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     light_idx += 4;
                 }
 
+                const cos_half = camera.cos / 2.0;
+                const sin_half = camera.sin / 2.0;
                 // zig fmt: off
                 drawSquare(square_idx, 
-                    camera.x_cos + camera.x_sin + clip_x, camera.y_sin - camera.y_cos + clip_y,
-                    -camera.x_cos + camera.x_sin + clip_x, -camera.y_sin - camera.y_cos + clip_y,
-                    -camera.x_cos - camera.x_sin + clip_x, -camera.y_sin + camera.y_cos + clip_y,
-                    camera.x_cos - camera.x_sin + clip_x, camera.y_sin + camera.y_cos + clip_y,
+                    (cos_half + sin_half + screen_x) * camera.clip_scale_x, (sin_half - cos_half + screen_y) * camera.clip_scale_y,
+                    (-cos_half + sin_half + screen_x) * camera.clip_scale_x, (-sin_half - cos_half + screen_y) * camera.clip_scale_y,
+                    (-cos_half - sin_half + screen_x) * camera.clip_scale_x, (-sin_half + cos_half + screen_y) * camera.clip_scale_y,
+                    (cos_half - sin_half + screen_x) * camera.clip_scale_x, (sin_half + cos_half + screen_y) * camera.clip_scale_y,
                     square.tex_u, square.tex_v, square.tex_w, square.tex_h,
                     square.left_blend_u, square.left_blend_v, 
                     square.top_blend_u, square.top_blend_v,
