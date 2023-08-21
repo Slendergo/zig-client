@@ -586,7 +586,7 @@ pub const Player = struct {
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
                 const move_speed = self.moveSpeedMultiplier();
-                const total_angle = camera.angle_unbound + self.move_angle; // -PI PI angle radian will mess up the animation rotation direction when moving, this functionally works the same as camera.angle but fixed my problem
+                const total_angle = camera.angle + self.move_angle;
                 const float_dt: f32 = @floatFromInt(dt);
                 const next_x = self.x + move_speed * float_dt * @cos(total_angle);
                 const next_y = self.y + move_speed * float_dt * @sin(total_angle);
