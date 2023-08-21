@@ -1002,14 +1002,6 @@ inline fn endDraw(
 }
 
 pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.TextureView, encoder: zgpu.wgpu.CommandEncoder) void {
-    if (main.resized) {
-        camera.screen_width = main.screen_width;
-        camera.screen_height = main.screen_height;
-        camera.clip_scale_x = 2.0 / main.screen_width;
-        camera.clip_scale_y = 2.0 / main.screen_height;
-        main.resized = false;
-    }
-
     if (!map.validPos(@intFromFloat(camera.x), @intFromFloat(camera.y)))
         return;
 
