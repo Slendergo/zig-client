@@ -455,8 +455,10 @@ pub const Player = struct {
     attack_start: i32 = 0,
     attack_period: i32 = 0,
     attack_angle: f32 = 0,
+    attack_angle_raw: f32 = 0,
     next_bullet_id: u8 = 0,
     move_angle: f32 = std.math.nan(f32),
+    move_angle_camera_included: f32 = std.math.nan(f32),
     facing: f32 = std.math.nan(f32),
     walk_speed_multiplier: f32 = 1.0,
     light_color: i32 = -1,
@@ -578,6 +580,7 @@ pub const Player = struct {
 
         self.attack_period = attack_delay;
         self.attack_angle = angle - camera.angle;
+        self.attack_angle_raw = angle;
         self.attack_start = time;
     }
 
@@ -586,11 +589,11 @@ pub const Player = struct {
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
                 const move_speed = self.moveSpeedMultiplier();
-                const total_angle = camera.angle + self.move_angle;
+                const total_angle = camera.angle_unbound + self.move_angle;
                 const float_dt: f32 = @floatFromInt(dt);
                 const next_x = self.x + move_speed * float_dt * @cos(total_angle);
                 const next_y = self.y + move_speed * float_dt * @sin(total_angle);
-
+                self.move_angle_camera_included = total_angle;
                 modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
 

@@ -1195,7 +1195,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     var float_period: f32 = 0.0;
 
                     if (time < player.attack_start + player.attack_period) {
-                        player.facing = player.attack_angle;
+                        player.facing = player.attack_angle_raw;
                         const time_dt: f32 = @floatFromInt(time - player.attack_start);
                         float_period = @floatFromInt(player.attack_period);
                         float_period = @mod(time_dt, float_period) / float_period;
@@ -1204,11 +1204,11 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         const walk_period = 3.5 / player.moveSpeedMultiplier();
                         const float_time: f32 = @floatFromInt(time);
                         float_period = @mod(float_time, walk_period) / walk_period;
-                        player.facing = player.move_angle;
+                        player.facing = player.move_angle_camera_included;
                         action = assets.walk_action;
                     }
 
-                    const angle = utils.halfBound(player.facing);
+                    const angle = utils.boundToPI(player.facing - camera.angle_unbound);
                     const pi_over_4 = std.math.pi / 4.0;
                     const angle_div = @divFloor(angle, pi_over_4);
 
