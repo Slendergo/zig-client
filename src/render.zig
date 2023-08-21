@@ -1427,16 +1427,20 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     var float_period: f32 = 0.0;
 
                     if (time < bo.attack_start + object_attack_period) {
+                        // if(!bo.dont_face_attacks){
                         bo.facing = bo.attack_angle;
+                        // }
                         const time_dt: f32 = @floatFromInt(time - bo.attack_start);
                         float_period = @mod(time_dt, object_attack_period) / object_attack_period;
                         action = assets.attack_action;
                     } else if (!std.math.isNan(bo.move_angle)) {
-                        var move_period = 2 / utils.distSqr(bo.tick_x, bo.tick_y, bo.target_x, bo.target_y);
+                        var move_period = 0.5 / utils.distSqr(bo.tick_x, bo.tick_y, bo.target_x, bo.target_y);
                         move_period += 400 - @mod(move_period, 400);
                         const float_time: f32 = @floatFromInt(time);
                         float_period = @mod(float_time, move_period) / move_period;
+                        // if(!bo.dont_face_attacks){
                         bo.facing = bo.move_angle;
+                        // }
                         action = assets.walk_action;
                     }
 
@@ -1447,8 +1451,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(angle_div + 4)) % 8;
 
                     sec = switch (sec) {
-                        0, 1, 2, 7 => assets.left_dir,
-                        3, 4, 5, 6 => assets.right_dir,
+                        0, 1, 6, 7 => assets.left_dir,
+                        2, 3, 4, 5 => assets.right_dir,
                         else => unreachable,
                     };
 
