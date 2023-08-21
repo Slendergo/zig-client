@@ -9,6 +9,7 @@ const utils = @import("utils.zig");
 const zstbrp = @import("zstbrp");
 const zstbi = @import("zstbi");
 const ui = @import("ui.zig");
+const main = @import("main.zig");
 const zgui = @import("zgui");
 
 pub const object_attack_period: u32 = 300;
@@ -1001,6 +1002,14 @@ inline fn endDraw(
 }
 
 pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.TextureView, encoder: zgpu.wgpu.CommandEncoder) void {
+    if (main.resized) {
+        camera.screen_width = main.screen_width;
+        camera.screen_height = main.screen_height;
+        camera.clip_scale_x = 2.0 / main.screen_width;
+        camera.clip_scale_y = 2.0 / main.screen_height;
+        main.resized = false;
+    }
+
     if (!map.validPos(@intFromFloat(camera.x), @intFromFloat(camera.y)))
         return;
 
@@ -1217,7 +1226,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         else => unreachable,
                     };
 
-                    // 2 frames so multiply by 2
                     const capped_period = @max(0, @min(0.99999, float_period)) * 2.0; // 2 walk cycle frames so * 2
                     const anim_idx: usize = @intFromFloat(capped_period);
 

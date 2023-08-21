@@ -21,6 +21,10 @@ const ui = @import("ui.zig");
 const render = @import("render.zig");
 const ztracy = @import("ztracy");
 
+pub var screen_width: f32 = 1280.0;
+pub var screen_height: f32 = 720.0;
+pub var resized: bool = false;
+
 pub const ServerData = struct {
     name: [:0]const u8 = "",
     dns: [:0]const u8 = "",
@@ -453,10 +457,17 @@ inline fn draw() void {
     if (gctx.present() == .swap_chain_resized) {
         const float_w: f32 = @floatFromInt(gctx.swapchain_descriptor.width);
         const float_h: f32 = @floatFromInt(gctx.swapchain_descriptor.height);
-        camera.screen_width = float_w;
-        camera.screen_height = float_h;
-        camera.clip_scale_x = 2.0 / float_w;
-        camera.clip_scale_y = 2.0 / float_h;
+
+        // original code
+
+        // camera.screen_width = float_w;
+        // camera.screen_height = float_h;
+        // camera.clip_scale_x = 2.0 / float_w;
+        // camera.clip_scale_y = 2.0 / float_h;
+
+        screen_width = float_w;
+        screen_height = float_h;
+        resized = true;
     }
 
     back_buffer.release();
