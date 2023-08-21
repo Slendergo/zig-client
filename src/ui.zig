@@ -1,11 +1,9 @@
 const std = @import("std");
 const camera = @import("camera.zig");
 const assets = @import("assets.zig");
+const map = @import("map.zig");
 
 pub const StatusText = struct {
-    // pointers to bo/player's screen x/y/h
-    ref_x: *const f32,
-    ref_y: *const f32,
     // the texts' internal x/y
     screen_x: f32 = 0.0,
     screen_y: f32 = 0.0,
@@ -16,6 +14,7 @@ pub const StatusText = struct {
     start_time: i32 = 0,
     alpha: f32 = 1.0,
     text: []u8 = &[0]u8{},
+    obj_id: i32 = -1,
 };
 
 pub const medium_text_type = 0.0;
@@ -39,8 +38,30 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     status_texts_to_remove.deinit();
 }
 
+pub fn removeStatusText(obj_id: i32) void {
+    for (status_texts.items, 0..) |text, i| {
+        if (text.obj_id == obj_id) {
+            status_texts_to_remove.append(i) catch |e| {
+                std.log.err("Status text disposing failed: {any}", .{e});
+            };
+            continue;
+        }
+    }
+}
+
 pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
     _ = dt;
+
+    if (status_texts_to_remove.items.len > 0) {
+        std.mem.reverse(usize, status_texts_to_remove.items);
+
+        for (status_texts_to_remove.items) |idx| {
+            allocator.free(status_texts.orderedRemove(idx).text);
+        }
+
+        status_texts_to_remove.clearRetainingCapacity();
+    }
+
     for (status_texts.items, 0..) |*text, i| {
         const elapsed = time - text.start_time;
         if (elapsed > text.lifetime) {
@@ -53,8 +74,14 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
         const frac = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(text.lifetime));
         text.size = text.initial_size * @min(1.0, @max(0.7, 1.0 - frac * 0.3 + 0.075));
         text.alpha = 1.0 - frac + 0.33;
-        text.screen_x = text.ref_x.* - textWidth(text.size, text.text, bold_text_type) / 2;
-        text.screen_y = text.ref_y.* - (frac * 40 + 20);
+        if (map.findEntity(text.obj_id)) |en| {
+            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
+                inline else => |obj| {
+                    text.screen_x = obj.screen_x - textWidth(text.size, text.text, bold_text_type) / 2;
+                    text.screen_y = obj.screen_y - (frac * 40 + 20);
+                },
+            }
+        }
     }
 
     std.mem.reverse(usize, status_texts_to_remove.items);

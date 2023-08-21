@@ -317,7 +317,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     defer map.object_lock.unlock();
 
                     if (map.findEntity(map.local_player_id)) |en| {
-                        switch (en.*) {
+                        switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                             .player => |local_player| {
                                 const square = local_player.getSquare();
                                 zgui.text(
@@ -335,7 +335,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     defer map.object_lock.unlock();
 
                     if (map.findEntity(map.local_player_id)) |en| {
-                        switch (en.*) {
+                        switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                             .player => |local_player| {
                                 zgui.text(
                                     "Attack Angle: {d:.3}\n",

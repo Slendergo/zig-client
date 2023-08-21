@@ -1174,7 +1174,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 idx = 0;
             }
 
-            switch (en.*) {
+            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                 .player => |*player| {
                     if (!camera.visibleInCamera(player.x, player.y)) {
                         continue;

@@ -175,7 +175,7 @@ pub fn updateState() void {
     defer map.object_lock.unlock();
 
     if (map.findEntity(map.local_player_id)) |en| {
-        switch (en.*) {
+        switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
             .player => |*local_player| {
                 const y_dt = move_down - move_up;
                 const x_dt = move_right - move_left;
@@ -207,7 +207,7 @@ inline fn useAbility() void {
         defer map.object_lock.unlock();
 
         if (map.findEntity(map.local_player_id)) |en| {
-            switch (en.*) {
+            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                 .player => |local_player| {
                     const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
 

@@ -823,8 +823,9 @@ pub const Projectile = struct {
     x: f32 = 0.0,
     y: f32 = 0.0,
     z: f32 = 0.0,
-    size: f32 = 1.0,
+    screen_x: f32 = 0.0,
     screen_y: f32 = 0.0,
+    size: f32 = 1.0,
     obj_id: i32 = 0,
     tex_u: f32 = 0.0,
     tex_v: f32 = 0.0,
@@ -877,7 +878,7 @@ pub const Projectile = struct {
         var min_dist = std.math.floatMax(f32);
         var target: ?*GameObject = null;
         for (entities.items) |*en| {
-            switch (en.*) {
+            switch (@atomicLoad(*Entity, &en, .Acquire).*) {
                 .object => |*obj| {
                     if (obj.is_enemy) {
                         const dist_sqr = utils.distSqr(obj.x, obj.y, x, y);
@@ -898,7 +899,7 @@ pub const Projectile = struct {
         var min_dist = std.math.floatMax(f32);
         var target: ?*Player = null;
         for (entities.items) |*en| {
-            switch (en.*) {
+            switch (@atomicLoad(*Entity, &en, .Acquire).*) {
                 .player => |*player| {
                     const dist_sqr = utils.distSqr(player.x, player.y, x, y);
                     if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
@@ -1059,8 +1060,7 @@ pub const Projectile = struct {
                     const damageValue = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
                     // zig fmt: off
                     ui.status_texts.append(ui.StatusText{
-                        .ref_x = &player.?.screen_x,
-                        .ref_y = &player.?.screen_y,
+                        .obj_id = player.?.obj_id,
                         .start_time = time,
                         .color = damageColor,
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damageValue}) catch unreachable
@@ -1094,8 +1094,7 @@ pub const Projectile = struct {
                         piercing
                     ));
                     ui.status_texts.append(ui.StatusText{
-                        .ref_x = &object.?.screen_x,
-                        .ref_y = &object.?.screen_y,
+                        .obj_id = object.?.obj_id,
                         .start_time = time,
                         .color = 0xB02020,
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable
@@ -1239,7 +1238,7 @@ pub fn setWH(w: isize, h: isize, allocator: std.mem.Allocator) void {
 
 pub fn findEntity(obj_id: i32) ?*Entity {
     for (entities.items) |*en| {
-        switch (en.*) {
+        switch (@atomicLoad(*Entity, &en, .Acquire).*) {
             inline else => |*obj| {
                 if (obj.obj_id == obj_id)
                     return en;
@@ -1255,7 +1254,7 @@ pub fn removeEntity(obj_id: i32) ?Entity {
     defer object_lock.unlock();
 
     for (entities.items, 0..) |*en, i| {
-        switch (en.*) {
+        switch (@atomicLoad(*Entity, &en, .Acquire).*) {
             inline else => |*obj| {
                 if (obj.obj_id == obj_id)
                     return entities.orderedRemove(i);
@@ -1268,7 +1267,7 @@ pub fn removeEntity(obj_id: i32) ?Entity {
 
 pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, piercing: bool) i32 {
     if (findEntity(object_id)) |en| {
-        switch (en.*) {
+        switch (@atomicLoad(*Entity, &en, .Acquire).*) {
             .object => |object| {
                 var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
 
@@ -1294,7 +1293,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
     interactive_id = -1;
 
     for (entities.items, 0..) |*en, i| {
-        switch (en.*) {
+        switch (@atomicLoad(*Entity, &en, .Acquire).*) {
             .object => |*obj| {
                 if (obj.class == .portal) {
                     const dt_x = camera.x - obj.x;
