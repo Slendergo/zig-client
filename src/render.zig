@@ -1208,7 +1208,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         action = assets.walk_action;
                     }
 
-                    const angle = utils.boundToPI(player.facing - camera.angle_unbound);
+                    const angle = utils.halfBound(player.facing - camera.angle_unbound);
                     const pi_over_4 = std.math.pi / 4.0;
                     const angle_div = @divFloor(angle, pi_over_4);
 
