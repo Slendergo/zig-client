@@ -1241,11 +1241,12 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     const rect = switch (action) {
                         assets.walk_action => player.anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
                         assets.attack_action => player.anim_data.attack_anims[sec][anim_idx],
-                        else => player.anim_data.walk_anims[sec][0], // assume were standing only 3 cases and the last is that
+                        assets.stand_action => player.anim_data.walk_anims[sec][0],
+                        else => unreachable,
                     };
 
                     var x_offset: f32 = 0.0;
-                    if (action == assets.attack_action) {
+                    if (action == assets.attack_action and anim_idx == 1) {
                         const w = @as(f32, @floatFromInt(rect.w)) * size;
                         if (sec == assets.left_dir) {
                             x_offset = -assets.padding * size;
