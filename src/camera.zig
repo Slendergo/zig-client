@@ -21,6 +21,7 @@ pub var clip_x: f32 = 0.0;
 pub var clip_y: f32 = 0.0;
 
 pub var angle: f32 = 0.0;
+pub var angle_unbound: f32 = 0.0;
 pub var min_x: u32 = 0;
 pub var min_y: u32 = 0;
 pub var max_x: u32 = 0;
@@ -42,6 +43,7 @@ pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
         const float_dt: f32 = @floatFromInt(dt);
         const float_rotate: f32 = @floatFromInt(rotate);
         angle = @mod(angle + float_dt * rotate_speed * float_rotate, math.tau);
+        angle_unbound += float_dt * rotate_speed * float_rotate;
     }
 
     const cos_angle = @cos(angle);
@@ -80,7 +82,7 @@ pub inline fn rotateAroundCamera(x_in: f32, y_in: f32) utils.Point {
 pub inline fn visibleInCamera(x_in: f32, y_in: f32) bool {
     if (x_in < 0 or y_in < 0)
         return false;
-        
+
     const floor_x: u32 = @intFromFloat(@floor(x_in));
     const floor_y: u32 = @intFromFloat(@floor(y_in));
     return !(floor_x < min_x or floor_x > max_x or floor_y < min_y or floor_y > max_y);
