@@ -1268,6 +1268,10 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     screen_pos.x += x_offset;
                     screen_pos.y += player.z * -camera.px_per_tile - (h - size * assets.padding);
 
+                    var alpha_mult: f32 = -1.0;
+                    if (player.condition.invisible)
+                        alpha_mult = 0.6;
+
                     player.h = h;
                     player.screen_y = screen_pos.y - 30; // account for name
                     player.screen_x = screen_pos.x - x_offset;
@@ -1311,7 +1315,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         @as(f32, @floatFromInt(rect.y)) * assets.base_texel_h,
                         @as(f32, @floatFromInt(rect.w)) * assets.base_texel_w,
                         @as(f32, @floatFromInt(rect.h)) * assets.base_texel_h / sink,
-                        .{ .texel_mult = 2.0 / size },
+                        .{ .texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
                     );
                     idx += 4;
 
@@ -1479,6 +1483,10 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     screen_pos.x += x_offset;
                     screen_pos.y += bo.z * -camera.px_per_tile - (h - size * assets.padding);
 
+                    var alpha_mult: f32 = -1.0;
+                    if (bo.condition.invisible)
+                        alpha_mult = 0.6;
+
                     bo.h = h;
                     bo.screen_y = screen_pos.y - 10;
                     bo.screen_x = screen_pos.x - x_offset;
@@ -1538,7 +1546,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         tex_v * assets.base_texel_h,
                         tex_w * assets.base_texel_w,
                         tex_h * assets.base_texel_h / sink,
-                        .{ .texel_mult = 2.0 / size },
+                        .{ .texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
                     );
                     idx += 4;
 

@@ -39,9 +39,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
   let dx = dpdx(in.uv);
   let dy = dpdy(in.uv);
   var pixel = textureSampleGrad(tex, default_sampler, in.uv, dx, dy);
-  if in.alpha_mult >= 0.0 {
-    pixel.a *= in.alpha_mult;
-  }
 
   if pixel.a == 0.0 {
     if in.texel_size.x != 0.0 {
@@ -84,6 +81,10 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
                   in.flash_color.g * in.flash_strength + pixel.g * flash_strength_inv, 
                   in.flash_color.b * in.flash_strength + pixel.b * flash_strength_inv, pixel.a);
     }
+  }
+
+  if in.alpha_mult >= 0.0 {
+    pixel.a *= in.alpha_mult;
   }
 
   return pixel;
