@@ -493,7 +493,7 @@ pub const Player = struct {
         if (self.condition.speedy or self.condition.ninja_speedy) {
             move_speed *= 1.5;
         }
-        
+
         return move_speed * self.move_multiplier * self.walk_speed_multiplier;
     }
 
@@ -1232,6 +1232,9 @@ pub fn setWH(w: isize, h: isize, allocator: std.mem.Allocator) void {
     } else {
         squares = allocator.realloc(squares, @intCast(w * h)) catch return;
     }
+
+    for (0..squares.len) |i|
+        squares[i] = Square{};
 }
 
 pub fn findEntity(obj_id: i32) ?*Entity {
