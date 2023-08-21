@@ -228,7 +228,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 if (zgui.beginListBox("Character", .{})) {
                     for (character_list, 0..) |char, index| {
                         const i: u32 = @intCast(index);
-                        if (zgui.selectable(char.name[0.. :0], .{ .selected = static.char_index == i }))
+                        if (zgui.selectable(char.name[0..], .{ .selected = static.char_index == i }))
                             static.char_index = i;
                     }
                     zgui.endListBox();
@@ -243,7 +243,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     if (zgui.beginListBox("Server", .{})) {
                         for (server_list.?, 0..) |serverData, index| {
                             const i: u32 = @intCast(index);
-                            if (zgui.selectable(serverData.name[0.. :0], .{ .selected = static.server_index == i }))
+                            if (zgui.selectable(serverData.name[0..], .{ .selected = static.server_index == i }))
                                 static.server_index = i;
                         }
                         zgui.endListBox();

@@ -1402,12 +1402,13 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     const square = bo.getSquare();
                     if (bo.draw_on_ground) {
+                        const tile_size = @as(f32, camera.px_per_tile) * 1.5 * camera.scale;
                         drawQuad(
                             idx,
-                            screen_pos.x - camera.px_per_tile / 2 * camera.scale,
-                            screen_pos.y - camera.px_per_tile / 2 * camera.scale,
-                            camera.px_per_tile * camera.scale,
-                            camera.px_per_tile * camera.scale,
+                            screen_pos.x - tile_size / 2 * camera.scale,
+                            screen_pos.y - tile_size / 2 * camera.scale,
+                            tile_size,
+                            tile_size,
                             tex_u * assets.base_texel_w,
                             tex_v * assets.base_texel_h,
                             tex_w * assets.base_texel_w,
