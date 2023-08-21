@@ -11,7 +11,8 @@ const zstbi = @import("zstbi");
 const ui = @import("ui.zig");
 const zgui = @import("zgui");
 
-pub const attack_period: u32 = 300;
+pub const object_attack_period: u32 = 300;
+pub const object_move_period: f32 = 3.5;
 
 pub const BaseVertexData = extern struct {
     pos: [2]f32,
@@ -1182,10 +1183,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     const size = camera.size_mult * camera.scale * player.size;
 
-                    // attacking animation takes priority
-
-                    // then goes movement
-
                     var action: u8 = assets.stand_action;
                     var float_period: f32 = 0.0;
 
@@ -1197,30 +1194,17 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         action = assets.attack_action;
                     } else if (!std.math.isNan(player.move_angle)) {
                         const walk_period = 3.5 / player.moveSpeedMultiplier();
-                        const time_dt: f32 = @floatFromInt(time - player.attack_start);
-                        float_period = @mod(time_dt, walk_period) / walk_period;
+                        const float_time: f32 = @floatFromInt(time);
+                        float_period = @mod(float_time, walk_period) / walk_period;
                         player.facing = player.move_angle;
                         action = assets.walk_action;
                     }
-
-                    // todo remove the double bounds see if it helps
 
                     const angle = utils.halfBound(player.facing);
                     const pi_over_4 = std.math.pi / 4.0;
                     const angle_div = @divFloor(angle, pi_over_4);
 
                     var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(angle_div + 4)) % 8;
-
-                    if (zgui.begin("Anim Debug\n", .{})) {
-                        if (zgui.collapsingHeader("World\n", .{ .default_open = true })) {
-                            zgui.text("Facing: {d:.3}", .{player.facing});
-                            zgui.text("Camera Angle: {d:.3}", .{camera.angle});
-                            zgui.text("Facing - Camera -> Angle: {d:.3}", .{angle});
-                            zgui.text("Angle Divided: {d:.3}", .{angle_div});
-                            zgui.text("Sector {d:.3}", .{sec});
-                        }
-                    }
-                    zgui.end();
 
                     sec = switch (sec) {
                         0 => assets.left_dir,
@@ -1440,29 +1424,52 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         continue;
                     }
 
+                    var action: u8 = assets.stand_action;
+                    var float_period: f32 = 0.0;
+
+                    if (time < bo.attack_start + object_attack_period) {
+                        bo.facing = bo.attack_angle;
+                        const time_dt: f32 = @floatFromInt(time - bo.attack_start);
+                        float_period = @mod(time_dt, object_attack_period) / object_attack_period;
+                        action = assets.attack_action;
+                    } else if (!std.math.isNan(bo.move_angle)) {
+                        const float_time: f32 = @floatFromInt(time);
+                        float_period = @mod(float_time, object_move_period) / object_move_period;
+                        bo.facing = bo.move_angle;
+                        action = assets.walk_action;
+                    }
+
+                    const angle = utils.halfBound(bo.facing);
+                    const pi_over_4 = std.math.pi / 4.0;
+                    const angle_div = @divFloor(angle, pi_over_4);
+
+                    var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(angle_div + 4)) % 8;
+
+                    sec = switch (sec) {
+                        0, 1, 2, 7 => assets.left_dir,
+                        3, 4, 5, 6 => assets.right_dir,
+                        else => unreachable,
+                    };
+
+                    // 2 frames so multiply by 2
+                    const capped_period = @max(0, @min(0.99999, float_period)) * 2.0; // 2 walk cycle frames so * 2
+                    const anim_idx: usize = @intFromFloat(capped_period);
+
                     var x_offset: f32 = 0.0;
                     if (bo.anim_data) |anim_data| {
-                        var rect = anim_data.walk_anims[bo.dir][0];
+                        const rect = switch (action) {
+                            assets.walk_action => anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
+                            assets.attack_action => anim_data.attack_anims[sec][anim_idx],
+                            assets.stand_action => anim_data.walk_anims[sec][0],
+                            else => unreachable,
+                        };
 
-                        if (!std.math.isNan(bo.move_angle)) {
-                            bo.dir = @intFromFloat(@mod(@divFloor(bo.move_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 2.0));
-                            const anim_idx: usize = @intCast(@divFloor(@mod(time, 500), 250));
-                            rect = anim_data.walk_anims[bo.dir][anim_idx];
-                        }
-
-                        if (time < bo.attack_start + attack_period) {
-                            bo.dir = @intFromFloat(@mod(@divFloor(bo.attack_angle - std.math.pi / 4.0, std.math.pi / 2.0) + 1.0, 2.0));
-                            const anim_idx: usize = @intCast(@divFloor(@mod(time - bo.attack_start, 300), 150));
-                            rect = anim_data.attack_anims[bo.dir][anim_idx];
-
-                            if (anim_idx != 0) {
-                                const w = @as(f32, @floatFromInt(rect.w)) * size;
-
-                                if (bo.dir == assets.left_dir) {
-                                    x_offset = -assets.padding * size;
-                                } else {
-                                    x_offset = w / 4.0;
-                                }
+                        if (action == assets.attack_action and anim_idx == 1) {
+                            const w = @as(f32, @floatFromInt(rect.w)) * size;
+                            if (sec == assets.left_dir) {
+                                x_offset = -assets.padding * size;
+                            } else {
+                                x_offset = w / 4.0;
                             }
                         }
 

@@ -230,6 +230,7 @@ pub const GameObject = struct {
     top_tex_u: f32 = 0.0,
     top_tex_v: f32 = 0.0,
     move_angle: f32 = std.math.nan(f32),
+    facing: f32 = std.math.nan(f32),
     attack_start: i32 = 0,
     attack_angle: f32 = 0.0,
     dir: u8 = assets.left_dir,
@@ -492,6 +493,7 @@ pub const Player = struct {
         if (self.condition.speedy or self.condition.ninja_speedy) {
             move_speed *= 1.5;
         }
+        
         return move_speed * self.move_multiplier * self.walk_speed_multiplier;
     }
 
