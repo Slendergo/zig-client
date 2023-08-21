@@ -12,7 +12,6 @@ const ui = @import("ui.zig");
 const zgui = @import("zgui");
 
 pub const object_attack_period: u32 = 300;
-pub const object_move_period: f32 = 3.5;
 
 pub const BaseVertexData = extern struct {
     pos: [2]f32,
@@ -1433,8 +1432,10 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         float_period = @mod(time_dt, object_attack_period) / object_attack_period;
                         action = assets.attack_action;
                     } else if (!std.math.isNan(bo.move_angle)) {
+                        var move_period = 2 / utils.distSqr(bo.tick_x, bo.tick_y, bo.target_x, bo.target_y);
+                        move_period += 400 - @mod(move_period, 400);
                         const float_time: f32 = @floatFromInt(time);
-                        float_period = @mod(float_time, object_move_period) / object_move_period;
+                        float_period = @mod(float_time, move_period) / move_period;
                         bo.facing = bo.move_angle;
                         action = assets.walk_action;
                     }
