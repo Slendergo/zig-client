@@ -32,6 +32,7 @@ pub const GroundVertexData = extern struct {
     right_blend_uv: [2]f32,
     bottom_blend_uv: [2]f32,
     base_uv: [2]f32,
+    uv_offsets: [2]f32,
 };
 
 pub const TextVertexData = extern struct {
@@ -298,6 +299,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
             .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "right_blend_uv"), .shader_location = 4 },
             .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "bottom_blend_uv"), .shader_location = 5 },
             .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "pos"), .shader_location = 6 },
+            .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "uv_offsets"), .shader_location = 7 },
         };
         const vertex_buffers = [_]zgpu.wgpu.VertexBufferLayout{.{
             .array_stride = @sizeOf(GroundVertexData),
@@ -783,6 +785,8 @@ inline fn drawSquare(
     y4: f32,
     tex_u: f32,
     tex_v: f32,
+    u_offset: f32,
+    v_offset: f32,
     tex_w: f32,
     tex_h: f32,
     left_blend_u: f32,
@@ -802,6 +806,7 @@ inline fn drawSquare(
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
         .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
         .base_uv = [2]f32{ tex_u, tex_v },
+        .uv_offsets = [2]f32{ u_offset, v_offset },
     };
 
     ground_vert_data[idx + 1] = GroundVertexData{
@@ -812,6 +817,7 @@ inline fn drawSquare(
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
         .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
         .base_uv = [2]f32{ tex_u, tex_v },
+        .uv_offsets = [2]f32{ u_offset, v_offset },
     };
 
     ground_vert_data[idx + 2] = GroundVertexData{
@@ -822,6 +828,7 @@ inline fn drawSquare(
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
         .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
         .base_uv = [2]f32{ tex_u, tex_v },
+        .uv_offsets = [2]f32{ u_offset, v_offset },
     };
 
     ground_vert_data[idx + 3] = GroundVertexData{
@@ -832,6 +839,7 @@ inline fn drawSquare(
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
         .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
         .base_uv = [2]f32{ tex_u, tex_v },
+        .uv_offsets = [2]f32{ u_offset, v_offset },
     };
 }
 
@@ -1093,6 +1101,21 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     light_idx += 4;
                 }
 
+                var u_offset = square.u_offset;
+                var v_offset = square.v_offset;
+                const float_time: f32 = @floatFromInt(time);
+                switch (square.anim_type) {
+                    .wave => {
+                        u_offset += @sin(square.anim_dx * float_time / 1000.0) * assets.base_texel_w;
+                        v_offset += @sin(square.anim_dy * float_time / 1000.0) * assets.base_texel_h;
+                    },
+                    .flow => {
+                        u_offset += (square.anim_dx * float_time / 1000.0) * assets.base_texel_w;
+                        v_offset += (square.anim_dy * float_time / 1000.0) * assets.base_texel_h;
+                    },
+                    else => {},
+                }
+
                 const cos_half = camera.cos / 2.0;
                 const sin_half = camera.sin / 2.0;
                 drawSquare(
@@ -1107,6 +1130,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     (sin_half + cos_half + screen_y) * camera.clip_scale_y,
                     square.tex_u,
                     square.tex_v,
+                    u_offset,
+                    v_offset,
                     square.tex_w,
                     square.tex_h,
                     square.left_blend_u,

@@ -45,6 +45,11 @@ pub const Square = struct {
     blocking: bool = false,
     full_occupy: bool = false,
     occupy_square: bool = false,
+    anim_type: game_data.GroundAnimType = .none,
+    anim_dx: f32 = 0,
+    anim_dy: f32 = 0,
+    u_offset: f32 = 0,
+    v_offset: f32 = 0,
 
     pub fn updateBlends(square: *Square) void {
         if (square.tile_type == 0xFFFF or square.tile_type == 0xFF)
@@ -1369,16 +1374,24 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
         square.updateBlends();
     }
 
-    const props = game_data.ground_type_to_props.get(tile_type);
-    if (props != null) {
-        square.sink = if (props.?.sink) 0.6 else 0.0;
-        square.sinking = props.?.sinking;
-        square.speed = props.?.speed;
-        square.light_color = props.?.light_color;
-        square.light_intensity = props.?.light_intensity;
-        square.light_radius = props.?.light_radius;
-        square.damage = props.?.min_damage;
-        square.blocking = props.?.no_walk;
+    if (game_data.ground_type_to_props.get(tile_type)) |props| {
+        square.sink = if (props.sink) 0.75 else 0.0;
+        square.sinking = props.sinking;
+        square.speed = props.speed;
+        square.light_color = props.light_color;
+        square.light_intensity = props.light_intensity;
+        square.light_radius = props.light_radius;
+        square.damage = props.min_damage;
+        square.blocking = props.no_walk;
+        square.anim_type = props.anim_type;
+        square.anim_dx = props.anim_dx;
+        square.anim_dy = props.anim_dy;
+        if (props.random_offset) {
+            const u_offset: f32 = @floatFromInt(utils.rng.next() % 8);
+            const v_offset: f32 = @floatFromInt(utils.rng.next() % 8);
+            square.u_offset = u_offset * assets.base_texel_w;
+            square.v_offset = v_offset * assets.base_texel_h;
+        }
     }
 
     squares[idx] = square;

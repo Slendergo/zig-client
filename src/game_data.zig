@@ -194,13 +194,27 @@ pub const AnimProps = struct {
     // zig fmt: on
 };
 
+pub const GroundAnimType = enum(u8) {
+    none = 0,
+    wave = 1,
+    flow = 2,
+
+    const map = std.ComptimeStringMap(GroundAnimType, .{
+        .{ "Wave", .wave },
+        .{ "Flow", .flow },
+    });
+
+    pub fn fromString(str: []const u8) GroundAnimType {
+        return map.get(str) orelse .none;
+    }
+};
+
 pub const GroundProps = struct {
     obj_type: i32,
     obj_id: []const u8,
     no_walk: bool,
     min_damage: u16,
     max_damage: u16,
-    animate: ?AnimProps,
     blend_prio: i32,
     composite_prio: i32,
     speed: f32,
@@ -213,19 +227,29 @@ pub const GroundProps = struct {
     light_color: i32,
     light_intensity: f32,
     light_radius: f32,
+    anim_type: GroundAnimType,
+    anim_dx: f32,
+    anim_dy: f32,
 
-    // zig fmt: off
-    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !GroundProps {        
-        return GroundProps {
+    pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !GroundProps {
+        var anim_type: GroundAnimType = .none;
+        var dx: f32 = 0.0;
+        var dy: f32 = 0.0;
+        if (node.findChild("Animate")) |anim_node| {
+            anim_type = GroundAnimType.fromString(anim_node.currentValue().?);
+            dx = try anim_node.getAttributeFloat("dx", f32, 0.0);
+            dy = try anim_node.getAttributeFloat("dy", f32, 0.0);
+        }
+
+        return GroundProps{
             .obj_type = try node.getAttributeInt("type", i32, 0),
             .obj_id = try node.getAttributeAlloc("id", allocator, "Unknown"),
             .no_walk = node.elementExists("NoWalk"),
             .min_damage = try node.getValueInt("MinDamage", u16, 0),
             .max_damage = try node.getValueInt("MaxDamage", u16, 0),
-            .animate = if (node.elementExists("Animate")) try AnimProps.parse(node.findChild("Animate").?, allocator) else null,
             .blend_prio = try node.getValueInt("BlendPriority", i32, 0),
             .composite_prio = try node.getValueInt("CompositePriority", i32, 0),
-            .speed = try node.getValueFloat("Speed", f32, 1.0), // default of 1.0 is needed
+            .speed = try node.getValueFloat("Speed", f32, 1.0),
             .x_offset = try node.getValueFloat("XOffset", f32, 0.0),
             .y_offset = try node.getValueFloat("YOffset", f32, 0.0),
             .push = node.elementExists("Push"),
@@ -235,9 +259,11 @@ pub const GroundProps = struct {
             .light_color = try node.getValueInt("LightColor", i32, -1),
             .light_intensity = try node.getValueFloat("LightIntensity", f32, 0.1),
             .light_radius = try node.getValueFloat("LightRadius", f32, 1.0),
+            .anim_type = anim_type,
+            .anim_dx = dx,
+            .anim_dy = dy,
         };
     }
-    // zig fmt: on
 };
 
 pub const ObjProps = struct {
