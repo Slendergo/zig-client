@@ -103,6 +103,7 @@ pub var wall_backface_uv: [2]f32 = undefined;
 pub var empty_bar_rect: FloatRect = undefined;
 pub var hp_bar_rect: FloatRect = undefined;
 pub var mp_bar_rect: FloatRect = undefined;
+pub var particle_rect: FloatRect = undefined;
 
 pub var error_rect: zstbrp.PackRect = undefined;
 pub var error_anim: AnimEnemyData = undefined;
@@ -399,6 +400,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     var nodes = try allocator.alloc(zstbrp.PackNode, 4096);
     zstbrp.initPack(&ctx, nodes);
 
+    try addImage("particle", "particle.png", 8, 8, &ctx, allocator);
     try addImage("textile4x4", "Textile4x4.png", 4, 4, &ctx, allocator);
     try addImage("textile5x5", "Textile5x5.png", 5, 5, &ctx, allocator);
     try addImage("textile9x9", "Textile9x9.png", 9, 9, &ctx, allocator);
@@ -490,6 +492,14 @@ pub fn init(allocator: std.mem.Allocator) !void {
     wall_backface_uv = [2]f32{
         @as(f32, @floatFromInt(wall_backface_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
         @as(f32, @floatFromInt(wall_backface_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height))
+    };
+
+    const particle = rects.get("particle").?[0x0];
+    particle_rect = FloatRect{
+        .x = @as(f32, @floatFromInt(particle.x)) / @as(f32, @floatFromInt(atlas_width)),
+        .y = @as(f32, @floatFromInt(particle.y)) / @as(f32, @floatFromInt(atlas_height)),
+        .w = @as(f32, @floatFromInt(particle.w)) / @as(f32, @floatFromInt(atlas_width)),
+        .h = @as(f32, @floatFromInt(particle.h)) / @as(f32, @floatFromInt(atlas_height)),
     };
 
     const bar_rects = rects.get("bars");
