@@ -889,7 +889,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
 
-        const px_range = 2.0 * assets.CharacterData.padding_mult / camera.scale;
+        const px_range = 9.0 / camera.scale;
 
         // zig fmt: off
         text_vert_data[idx_new] = TextVertexData{

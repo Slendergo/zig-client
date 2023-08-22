@@ -29,7 +29,7 @@ pub const CharacterData = struct {
     pub const atlas_h = 512.0;
     pub const size = 64.0;
     pub const padding = 8.0;
-    pub const padding_mult = 1.0 + CharacterData.padding * 2 / size * 2;
+    pub const padding_mult = 1.0 + CharacterData.padding * 2 / size;
     pub const line_height = 1.149;
 
     x_advance: f32,
