@@ -252,7 +252,7 @@ pub const Server = struct {
         const angle = reader.read(f32);
 
         if (map.findEntity(owner_id)) |en| {
-            switch (en.*) {
+            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                 .player => |*player| {
                     const weapon = player.inventory[0];
                     const item_props = game_data.item_type_to_props.get(@intCast(weapon));
@@ -349,7 +349,7 @@ pub const Server = struct {
 
         var owner: ?map.GameObject = null;
         if (map.findEntity(owner_id)) |en| {
-            switch (en.*) {
+            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                 .object => |object| owner = object,
                 else => {},
             }
@@ -419,7 +419,7 @@ pub const Server = struct {
         const position = reader.read(Position);
 
         if (map.findEntity(object_id)) |en| {
-            switch (en.*) {
+            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                 .player => |*player| {
                     if (object_id == map.local_player_id) {
                         player.x = position.x;
@@ -513,7 +513,7 @@ pub const Server = struct {
         defer {
             if (main.tick_frame) {
                 if (map.findEntity(map.local_player_id)) |en| {
-                    switch (en.*) {
+                    switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                         .player => |player| {
                             self.sendMove(tick_id, main.last_update, player.x, player.y, map.move_records.items) catch |e| {
                                 std.log.err("Could not send Move: {any}", .{e});
@@ -532,7 +532,7 @@ pub const Server = struct {
 
             const stats_len = reader.read(u16);
             if (map.findEntity(obj_id)) |en| {
-                switch (en.*) {
+                switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                     .player => |*player| {
                         if (player.obj_id != map.local_player_id) {
                             player.target_x = position.x;
@@ -597,7 +597,7 @@ pub const Server = struct {
 
         // zig fmt: off
         if (map.findEntity(object_id)) |en| {
-            switch (en.*) {
+            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                 .player => |*player| {
                      ui.status_texts.append(ui.StatusText{
                         .obj_id = player.obj_id,
@@ -668,7 +668,7 @@ pub const Server = struct {
 
         const needs_ack = owner_id == map.local_player_id;
         if (map.findEntity(owner_id)) |en| {
-            switch (en.*) {
+            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                 .player => {
                     const item_props = game_data.item_type_to_props.get(@intCast(container_type));
                     if (item_props == null or item_props.?.projectile == null)
@@ -789,38 +789,43 @@ pub const Server = struct {
         }
 
         const drops = reader.read([]i32);
-        for (drops) |drop| {
-            if (map.removeEntity(drop)) |en| {
-                switch (en) {
-                    .object => |obj| {
-                        if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
-                            if (class_props == .wall) {
-                                const floor_y: u32 = @intFromFloat(@floor(obj.y));
-                                const floor_x: u32 = @intFromFloat(@floor(obj.x));
-                                if (map.validPos(floor_x, floor_y)) {
-                                    map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x].has_wall = false;
-                                    map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x].blocking = false;
+        {
+            while (!map.object_lock.tryLock()) {}
+            defer map.object_lock.unlock();
+
+            for (drops) |drop| {
+                if (map.removeEntity(drop)) |en| {
+                    switch (en) {
+                        .object => |obj| {
+                            if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
+                                if (class_props == .wall) {
+                                    const floor_y: u32 = @intFromFloat(@floor(obj.y));
+                                    const floor_x: u32 = @intFromFloat(@floor(obj.x));
+                                    if (map.validPos(floor_x, floor_y)) {
+                                        map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x].has_wall = false;
+                                        map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x].blocking = false;
+                                    }
                                 }
                             }
-                        }
 
-                        ui.removeStatusText(obj.obj_id);
+                            ui.removeStatusText(obj.obj_id);
 
-                        allocator.free(obj.name_override);
-                        continue;
-                    },
-                    .player => |player| {
-                        ui.removeStatusText(player.obj_id);
+                            allocator.free(obj.name_override);
+                            continue;
+                        },
+                        .player => |player| {
+                            ui.removeStatusText(player.obj_id);
 
-                        allocator.free(player.name_override);
-                        allocator.free(player.guild);
-                        continue;
-                    },
-                    else => {},
+                            allocator.free(player.name_override);
+                            allocator.free(player.guild);
+                            continue;
+                        },
+                        else => {},
+                    }
                 }
-            }
 
-            std.log.err("Could not remove object with id {d}\n", .{drop});
+                std.log.err("Could not remove object with id {d}\n", .{drop});
+            }
         }
 
         const new_objs_len = reader.read(u16);
@@ -1298,7 +1303,7 @@ pub const Server = struct {
         self.writer.index = 0;
 
         if (map.findEntity(map.local_player_id)) |en| {
-            switch (en.*) {
+            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
                 .player => |*player| player.onMove(),
                 else => {},
             }

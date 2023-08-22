@@ -1232,14 +1232,10 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(angle_div + 4)) % 8;
 
                     sec = switch (sec) {
-                        0 => assets.left_dir,
-                        1 => assets.up_dir,
-                        2 => assets.up_dir,
-                        3 => assets.right_dir,
-                        4 => assets.right_dir,
-                        5 => assets.down_dir,
-                        6 => assets.down_dir,
-                        7 => assets.left_dir,
+                        0, 7 => assets.left_dir,
+                        1, 2 => assets.up_dir,
+                        3, 4 => assets.right_dir,
+                        5, 6 => assets.down_dir,
                         else => unreachable,
                     };
 
@@ -1280,7 +1276,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     if (player.condition.invisible)
                         alpha_mult = 0.6;
 
-                    player.h = h;
                     player.screen_y = screen_pos.y - 30; // account for name
                     player.screen_x = screen_pos.x - x_offset;
 
@@ -1329,10 +1324,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     // todo make sink calculate actual values based on h, pad, etc
                     var y_pos: f32 = 5.0 + if (sink != 1.0) @as(f32, 15.0) else @as(f32, 0.0);
-
-                    // this should be the server's job...
-                    if (player.hp > player.max_hp)
-                        player.max_hp = player.hp;
 
                     const pad_scale_obj = assets.padding * size * camera.scale;
                     const pad_scale_bar = assets.padding * 2 * camera.scale;
@@ -1528,7 +1519,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     if (bo.condition.invisible)
                         alpha_mult = 0.6;
 
-                    bo.h = h;
                     bo.screen_y = screen_pos.y - 10;
                     bo.screen_x = screen_pos.x - x_offset;
 
@@ -1595,10 +1585,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         continue;
 
                     var y_pos: f32 = 5.0 + if (sink != 1.0) @as(f32, 15.0) else @as(f32, 0.0);
-
-                    // this should be the server's job...
-                    if (bo.hp > bo.max_hp)
-                        bo.max_hp = bo.hp;
 
                     const pad_scale_obj = assets.padding * size * camera.scale;
                     const pad_scale_bar = assets.padding * 2 * camera.scale;

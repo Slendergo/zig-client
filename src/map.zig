@@ -197,7 +197,6 @@ pub const GameObject = struct {
     z: f32 = 0.0,
     screen_x: f32 = 0.0,
     screen_y: f32 = 0.0,
-    h: f32 = 0.0,
     target_x: f32 = 0.0,
     target_y: f32 = 0.0,
     tick_x: f32 = 0.0,
@@ -413,7 +412,6 @@ pub const Player = struct {
     tick_y: f32 = 0.0,
     screen_x: f32 = 0.0,
     screen_y: f32 = 0.0,
-    h: f32 = 0.0,
     name: []u8 = &[0]u8{},
     name_override: []u8 = &[0]u8{},
     name_chosen: bool = false,
@@ -1258,9 +1256,6 @@ pub fn findEntity(obj_id: i32) ?*Entity {
 }
 
 pub fn removeEntity(obj_id: i32) ?Entity {
-    while (!object_lock.tryLock()) {}
-    defer object_lock.unlock();
-
     for (entities.items, 0..) |*en, i| {
         switch (en.*) {
             inline else => |*obj| {

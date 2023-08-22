@@ -173,8 +173,9 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
 pub fn updateState() void {
     rotate = rotate_right - rotate_left;
 
-    while (!map.object_lock.tryLockShared()) {}
-    defer map.object_lock.unlockShared();
+    // need a writer lock for shooting
+    while (!map.object_lock.tryLock()) {}
+    defer map.object_lock.unlock();
 
     if (map.findEntity(map.local_player_id)) |en| {
         switch (en.*) {
