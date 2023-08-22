@@ -57,28 +57,44 @@ fn median(r: f32, g: f32, b: f32) -> f32 {
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let dx = dpdx(in.uv);
     let dy = dpdy(in.uv);
+    let subpixel_width = (abs(dx.x) + abs(dy.x)) / 3.0; // this is just fwidth(in.uv).x / 3.0
 
-    var tex = vec4(0.0, 0.0, 0.0, 0.0);
+    var red_tex = vec4(0.0, 0.0, 0.0, 0.0);
+    var green_tex = vec4(0.0, 0.0, 0.0, 0.0);
+    var blue_tex = vec4(0.0, 0.0, 0.0, 0.0);
     var tex_offset = vec4(0.0, 0.0, 0.0, 0.0);
     if in.text_type == medium_text_type {
-        tex = textureSampleGrad(medium_tex, default_sampler, in.uv, dx, dy);
+        red_tex = textureSampleGrad(medium_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+        green_tex = textureSampleGrad(medium_tex, default_sampler, in.uv, dx, dy);
+        blue_tex = textureSampleGrad(medium_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
         tex_offset = textureSampleGrad(medium_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
     } else if in.text_type == medium_italic_text_type {
-        tex = textureSampleGrad(medium_italic_tex, default_sampler, in.uv, dx, dy);
+        red_tex = textureSampleGrad(medium_italic_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+        green_tex = textureSampleGrad(medium_italic_tex, default_sampler, in.uv, dx, dy);
+        blue_tex = textureSampleGrad(medium_italic_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
         tex_offset = textureSampleGrad(medium_italic_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
     } else if in.text_type == bold_text_type {
-        tex = textureSampleGrad(bold_tex, default_sampler, in.uv, dx, dy);
+        red_tex = textureSampleGrad(bold_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+        green_tex = textureSampleGrad(bold_tex, default_sampler, in.uv, dx, dy);
+        blue_tex = textureSampleGrad(bold_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
         tex_offset = textureSampleGrad(bold_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
     } else if in.text_type == bold_italic_text_type {
-        tex = textureSampleGrad(bold_italic_tex, default_sampler, in.uv, dx, dy);
+        red_tex = textureSampleGrad(bold_italic_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+        green_tex = textureSampleGrad(bold_italic_tex, default_sampler, in.uv, dx, dy);
+        blue_tex = textureSampleGrad(bold_italic_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
         tex_offset = textureSampleGrad(bold_italic_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
     }
 
-    let sig_dist = median(tex.r, tex.g, tex.b) - 0.5;
-    let opacity = clamp(sig_dist * in.distance_factor + 0.5, 0.0, 1.0) * in.alpha_mult;
-    
+    let red = clamp((median(red_tex.r, red_tex.g, red_tex.b) - 0.5) * in.distance_factor + 0.5, 0.0, 1.0) * in.alpha_mult;
+    let green = clamp((median(green_tex.r, green_tex.g, green_tex.b) - 0.5) * in.distance_factor + 0.5, 0.0, 1.0) * in.alpha_mult;
+    let blue = clamp((median(blue_tex.r, blue_tex.g, blue_tex.b) - 0.5) * in.distance_factor + 0.5, 0.0, 1.0) * in.alpha_mult;
+
+    const subpixel = 1.0 / 3.0;
+    let alpha = clamp(subpixel * (red + green + blue), 0.0, 1.0);
+
+    // don't subpixel aa the offset, it's supposed to be a shadow
     let offset_sig_dist = median(tex_offset.r, tex_offset.g, tex_offset.b) - 0.5;
     let offset_opacity = clamp(offset_sig_dist * in.distance_factor + 0.5, 0.0, 1.0) * in.shadow_alpha_mult * in.alpha_mult;
 
-    return mix(vec4(in.shadow_color, offset_opacity), vec4(in.color, opacity), opacity);
+    return mix(vec4(in.shadow_color, offset_opacity), vec4(red * in.color.r, green * in.color.g, blue * in.color.b, alpha), alpha);
 }

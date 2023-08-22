@@ -1294,7 +1294,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     const name = if (player.name_override.len > 0) player.name_override else player.name;
                     if (name.len > 0) {
-                        const text_width = ui.textWidth(16, name, ui.medium_text_type);
+                        const text_width = ui.textWidth(16, name, ui.bold_text_type);
                         text_idx += drawText(
                             text_idx,
                             screen_pos.x - x_offset - text_width / 2,
@@ -1303,7 +1303,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             name,
                             0xFCDF00,
                             1.0,
-                            ui.medium_text_type,
+                            ui.bold_text_type,
                             .{},
                         );
                     }
@@ -1538,7 +1538,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     const is_portal = bo.class == .portal;
                     const name = if (bo.name_override.len > 0) bo.name_override else bo.name;
                     if (name.len > 0 and (bo.show_name or is_portal)) {
-                        const text_width = ui.textWidth(16, name, ui.medium_text_type);
+                        const text_width = ui.textWidth(16, name, ui.bold_text_type);
                         text_idx += drawText(
                             text_idx,
                             screen_pos.x - x_offset - text_width / 2,
@@ -1547,12 +1547,12 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             name,
                             0xFFFFFF,
                             1.0,
-                            ui.medium_text_type,
+                            ui.bold_text_type,
                             .{},
                         );
 
                         if (is_portal and map.interactive_id == bo.obj_id) {
-                            const enter_text_width = ui.textWidth(16, "Enter", ui.medium_text_type);
+                            const enter_text_width = ui.textWidth(16, "Enter", ui.bold_text_type);
                             text_idx += drawText(
                                 text_idx,
                                 screen_pos.x - x_offset - enter_text_width / 2,
@@ -1561,7 +1561,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                                 "Enter",
                                 0xFFFFFF,
                                 1.0,
-                                ui.medium_text_type,
+                                ui.bold_text_type,
                                 .{},
                             );
                         }
