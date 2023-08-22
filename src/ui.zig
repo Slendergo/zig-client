@@ -52,6 +52,9 @@ pub fn removeStatusText(obj_id: i32) void {
 pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
     _ = dt;
 
+    while (!map.object_lock.tryLockShared()) {}
+    defer map.object_lock.unlockShared();
+
     if (status_texts_to_remove.items.len > 0) {
         std.mem.reverse(usize, status_texts_to_remove.items);
 
@@ -75,7 +78,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
         text.size = text.initial_size * @min(1.0, @max(0.7, 1.0 - frac * 0.3 + 0.075));
         text.alpha = 1.0 - frac + 0.33;
         if (map.findEntity(text.obj_id)) |en| {
-            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
+            switch (en.*) {
                 inline else => |obj| {
                     text.screen_x = obj.screen_x - textWidth(text.size, text.text, bold_text_type) / 2;
                     text.screen_y = obj.screen_y - (frac * 40 + 20);

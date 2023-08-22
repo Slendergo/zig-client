@@ -313,11 +313,11 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     zgui.text("Size: {d}x{d}\n", .{ map.width, map.height });
                     zgui.text("Entities: {d}\n", .{map.entities.items.len});
 
-                    while (!map.object_lock.tryLock()) {}
-                    defer map.object_lock.unlock();
+                    while (!map.object_lock.tryLockShared()) {}
+                    defer map.object_lock.unlockShared();
 
                     if (map.findEntity(map.local_player_id)) |en| {
-                        switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
+                        switch (en.*) {
                             .player => |local_player| {
                                 const square = local_player.getSquare();
                                 zgui.text(
@@ -331,11 +331,11 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 }
 
                 if (zgui.collapsingHeader("Player\n", .{ .default_open = true })) {
-                    while (!map.object_lock.tryLock()) {}
-                    defer map.object_lock.unlock();
+                    while (!map.object_lock.tryLockShared()) {}
+                    defer map.object_lock.unlockShared();
 
                     if (map.findEntity(map.local_player_id)) |en| {
-                        switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
+                        switch (en.*) {
                             .player => |local_player| {
                                 zgui.text(
                                     "Attack Angle: {d:.3}\n",

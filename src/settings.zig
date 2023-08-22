@@ -20,13 +20,13 @@ pub const Button = union(enum) {
     pub fn getKey(self: Button) zglfw.Key {
         switch (self) {
             .key => |key| return key,
-            .mouse => |_| return zglfw.Key.unknown,
+            .mouse => |_| return .unknown,
         }
     }
 
     pub fn getMouse(self: Button) zglfw.MouseButton {
         switch (self) {
-            .key => |_| return zglfw.MouseButton.eight,
+            .key => |_| return .eight,
             .mouse => |mouse| return mouse,
         }
     }
@@ -34,33 +34,55 @@ pub const Button = union(enum) {
 
 pub const build_version = "0.5";
 pub const app_engine_url = "http://127.0.0.1:8080/";
-pub const log_packets = LogType.all;
+pub const log_packets = LogType.off;
 pub const print_atlas = false;
 pub const rotate_speed = 0.002;
 pub const enable_tracy = false;
 
-pub var move_left: Button = .{ .key = zglfw.Key.a };
-pub var move_right: Button = .{ .key = zglfw.Key.d };
-pub var move_up: Button = .{ .key = zglfw.Key.w };
-pub var move_down: Button = .{ .key = zglfw.Key.s };
-pub var rotate_left: Button = .{ .key = zglfw.Key.q };
-pub var rotate_right: Button = .{ .key = zglfw.Key.e };
-pub var interact: Button = .{ .key = zglfw.Key.r };
-pub var options: Button = .{ .key = zglfw.Key.escape };
-pub var escape: Button = .{ .key = zglfw.Key.tab };
-pub var chat_up: Button = .{ .key = zglfw.Key.page_up };
-pub var chat_down: Button = .{ .key = zglfw.Key.page_down };
-pub var walk: Button = .{ .key = zglfw.Key.left_shift };
-pub var reset_camera: Button = .{ .key = zglfw.Key.z };
-pub var toggle_stats: Button = .{ .key = zglfw.Key.F3 };
-pub var chat: Button = .{ .key = zglfw.Key.enter };
-pub var chat_cmd: Button = .{ .key = zglfw.Key.slash };
-pub var respond: Button = .{ .key = zglfw.Key.F2 };
-pub var shoot: Button = .{ .mouse = zglfw.MouseButton.left };
-pub var ability: Button = .{ .mouse = zglfw.MouseButton.right };
+pub var move_left: Button = .{ .key = .a };
+pub var move_right: Button = .{ .key = .d };
+pub var move_up: Button = .{ .key = .w };
+pub var move_down: Button = .{ .key = .s };
+pub var rotate_left: Button = .{ .key = .q };
+pub var rotate_right: Button = .{ .key = .e };
+pub var interact: Button = .{ .key = .r };
+pub var options: Button = .{ .key = .escape };
+pub var escape: Button = .{ .key = .tab };
+pub var chat_up: Button = .{ .key = .page_up };
+pub var chat_down: Button = .{ .key = .page_down };
+pub var walk: Button = .{ .key = .left_shift };
+pub var reset_camera: Button = .{ .key = .z };
+pub var toggle_stats: Button = .{ .key = .F3 };
+pub var chat: Button = .{ .key = .enter };
+pub var chat_cmd: Button = .{ .key = .slash };
+pub var respond: Button = .{ .key = .F2 };
+pub var toggle_centering: Button = .{ .key = .x };
+pub var shoot: Button = .{ .mouse = .left };
+pub var ability: Button = .{ .mouse = .right };
 
 pub fn init() void {}
 
 pub fn save() void {}
 
-pub fn resetToDefault() void {}
+pub fn resetToDefault() void {
+    move_left = .{ .key = .a };
+    move_right = .{ .key = .d };
+    move_up = .{ .key = .w };
+    move_down = .{ .key = .s };
+    rotate_left = .{ .key = .q };
+    rotate_right = .{ .key = .e };
+    interact = .{ .key = .r };
+    options = .{ .key = .escape };
+    escape = .{ .key = .tab };
+    chat_up = .{ .key = .page_up };
+    chat_down = .{ .key = .page_down };
+    walk = .{ .key = .left_shift };
+    reset_camera = .{ .key = .z };
+    toggle_stats = .{ .key = .F3 };
+    chat = .{ .key = .enter };
+    chat_cmd = .{ .key = .slash };
+    respond = .{ .key = .F2 };
+    toggle_centering = .{ .key = .x };
+    shoot = .{ .mouse = .left };
+    ability = .{ .mouse = .right };
+}

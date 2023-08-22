@@ -173,11 +173,11 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
 pub fn updateState() void {
     rotate = rotate_right - rotate_left;
 
-    while (!map.object_lock.tryLock()) {}
-    defer map.object_lock.unlock();
+    while (!map.object_lock.tryLockShared()) {}
+    defer map.object_lock.unlockShared();
 
     if (map.findEntity(map.local_player_id)) |en| {
-        switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
+        switch (en.*) {
             .player => |*local_player| {
                 const y_dt = move_down - move_up;
                 const x_dt = move_right - move_left;
@@ -205,11 +205,11 @@ pub fn mouseMoveEvent(window: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) 
 
 inline fn useAbility() void {
     if (main.server) |*server| {
-        while (!map.object_lock.tryLock()) {}
-        defer map.object_lock.unlock();
+        while (!map.object_lock.tryLockShared()) {}
+        defer map.object_lock.unlockShared();
 
         if (map.findEntity(map.local_player_id)) |en| {
-            switch (@atomicLoad(*map.Entity, &en, .Acquire).*) {
+            switch (en.*) {
                 .player => |local_player| {
                     const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
 

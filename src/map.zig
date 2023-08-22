@@ -886,7 +886,7 @@ pub const Projectile = struct {
         var min_dist = std.math.floatMax(f32);
         var target: ?*GameObject = null;
         for (entities.items) |*en| {
-            switch (@atomicLoad(*Entity, &en, .Acquire).*) {
+            switch (en.*) {
                 .object => |*obj| {
                     if (obj.is_enemy) {
                         const dist_sqr = utils.distSqr(obj.x, obj.y, x, y);
@@ -907,7 +907,7 @@ pub const Projectile = struct {
         var min_dist = std.math.floatMax(f32);
         var target: ?*Player = null;
         for (entities.items) |*en| {
-            switch (@atomicLoad(*Entity, &en, .Acquire).*) {
+            switch (en.*) {
                 .player => |*player| {
                     const dist_sqr = utils.distSqr(player.x, player.y, x, y);
                     if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
@@ -1162,7 +1162,7 @@ pub const Entity = union(enum) {
 const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
 const day_cycle_ms_half: f32 = @floatFromInt(day_cycle_ms / 2);
 
-pub var object_lock: std.Thread.Mutex = .{};
+pub var object_lock: std.Thread.RwLock = .{};
 pub var entities: std.ArrayList(Entity) = undefined;
 pub var entity_indices_to_remove: std.ArrayList(usize) = undefined;
 pub var last_tick_time: i32 = 0;
@@ -1246,7 +1246,7 @@ pub fn setWH(w: isize, h: isize, allocator: std.mem.Allocator) void {
 
 pub fn findEntity(obj_id: i32) ?*Entity {
     for (entities.items) |*en| {
-        switch (@atomicLoad(*Entity, &en, .Acquire).*) {
+        switch (en.*) {
             inline else => |*obj| {
                 if (obj.obj_id == obj_id)
                     return en;
@@ -1262,7 +1262,7 @@ pub fn removeEntity(obj_id: i32) ?Entity {
     defer object_lock.unlock();
 
     for (entities.items, 0..) |*en, i| {
-        switch (@atomicLoad(*Entity, &en, .Acquire).*) {
+        switch (en.*) {
             inline else => |*obj| {
                 if (obj.obj_id == obj_id)
                     return entities.orderedRemove(i);
@@ -1275,7 +1275,7 @@ pub fn removeEntity(obj_id: i32) ?Entity {
 
 pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, piercing: bool) i32 {
     if (findEntity(object_id)) |en| {
-        switch (@atomicLoad(*Entity, &en, .Acquire).*) {
+        switch (en.*) {
             .object => |object| {
                 var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
 
@@ -1301,7 +1301,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
     interactive_id = -1;
 
     for (entities.items, 0..) |*en, i| {
-        switch (@atomicLoad(*Entity, &en, .Acquire).*) {
+        switch (en.*) {
             .object => |*obj| {
                 if (obj.class == .portal) {
                     const dt_x = camera.x - obj.x;
