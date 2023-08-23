@@ -799,12 +799,11 @@ pub const Server = struct {
                         .object => |obj| {
                             if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
                                 if (class_props == .wall) {
-                                    const floor_y: u32 = @intFromFloat(@floor(obj.y));
-                                    const floor_x: u32 = @intFromFloat(@floor(obj.x));
-                                    if (map.validPos(floor_x, floor_y)) {
-                                        map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x].has_wall = false;
-                                        map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x].blocking = false;
-                                    }
+                                    var square = map.getSquareUnsafe(obj.x, obj.y);
+                                    square.occupy_square = false;
+                                    square.full_occupy = false;
+                                    square.has_wall = false;
+                                    square.blocking = false;
                                 }
                             }
 

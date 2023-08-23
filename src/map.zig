@@ -6,6 +6,7 @@ const camera = @import("camera.zig");
 const input = @import("input.zig");
 const main = @import("main.zig");
 const utils = @import("utils.zig");
+const map = @import("map.zig");
 const assets = @import("assets.zig");
 const ui = @import("ui.zig");
 
@@ -1352,6 +1353,12 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
 
 pub inline fn validPos(x: isize, y: isize) bool {
     return !(x < 0 or x >= width or y < 0 or y >= height);
+}
+
+pub inline fn getSquareUnsafe(x: f32, y: f32) Square {
+    const floor_x: u32 = @intFromFloat(@floor(x));
+    const floor_y: u32 = @intFromFloat(@floor(y));
+    return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
 }
 
 pub fn setSquare(x: isize, y: isize, tile_type: u16) void {

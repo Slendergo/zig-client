@@ -481,7 +481,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         );
         music.setLooping(true);
         music.setVolume(settings.music_volume);
-        try music.start();
+        // try music.start();
     }
 
     light_tex = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/Light.png", 4);
