@@ -863,9 +863,16 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
     const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
     var idx_new = idx;
-    var x_pointer = x - camera.screen_width / 2.0;
-    const offset_y = y - camera.screen_height / 2.0;
+    const x_base = x - camera.screen_width / 2.0;
+    var x_pointer = x_base;
+    var y_pointer = y - camera.screen_height / 2.0 + line_height;
     for (text.text) |char| {
+        if (char == '\n') {
+            x_pointer = x_base;
+            y_pointer += line_height;
+            continue;
+        }
+
         const char_data = switch (text.text_type) {
             .medium => assets.medium_chars[char],
             .medium_italic => assets.medium_italic_chars[char],
@@ -881,7 +888,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
         const w = char_data.width * size_scale;
         const h = char_data.height * size_scale;
         const scaled_x = (x_pointer + char_data.x_offset * size_scale + w / 2) * camera.clip_scale_x;
-        const scaled_y = -(offset_y - char_data.y_offset * size_scale - h / 2 + line_height) * camera.clip_scale_y;
+        const scaled_y = -(y_pointer - char_data.y_offset * size_scale - h / 2) * camera.clip_scale_y;
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
 

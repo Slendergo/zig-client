@@ -34,8 +34,14 @@ pub const Text = struct {
     pub fn width(self: Text) f32 {
         const size_scale = self.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
 
+        var x_max: f32 = 0.0;
         var x_pointer: f32 = 0.0;
         for (self.text) |char| {
+            if (char == '\n') {
+                x_pointer = 0;
+                continue;
+            }
+
             const char_data = switch (self.text_type) {
                 .medium => assets.medium_chars[char],
                 .medium_italic => assets.medium_italic_chars[char],
@@ -44,6 +50,8 @@ pub const Text = struct {
             };
 
             x_pointer += char_data.x_advance * size_scale;
+            if (x_pointer > x_max)
+                x_max = x_pointer;
         }
 
         return x_pointer;
@@ -52,7 +60,8 @@ pub const Text = struct {
     pub fn height(self: Text) f32 {
         const size_scale = self.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
         const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
-        return line_height;
+        const newline_count: f32 = @floatFromInt(std.mem.count(u8, self.text, "\n") + 1);
+        return line_height * newline_count;
     }
 };
 
@@ -117,7 +126,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
             switch (en.*) {
                 inline else => |obj| {
                     status_text.screen_x = obj.screen_x - status_text.text.width() / 2;
-                    status_text.screen_y = obj.screen_y - (frac * 40 + 20);
+                    status_text.screen_y = obj.screen_y - status_text.text.height() - frac * 40;
                 },
             }
         }
