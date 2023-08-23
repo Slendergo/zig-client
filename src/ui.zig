@@ -30,6 +30,7 @@ pub const Text = struct {
     shadow_color: u32 = 0x000000,
     shadow_alpha_mult: f32 = 0.5,
     shadow_texel_offset_mult: f32 = 6.0,
+    max_width: f32 = @as(f32, std.math.maxInt(u32)),
 
     pub fn width(self: Text) f32 {
         const size_scale = self.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
@@ -54,14 +55,34 @@ pub const Text = struct {
                 x_max = x_pointer;
         }
 
-        return x_pointer;
+        return @min(x_max, self.max_width);
     }
 
     pub fn height(self: Text) f32 {
         const size_scale = self.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
         const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
-        const newline_count: f32 = @floatFromInt(std.mem.count(u8, self.text, "\n") + 1);
-        return line_height * newline_count;
+
+        var x_pointer: f32 = 0.0;
+        var y_pointer: f32 = line_height;
+        for (self.text) |char| {
+            const char_data = switch (self.text_type) {
+                .medium => assets.medium_chars[char],
+                .medium_italic => assets.medium_italic_chars[char],
+                .bold => assets.bold_chars[char],
+                .bold_italic => assets.bold_italic_chars[char],
+            };
+
+            const next_x_pointer = x_pointer + char_data.x_advance * size_scale;
+            if (char == '\n' or next_x_pointer > self.max_width) {
+                x_pointer = 0.0;
+                y_pointer += line_height;
+                continue;
+            }
+
+            x_pointer = next_x_pointer;
+        }
+
+        return y_pointer;
     }
 };
 

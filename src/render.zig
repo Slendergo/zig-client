@@ -867,18 +867,19 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
     var x_pointer = x_base;
     var y_pointer = y - camera.screen_height / 2.0 + line_height;
     for (text.text) |char| {
-        if (char == '\n') {
-            x_pointer = x_base;
-            y_pointer += line_height;
-            continue;
-        }
-
         const char_data = switch (text.text_type) {
             .medium => assets.medium_chars[char],
             .medium_italic => assets.medium_italic_chars[char],
             .bold => assets.bold_chars[char],
             .bold_italic => assets.bold_italic_chars[char],
         };
+
+        const next_x_pointer = x_pointer + char_data.x_advance * size_scale;
+        if (char == '\n' or next_x_pointer - x_base > text.max_width) {
+            x_pointer = x_base;
+            y_pointer += line_height;
+            continue;
+        }
 
         if (char_data.tex_w <= 0) {
             x_pointer += char_data.x_advance * size_scale;
@@ -891,10 +892,11 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
         const scaled_y = -(y_pointer - char_data.y_offset * size_scale - h / 2) * camera.clip_scale_y;
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
-
         const px_range = 9.0 / camera.scale;
-
         const float_text_type: f32 = @floatFromInt(@intFromEnum(text.text_type));
+
+        x_pointer = next_x_pointer;
+
         text_vert_data[idx_new] = TextVertexData{
             .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
             .uv = [2]f32{ char_data.tex_u, char_data.tex_v },
@@ -943,8 +945,6 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .distance_factor = size_scale * px_range,
         };
         idx_new += 4;
-
-        x_pointer += char_data.x_advance * size_scale;
     }
 
     return idx_new - idx;
@@ -1301,6 +1301,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             .text_type = .bold,
                             .size = 16,
                             .color = 0xFCDF00,
+                            .max_width = 200,
                         };
 
                         text_idx += drawText(
