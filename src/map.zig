@@ -333,6 +333,12 @@ pub const GameObject = struct {
             }
         }
 
+        // allign the wall to the square by rounding then offsetting by half
+        if (self.is_wall) {
+            self.x = @floor(self.x) + 0.5;
+            self.y = @floor(self.y) + 0.5;
+        }
+
         self.class = game_data.obj_type_to_class.get(self.obj_type) orelse .game_object;
 
         entities.append(.{ .object = self.* }) catch |e| {
