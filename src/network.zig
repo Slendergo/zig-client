@@ -170,7 +170,7 @@ pub const Server = struct {
     }
 
     pub fn onError(e: anytype) void {
-        std.log.err("Error while accepting server packets: {any}", .{e});
+        std.log.err("Error while handling server packets: {any}", .{e});
         main.server = null;
         main.selected_server = null;
         main.sent_hello = false;
