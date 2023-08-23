@@ -43,15 +43,11 @@ inline fn keyPress(key: zglfw.Key) void {
         main.disconnect();
     } else if (key == settings.escape.getKey()) {
         if (main.server) |*server|
-            server.sendEscape() catch |e| {
-                std.log.err("Could not escape: {any}", .{e});
-            };
+            server.sendEscape();
     } else if (key == settings.interact.getKey()) {
         if (map.interactive_id != -1) {
             if (main.server) |*server|
-                server.sendUsePortal(map.interactive_id) catch |e| {
-                    std.log.err("Could not use portal: {any}", .{e});
-                };
+                server.sendUsePortal(map.interactive_id);
         }
     } else if (key == settings.ability.getKey()) {
         useAbility();
@@ -102,15 +98,11 @@ inline fn mousePress(button: zglfw.MouseButton) void {
         main.disconnect();
     } else if (button == settings.escape.getMouse()) {
         if (main.server) |*server|
-            server.sendEscape() catch |e| {
-                std.log.err("Could not escape: {any}", .{e});
-            };
+            server.sendEscape();
     } else if (button == settings.interact.getMouse()) {
         if (map.interactive_id != -1) {
             if (main.server) |*server|
-                server.sendUsePortal(map.interactive_id) catch |e| {
-                    std.log.err("Could not use portal: {any}", .{e});
-                };
+                server.sendUsePortal(map.interactive_id);
         }
     } else if (button == settings.ability.getMouse()) {
         useAbility();
@@ -219,9 +211,7 @@ inline fn useAbility() void {
                         .object_id = local_player.obj_id, 
                         .slot_id = 1, 
                         .object_type = @intCast(local_player.inventory[1])
-                    }, .{ .x = world_pos.x, .y = world_pos.y },  0) catch |e| {
-                        std.log.err("Could not use item: {any}", .{e});
-                    };
+                    }, .{ .x = world_pos.x, .y = world_pos.y },  0);
                     // zig fmt: on
                 },
                 else => {},

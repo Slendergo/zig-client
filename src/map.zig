@@ -573,9 +573,7 @@ pub const Player = struct {
             proj.addToMap(false);
 
             if (main.server) |*server| {
-                server.sendPlayerShoot(time, bullet_id, @intCast(weapon), network.Position{ .x = x, .y = y }, current_angle) catch |e| {
-                    std.log.err("PlayerShoot failure: {any}", .{e});
-                };
+                server.sendPlayerShoot(time, bullet_id, @intCast(weapon), network.Position{ .x = x, .y = y }, current_angle);
             }
 
             current_angle += arc_gap;
@@ -607,9 +605,7 @@ pub const Player = struct {
                     const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
                     if (square.tile_type != 0xFFFF and square.tile_type != 0xFF and square.damage > 0) {
                         if (main.server) |*server|
-                            server.sendGroundDamage(time, .{ .x = self.x, .y = self.y }) catch |e| {
-                                std.log.err("Failed to ground damage: {any}", .{e});
-                            };
+                            server.sendGroundDamage(time, .{ .x = self.x, .y = self.y });
                         self.last_ground_damage = time;
                     }
                 }
@@ -1054,9 +1050,7 @@ pub const Projectile = struct {
             const player = findTargetPlayer(self.x, self.y, 0.33);
             if (player != null) {
                 if (main.server) |*server|
-                    server.sendPlayerHit(self.bullet_id, self.owner_id) catch |e| {
-                        std.log.err("Could not send player hit: {any}", .{e});
-                    };
+                    server.sendPlayerHit(self.bullet_id, self.owner_id);
 
                 if (self.props.damage > 0 or self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;
@@ -1090,9 +1084,7 @@ pub const Projectile = struct {
                 const dead = object.?.hp <= self.props.min_damage;
 
                 if (main.server) |*server|
-                    server.sendEnemyHit(time, self.bullet_id, object.?.obj_id, dead) catch |e| {
-                        std.log.err("Could not send enemy hit: {any}", .{e});
-                    };
+                    server.sendEnemyHit(time, self.bullet_id, object.?.obj_id, dead);
 
                 if (self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;

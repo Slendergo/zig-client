@@ -413,9 +413,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
 
                     if (zgui.button("Send message", .{ .w = 150.0 })) {
                         if (server != null) {
-                            server.?.sendPlayerText(static.text_buf[0..utils.strlen(static.text_buf[0..])]) catch |e| {
-                                std.log.err("Can't send player text: {any}", .{e});
-                            };
+                            server.?.sendPlayerText(static.text_buf[0..utils.strlen(static.text_buf[0..])]);
                         }
                         static.text_buf = std.mem.zeroes([128]u8);
                     }
@@ -477,19 +475,20 @@ fn networkTick(allocator: std.mem.Allocator) void {
 
             if (server != null) {
                 if (selected_char_id != 65535 and !sent_hello) {
-                    server.?.sendHello(settings.build_version, -2, current_account.email, current_account.password, @as(i16, @intCast(selected_char_id)), char_create_type != 0, char_create_type, char_create_skin_type) catch |e| {
-                        std.log.err("Could not send Hello: {any}", .{e});
-                    };
+                    server.?.sendHello(
+                        settings.build_version,
+                        -2,
+                        current_account.email,
+                        current_account.password,
+                        @as(i16, @intCast(selected_char_id)),
+                        char_create_type != 0,
+                        char_create_type,
+                        char_create_skin_type,
+                    );
                     sent_hello = true;
                 }
 
-                server.?.accept(allocator) catch |e| {
-                    std.log.err("Error while accepting server packets: {any}", .{e});
-                    server = null;
-                    selected_server = null;
-                    sent_hello = false;
-                    disconnect();
-                };
+                server.?.accept(allocator);
             }
         }
     }
