@@ -59,6 +59,8 @@ pub var respond: Button = .{ .key = .F2 };
 pub var toggle_centering: Button = .{ .key = .x };
 pub var shoot: Button = .{ .mouse = .left };
 pub var ability: Button = .{ .mouse = .right };
+pub var sfx_volume: f32 = 0.33;
+pub var music_volume: f32 = 0.33;
 
 pub fn init() void {}
 

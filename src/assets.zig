@@ -6,6 +6,7 @@ const std = @import("std");
 const game_data = @import("game_data.zig");
 const settings = @import("settings.zig");
 const builtin = @import("builtin");
+const zaudio = @import("zaudio");
 
 pub const padding = 2;
 
@@ -80,6 +81,92 @@ pub const FloatRect = struct {
     w: f32,
     h: f32,
 };
+
+const AudioState = struct {
+    const num_sets = 100;
+    const samples_per_set = 512;
+    const usable_samples_per_set = 480;
+
+    device: *zaudio.Device,
+    engine: *zaudio.Engine,
+    mutex: std.Thread.Mutex = .{},
+    current_set: u32 = num_sets - 1,
+    samples: std.ArrayList(f32),
+
+    fn audioCallback(
+        device: *zaudio.Device,
+        output: ?*anyopaque,
+        _: ?*const anyopaque,
+        num_frames: u32,
+    ) callconv(.C) void {
+        const audio = @as(*AudioState, @ptrCast(@alignCast(device.getUserData())));
+
+        audio.engine.readPcmFrames(output.?, num_frames, null) catch {};
+
+        audio.mutex.lock();
+        defer audio.mutex.unlock();
+
+        audio.current_set = (audio.current_set + 1) % num_sets;
+
+        const num_channels = 2;
+        const base_index = samples_per_set * audio.current_set;
+        const frames = @as([*]f32, @ptrCast(@alignCast(output)));
+
+        var i: u32 = 0;
+        while (i < @min(num_frames, usable_samples_per_set)) : (i += 1) {
+            audio.samples.items[base_index + i] = frames[i * num_channels];
+        }
+    }
+
+    fn create(allocator: std.mem.Allocator) !*AudioState {
+        const samples = samples: {
+            var samples = std.ArrayList(f32).initCapacity(
+                allocator,
+                num_sets * samples_per_set,
+            ) catch unreachable;
+            samples.expandToCapacity();
+            @memset(samples.items, 0.0);
+            break :samples samples;
+        };
+
+        const audio = try allocator.create(AudioState);
+
+        const device = device: {
+            var config = zaudio.Device.Config.init(.playback);
+            config.data_callback = audioCallback;
+            config.user_data = audio;
+            config.sample_rate = 48000;
+            config.period_size_in_frames = 480;
+            config.period_size_in_milliseconds = 10;
+            config.playback.format = .float32;
+            config.playback.channels = 2;
+            break :device try zaudio.Device.create(null, config);
+        };
+
+        const engine = engine: {
+            var config = zaudio.Engine.Config.init();
+            config.device = device;
+            config.no_auto_start = .true32;
+            break :engine try zaudio.Engine.create(config);
+        };
+
+        audio.* = .{
+            .device = device,
+            .engine = engine,
+            .samples = samples,
+        };
+        return audio;
+    }
+
+    fn destroy(audio: *AudioState, allocator: std.mem.Allocator) void {
+        audio.samples.deinit();
+        audio.engine.destroy();
+        audio.device.destroy();
+        allocator.destroy(audio);
+    }
+};
+
+pub var audio_state: *AudioState = undefined;
 
 pub var atlas: zstbi.Image = undefined;
 pub var light_tex: zstbi.Image = undefined;
@@ -315,7 +402,27 @@ inline fn addAnimPlayer(comptime sheet_name: []const u8, comptime image_name: []
     }
 }
 
+fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]CharacterData) !void {
+    const file = try std.fs.cwd().openFile(path, .{});
+    defer file.close();
+
+    const data = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
+    defer allocator.free(data);
+
+    var iter = std.mem.splitSequence(u8, data, if (builtin.os.tag == .windows) "\r\n" else "\n");
+    while (iter.next()) |line| {
+        if (line.len == 0)
+            continue;
+
+        var split = std.mem.splitSequence(u8, line, ",");
+        const idx = try std.fmt.parseInt(usize, split.next().?, 0);
+        chars[idx] = try CharacterData.parse(&split);
+    }
+}
+
 pub fn deinit(allocator: std.mem.Allocator) void {
+    audio_state.destroy(allocator);
+
     atlas.deinit();
     light_tex.deinit();
     bold_atlas.deinit();
@@ -349,24 +456,6 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     anim_players.deinit();
 }
 
-fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]CharacterData) !void {
-    const file = try std.fs.cwd().openFile(path, .{});
-    defer file.close();
-
-    const data = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
-    defer allocator.free(data);
-
-    var iter = std.mem.splitSequence(u8, data, if (builtin.os.tag == .windows) "\r\n" else "\n");
-    while (iter.next()) |line| {
-        if (line.len == 0)
-            continue;
-
-        var split = std.mem.splitSequence(u8, line, ",");
-        const idx = try std.fmt.parseInt(usize, split.next().?, 0);
-        chars[idx] = try CharacterData.parse(&split);
-    }
-}
-
 pub fn init(allocator: std.mem.Allocator) !void {
     rects = std.StringHashMap([]zstbrp.PackRect).init(allocator);
     anim_enemies = std.StringHashMap([]AnimEnemyData).init(allocator);
@@ -381,6 +470,19 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-BoldItalic.csv", &bold_italic_chars);
     try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-Medium.csv", &medium_chars);
     try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-MediumItalic.csv", &medium_italic_chars);
+
+    audio_state = try AudioState.create(allocator);
+    try audio_state.engine.start();
+
+    if (settings.music_volume > 0.0) {
+        const music = try audio_state.engine.createSoundFromFile(
+            asset_dir ++ "music/sorc.mp3",
+            .{},
+        );
+        music.setLooping(true);
+        music.setVolume(settings.music_volume);
+        try music.start();
+    }
 
     light_tex = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/Light.png", 4);
 
@@ -486,7 +588,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             @as(f32, @floatFromInt(bottom_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
         };
     }
-    
+
     const wall_backface_rect = rects.get("wallBackface").?[0x0];
     wall_backface_uv = [2]f32{
         @as(f32, @floatFromInt(wall_backface_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),

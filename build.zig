@@ -7,12 +7,18 @@ const zgui = @import("libs/zgui/build.zig");
 const zstbi = @import("libs/zstbi/build.zig");
 const zstbrp = @import("libs/zstbrp/build.zig");
 const ztracy = @import("libs/ztracy/build.zig");
+const zaudio = @import("libs/zaudio/build.zig");
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const exe = b.addExecutable(.{ .name = "Client", .root_source_file = .{ .path = "src/main.zig" }, .target = target, .optimize = optimize });
+    const exe = b.addExecutable(.{
+        .name = "Client",
+        .root_source_file = .{ .path = "src/main.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
     exe.want_lto = false; // remove later
 
     const libxml = try libxml2.create(b, target, optimize, .{
@@ -38,6 +44,9 @@ pub fn build(b: *std.Build) !void {
     });
     ztracy_pkg.link(exe);
 
+    const zaudio_pkg = zaudio.package(b, target, optimize, .{});
+    zaudio_pkg.link(exe);
+
     const zglfw_pkg = zglfw.package(b, target, optimize, .{});
     const zpool_pkg = zpool.package(b, target, optimize, .{});
     const zgpu_pkg = zgpu.package(b, target, optimize, .{
@@ -58,7 +67,11 @@ pub fn build(b: *std.Build) !void {
     exe.addOptions("build_options", exe_options);
     exe_options.addOption([]const u8, "asset_dir", "./assets/");
 
-    const install_assets_step = b.addInstallDirectory(.{ .source_dir = .{ .path = "src/assets" }, .install_dir = .{ .custom = "" }, .install_subdir = "bin/assets" });
+    const install_assets_step = b.addInstallDirectory(.{
+        .source_dir = .{ .path = "src/assets" },
+        .install_dir = .{ .custom = "" },
+        .install_subdir = "bin/assets",
+    });
     exe.step.dependOn(&install_assets_step.step);
 
     const run_step = b.step("run", "Run the app");

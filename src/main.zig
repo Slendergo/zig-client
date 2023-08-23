@@ -20,6 +20,7 @@ const map = @import("map.zig");
 const ui = @import("ui.zig");
 const render = @import("render.zig");
 const ztracy = @import("ztracy");
+const zaudio = @import("zaudio");
 
 pub const ServerData = struct {
     name: [:0]const u8 = "",
@@ -294,7 +295,6 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                         selected_char_id = next_char_id;
                         next_char_id += 1;
 
-                        std.debug.print("Using server index {d}\n", .{static.server_index});
                         selected_server = server_list.?[static.server_index];
                     }
                 }
@@ -481,7 +481,6 @@ fn networkTick(allocator: std.mem.Allocator) void {
                         std.log.err("Could not send Hello: {any}", .{e});
                     };
                     sent_hello = true;
-                    std.debug.print("Sent Hello\n", .{});
                 }
 
                 server.?.accept(allocator) catch |e| {
@@ -528,7 +527,6 @@ pub fn disconnect() void {
     clear();
 
     current_screen = .char_select;
-    std.debug.print("Disconnected\n", .{});
 }
 
 pub fn main() !void {
@@ -554,6 +552,9 @@ pub fn main() !void {
 
     zstbi.init(allocator);
     defer zstbi.deinit();
+
+    zaudio.init(allocator);
+    defer zaudio.deinit();
 
     try assets.init(allocator);
     defer assets.deinit(allocator);
@@ -693,7 +694,6 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
     var char_iter = list_root.iterate(&.{}, "Char");
     while (char_iter.next()) |node|
         try char_list.append(try CharacterData.parse(allocator, node, try node.getAttributeInt("id", u32, 0)));
-    std.debug.print("Total characters: {d}\n", .{char_list.capacity});
 
     character_list = try allocator.dupe(CharacterData, char_list.items);
 
@@ -707,10 +707,7 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
             try server_data_list.append(try ServerData.parse(server_node, allocator));
 
         server_list = try allocator.dupe(ServerData, server_data_list.items);
-        std.debug.print("Total servers: {d}\n", .{server_list.?.len});
     }
-
-    std.debug.print("Logged in as {s}\n", .{current_account.name});
 
     if (character_list.len > 0) {
         current_screen = ScreenType.char_select;
