@@ -1423,7 +1423,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     }
 
                     if (bo.is_wall) {
-                        idx += drawWall(idx, bo.x, bo.y, bo.tex_u, bo.tex_v, bo.top_tex_u, bo.top_tex_v);
+                        idx += drawWall(idx, @floor(bo.x) + 0.5, @floor(bo.y) + 0.5, bo.tex_u, bo.tex_v, bo.top_tex_u, bo.top_tex_v);
                         continue;
                     }
 
