@@ -400,7 +400,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     var nodes = try allocator.alloc(zstbrp.PackNode, 4096);
     zstbrp.initPack(&ctx, nodes);
 
-    try addImage("particle", "particle.png", 8, 8, &ctx, allocator);
+    try addImage("particle", "Particle.png", 8, 8, &ctx, allocator);
     try addImage("textile4x4", "Textile4x4.png", 4, 4, &ctx, allocator);
     try addImage("textile5x5", "Textile5x5.png", 5, 5, &ctx, allocator);
     try addImage("textile9x9", "Textile9x9.png", 9, 9, &ctx, allocator);
@@ -466,7 +466,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
     if (settings.print_atlas)
         try zstbi.Image.writeToFile(atlas, "atlas.png", .png);
 
-    // zig fmt: off
     const mask_rects = rects.get("groundMasks");
     if (mask_rects != null) {
         const left_mask_rect = mask_rects.?[0];
@@ -475,7 +474,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             @as(f32, @floatFromInt(left_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
             @as(f32, @floatFromInt(left_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
             @as(f32, @floatFromInt(top_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
-            @as(f32, @floatFromInt(top_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height))
+            @as(f32, @floatFromInt(top_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
         };
 
         const right_mask_rect = mask_rects.?[2];
@@ -484,14 +483,14 @@ pub fn init(allocator: std.mem.Allocator) !void {
             @as(f32, @floatFromInt(right_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
             @as(f32, @floatFromInt(right_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
             @as(f32, @floatFromInt(bottom_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
-            @as(f32, @floatFromInt(bottom_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height))
+            @as(f32, @floatFromInt(bottom_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
         };
     }
     
     const wall_backface_rect = rects.get("wallBackface").?[0x0];
     wall_backface_uv = [2]f32{
         @as(f32, @floatFromInt(wall_backface_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
-        @as(f32, @floatFromInt(wall_backface_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height))
+        @as(f32, @floatFromInt(wall_backface_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
     };
 
     const particle = rects.get("particle").?[0x0];
@@ -528,7 +527,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
             .h = @as(f32, @floatFromInt(mp_bar_rect_rp.h)) / @as(f32, @floatFromInt(atlas_height)),
         };
     }
-    // zig fmt: on
 
     const error_rects = rects.get("errorTexture");
     if (error_rects != null) {

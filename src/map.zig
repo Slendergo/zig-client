@@ -1060,20 +1060,26 @@ pub const Projectile = struct {
 
                 if (self.props.damage > 0 or self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;
-                    var damageColor: u32 = 0x000000;
-                    if (piercing) damageColor = 0x890AFF else damageColor = 0xB02020;
+                    var damageColor: u32 = 0xB02020;
+                    if (piercing)
+                        damageColor = 0x890AFF;
 
                     const damageValue = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
-                    // zig fmt: off
+
+                    const text = ui.Text{
+                        .text = std.fmt.allocPrint(allocator, "-{d}", .{damageValue}) catch unreachable,
+                        .text_type = .bold,
+                        .size = 16,
+                        .color = damageColor,
+                    };
+
                     ui.status_texts.append(ui.StatusText{
                         .obj_id = player.?.obj_id,
                         .start_time = time,
-                        .color = damageColor,
-                        .text = std.fmt.allocPrint(allocator, "-{d}", .{damageValue}) catch unreachable
+                        .text = text,
                     }) catch |e| {
-                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{damageValue, e});
+                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damageValue, e });
                     };
-                    // zig fmt: on
                 }
 
                 return false;
@@ -1090,24 +1096,31 @@ pub const Projectile = struct {
 
                 if (self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;
-                    var damageColor: u32 = 0x000000;
-                    if (piercing) damageColor = 0x890AFF else damageColor = 0xB02020;
-                    // zig fmt: off
+                    var damageColor: u32 = 0xB02020;
+                    if (piercing)
+                        damageColor = 0x890AFF;
+
                     const damage = @as(i32, calculateDamage(
                         self,
                         object.?.obj_id,
                         self.owner_id,
-                        piercing
+                        piercing,
                     ));
+
+                    const text = ui.Text{
+                        .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable,
+                        .text_type = .bold,
+                        .size = 16,
+                        .color = damageColor,
+                    };
+
                     ui.status_texts.append(ui.StatusText{
                         .obj_id = object.?.obj_id,
                         .start_time = time,
-                        .color = 0xB02020,
-                        .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable
+                        .text = text,
                     }) catch |e| {
-                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{damage, e});
+                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage, e });
                     };
-                    // zig fmt: on
                 }
 
                 return false;

@@ -595,31 +595,34 @@ pub const Server = struct {
         const message = reader.read([]u8);
         const color = @byteSwap(@as(u32, @bitCast(reader.read(ARGB))));
 
-        // zig fmt: off
         if (map.findEntity(object_id)) |en| {
+            const text = ui.Text{
+                .text = allocator.dupe(u8, message) catch unreachable, // not really unreachable is it now?
+                .text_type = .bold,
+                .size = 22,
+                .color = color,
+            };
+
             switch (en.*) {
                 .player => |*player| {
-                     ui.status_texts.append(ui.StatusText{
+                    ui.status_texts.append(ui.StatusText{
                         .obj_id = player.obj_id,
                         .start_time = main.current_time,
-                        .color = color,
                         .lifetime = 2000,
-                        .text = allocator.dupe(u8, message) catch unreachable, // not really unreachable is it now?
-                    }) catch unreachable; 
+                        .text = text,
+                    }) catch unreachable;
                 },
                 .object => |*obj| {
                     ui.status_texts.append(ui.StatusText{
                         .obj_id = obj.obj_id,
                         .start_time = main.current_time,
-                        .color = color,
                         .lifetime = 2000,
-                        .text = allocator.dupe(u8, message) catch unreachable,
+                        .text = text,
                     }) catch unreachable;
                 },
                 else => {},
             }
         }
-        // zig fmt: on
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
             std.log.debug("Recv - Notification: object_id={d}, message={s}, color={any}", .{ object_id, message, color });

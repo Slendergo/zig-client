@@ -843,38 +843,34 @@ inline fn drawSquare(
     };
 }
 
-const TextOptions = struct {
-    shadow_color: u32 = 0x000000,
-    shadow_alpha_mult: f32 = 0.5,
-    shadow_texel_offset_mult: f32 = 6.0,
-};
-
-inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color: u32, alpha_mult: f32, text_type: f32, opts: TextOptions) u16 {
-    const r: f32 = @as(f32, @floatFromInt((color & 0x00FF0000) >> 16)) / 255.0;
-    const g: f32 = @as(f32, @floatFromInt((color & 0x0000FF00) >> 8)) / 255.0;
-    const b: f32 = @as(f32, @floatFromInt((color & 0x000000FF) >> 0)) / 255.0;
+inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
+    const r: f32 = @as(f32, @floatFromInt((text.color & 0x00FF0000) >> 16)) / 255.0;
+    const g: f32 = @as(f32, @floatFromInt((text.color & 0x0000FF00) >> 8)) / 255.0;
+    const b: f32 = @as(f32, @floatFromInt((text.color & 0x000000FF) >> 0)) / 255.0;
     const rgb = [3]f32{ r, g, b };
 
-    const shadow_r: f32 = @as(f32, @floatFromInt((opts.shadow_color & 0x00FF0000) >> 16)) / 255.0;
-    const shadow_g: f32 = @as(f32, @floatFromInt((opts.shadow_color & 0x0000FF00) >> 8)) / 255.0;
-    const shadow_b: f32 = @as(f32, @floatFromInt((opts.shadow_color & 0x000000FF) >> 0)) / 255.0;
+    const shadow_r: f32 = @as(f32, @floatFromInt((text.shadow_color & 0x00FF0000) >> 16)) / 255.0;
+    const shadow_g: f32 = @as(f32, @floatFromInt((text.shadow_color & 0x0000FF00) >> 8)) / 255.0;
+    const shadow_b: f32 = @as(f32, @floatFromInt((text.shadow_color & 0x000000FF) >> 0)) / 255.0;
     const shadow_rgb = [3]f32{ shadow_r, shadow_g, shadow_b };
 
-    const shadow_texel_size = [2]f32{ opts.shadow_texel_offset_mult / assets.CharacterData.atlas_w, opts.shadow_texel_offset_mult / assets.CharacterData.atlas_h };
+    const shadow_texel_size = [2]f32{
+        text.shadow_texel_offset_mult / assets.CharacterData.atlas_w,
+        text.shadow_texel_offset_mult / assets.CharacterData.atlas_h,
+    };
 
-    const size_scale = size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
+    const size_scale = text.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
     const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
     var idx_new = idx;
     var x_pointer = x - camera.screen_width / 2.0;
     const offset_y = y - camera.screen_height / 2.0;
-    for (text) |char| {
-        const char_data = switch (@as(u32, @intFromFloat(text_type))) {
-            0.0 => assets.medium_chars[char],
-            1.0 => assets.medium_italic_chars[char],
-            2.0 => assets.bold_chars[char],
-            3.0 => assets.bold_italic_chars[char],
-            else => unreachable,
+    for (text.text) |char| {
+        const char_data = switch (text.text_type) {
+            .medium => assets.medium_chars[char],
+            .medium_italic => assets.medium_italic_chars[char],
+            .bold => assets.bold_chars[char],
+            .bold_italic => assets.bold_italic_chars[char],
         };
 
         if (char_data.tex_w <= 0) {
@@ -891,55 +887,54 @@ inline fn drawText(idx: u16, x: f32, y: f32, size: f32, text: []const u8, color:
 
         const px_range = 9.0 / camera.scale;
 
-        // zig fmt: off
+        const float_text_type: f32 = @floatFromInt(@intFromEnum(text.text_type));
         text_vert_data[idx_new] = TextVertexData{
             .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
             .uv = [2]f32{ char_data.tex_u, char_data.tex_v },
             .color = rgb,
-            .text_type = text_type,
-            .alpha_mult = alpha_mult,
+            .text_type = float_text_type,
+            .alpha_mult = text.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = opts.shadow_alpha_mult,
+            .shadow_alpha_mult = text.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
-            .distance_factor = size_scale * px_range
+            .distance_factor = size_scale * px_range,
         };
 
         text_vert_data[idx_new + 1] = TextVertexData{
             .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
             .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v },
             .color = rgb,
-            .text_type = text_type,
-            .alpha_mult = alpha_mult,
+            .text_type = float_text_type,
+            .alpha_mult = text.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = opts.shadow_alpha_mult,
+            .shadow_alpha_mult = text.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
-            .distance_factor = size_scale * px_range
+            .distance_factor = size_scale * px_range,
         };
 
         text_vert_data[idx_new + 2] = TextVertexData{
             .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
             .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v + char_data.tex_h },
             .color = rgb,
-            .text_type = text_type,
-            .alpha_mult = alpha_mult,
+            .text_type = float_text_type,
+            .alpha_mult = text.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = opts.shadow_alpha_mult,
+            .shadow_alpha_mult = text.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
-            .distance_factor = size_scale * px_range
+            .distance_factor = size_scale * px_range,
         };
 
         text_vert_data[idx_new + 3] = TextVertexData{
             .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
             .uv = [2]f32{ char_data.tex_u, char_data.tex_v + char_data.tex_h },
             .color = rgb,
-            .text_type = text_type,
-            .alpha_mult = alpha_mult,
+            .text_type = float_text_type,
+            .alpha_mult = text.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = opts.shadow_alpha_mult,
+            .shadow_alpha_mult = text.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
-            .distance_factor = size_scale * px_range
+            .distance_factor = size_scale * px_range,
         };
-        // zig fmt: on
         idx_new += 4;
 
         x_pointer += char_data.x_advance * size_scale;
@@ -1294,17 +1289,18 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     const name = if (player.name_override.len > 0) player.name_override else player.name;
                     if (name.len > 0) {
-                        const text_width = ui.textWidth(16, name, ui.bold_text_type);
+                        const text = ui.Text{
+                            .text = name,
+                            .text_type = .bold,
+                            .size = 16,
+                            .color = 0xFCDF00,
+                        };
+
                         text_idx += drawText(
                             text_idx,
-                            screen_pos.x - x_offset - text_width / 2,
-                            screen_pos.y - 16 * assets.CharacterData.padding_mult / camera.scale,
-                            16,
-                            name,
-                            0xFCDF00,
-                            1.0,
-                            ui.bold_text_type,
-                            .{},
+                            screen_pos.x - x_offset - text.width() / 2,
+                            screen_pos.y - text.height(),
+                            text,
                         );
                     }
 
@@ -1538,31 +1534,31 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     const is_portal = bo.class == .portal;
                     const name = if (bo.name_override.len > 0) bo.name_override else bo.name;
                     if (name.len > 0 and (bo.show_name or is_portal)) {
-                        const text_width = ui.textWidth(16, name, ui.bold_text_type);
+                        const text = ui.Text{
+                            .text = name,
+                            .text_type = .bold,
+                            .size = 16,
+                        };
+
                         text_idx += drawText(
                             text_idx,
-                            screen_pos.x - x_offset - text_width / 2,
-                            screen_pos.y - 16 * assets.CharacterData.padding_mult / camera.scale,
-                            16,
-                            name,
-                            0xFFFFFF,
-                            1.0,
-                            ui.bold_text_type,
-                            .{},
+                            screen_pos.x - x_offset - text.width() / 2,
+                            screen_pos.y - text.height(),
+                            text,
                         );
 
                         if (is_portal and map.interactive_id == bo.obj_id) {
-                            const enter_text_width = ui.textWidth(16, "Enter", ui.bold_text_type);
+                            const enter_text = ui.Text{
+                                .text = @constCast("Enter"), // meh
+                                .text_type = .bold,
+                                .size = 16,
+                            };
+
                             text_idx += drawText(
                                 text_idx,
-                                screen_pos.x - x_offset - enter_text_width / 2,
+                                screen_pos.x - x_offset - enter_text.width() / 2,
                                 screen_pos.y + h + 5,
-                                16,
-                                "Enter",
-                                0xFFFFFF,
-                                1.0,
-                                ui.bold_text_type,
-                                .{},
+                                enter_text,
                             );
                         }
                     }
@@ -1698,11 +1694,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             const pipeline = gctx.lookupResource(text_pipeline) orelse break :textPass;
             const bind_group = gctx.lookupResource(text_bind_group) orelse break :textPass;
 
-            for (ui.status_texts.items) |text| {
-                // zig fmt: off
-                text_idx += drawText(text_idx, text.screen_x, text.screen_y, 
-                    text.size, text.text, text.color, text.alpha, ui.bold_text_type, .{});
-                // zig fmt: on
+            for (ui.status_texts.items) |status_text| {
+                text_idx += drawText(text_idx, status_text.screen_x, status_text.screen_y, status_text.text);
             }
 
             encoder.writeBuffer(
