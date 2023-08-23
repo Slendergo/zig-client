@@ -24,10 +24,12 @@ pub const bold_italic_text_type = 3.0;
 
 pub var status_texts: std.ArrayList(StatusText) = undefined;
 pub var status_texts_to_remove: std.ArrayList(usize) = undefined;
+pub var obj_ids_to_remove: std.ArrayList(i32) = undefined;
 
 pub fn init(allocator: std.mem.Allocator) void {
     status_texts = std.ArrayList(StatusText).init(allocator);
     status_texts_to_remove = std.ArrayList(usize).init(allocator);
+    obj_ids_to_remove = std.ArrayList(i32).init(allocator);
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
@@ -36,12 +38,13 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     }
     status_texts.deinit();
     status_texts_to_remove.deinit();
+    obj_ids_to_remove.deinit();
 }
 
 pub fn removeStatusText(obj_id: i32) void {
-    for (status_texts.items, 0..) |text, i| {
+    for (status_texts.items) |text| {
         if (text.obj_id == obj_id) {
-            status_texts_to_remove.append(i) catch |e| {
+            obj_ids_to_remove.append(obj_id) catch |e| {
                 std.log.err("Status text disposing failed: {any}", .{e});
             };
             continue;
@@ -55,17 +58,16 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();
 
-    if (status_texts_to_remove.items.len > 0) {
-        std.mem.reverse(usize, status_texts_to_remove.items);
-
-        for (status_texts_to_remove.items) |idx| {
-            allocator.free(status_texts.orderedRemove(idx).text);
+    textUpdate: for (status_texts.items, 0..) |*text, i| {
+        for (obj_ids_to_remove.items) |obj_id| {
+            if (obj_id == text.obj_id) {
+                status_texts_to_remove.append(i) catch |e| {
+                    std.log.err("Status text disposing failed: {any}", .{e});
+                };
+                continue :textUpdate;
+            }
         }
 
-        status_texts_to_remove.clearRetainingCapacity();
-    }
-
-    for (status_texts.items, 0..) |*text, i| {
         const elapsed = time - text.start_time;
         if (elapsed > text.lifetime) {
             status_texts_to_remove.append(i) catch |e| {
@@ -93,6 +95,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
         allocator.free(status_texts.orderedRemove(idx).text);
     }
 
+    obj_ids_to_remove.clearRetainingCapacity();
     status_texts_to_remove.clearRetainingCapacity();
 }
 

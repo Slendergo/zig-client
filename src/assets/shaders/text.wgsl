@@ -53,11 +53,17 @@ fn median(r: f32, g: f32, b: f32) -> f32 {
     return max(min(r, g), min(max(r, g), b));
 }
 
+fn sample_msdf(tex: vec4<f32>, dist_factor: f32, alpha_mult: f32) -> f32 {
+    return clamp((median(tex.r, tex.g, tex.b) - 0.5) * dist_factor + 0.5, 0.0, 1.0) * alpha_mult;
+}
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let dx = dpdx(in.uv);
     let dy = dpdy(in.uv);
-    let subpixel_width = (abs(dx.x) + abs(dy.x)) / 3.0; // this is just fwidth(in.uv).x / 3.0
+
+    const subpixel = 1.0 / 3.0;
+    let subpixel_width = (abs(dx.x) + abs(dy.x)) * subpixel; // this is just fwidth(in.uv).x * subpixel
 
     var red_tex = vec4(0.0, 0.0, 0.0, 0.0);
     var green_tex = vec4(0.0, 0.0, 0.0, 0.0);
@@ -85,16 +91,16 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         tex_offset = textureSampleGrad(bold_italic_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
     }
 
-    let red = clamp((median(red_tex.r, red_tex.g, red_tex.b) - 0.5) * in.distance_factor + 0.5, 0.0, 1.0) * in.alpha_mult;
-    let green = clamp((median(green_tex.r, green_tex.g, green_tex.b) - 0.5) * in.distance_factor + 0.5, 0.0, 1.0) * in.alpha_mult;
-    let blue = clamp((median(blue_tex.r, blue_tex.g, blue_tex.b) - 0.5) * in.distance_factor + 0.5, 0.0, 1.0) * in.alpha_mult;
+    let red = sample_msdf(red_tex, in.distance_factor, in.alpha_mult);
+    let green = sample_msdf(green_tex, in.distance_factor, in.alpha_mult);
+    let blue = sample_msdf(blue_tex, in.distance_factor, in.alpha_mult);
 
-    const subpixel = 1.0 / 3.0;
     let alpha = clamp(subpixel * (red + green + blue), 0.0, 1.0);
+    let base_pixel = vec4(red * in.color.r, green * in.color.g, blue * in.color.b, alpha);
 
     // don't subpixel aa the offset, it's supposed to be a shadow
-    let offset_sig_dist = median(tex_offset.r, tex_offset.g, tex_offset.b) - 0.5;
-    let offset_opacity = clamp(offset_sig_dist * in.distance_factor + 0.5, 0.0, 1.0) * in.shadow_alpha_mult * in.alpha_mult;
+    let offset_opacity = sample_msdf(tex_offset, in.distance_factor, in.alpha_mult * in.shadow_alpha_mult);
+    let offset_pixel = vec4(in.shadow_color, offset_opacity);
 
-    return mix(vec4(in.shadow_color, offset_opacity), vec4(red * in.color.r, green * in.color.g, blue * in.color.b, alpha), alpha);
+    return mix(offset_pixel, base_pixel, alpha);
 }
