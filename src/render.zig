@@ -18,9 +18,9 @@ pub const BaseVertexData = extern struct {
     pos: [2]f32,
     uv: [2]f32,
     texel_size: [2]f32,
-    flash_color: [3]f32,
+    flash_color: ui.RGBF32,
     flash_strength: f32,
-    glow_color: [3]f32,
+    glow_color: ui.RGBF32,
     alpha_mult: f32,
 };
 
@@ -38,10 +38,10 @@ pub const GroundVertexData = extern struct {
 pub const TextVertexData = extern struct {
     pos: [2]f32,
     uv: [2]f32,
-    color: [3]f32,
+    color: ui.RGBF32,
     text_type: f32,
     alpha_mult: f32,
-    shadow_color: [3]f32,
+    shadow_color: ui.RGBF32,
     shadow_alpha_mult: f32,
     shadow_texel_offset: [2]f32,
     distance_factor: f32,
@@ -50,7 +50,7 @@ pub const TextVertexData = extern struct {
 pub const LightVertexData = extern struct {
     pos: [2]f32,
     uv: [2]f32,
-    color: [3]f32,
+    color: ui.RGBF32,
     intensity: f32,
 };
 
@@ -624,19 +624,13 @@ inline fn drawQuad(
     tex_h: f32,
     opts: QuadOptions,
 ) void {
-    var flash_rgb = [3]f32{ -1.0, -1.0, -1.0 };
-    if (opts.flash_color != -1) {
-        flash_rgb[0] = @as(f32, @floatFromInt((opts.flash_color >> 16) & 0xFF)) / 255.0;
-        flash_rgb[1] = @as(f32, @floatFromInt((opts.flash_color >> 8) & 0xFF)) / 255.0;
-        flash_rgb[2] = @as(f32, @floatFromInt(opts.flash_color & 0xFF)) / 255.0;
-    }
+    var flash_rgb = ui.RGBF32.fromValues(-1.0, -1.0, -1.0);
+    if (opts.flash_color != -1)
+        flash_rgb = ui.RGBF32.fromInt(opts.flash_color);
 
-    var glow_rgb = [3]f32{ 0.0, 0.0, 0.0 };
-    if (opts.glow_color != -1) {
-        glow_rgb[0] = @as(f32, @floatFromInt((opts.glow_color >> 16) & 0xFF)) / 255.0;
-        glow_rgb[1] = @as(f32, @floatFromInt((opts.glow_color >> 8) & 0xFF)) / 255.0;
-        glow_rgb[2] = @as(f32, @floatFromInt(opts.glow_color & 0xFF)) / 255.0;
-    }
+    var glow_rgb = ui.RGBF32.fromValues(0.0, 0.0, 0.0);
+    if (opts.glow_color != -1)
+        glow_rgb = ui.RGBF32.fromInt(opts.glow_color);
 
     const texel_w = assets.base_texel_w * opts.texel_mult;
     const texel_h = assets.base_texel_h * opts.texel_mult;
@@ -715,19 +709,13 @@ inline fn drawQuadVerts(
     flash_strength: f32,
     alpha_mult: f32,
 ) void {
-    var flash_rgb = [3]f32{ -1.0, -1.0, -1.0 };
-    if (flash_color != -1) {
-        flash_rgb[0] = @as(f32, @floatFromInt((flash_color & 0x00FF0000) >> 16)) / 255.0;
-        flash_rgb[1] = @as(f32, @floatFromInt((flash_color & 0x0000FF00) >> 8)) / 255.0;
-        flash_rgb[2] = @as(f32, @floatFromInt((flash_color & 0x000000FF) >> 0)) / 255.0;
-    }
+    var flash_rgb = ui.RGBF32.fromValues(-1.0, -1.0, -1.0);
+    if (flash_color != -1)
+        flash_rgb = ui.RGBF32.fromInt(flash_color);
 
-    var glow_rgb = [3]f32{ 0.0, 0.0, 0.0 };
-    if (glow_color != -1) {
-        glow_rgb[0] = @as(f32, @floatFromInt((glow_color & 0x00FF0000) >> 16)) / 255.0;
-        glow_rgb[1] = @as(f32, @floatFromInt((glow_color & 0x0000FF00) >> 8)) / 255.0;
-        glow_rgb[2] = @as(f32, @floatFromInt((glow_color & 0x000000FF) >> 0)) / 255.0;
-    }
+    var glow_rgb = ui.RGBF32.fromValues(0.0, 0.0, 0.0);
+    if (glow_color != -1)
+        glow_rgb = ui.RGBF32.fromInt(glow_color);
 
     const texel_w = assets.base_texel_w * texel_mult;
     const texel_h = assets.base_texel_h * texel_mult;
@@ -844,15 +832,8 @@ inline fn drawSquare(
 }
 
 inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
-    const r: f32 = @as(f32, @floatFromInt((text.color & 0x00FF0000) >> 16)) / 255.0;
-    const g: f32 = @as(f32, @floatFromInt((text.color & 0x0000FF00) >> 8)) / 255.0;
-    const b: f32 = @as(f32, @floatFromInt((text.color & 0x000000FF) >> 0)) / 255.0;
-    const rgb = [3]f32{ r, g, b };
-
-    const shadow_r: f32 = @as(f32, @floatFromInt((text.shadow_color & 0x00FF0000) >> 16)) / 255.0;
-    const shadow_g: f32 = @as(f32, @floatFromInt((text.shadow_color & 0x0000FF00) >> 8)) / 255.0;
-    const shadow_b: f32 = @as(f32, @floatFromInt((text.shadow_color & 0x000000FF) >> 0)) / 255.0;
-    const shadow_rgb = [3]f32{ shadow_r, shadow_g, shadow_b };
+    const rgb = ui.RGBF32.fromInt(text.color);
+    const shadow_rgb = ui.RGBF32.fromInt(text.shadow_color);
 
     const shadow_texel_size = [2]f32{
         text.shadow_texel_offset_mult / assets.CharacterData.atlas_w,
@@ -864,6 +845,8 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
 
     var idx_new = idx;
     const x_base = x - camera.screen_width / 2.0;
+    var current_text_type = text.text_type;
+    _ = current_text_type;
     var x_pointer = x_base;
     var y_pointer = y - camera.screen_height / 2.0 + line_height;
     for (text.text) |char| {
@@ -951,10 +934,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
 }
 
 inline fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: i32, intensity: f32) void {
-    const r: f32 = @as(f32, @floatFromInt((color & 0x00FF0000) >> 16)) / 255.0;
-    const g: f32 = @as(f32, @floatFromInt((color & 0x0000FF00) >> 8)) / 255.0;
-    const b: f32 = @as(f32, @floatFromInt((color & 0x000000FF) >> 0)) / 255.0;
-    const rgb = [3]f32{ r, g, b };
+    const rgb = ui.RGBF32.fromInt(color);
 
     // 2x given size
     const scaled_w = w * 4 * camera.clip_scale_x * camera.scale;

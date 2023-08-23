@@ -1060,17 +1060,17 @@ pub const Projectile = struct {
 
                 if (self.props.damage > 0 or self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;
-                    var damageColor: u32 = 0xB02020;
+                    var damage_color: i32 = 0xB02020;
                     if (piercing)
-                        damageColor = 0x890AFF;
+                        damage_color = 0x890AFF;
 
-                    const damageValue = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
+                    const damage_value = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
 
                     const text = ui.Text{
-                        .text = std.fmt.allocPrint(allocator, "-{d}", .{damageValue}) catch unreachable,
+                        .text = std.fmt.allocPrint(allocator, "-{d}", .{damage_value}) catch unreachable,
                         .text_type = .bold,
                         .size = 16,
-                        .color = damageColor,
+                        .color = damage_color,
                     };
 
                     ui.status_texts.append(ui.StatusText{
@@ -1078,7 +1078,7 @@ pub const Projectile = struct {
                         .start_time = time,
                         .text = text,
                     }) catch |e| {
-                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damageValue, e });
+                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
                     };
                 }
 
@@ -1096,9 +1096,9 @@ pub const Projectile = struct {
 
                 if (self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;
-                    var damageColor: u32 = 0xB02020;
+                    var damage_color: i32 = 0xB02020;
                     if (piercing)
-                        damageColor = 0x890AFF;
+                        damage_color = 0x890AFF;
 
                     const damage = @as(i32, calculateDamage(
                         self,
@@ -1111,7 +1111,7 @@ pub const Projectile = struct {
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable,
                         .text_type = .bold,
                         .size = 16,
-                        .color = damageColor,
+                        .color = damage_color,
                     };
 
                     ui.status_texts.append(ui.StatusText{

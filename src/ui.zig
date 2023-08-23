@@ -3,6 +3,24 @@ const camera = @import("camera.zig");
 const assets = @import("assets.zig");
 const map = @import("map.zig");
 
+pub const RGBF32 = extern struct {
+    r: f32,
+    g: f32,
+    b: f32,
+
+    pub fn fromValues(r: f32, g: f32, b: f32) RGBF32 {
+        return RGBF32{ .r = r, .g = g, .b = b };
+    }
+
+    pub fn fromInt(int: i32) RGBF32 {
+        return RGBF32{
+            .r = @as(f32, @floatFromInt((int & 0x00FF0000) >> 16)) / 255.0,
+            .g = @as(f32, @floatFromInt((int & 0x0000FF00) >> 8)) / 255.0,
+            .b = @as(f32, @floatFromInt((int & 0x000000FF) >> 0)) / 255.0,
+        };
+    }
+};
+
 pub const StatusText = struct {
     text: Text,
     // the texts' internal x/y
@@ -25,9 +43,9 @@ pub const Text = struct {
     text: []u8,
     size: f32,
     text_type: TextType = .medium,
-    color: u32 = 0xFFFFFF,
+    color: i32 = 0xFFFFFF,
     alpha: f32 = 1.0,
-    shadow_color: u32 = 0x000000,
+    shadow_color: i32 = 0x000000,
     shadow_alpha_mult: f32 = 0.5,
     shadow_texel_offset_mult: f32 = 6.0,
     max_width: f32 = @as(f32, std.math.maxInt(u32)),

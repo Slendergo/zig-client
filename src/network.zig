@@ -593,7 +593,7 @@ pub const Server = struct {
     inline fn handleNotification(reader: *utils.PacketReader, allocator: std.mem.Allocator) void {
         const object_id = reader.read(i32);
         const message = reader.read([]u8);
-        const color = @byteSwap(@as(u32, @bitCast(reader.read(ARGB))));
+        const color = @byteSwap(@as(i32, @bitCast(reader.read(ARGB))));
 
         if (map.findEntity(object_id)) |en| {
             const text = ui.Text{
