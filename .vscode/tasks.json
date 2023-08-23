@@ -6,7 +6,12 @@
         {
             "label": "Debug",
             "type": "shell",
-            "command": "zig build -Doptimize=Debug"
+            "command": "zig build -Doptimize=Debug",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         },
         {
             "label": "ReleaseSafe",
