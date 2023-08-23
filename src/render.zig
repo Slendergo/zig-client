@@ -761,7 +761,7 @@ inline fn drawQuadVerts(
     };
 }
 
-inline fn drawSquare(
+fn drawSquare(
     idx: u16,
     x1: f32,
     y1: f32,
@@ -1063,7 +1063,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                 const map_square_idx = x + y * @as(usize, @intCast(map.width));
                 const square = map.squares[map_square_idx];
-                if (square.tile_type == 0xFFFF)
+                if (square.tile_type == 0xFFFF or square.tile_type == 0xFF)
                     continue;
 
                 const screen_pos = camera.rotateAroundCamera(square.x, square.y);
@@ -1098,8 +1098,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     else => {},
                 }
 
-                const cos_half = camera.cos / 2.0;
-                const sin_half = camera.sin / 2.0;
+                const cos_half = camera.tile_cos / 2.0;
+                const sin_half = camera.tile_sin / 2.0;
                 drawSquare(
                     square_idx,
                     (cos_half + sin_half + screen_x) * camera.clip_scale_x,

@@ -5,7 +5,7 @@ const math = @import("std").math;
 const utils = @import("utils.zig");
 
 pub const px_per_tile: i16 = 88;
-pub const size_mult: f32 = 80.0 / (8.0 + @as(f32, @floatFromInt(pad)));
+pub const size_mult: f32 = 8.0;
 
 pub var x: f32 = 0.0;
 pub var y: f32 = 0.0;
@@ -13,6 +13,8 @@ pub var z: f32 = 0.0;
 
 pub var cos: f32 = 0.0;
 pub var sin: f32 = 0.0;
+pub var tile_cos: f32 = 0.0;
+pub var tile_sin: f32 = 0.0;
 pub var x_cos: f32 = 0.0;
 pub var y_cos: f32 = 0.0;
 pub var x_sin: f32 = 0.0;
@@ -51,6 +53,8 @@ pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
 
     cos = cos_angle * px_per_tile * scale;
     sin = sin_angle * px_per_tile * scale;
+    tile_cos = cos_angle * (px_per_tile + 1) * scale;
+    tile_sin = sin_angle * (px_per_tile + 1) * scale;
     x_cos = cos * clip_scale_x * 0.5;
     y_cos = cos * clip_scale_y * 0.5;
     x_sin = sin * clip_scale_x * 0.5;
