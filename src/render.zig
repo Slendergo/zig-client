@@ -1209,9 +1209,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     const angle = utils.halfBound(player.facing - camera.angle_unbound);
                     const pi_over_4 = std.math.pi / 4.0;
-                    const angle_div = @divFloor(angle, pi_over_4);
+                    const angle_div = (angle / pi_over_4) + 4;
 
-                    var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(angle_div + 4)) % 8;
+                    var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(@round(angle_div))) % 8;
 
                     sec = switch (sec) {
                         0, 7 => assets.left_dir,
