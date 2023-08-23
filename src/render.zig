@@ -448,20 +448,20 @@ inline fn drawWall(idx: u16, x: f32, y: f32, u: f32, v: f32, top_u: f32, top_v: 
     const y_base = -(x * -camera.sin + y * camera.cos + camera.clip_y) * camera.clip_scale_y;
     const y_base_top = -(x * -camera.sin + y * camera.cos + camera.clip_y - camera.px_per_tile * camera.scale) * camera.clip_scale_y;
 
-    const x1 = camera.x_cos + camera.x_sin + x_base;
-    const x2 = -camera.x_cos + camera.x_sin + x_base;
-    const x3 = -camera.x_cos - camera.x_sin + x_base;
-    const x4 = camera.x_cos - camera.x_sin + x_base;
+    const x1 = camera.pad_x_cos + camera.pad_x_sin + x_base;
+    const x2 = -camera.pad_x_cos + camera.pad_x_sin + x_base;
+    const x3 = -camera.pad_x_cos - camera.pad_x_sin + x_base;
+    const x4 = camera.pad_x_cos - camera.pad_x_sin + x_base;
 
-    const y1 = camera.y_sin - camera.y_cos + y_base;
-    const y2 = -camera.y_sin - camera.y_cos + y_base;
-    const y3 = -camera.y_sin + camera.y_cos + y_base;
-    const y4 = camera.y_sin + camera.y_cos + y_base;
+    const y1 = camera.pad_y_sin - camera.pad_y_cos + y_base;
+    const y2 = -camera.pad_y_sin - camera.pad_y_cos + y_base;
+    const y3 = -camera.pad_y_sin + camera.pad_y_cos + y_base;
+    const y4 = camera.pad_y_sin + camera.pad_y_cos + y_base;
 
-    const top_y1 = camera.y_sin - camera.y_cos + y_base_top;
-    const top_y2 = -camera.y_sin - camera.y_cos + y_base_top;
-    const top_y3 = -camera.y_sin + camera.y_cos + y_base_top;
-    const top_y4 = camera.y_sin + camera.y_cos + y_base_top;
+    const top_y1 = camera.pad_y_sin - camera.pad_y_cos + y_base_top;
+    const top_y2 = -camera.pad_y_sin - camera.pad_y_cos + y_base_top;
+    const top_y3 = -camera.pad_y_sin + camera.pad_y_cos + y_base_top;
+    const top_y4 = camera.pad_y_sin + camera.pad_y_cos + y_base_top;
 
     const floor_y: u32 = @intFromFloat(@floor(y));
     const floor_x: u32 = @intFromFloat(@floor(x));
@@ -1098,8 +1098,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     else => {},
                 }
 
-                const cos_half = camera.tile_cos / 2.0;
-                const sin_half = camera.tile_sin / 2.0;
+                const cos_half = camera.pad_cos / 2.0;
+                const sin_half = camera.pad_sin / 2.0;
                 drawSquare(
                     square_idx,
                     (cos_half + sin_half + screen_x) * camera.clip_scale_x,
