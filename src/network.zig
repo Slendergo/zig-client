@@ -153,10 +153,10 @@ pub const Server = struct {
 
     pub fn init(ip: []const u8, port: u16) ?Server {
         var stream = std.net.tcpConnectToAddress(std.net.Address.parseIp(ip, port) catch |address_error| {
-            std.log.err("Could not parse address {s}:{d}: {any}\n", .{ ip, port, address_error });
+            std.log.err("Could not parse address {s}:{d}: {any}", .{ ip, port, address_error });
             return null;
         }) catch |connect_error| {
-            std.log.err("Could not connect to address {s}:{d}: {any}\n", .{ ip, port, connect_error });
+            std.log.err("Could not connect to address {s}:{d}: {any}", .{ ip, port, connect_error });
             return null;
         };
 
@@ -824,7 +824,7 @@ pub const Server = struct {
                     }
                 }
 
-                std.log.err("Could not remove object with id {d}\n", .{drop});
+                std.log.err("Could not remove object with id {d}", .{drop});
             }
         }
 
