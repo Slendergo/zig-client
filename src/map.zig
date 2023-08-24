@@ -558,8 +558,7 @@ pub const Player = struct {
             self.next_bullet_id = bullet_id;
             const x = self.x + @cos(current_angle) * 0.25;
             const y = self.y + @sin(current_angle) * 0.25;
-            // zig fmt: off
-            var proj = Projectile{ 
+            var proj = Projectile{
                 .x = x,
                 .y = y,
                 .props = proj_props,
@@ -568,7 +567,6 @@ pub const Player = struct {
                 .bullet_id = bullet_id,
                 .owner_id = self.obj_id,
             };
-            // zig fmt: on
             proj.addToMap(false);
 
             if (main.server) |*server| {
@@ -1060,7 +1058,7 @@ pub const Projectile = struct {
                     const text = ui.Text{
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage_value}) catch unreachable,
                         .text_type = .bold,
-                        .size = 16,
+                        .size = 22,
                         .color = damage_color,
                     };
 
@@ -1068,6 +1066,7 @@ pub const Projectile = struct {
                         .obj_id = player.?.obj_id,
                         .start_time = time,
                         .text = text,
+                        .initial_size = 22,
                     }) catch |e| {
                         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
                     };
@@ -1099,7 +1098,7 @@ pub const Projectile = struct {
                     const text = ui.Text{
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable,
                         .text_type = .bold,
-                        .size = 16,
+                        .size = 22,
                         .color = damage_color,
                     };
 
@@ -1107,6 +1106,7 @@ pub const Projectile = struct {
                         .obj_id = object.?.obj_id,
                         .start_time = time,
                         .text = text,
+                        .initial_size = 22,
                     }) catch |e| {
                         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage, e });
                     };

@@ -24,15 +24,14 @@ pub const RGBF32 = extern struct {
 pub const Image = struct {
     x: f32,
     y: f32,
-    
 };
 
 pub const StatusText = struct {
     text: Text,
+    initial_size: f32,
     // the texts' internal x/y
     screen_x: f32 = 0.0,
     screen_y: f32 = 0.0,
-    initial_size: f32 = 22.0,
     lifetime: i32 = 500,
     start_time: i32 = 0,
     obj_id: i32 = -1,

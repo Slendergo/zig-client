@@ -230,15 +230,13 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         const s_mod = zgpu.createWgslShaderModule(gctx.device, @embedFile("./assets/shaders/base.wgsl"), null);
         defer s_mod.release();
 
-        // zig fmt: off
-        const color_targets = [_]zgpu.wgpu.ColorTargetState{.{ 
-                .format = zgpu.GraphicsContext.swapchain_format, 
-                .blend = &zgpu.wgpu.BlendState{ 
-                    .color = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha }, 
-                    .alpha = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha } 
-                } 
+        const color_targets = [_]zgpu.wgpu.ColorTargetState{.{
+            .format = zgpu.GraphicsContext.swapchain_format,
+            .blend = &zgpu.wgpu.BlendState{
+                .color = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha },
+                .alpha = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha },
+            },
         }};
-        // zig fmt: on
 
         const vertex_attributes = [_]zgpu.wgpu.VertexAttribute{
             .{ .format = .float32x2, .offset = @offsetOf(BaseVertexData, "pos"), .shader_location = 0 },
@@ -339,15 +337,14 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         const s_mod = zgpu.createWgslShaderModule(gctx.device, @embedFile("./assets/shaders/text.wgsl"), null);
         defer s_mod.release();
 
-        // zig fmt: off
-        const color_targets = [_]zgpu.wgpu.ColorTargetState{.{ 
+        const color_targets = [_]zgpu.wgpu.ColorTargetState{.{
             .format = zgpu.GraphicsContext.swapchain_format,
-            .blend = &zgpu.wgpu.BlendState{ 
-                .color = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha }, 
-                .alpha = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha } 
-            } 
+            .blend = &zgpu.wgpu.BlendState{
+                .color = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha },
+                .alpha = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha },
+            },
         }};
-        // zig fmt: on
+
         const vertex_attributes = [_]zgpu.wgpu.VertexAttribute{
             .{ .format = .float32x2, .offset = @offsetOf(TextVertexData, "pos"), .shader_location = 0 },
             .{ .format = .float32x2, .offset = @offsetOf(TextVertexData, "uv"), .shader_location = 1 },
@@ -397,15 +394,14 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         const s_mod = zgpu.createWgslShaderModule(gctx.device, @embedFile("./assets/shaders/light.wgsl"), null);
         defer s_mod.release();
 
-        // zig fmt: off
-        const color_targets = [_]zgpu.wgpu.ColorTargetState{.{ 
-            .format = zgpu.GraphicsContext.swapchain_format, 
+        const color_targets = [_]zgpu.wgpu.ColorTargetState{.{
+            .format = zgpu.GraphicsContext.swapchain_format,
             .blend = &zgpu.wgpu.BlendState{
-                .color = .{ .src_factor = .src_alpha, .dst_factor = .one }, 
-                .alpha = .{ .src_factor = .zero, .dst_factor = .zero } 
-            } 
+                .color = .{ .src_factor = .src_alpha, .dst_factor = .one },
+                .alpha = .{ .src_factor = .zero, .dst_factor = .zero },
+            },
         }};
-        // zig fmt: on
+
         const vertex_attributes = [_]zgpu.wgpu.VertexAttribute{
             .{ .format = .float32x2, .offset = @offsetOf(LightVertexData, "pos"), .shader_location = 0 },
             .{ .format = .float32x2, .offset = @offsetOf(LightVertexData, "uv"), .shader_location = 1 },

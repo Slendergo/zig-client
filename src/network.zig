@@ -7,43 +7,41 @@ const game_data = @import("game_data.zig");
 const ui = @import("ui.zig");
 const camera = @import("camera.zig");
 
-// zig fmt: off
-pub const ObjectSlot = extern struct { 
+pub const ObjectSlot = extern struct {
     object_id: i32 align(1),
-    slot_id: u8 align(1), 
+    slot_id: u8 align(1),
     object_type: u16 align(1),
 };
 
-pub const Position = extern struct { 
-    x: f32, 
-    y: f32 
+pub const Position = extern struct {
+    x: f32,
+    y: f32,
 };
 
-pub const TimedPosition = extern struct { 
-    time: i32, 
-    position: Position 
+pub const TimedPosition = extern struct {
+    time: i32,
+    position: Position,
 };
 
-pub const TileData = extern struct { 
-    x: i16, 
-    y: i16, 
-    tile_type: u16 
+pub const TileData = extern struct {
+    x: i16,
+    y: i16,
+    tile_type: u16,
 };
 
-pub const TradeItem = extern struct { 
-    item: i32 align(1), 
-    slot_type: i32 align(1), 
+pub const TradeItem = extern struct {
+    item: i32 align(1),
+    slot_type: i32 align(1),
     tradeable: bool align(1),
-    included: bool align(1), 
+    included: bool align(1),
 };
 
-pub const ARGB = packed struct(u32) { 
-    a: u8, 
-    r: u8, 
-    g: u8, 
-    b: u8
+pub const ARGB = packed struct(u32) {
+    a: u8,
+    r: u8,
+    g: u8,
+    b: u8,
 };
-// zig fmt: on
 
 const EffectType = enum(u8) {
     unknown = 0,
@@ -377,8 +375,7 @@ pub const Server = struct {
         var current_angle = angle - total_angle / 2.0;
         const proj_props = owner_props.?.projectiles[bullet_type];
         for (0..num_shots) |i| {
-            // zig fmt: off
-            var proj = map.Projectile{ 
+            var proj = map.Projectile{
                 .x = starting_pos.x,
                 .y = starting_pos.y,
                 .damage = damage,
@@ -389,7 +386,6 @@ pub const Server = struct {
                 .owner_id = owner_id,
                 .damage_players = true,
             };
-            // zig fmt: on
             proj.addToMap(true);
 
             current_angle += angle_inc;
@@ -615,6 +611,7 @@ pub const Server = struct {
                         .start_time = main.current_time,
                         .lifetime = 2000,
                         .text = text,
+                        .initial_size = 22,
                     }) catch unreachable;
                 },
                 .object => |*obj| {
@@ -623,6 +620,7 @@ pub const Server = struct {
                         .start_time = main.current_time,
                         .lifetime = 2000,
                         .text = text,
+                        .initial_size = 22,
                     }) catch unreachable;
                 },
                 else => {},
@@ -684,8 +682,7 @@ pub const Server = struct {
                     const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
                     var current_angle = angle - total_angle / 2.0;
                     for (0..num_shots) |i| {
-                        // zig fmt: off
-                        var proj = map.Projectile{ 
+                        var proj = map.Projectile{
                             .x = starting_pos.x,
                             .y = starting_pos.y,
                             .damage = damage,
@@ -695,7 +692,6 @@ pub const Server = struct {
                             .bullet_id = bullet_id +% @as(u8, @intCast(i)), // this is wrong but whatever
                             .owner_id = owner_id,
                         };
-                        // zig fmt: on
                         proj.addToMap(true);
 
                         current_angle += angle_inc;

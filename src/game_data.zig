@@ -4,8 +4,7 @@ const utils = @import("utils.zig");
 const asset_dir = @import("build_options").asset_dir;
 
 const item_files = [_][]const u8{ "Equip", "Dyes", "Textiles" };
-// zig fmt: off
-const object_files = [_][]const u8 {
+const object_files = [_][]const u8{
     "Projectiles",     "Permapets",       "Players",
     "Objects",         "TestingObjects",  "StaticObjects",
     "TutorialObjects", "Monsters",        "Pets",
@@ -18,7 +17,6 @@ const object_files = [_][]const u8 {
     "GhostShip",       "MadLab",          "CaveOfAThousandTreasures",
     "CandyLand",       "HauntedCemetery",
 };
-// zig fmt: on
 const ground_files = [_][]const u8{"Ground"};
 const region_files = [_][]const u8{"Regions"};
 
@@ -85,15 +83,13 @@ pub const TextureData = struct {
     index: u16,
     animated: bool,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator, animated: bool) !TextureData {
-        return TextureData {
+        return TextureData{
             .sheet = try node.getValueAlloc("File", allocator, "Unknown"),
             .index = try node.getValueInt("Index", u16, 0),
             .animated = animated,
         };
     }
-    // zig fmt: on
 };
 
 pub const CharacterSkin = struct {
@@ -101,15 +97,17 @@ pub const CharacterSkin = struct {
     name: []const u8,
     texture: TextureData,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) CharacterSkin {
-        return CharacterSkin {
+        return CharacterSkin{
             .objType = try node.getAttributeInt("type", u16, 0),
             .name = try node.getAttributeAlloc("id", allocator, "Unknown"),
-            .texture = try TextureData.parse(node.findChild("AnimatedTexture") orelse @panic("Could not parse CharacterClass"), allocator, false),
+            .texture = try TextureData.parse(
+                node.findChild("AnimatedTexture") orelse @panic("Could not parse CharacterClass"),
+                allocator,
+                false,
+            ),
         };
     }
-    // zig fmt: on
 };
 
 pub const CharacterClass = struct {
@@ -124,7 +122,6 @@ pub const CharacterClass = struct {
     texture: TextureData,
     skins: ?[]CharacterSkin,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !CharacterClass {
         var slot_list = std.ArrayList(i8).init(allocator);
         defer slot_list.deinit();
@@ -138,7 +135,7 @@ pub const CharacterClass = struct {
         while (equip_iter.next()) |s|
             try equip_list.append(try std.fmt.parseInt(i16, s, 0));
 
-        return CharacterClass {
+        return CharacterClass{
             .obj_type = try node.getAttributeInt("type", u16, 0),
             .name = try node.getAttributeAlloc("id", allocator, "Unknown"),
             .desc = try node.getValueAlloc("Description", allocator, "Unknown"),
@@ -148,24 +145,21 @@ pub const CharacterClass = struct {
             .slot_types = slot_list.items,
             .equipment = equip_list.items,
             .texture = try TextureData.parse(node.findChild("AnimatedTexture") orelse @panic("Could not parse CharacterClass"), allocator, false),
-            .skins = null
+            .skins = null,
         };
     }
-    // zig fmt: on
 };
 
 pub const AnimFrame = struct {
     time: f32,
     tex: TextureData,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !AnimFrame {
-        return AnimFrame {
+        return AnimFrame{
             .time = try node.getAttributeFloat("time", f32, 0.0) * 1000,
-            .tex = try TextureData.parse(node.findChild("Texture").?, allocator, false)
+            .tex = try TextureData.parse(node.findChild("Texture").?, allocator, false),
         };
     }
-    // zig fmt: on
 };
 
 pub const AnimProps = struct {
@@ -175,7 +169,6 @@ pub const AnimProps = struct {
     sync: bool,
     frames: []AnimFrame,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !AnimProps {
         var frame_list = std.ArrayList(AnimFrame).init(allocator);
         defer frame_list.deinit();
@@ -183,15 +176,14 @@ pub const AnimProps = struct {
         while (frame_iter.next()) |animNode|
             try frame_list.append(try AnimFrame.parse(animNode, allocator));
 
-        return AnimProps {
+        return AnimProps{
             .prob = try node.getAttributeFloat("prob", f32, 0.0),
             .period = try node.getAttributeInt("period", u16, 0),
             .period_jitter = try node.getAttributeInt("periodJitter", u16, 0),
             .sync = node.attributeExists("sync"),
-            .frames = frame_list.items
+            .frames = frame_list.items,
         };
     }
-    // zig fmt: on
 };
 
 pub const GroundAnimType = enum(u8) {
@@ -307,7 +299,6 @@ pub const ObjProps = struct {
     hit_sound: []const u8,
     death_sound: []const u8,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ObjProps {
         const obj_id = try node.getAttributeAlloc("id", allocator, "");
         var min_size = try node.getValueFloat("MinSize", f32, 100.0) / 100.0;
@@ -325,7 +316,7 @@ pub const ObjProps = struct {
             try proj_list.append(try ProjProps.parse(proj_node, allocator));
 
         const float_node = node.findChild("Float");
-        return ObjProps {
+        return ObjProps{
             .obj_type = try node.getAttributeInt("type", u16, 0),
             .obj_id = obj_id,
             .display_id = try node.getValueAlloc("DisplayId", allocator, obj_id),
@@ -367,7 +358,6 @@ pub const ObjProps = struct {
             .death_sound = try node.getValueAlloc("DeathSound", allocator, "Unknown"),
         };
     }
-    // zig fmt: on
 
     pub fn getSize(self: *const ObjProps) f32 {
         if (self.min_size == self.max_size)
@@ -568,7 +558,6 @@ pub const ProjProps = struct {
     heat_seek_radius: f32,
     heat_seek_delay: u16,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ProjProps {
         var effect_it = node.iterate(&.{}, "ConditionEffect");
         var effect_list = std.ArrayList(ConditionEffect).init(allocator);
@@ -576,15 +565,15 @@ pub const ProjProps = struct {
         while (effect_it.next()) |effect_node|
             try effect_list.append(try ConditionEffect.parse(effect_node));
 
-        return ProjProps {
+        return ProjProps{
             .texture_data = try parseTexture(node, allocator),
             .angle_correction = try node.getValueFloat("AngleCorrection", f32, 0.0) * (std.math.pi / 4.0),
             .rotation = try node.getValueFloat("Rotation", f32, 0.0),
             .light_color = try node.getValueInt("LightColor", i32, -1),
             .light_intensity = try node.getValueFloat("LightIntensity", f32, 0.1),
             .light_radius = try node.getValueFloat("LightRadius", f32, 1.0),
-            .bullet_type = try node.getAttributeInt("type", i32, 0), 
-            .object_id = try node.getValueAlloc("ObjectId", allocator, ""), 
+            .bullet_type = try node.getAttributeInt("type", i32, 0),
+            .object_id = try node.getValueAlloc("ObjectId", allocator, ""),
             .lifetime_ms = try node.getValueInt("LifetimeMS", u16, 0),
             .speed = try node.getValueFloat("Speed", f32, 0) / 10000.0,
             .size = try node.getValueFloat("Size", f32, 100) / 100.0,
@@ -617,7 +606,6 @@ pub const ProjProps = struct {
             .heat_seek_delay = try node.getValueInt("HeatSeekDelay", u16, 0),
         };
     }
-    // zig fmt: on
 };
 
 pub const EffectProps = struct {
@@ -836,9 +824,8 @@ pub const ActivationData = struct {
     effect: ConditionEnum,
     range: f32,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ActivationData {
-        return ActivationData {
+        return ActivationData{
             .activation_type = ActivationType.fromString(node.currentValue() orelse "IncrementStat"),
             .object_id = try node.getAttributeAlloc("objectId", allocator, ""),
             .id = try node.getAttributeAlloc("id", allocator, ""),
@@ -849,24 +836,20 @@ pub const ActivationData = struct {
             .radius = try node.getAttributeFloat("maxDistance", f32, 0.0),
             .total_damage = try node.getAttributeInt("totalDamage", u32, 0),
             .range = try node.getAttributeFloat("condDuration", f32, 0.0),
-
         };
     }
-    // zig fmt: on
 };
 
 pub const StatIncrementData = struct {
     stat: StatType,
     amount: u16,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node) !StatIncrementData {
-        return StatIncrementData {
+        return StatIncrementData{
             .stat = StatType.fromString(node.getAttribute("stat") orelse "MaxHP"),
             .amount = try node.getAttributeInt("amount", u16, 0),
         };
     }
-    // zig fmt: on
 };
 
 pub const EffectInfo = struct {
@@ -913,7 +896,6 @@ pub const ItemProps = struct {
     timer: f32,
     extra_tooltip_data: ?[]EffectInfo,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ItemProps {
         var incr_it = node.iterate(&.{}, "IncrementStat");
         var incr_list = std.ArrayList(StatIncrementData).init(allocator);
@@ -933,7 +915,7 @@ pub const ItemProps = struct {
         while (extra_tooltip_it.next()) |extra_tooltip_node|
             try extra_tooltip_list.append(try EffectInfo.parse(extra_tooltip_node, allocator));
 
-        return ItemProps {
+        return ItemProps{
             .consumable = node.elementExists("Consumable"),
             .untradeable = node.elementExists("Soulbound"),
             .usable = node.elementExists("Usable"),
@@ -966,7 +948,6 @@ pub const ItemProps = struct {
             .extra_tooltip_data = if (node.elementExists("ExtraTooltipData")) try allocator.dupe(EffectInfo, extra_tooltip_list.items) else null,
         };
     }
-    // zig fmt: on
 };
 
 pub const ItemType = enum(i8) {

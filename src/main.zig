@@ -29,17 +29,15 @@ pub const ServerData = struct {
     max_players: u16,
     admin_only: bool,
 
-    // zig fmt: off
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ServerData {
-        return ServerData {
+        return ServerData{
             .name = try node.getValueAllocZ("Name", allocator, "Unknown"),
             .dns = try node.getValueAllocZ("DNS", allocator, "127.0.0.1"),
             .port = try node.getValueInt("Port", u16, 2050),
             .max_players = try node.getValueInt("MaxPlayers", u16, 0),
-            .admin_only = node.elementExists("AdminOnly") and std.mem.eql(u8, node.getValue("AdminOnly").?, "true")
+            .admin_only = node.elementExists("AdminOnly") and std.mem.eql(u8, node.getValue("AdminOnly").?, "true"),
         };
     }
-    // zig fmt: on
 };
 
 pub const AccountData = struct {
@@ -67,10 +65,9 @@ pub const CharacterData = struct {
     has_backpack: bool = false,
     equipment: [20]u16 = std.mem.zeroes([20]u16),
 
-    // zig fmt: off
     pub fn parse(allocator: std.mem.Allocator, node: xml.Node, id: u32) !CharacterData {
         const obj_type = try node.getValueInt("ObjectType", u16, 0);
-        return CharacterData {
+        return CharacterData{
             .id = id,
             .obj_type = obj_type,
             .tex1 = try node.getValueInt("Tex1", u32, 0),
@@ -82,7 +79,6 @@ pub const CharacterData = struct {
             .name = try allocator.dupeZ(u8, game_data.obj_type_to_name.get(obj_type) orelse "Unknown Class"),
         };
     }
-    // zig fmt: on
 };
 
 pub const ScreenType = enum(u8) { main_menu, char_select, char_creation, map_editor, in_game };

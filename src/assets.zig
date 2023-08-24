@@ -614,7 +614,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
 
         var top_mask_data = ground_masks[0x1];
         top_mask_data.removePadding();
-        
+
         left_top_mask_uv = [4]f32{ left_mask_data.tex_u, left_mask_data.tex_v, top_mask_data.tex_u, top_mask_data.tex_v };
 
         var right_mask_rect = ground_masks[0x2];
