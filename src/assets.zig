@@ -65,21 +65,54 @@ pub const CharacterData = struct {
 
 pub const AnimEnemyData = struct {
     // left/right dir
-    walk_anims: [2][3]zstbrp.PackRect,
-    attack_anims: [2][2]zstbrp.PackRect,
+    walk_anims: [2][3]AtlasData,
+    attack_anims: [2][2]AtlasData,
 };
 
 pub const AnimPlayerData = struct {
     // all dirs
-    walk_anims: [4][3]zstbrp.PackRect,
-    attack_anims: [4][2]zstbrp.PackRect,
+    walk_anims: [4][3]AtlasData,
+    attack_anims: [4][2]AtlasData,
 };
 
-pub const FloatRect = struct {
-    x: f32,
-    y: f32,
-    w: f32,
-    h: f32,
+pub const AtlasData = struct {
+    tex_u: f32,
+    tex_v: f32,
+    tex_w: f32,
+    tex_h: f32,
+
+    pub fn removePadding(self: *AtlasData) void {
+        const float_pad: f32 = padding;
+        self.tex_u += float_pad / @as(f32, atlas_width);
+        self.tex_v += float_pad / @as(f32, atlas_height);
+        self.tex_w -= float_pad * 2 / @as(f32, atlas_width);
+        self.tex_h -= float_pad * 2 / @as(f32, atlas_height);
+    }
+
+    pub inline fn fromRaw(u: u32, v: u32, w: u32, h: u32) AtlasData {
+        return AtlasData{
+            .tex_u = @as(f32, @floatFromInt(u)) / @as(f32, atlas_width),
+            .tex_v = @as(f32, @floatFromInt(v)) / @as(f32, atlas_height),
+            .tex_w = @as(f32, @floatFromInt(w)) / @as(f32, atlas_width),
+            .tex_h = @as(f32, @floatFromInt(h)) / @as(f32, atlas_height),
+        };
+    }
+
+    pub inline fn texURaw(self: AtlasData) f32 {
+        return self.tex_u * atlas_width;
+    }
+
+    pub inline fn texVRaw(self: AtlasData) f32 {
+        return self.tex_v * atlas_height;
+    }
+
+    pub inline fn texWRaw(self: AtlasData) f32 {
+        return self.tex_w * atlas_width;
+    }
+
+    pub inline fn texHRaw(self: AtlasData) f32 {
+        return self.tex_h * atlas_height;
+    }
 };
 
 const AudioState = struct {
@@ -180,19 +213,18 @@ pub var medium_chars: [256]CharacterData = undefined;
 pub var medium_italic_atlas: zstbi.Image = undefined;
 pub var medium_italic_chars: [256]CharacterData = undefined;
 
-pub var rects: std.StringHashMap([]zstbrp.PackRect) = undefined;
+pub var atlas_data: std.StringHashMap([]AtlasData) = undefined;
 pub var anim_enemies: std.StringHashMap([]AnimEnemyData) = undefined;
 pub var anim_players: std.StringHashMap([]AnimPlayerData) = undefined;
 
 pub var left_top_mask_uv: [4]f32 = undefined;
 pub var right_bottom_mask_uv: [4]f32 = undefined;
-pub var wall_backface_uv: [2]f32 = undefined;
-pub var empty_bar_rect: FloatRect = undefined;
-pub var hp_bar_rect: FloatRect = undefined;
-pub var mp_bar_rect: FloatRect = undefined;
-pub var particle_rect: FloatRect = undefined;
-
-pub var error_rect: zstbrp.PackRect = undefined;
+pub var wall_backface_data: AtlasData = undefined;
+pub var empty_bar_data: AtlasData = undefined;
+pub var hp_bar_data: AtlasData = undefined;
+pub var mp_bar_data: AtlasData = undefined;
+pub var particle_data: AtlasData = undefined;
+pub var error_data: AtlasData = undefined;
 pub var error_anim: AnimEnemyData = undefined;
 
 fn isImageEmpty(img: zstbi.Image, x: usize, y: usize, w: u32, h: u32) bool {
@@ -213,6 +245,8 @@ inline fn addImage(comptime sheet_name: []const u8, comptime image_name: []const
     const img_size = cut_width * cut_height;
     var len = @divFloor(img.width * img.height, img_size);
     var current_rects = try allocator.alloc(zstbrp.PackRect, len);
+    defer allocator.free(current_rects);
+    var data = try allocator.alloc(AtlasData, len);
 
     for (0..len) |i| {
         const cur_src_x = (i * cut_width) % img.width;
@@ -247,7 +281,11 @@ inline fn addImage(comptime sheet_name: []const u8, comptime image_name: []const
             }
         }
 
-        try rects.put(sheet_name, current_rects);
+        for (current_rects, 0..) |rect, i| {
+            data[i] = AtlasData.fromRaw(rect.x, rect.y, rect.w, rect.h);
+        }
+
+        try atlas_data.put(sheet_name, data);
     } else {
         std.log.err("Could not pack " ++ image_name ++ " into the atlas", .{});
     }
@@ -285,12 +323,13 @@ inline fn addAnimEnemy(comptime sheet_name: []const u8, comptime image_name: []c
         for (0..2) |i| {
             for (0..len) |j| {
                 const rect = current_rects[i * len + j];
+                const data = AtlasData.fromRaw(rect.x, rect.y, rect.w, rect.h);
                 const frame_idx = j % 5;
                 const set_idx = @divFloor(j, 5);
                 if (frame_idx >= 3) {
-                    enemy_data[set_idx].attack_anims[i][frame_idx - 3] = rect;
+                    enemy_data[set_idx].attack_anims[i][frame_idx - 3] = data;
                 } else {
-                    enemy_data[set_idx].walk_anims[i][frame_idx] = rect;
+                    enemy_data[set_idx].walk_anims[i][frame_idx] = data;
                 }
 
                 const cur_atlas_x = rect.x + padding;
@@ -361,6 +400,7 @@ inline fn addAnimPlayer(comptime sheet_name: []const u8, comptime image_name: []
         left_sub = 0;
         for (0..len) |j| {
             const rect = current_rects[j];
+            const data = AtlasData.fromRaw(rect.x, rect.y, rect.w, rect.h);
             const frame_idx = j % 5;
             const set_idx = @divFloor(j, 5);
             if (set_idx % 4 == 1 and frame_idx == 0) {
@@ -369,9 +409,9 @@ inline fn addAnimPlayer(comptime sheet_name: []const u8, comptime image_name: []
 
             const data_idx = @divFloor(set_idx, 4);
             if (frame_idx >= 3) {
-                player_data[data_idx].attack_anims[set_idx % 4][frame_idx - 3] = rect;
+                player_data[data_idx].attack_anims[set_idx % 4][frame_idx - 3] = data;
             } else {
-                player_data[data_idx].walk_anims[set_idx % 4][frame_idx] = rect;
+                player_data[data_idx].walk_anims[set_idx % 4][frame_idx] = data;
             }
             const cur_atlas_x = rect.x + padding;
             const cur_atlas_y = rect.y + padding;
@@ -430,7 +470,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     medium_atlas.deinit();
     medium_italic_atlas.deinit();
 
-    var rects_iter = rects.valueIterator();
+    var rects_iter = atlas_data.valueIterator();
     while (rects_iter.next()) |sheet_rects| {
         if (sheet_rects.len > 0) {
             allocator.free(sheet_rects.*);
@@ -451,13 +491,13 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         }
     }
 
-    rects.deinit();
+    atlas_data.deinit();
     anim_enemies.deinit();
     anim_players.deinit();
 }
 
 pub fn init(allocator: std.mem.Allocator) !void {
-    rects = std.StringHashMap([]zstbrp.PackRect).init(allocator);
+    atlas_data = std.StringHashMap([]AtlasData).init(allocator);
     anim_enemies = std.StringHashMap([]AnimEnemyData).init(allocator);
     anim_players = std.StringHashMap([]AnimPlayerData).init(allocator);
 
@@ -481,7 +521,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         );
         music.setLooping(true);
         music.setVolume(settings.music_volume);
-        // try music.start();
+        try music.start();
     }
 
     light_tex = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/Light.png", 4);
@@ -568,80 +608,49 @@ pub fn init(allocator: std.mem.Allocator) !void {
     if (settings.print_atlas)
         try zstbi.Image.writeToFile(atlas, "atlas.png", .png);
 
-    const mask_rects = rects.get("groundMasks");
-    if (mask_rects != null) {
-        const left_mask_rect = mask_rects.?[0];
-        const top_mask_rect = mask_rects.?[1];
-        left_top_mask_uv = [4]f32{
-            @as(f32, @floatFromInt(left_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
-            @as(f32, @floatFromInt(left_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
-            @as(f32, @floatFromInt(top_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
-            @as(f32, @floatFromInt(top_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
-        };
+    if (atlas_data.get("groundMasks")) |ground_masks| {
+        var left_mask_data = ground_masks[0x0];
+        left_mask_data.removePadding();
 
-        const right_mask_rect = mask_rects.?[2];
-        const bottom_mask_rect = mask_rects.?[3];
-        right_bottom_mask_uv = [4]f32{
-            @as(f32, @floatFromInt(right_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
-            @as(f32, @floatFromInt(right_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
-            @as(f32, @floatFromInt(bottom_mask_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
-            @as(f32, @floatFromInt(bottom_mask_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
-        };
+        var top_mask_data = ground_masks[0x1];
+        top_mask_data.removePadding();
+        
+        left_top_mask_uv = [4]f32{ left_mask_data.tex_u, left_mask_data.tex_v, top_mask_data.tex_u, top_mask_data.tex_v };
+
+        var right_mask_rect = ground_masks[0x2];
+        right_mask_rect.removePadding();
+
+        var bottom_mask_rect = ground_masks[0x3];
+        bottom_mask_rect.removePadding();
+
+        right_bottom_mask_uv = [4]f32{ right_mask_rect.tex_u, right_mask_rect.tex_v, bottom_mask_rect.tex_u, bottom_mask_rect.tex_v };
     }
 
-    const wall_backface_rect = rects.get("wallBackface").?[0x0];
-    wall_backface_uv = [2]f32{
-        @as(f32, @floatFromInt(wall_backface_rect.x + padding)) / @as(f32, @floatFromInt(atlas_width)),
-        @as(f32, @floatFromInt(wall_backface_rect.y + padding)) / @as(f32, @floatFromInt(atlas_height)),
-    };
-
-    const particle = rects.get("particle").?[0x0];
-    particle_rect = FloatRect{
-        .x = @as(f32, @floatFromInt(particle.x)) / @as(f32, @floatFromInt(atlas_width)),
-        .y = @as(f32, @floatFromInt(particle.y)) / @as(f32, @floatFromInt(atlas_height)),
-        .w = @as(f32, @floatFromInt(particle.w)) / @as(f32, @floatFromInt(atlas_width)),
-        .h = @as(f32, @floatFromInt(particle.h)) / @as(f32, @floatFromInt(atlas_height)),
-    };
-
-    const bar_rects = rects.get("bars");
-    if (bar_rects != null) {
-        const empty_bar_rect_rp = bar_rects.?[0x4];
-        empty_bar_rect = FloatRect{
-            .x = @as(f32, @floatFromInt(empty_bar_rect_rp.x)) / @as(f32, @floatFromInt(atlas_width)),
-            .y = @as(f32, @floatFromInt(empty_bar_rect_rp.y)) / @as(f32, @floatFromInt(atlas_height)),
-            .w = @as(f32, @floatFromInt(empty_bar_rect_rp.w)) / @as(f32, @floatFromInt(atlas_width)),
-            .h = @as(f32, @floatFromInt(empty_bar_rect_rp.h)) / @as(f32, @floatFromInt(atlas_height)),
-        };
-
-        const hp_bar_rect_rp = bar_rects.?[0x0];
-        hp_bar_rect = FloatRect{
-            .x = @as(f32, @floatFromInt(hp_bar_rect_rp.x)) / @as(f32, @floatFromInt(atlas_width)),
-            .y = @as(f32, @floatFromInt(hp_bar_rect_rp.y)) / @as(f32, @floatFromInt(atlas_height)),
-            .w = @as(f32, @floatFromInt(hp_bar_rect_rp.w)) / @as(f32, @floatFromInt(atlas_width)),
-            .h = @as(f32, @floatFromInt(hp_bar_rect_rp.h)) / @as(f32, @floatFromInt(atlas_height)),
-        };
-
-        const mp_bar_rect_rp = bar_rects.?[0x1];
-        mp_bar_rect = FloatRect{
-            .x = @as(f32, @floatFromInt(mp_bar_rect_rp.x)) / @as(f32, @floatFromInt(atlas_width)),
-            .y = @as(f32, @floatFromInt(mp_bar_rect_rp.y)) / @as(f32, @floatFromInt(atlas_height)),
-            .w = @as(f32, @floatFromInt(mp_bar_rect_rp.w)) / @as(f32, @floatFromInt(atlas_width)),
-            .h = @as(f32, @floatFromInt(mp_bar_rect_rp.h)) / @as(f32, @floatFromInt(atlas_height)),
-        };
+    if (atlas_data.get("wallBackface")) |backfaces| {
+        wall_backface_data = backfaces[0x0];
+        wall_backface_data.removePadding();
     }
 
-    const error_rects = rects.get("errorTexture");
-    if (error_rects != null) {
-        error_rect = error_rects.?[0];
+    if (atlas_data.get("particle")) |particles| {
+        particle_data = particles[0x0];
+    }
 
+    if (atlas_data.get("bars")) |bars| {
+        hp_bar_data = bars[0x0];
+        mp_bar_data = bars[0x1];
+        empty_bar_data = bars[0x4];
+    }
+
+    if (atlas_data.get("errorTexture")) |error_tex| {
+        error_data = error_tex[0x0];
         error_anim = AnimEnemyData{
-            .walk_anims = [2][3]zstbrp.PackRect{
-                [_]zstbrp.PackRect{ error_rect, error_rect, error_rect },
-                [_]zstbrp.PackRect{ error_rect, error_rect, error_rect },
+            .walk_anims = [2][3]AtlasData{
+                [_]AtlasData{ error_data, error_data, error_data },
+                [_]AtlasData{ error_data, error_data, error_data },
             },
-            .attack_anims = [2][2]zstbrp.PackRect{
-                [_]zstbrp.PackRect{ error_rect, error_rect },
-                [_]zstbrp.PackRect{ error_rect, error_rect },
+            .attack_anims = [2][2]AtlasData{
+                [_]AtlasData{ error_data, error_data },
+                [_]AtlasData{ error_data, error_data },
             },
         };
     }

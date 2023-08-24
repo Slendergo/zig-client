@@ -23,10 +23,7 @@ pub const Square = struct {
     tile_type: u16 = 0xFFFF,
     x: f32 = 0.0,
     y: f32 = 0.0,
-    tex_u: f32 = -1.0,
-    tex_v: f32 = -1.0,
-    tex_w: f32 = 0.0,
-    tex_h: f32 = 0.0,
+    atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     left_blend_u: f32 = -1.0,
     left_blend_v: f32 = -1.0,
     top_blend_u: f32 = -1.0,
@@ -71,13 +68,13 @@ pub const Square = struct {
                 if (game_data.ground_type_to_props.get(left_sq.tile_type)) |left_props| {
                     const left_blend_prio = left_props.blend_prio;
                     if (left_blend_prio > current_prio) {
-                        square.left_blend_u = left_sq.tex_u;
-                        square.left_blend_v = left_sq.tex_v;
+                        square.left_blend_u = left_sq.atlas_data.tex_u;
+                        square.left_blend_v = left_sq.atlas_data.tex_v;
                         squares[left_idx].right_blend_u = -1.0;
                         squares[left_idx].right_blend_v = -1.0;
                     } else if (left_blend_prio < current_prio) {
-                        squares[left_idx].right_blend_u = square.tex_u;
-                        squares[left_idx].right_blend_v = square.tex_v;
+                        squares[left_idx].right_blend_u = square.atlas_data.tex_u;
+                        squares[left_idx].right_blend_v = square.atlas_data.tex_v;
                         square.left_blend_u = -1.0;
                         square.left_blend_v = -1.0;
                     } else {
@@ -102,13 +99,13 @@ pub const Square = struct {
                 if (game_data.ground_type_to_props.get(top_sq.tile_type)) |top_props| {
                     const top_blend_prio = top_props.blend_prio;
                     if (top_blend_prio > current_prio) {
-                        square.top_blend_u = top_sq.tex_u;
-                        square.top_blend_v = top_sq.tex_v;
+                        square.top_blend_u = top_sq.atlas_data.tex_u;
+                        square.top_blend_v = top_sq.atlas_data.tex_v;
                         squares[top_idx].bottom_blend_u = -1.0;
                         squares[top_idx].bottom_blend_v = -1.0;
                     } else if (top_blend_prio < current_prio) {
-                        squares[top_idx].bottom_blend_u = square.tex_u;
-                        squares[top_idx].bottom_blend_v = square.tex_v;
+                        squares[top_idx].bottom_blend_u = square.atlas_data.tex_u;
+                        squares[top_idx].bottom_blend_v = square.atlas_data.tex_v;
                         square.top_blend_u = -1.0;
                         square.top_blend_v = -1.0;
                     } else {
@@ -133,13 +130,13 @@ pub const Square = struct {
                 if (game_data.ground_type_to_props.get(right_sq.tile_type)) |right_props| {
                     const right_blend_prio = right_props.blend_prio;
                     if (right_blend_prio > current_prio) {
-                        square.right_blend_u = right_sq.tex_u;
-                        square.right_blend_v = right_sq.tex_v;
+                        square.right_blend_u = right_sq.atlas_data.tex_u;
+                        square.right_blend_v = right_sq.atlas_data.tex_v;
                         squares[right_idx].left_blend_u = -1.0;
                         squares[right_idx].left_blend_v = -1.0;
                     } else if (right_blend_prio < current_prio) {
-                        squares[right_idx].left_blend_u = square.tex_u;
-                        squares[right_idx].left_blend_v = square.tex_v;
+                        squares[right_idx].left_blend_u = square.atlas_data.tex_u;
+                        squares[right_idx].left_blend_v = square.atlas_data.tex_v;
                         square.right_blend_u = -1.0;
                         square.right_blend_v = -1.0;
                     } else {
@@ -164,13 +161,13 @@ pub const Square = struct {
                 if (game_data.ground_type_to_props.get(bottom_sq.tile_type)) |bottom_props| {
                     const bottom_blend_prio = bottom_props.blend_prio;
                     if (bottom_blend_prio > current_prio) {
-                        square.bottom_blend_u = bottom_sq.tex_u;
-                        square.bottom_blend_v = bottom_sq.tex_v;
+                        square.bottom_blend_u = bottom_sq.atlas_data.tex_u;
+                        square.bottom_blend_v = bottom_sq.atlas_data.tex_v;
                         squares[bottom_idx].top_blend_u = -1.0;
                         squares[bottom_idx].top_blend_v = -1.0;
                     } else if (bottom_blend_prio < current_prio) {
-                        squares[bottom_idx].top_blend_u = square.tex_u;
-                        squares[bottom_idx].top_blend_v = square.tex_v;
+                        squares[bottom_idx].top_blend_u = square.atlas_data.tex_u;
+                        squares[bottom_idx].top_blend_v = square.atlas_data.tex_v;
                         square.bottom_blend_u = -1.0;
                         square.bottom_blend_v = -1.0;
                     } else {
@@ -228,12 +225,8 @@ pub const GameObject = struct {
     owner_account_id: i32 = 0,
     rank_required: i32 = 0,
     anim_data: ?assets.AnimEnemyData = null,
-    tex_u: f32 = 0.0,
-    tex_v: f32 = 0.0,
-    tex_w: f32 = 0.0,
-    tex_h: f32 = 0.0,
-    top_tex_u: f32 = 0.0,
-    top_tex_v: f32 = 0.0,
+    atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
+    top_atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     move_angle: f32 = std.math.nan(f32),
     facing: f32 = std.math.nan(f32),
     attack_start: i32 = 0,
@@ -258,50 +251,60 @@ pub const GameObject = struct {
         while (!object_lock.tryLock()) {}
         defer object_lock.unlock();
 
-        const tex_list = game_data.obj_type_to_tex_data.get(self.obj_type);
-        if (tex_list != null and tex_list.?.len > 0) {
-            const tex = tex_list.?[@as(usize, @intCast(self.obj_id)) % tex_list.?.len];
+        texParse: {
+            if (game_data.obj_type_to_tex_data.get(self.obj_type)) |tex_list| {
+                if (tex_list.len == 0) {
+                    std.log.err("Object with type {d} has an empty texture list, parsing failed", .{self.obj_type});
+                    break :texParse;
+                }
 
-            if (tex.animated) {
-                const tex_sheet = assets.anim_enemies.get(tex.sheet);
-                if (tex_sheet != null) {
-                    self.anim_data = tex_sheet.?[tex.index];
+                const tex = tex_list[@as(usize, @intCast(self.obj_id)) % tex_list.len];
+
+                if (tex.animated) {
+                    if (assets.anim_enemies.get(tex.sheet)) |anim_data| {
+                        self.anim_data = anim_data[tex.index];
+                    } else {
+                        std.log.err("Could not find anim sheet {s} for object with type {d}. Using error texture", .{ tex.sheet, self.obj_type });
+                        self.anim_data = assets.error_anim;
+                    }
                 } else {
-                    self.anim_data = assets.error_anim;
+                    if (assets.atlas_data.get(tex.sheet)) |data| {
+                        self.atlas_data = data[tex.index];
+                    } else {
+                        std.log.err("Could not find sheet {s} for object with type {d}. Using error texture", .{ tex.sheet, self.obj_type });
+                        self.atlas_data = assets.error_data;
+                    }
+
+                    if (game_data.obj_type_to_class.get(self.obj_type) == .wall) {
+                        self.atlas_data.removePadding();
+                    }
                 }
             } else {
-                const rect_sheet = assets.rects.get(tex.sheet);
+                std.log.err("Could not find texture data for obj {d}", .{self.obj_type});
+            }
+        }
 
-                var rect: zstbrp.PackRect = undefined;
-                if (rect_sheet != null) {
-                    rect = rect_sheet.?[tex.index];
-                } else {
-                    rect = assets.error_rect;
+        topTexParse: {
+            if (game_data.obj_type_to_top_tex_data.get(self.obj_type)) |top_tex_list| {
+                if (top_tex_list.len == 0) {
+                    std.log.err("Object with type {d} has an empty top texture list, parsing failed", .{self.obj_type});
+                    break :topTexParse;
                 }
-                // hack
-                if (game_data.obj_type_to_class.get(self.obj_type) == .wall) {
-                    self.tex_u = @as(f32, @floatFromInt(rect.x + assets.padding)) / @as(f32, @floatFromInt(assets.atlas_width));
-                    self.tex_v = @as(f32, @floatFromInt(rect.y + assets.padding)) / @as(f32, @floatFromInt(assets.atlas_height));
+
+                const tex = top_tex_list[@as(usize, @intCast(self.obj_id)) % top_tex_list.len];
+                if (assets.atlas_data.get(tex.sheet)) |data| {
+                    var top_data = data[tex.index];
+                    top_data.removePadding();
+                    self.top_atlas_data = top_data;
                 } else {
-                    self.tex_u = @floatFromInt(rect.x);
-                    self.tex_v = @floatFromInt(rect.y);
-                    self.tex_w = @floatFromInt(rect.w);
-                    self.tex_h = @floatFromInt(rect.h);
+                    std.log.err("Could not find top sheet {s} for object with type {d}. Using error texture", .{ tex.sheet, self.obj_type });
+                    self.top_atlas_data = assets.error_data;
                 }
             }
         }
 
-        const top_tex_list = game_data.obj_type_to_top_tex_data.get(self.obj_type);
-        if (top_tex_list != null and top_tex_list.?.len > 0) {
-            const tex = top_tex_list.?[@as(usize, @intCast(self.obj_id)) % top_tex_list.?.len];
-            const rect = assets.rects.get(tex.sheet).?[tex.index];
-            self.top_tex_u = @as(f32, @floatFromInt(rect.x + assets.padding)) / @as(f32, @floatFromInt(assets.atlas_width));
-            self.top_tex_v = @as(f32, @floatFromInt(rect.y + assets.padding)) / @as(f32, @floatFromInt(assets.atlas_height));
-        }
-
-        const class_props = game_data.obj_type_to_class.get(self.obj_type);
-        if (class_props != null) {
-            self.is_wall = class_props.? == .wall;
+        if (game_data.obj_type_to_class.get(self.obj_type)) |class_props| {
+            self.is_wall = class_props == .wall;
             const floor_y: u32 = @intFromFloat(@floor(self.y));
             const floor_x: u32 = @intFromFloat(@floor(self.x));
             if (validPos(floor_x, floor_y)) {
@@ -310,25 +313,25 @@ pub const GameObject = struct {
             }
         }
 
-        const props = game_data.obj_type_to_props.get(self.obj_type);
-        if (props != null) {
-            self.size = props.?.getSize();
-            self.draw_on_ground = props.?.draw_on_ground;
-            self.light_color = props.?.light_color;
-            self.light_intensity = props.?.light_intensity;
-            self.light_radius = props.?.light_radius;
-            self.is_enemy = props.?.is_enemy;
-            self.show_name = props.?.show_name;
-            self.name = @constCast(props.?.display_id);
+        if (game_data.obj_type_to_props.get(self.obj_type)) |props| {
+            self.size = props.getSize();
+            self.draw_on_ground = props.draw_on_ground;
+            self.light_color = props.light_color;
+            self.light_intensity = props.light_intensity;
+            self.light_radius = props.light_radius;
+            self.is_enemy = props.is_enemy;
+            self.show_name = props.show_name;
+            self.name = @constCast(props.display_id);
 
-            const full_occupy = props.?.full_occupy;
-            const occupy_square = props.?.occupy_square;
-            if (full_occupy or props.?.static and occupy_square) {
+            if (props.draw_on_ground)
+                self.atlas_data.removePadding();
+
+            if (props.full_occupy or props.static and props.occupy_square) {
                 const floor_x: u32 = @intFromFloat(@floor(self.x));
                 const floor_y: u32 = @intFromFloat(@floor(self.y));
                 if (validPos(floor_x, floor_y)) {
-                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].occupy_square = occupy_square;
-                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].full_occupy = full_occupy;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].occupy_square = props.occupy_square;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].full_occupy = props.full_occupy;
                     squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = true;
                 }
             }
@@ -376,25 +379,20 @@ pub const GameObject = struct {
             // todo move it into a fn call that will only be set on merchant_obj_type set
             // this is temporary
 
-            const tex_list = game_data.obj_type_to_tex_data.get(self.merchant_obj_type);
-            if (tex_list == null or tex_list.?.len > 0) {
-                break :merchantBlock;
+            if (game_data.obj_type_to_tex_data.get(self.merchant_obj_type)) |tex_list| {
+                if (tex_list.len == 0) {
+                    std.log.err("Merchant with type {d} has an empty texture list, parsing failed", .{self.merchant_obj_type});
+                    break :merchantBlock;
+                }
+
+                const tex = tex_list[@as(usize, @intCast(self.obj_id)) % tex_list.len];
+                if (assets.atlas_data.get(tex.sheet)) |data| {
+                    self.atlas_data = data[tex.index];
+                } else {
+                    std.log.err("Could not find sheet {s} for merchant with type {d}. Using error texture", .{ tex.sheet, self.merchant_obj_type });
+                    self.atlas_data = assets.error_data;
+                }
             }
-
-            const tex = tex_list.?[@as(usize, @intCast(self.obj_id)) % tex_list.?.len];
-
-            const rect_sheet = assets.rects.get(tex.sheet);
-            var rect: zstbrp.PackRect = undefined;
-            if (rect_sheet != null) {
-                rect = rect_sheet.?[tex.index];
-            } else {
-                rect = assets.error_rect;
-            }
-
-            self.tex_u = @floatFromInt(rect.x);
-            self.tex_v = @floatFromInt(rect.y);
-            self.tex_w = @floatFromInt(rect.w);
-            self.tex_h = @floatFromInt(rect.h);
 
             self.last_merch_type = self.merchant_obj_type;
         }
@@ -830,10 +828,7 @@ pub const Projectile = struct {
     screen_y: f32 = 0.0,
     size: f32 = 1.0,
     obj_id: i32 = 0,
-    tex_u: f32 = 0.0,
-    tex_v: f32 = 0.0,
-    tex_w: f32 = 0.0,
-    tex_h: f32 = 0.0,
+    atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     start_time: i32 = 0.0,
     angle: f32 = 0.0,
     visual_angle: f32 = 0.0,
@@ -863,11 +858,12 @@ pub const Projectile = struct {
 
         const tex_list = self.props.texture_data;
         const tex = tex_list[@as(usize, @intCast(self.obj_id)) % tex_list.len];
-        const rect = assets.rects.get(tex.sheet).?[tex.index];
-        self.tex_u = @as(f32, @floatFromInt(rect.x)) * assets.base_texel_w;
-        self.tex_v = @as(f32, @floatFromInt(rect.y)) * assets.base_texel_h;
-        self.tex_w = @as(f32, @floatFromInt(rect.w)) * assets.base_texel_w;
-        self.tex_h = @as(f32, @floatFromInt(rect.h)) * assets.base_texel_h;
+        if (assets.atlas_data.get(tex.sheet)) |data| {
+            self.atlas_data = data[tex.index];
+        } else {
+            std.log.err("Could not find sheet {s} for proj with id {d}. Using error texture", .{ tex.sheet, self.obj_id });
+            self.atlas_data = assets.error_data;
+        }
 
         self.obj_id = Projectile.next_obj_id + 1;
         Projectile.next_obj_id += 1;
@@ -1370,15 +1366,25 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
         .y = @as(f32, @floatFromInt(y)) + 0.5,
     };
 
-    const tex_list = game_data.ground_type_to_tex_data.get(tile_type);
-    if (tex_list != null) {
-        const tex = if (tex_list.?.len == 1) tex_list.?[0] else tex_list.?[utils.rng.next() % tex_list.?.len];
-        const rect = assets.rects.get(tex.sheet).?[tex.index];
-        square.tex_u = @as(f32, @floatFromInt(rect.x + assets.padding)) / @as(f32, @floatFromInt(assets.atlas_width));
-        square.tex_v = @as(f32, @floatFromInt(rect.y + assets.padding)) / @as(f32, @floatFromInt(assets.atlas_height));
-        square.tex_w = @as(f32, @floatFromInt(rect.w - assets.padding * 2)) / @as(f32, @floatFromInt(assets.atlas_width));
-        square.tex_h = @as(f32, @floatFromInt(rect.h - assets.padding * 2)) / @as(f32, @floatFromInt(assets.atlas_height));
-        square.updateBlends();
+    texParse: {
+        if (game_data.ground_type_to_tex_data.get(tile_type)) |tex_list| {
+            if (tex_list.len == 0) {
+                std.log.err("Square with type {d} has an empty texture list, parsing failed", .{tile_type});
+                break :texParse;
+            }
+
+            const tex = if (tex_list.len == 1) tex_list[0] else tex_list[utils.rng.next() % tex_list.len];
+            if (assets.atlas_data.get(tex.sheet)) |data| {
+                var ground_data = data[tex.index];
+                ground_data.removePadding();
+                square.atlas_data = ground_data;
+            } else {
+                std.log.err("Could not find sheet {s} for square with type {d}. Using error texture", .{ tex.sheet, tile_type });
+                square.atlas_data = assets.error_data;
+            }
+
+            square.updateBlends();
+        }
     }
 
     if (game_data.ground_type_to_props.get(tile_type)) |props| {
@@ -1409,7 +1415,7 @@ pub fn addMoveRecord(time: i32, position: network.Position) void {
         return;
     }
 
-    const id: i32 = getId(time);
+    const id = getId(time);
     if (id < 1 or id > 10) {
         return;
     }
@@ -1419,15 +1425,15 @@ pub fn addMoveRecord(time: i32, position: network.Position) void {
         return;
     }
 
-    const curr_record: network.TimedPosition = move_records.items[move_records.items.len - 1];
-    const curr_id: i32 = getId(curr_record.time);
+    const curr_record = move_records.items[move_records.items.len - 1];
+    const curr_id = getId(curr_record.time);
     if (id != curr_id) {
         move_records.append(network.TimedPosition{ .time = time, .position = position });
         return;
     }
 
-    const score: i32 = getScore(id, time);
-    const curr_score: i32 = getScore(id, curr_record.time);
+    const score = getScore(id, time);
+    const curr_score = getScore(id, curr_record.time);
     if (score < curr_score) {
         curr_record.time = time;
         curr_record.position = position;

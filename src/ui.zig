@@ -21,6 +21,12 @@ pub const RGBF32 = extern struct {
     }
 };
 
+pub const Image = struct {
+    x: f32,
+    y: f32,
+    
+};
+
 pub const StatusText = struct {
     text: Text,
     // the texts' internal x/y

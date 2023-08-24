@@ -441,9 +441,10 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
     }
 }
 
-inline fn drawWall(idx: u16, x: f32, y: f32, u: f32, v: f32, top_u: f32, top_v: f32) u16 {
+inline fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_data: assets.AtlasData) u16 {
     var idx_new: u16 = 0;
-    const size = 8 * assets.base_texel_w;
+    var atlas_data_new = atlas_data;
+
     const x_base = (x * camera.cos + y * camera.sin + camera.clip_x) * camera.clip_scale_x;
     const y_base = -(x * -camera.sin + y * camera.cos + camera.clip_y) * camera.clip_scale_y;
     const y_base_top = -(x * -camera.sin + y * camera.cos + camera.clip_y - camera.px_per_tile * camera.scale) * camera.clip_scale_y;
@@ -470,134 +471,160 @@ inline fn drawWall(idx: u16, x: f32, y: f32, u: f32, v: f32, top_u: f32, top_v: 
     const pi_div_2 = std.math.pi / 2.0;
     topSide: {
         if (bound_angle >= pi_div_2 and bound_angle <= std.math.pi or bound_angle >= -std.math.pi and bound_angle <= -pi_div_2) {
-            var new_u: f32 = 0.0;
-            var new_v: f32 = 0.0;
-
             if (!map.validPos(@intCast(floor_x), @intCast(floor_y - 1))) {
-                new_u = assets.wall_backface_uv[0];
-                new_v = assets.wall_backface_uv[1];
+                atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
+                atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const top_sq = map.squares[(floor_y - 1) * @as(u32, @intCast(map.width)) + floor_x];
                 if (top_sq.has_wall)
                     break :topSide;
 
                 if (top_sq.tile_type == 0xFFFF or top_sq.tile_type == 0xFF) {
-                    new_u = assets.wall_backface_uv[0];
-                    new_v = assets.wall_backface_uv[1];
-                } else {
-                    new_u = u;
-                    new_v = v;
+                    atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
+                    atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
                 }
+
+                // no need to set back atlas_data_new here, nothing can override it prior to this
             }
 
-            // zig fmt: off
-            drawQuadVerts(idx + idx_new, x3, top_y3, x4, top_y4, x4, y4, x3, y3,
-                new_u, new_v, size, size, 0, 0, 
-                0, 0.25, -1.0);
-            // zig fmt: on
+            drawQuadVerts(
+                idx + idx_new,
+                x3,
+                top_y3,
+                x4,
+                top_y4,
+                x4,
+                y4,
+                x3,
+                y3,
+                atlas_data_new,
+                .{ .flash_color = 0x000000, .flash_strength = 0.25 },
+            );
             idx_new += 4;
         }
     }
 
     bottomSide: {
         if (bound_angle <= pi_div_2 and bound_angle >= -pi_div_2) {
-            var new_u: f32 = 0.0;
-            var new_v: f32 = 0.0;
-
             if (!map.validPos(@intCast(floor_x), @intCast(floor_y + 1))) {
-                new_u = assets.wall_backface_uv[0];
-                new_v = assets.wall_backface_uv[1];
+                atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
+                atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const bottom_sq = map.squares[(floor_y + 1) * @as(u32, @intCast(map.width)) + floor_x];
                 if (bottom_sq.has_wall)
                     break :bottomSide;
 
                 if (bottom_sq.tile_type == 0xFFFF or bottom_sq.tile_type == 0xFF) {
-                    new_u = assets.wall_backface_uv[0];
-                    new_v = assets.wall_backface_uv[1];
+                    atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
+                    atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
                 } else {
-                    new_u = u;
-                    new_v = v;
+                    atlas_data_new.tex_u = atlas_data.tex_u;
+                    atlas_data_new.tex_v = atlas_data.tex_v;
                 }
             }
 
-            // zig fmt: off
-            drawQuadVerts(idx + idx_new, x1, top_y1, x2, top_y2, x2, y2, x1, y1,
-                new_u, new_v, size, size, 0, 0, 
-                0, 0.25, -1.0);
-            // zig fmt: on
+            drawQuadVerts(
+                idx + idx_new,
+                x1,
+                top_y1,
+                x2,
+                top_y2,
+                x2,
+                y2,
+                x1,
+                y1,
+                atlas_data_new,
+                .{ .flash_color = 0x000000, .flash_strength = 0.25 },
+            );
             idx_new += 4;
         }
     }
 
     leftSide: {
         if (bound_angle >= 0 and bound_angle <= std.math.pi) {
-            var new_u: f32 = 0.0;
-            var new_v: f32 = 0.0;
-
             if (!map.validPos(@intCast(floor_x - 1), @intCast(floor_y))) {
-                new_u = assets.wall_backface_uv[0];
-                new_v = assets.wall_backface_uv[1];
+                atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
+                atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const left_sq = map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x - 1];
                 if (left_sq.has_wall)
                     break :leftSide;
 
                 if (left_sq.tile_type == 0xFFFF or left_sq.tile_type == 0xFF) {
-                    new_u = assets.wall_backface_uv[0];
-                    new_v = assets.wall_backface_uv[1];
+                    atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
+                    atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
                 } else {
-                    new_u = u;
-                    new_v = v;
+                    atlas_data_new.tex_u = atlas_data.tex_u;
+                    atlas_data_new.tex_v = atlas_data.tex_v;
                 }
             }
 
-            // zig fmt: off
-            drawQuadVerts(idx + idx_new, x3, top_y3, x2, top_y2, x2, y2, x3, y3,
-                new_u, new_v, size, size, 0, 0, 
-                0, 0.25, -1.0);
-            // zig fmt: on
+            drawQuadVerts(
+                idx + idx_new,
+                x3,
+                top_y3,
+                x2,
+                top_y2,
+                x2,
+                y2,
+                x3,
+                y3,
+                atlas_data_new,
+                .{ .flash_color = 0x000000, .flash_strength = 0.25 },
+            );
             idx_new += 4;
         }
     }
 
     rightSide: {
         if (bound_angle <= 0 and bound_angle >= -std.math.pi) {
-            var new_u: f32 = 0.0;
-            var new_v: f32 = 0.0;
-
             if (!map.validPos(@intCast(floor_x + 1), @intCast(floor_y))) {
-                new_u = assets.wall_backface_uv[0];
-                new_v = assets.wall_backface_uv[1];
+                atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
+                atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const right_sq = map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x + 1];
                 if (right_sq.has_wall)
                     break :rightSide;
 
                 if (right_sq.tile_type == 0xFFFF or right_sq.tile_type == 0xFF) {
-                    new_u = assets.wall_backface_uv[0];
-                    new_v = assets.wall_backface_uv[1];
+                    atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
+                    atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
                 } else {
-                    new_u = u;
-                    new_v = v;
+                    atlas_data_new.tex_u = atlas_data.tex_u;
+                    atlas_data_new.tex_v = atlas_data.tex_v;
                 }
             }
 
-            // zig fmt: off
-            drawQuadVerts(idx + idx_new, x4, top_y4, x1, top_y1, x1, y1, x4, y4,
-                new_u, new_v, size, size, 0, 0, 
-                0, 0.25, -1.0);
-            // zig fmt: on
+            drawQuadVerts(
+                idx + idx_new,
+                x4,
+                top_y4,
+                x1,
+                top_y1,
+                x1,
+                y1,
+                x4,
+                y4,
+                atlas_data_new,
+                .{ .flash_color = 0x000000, .flash_strength = 0.25 },
+            );
             idx_new += 4;
         }
     }
 
-    // zig fmt: off
-    drawQuadVerts(idx + idx_new, 
-        x1, top_y1, x2, top_y2, x3, top_y3, x4, top_y4,
-        top_u, top_v, size, size, 
-        0, 0, 0, 0.1, -1.0);
-    // zig fmt: on
+    drawQuadVerts(
+        idx + idx_new,
+        x1,
+        top_y1,
+        x2,
+        top_y2,
+        x3,
+        top_y3,
+        x4,
+        top_y4,
+        top_atlas_data,
+        .{ .flash_color = 0x000000, .flash_strength = 0.1 },
+    );
     idx_new += 4;
 
     return idx_new;
@@ -618,10 +645,7 @@ inline fn drawQuad(
     y: f32,
     w: f32,
     h: f32,
-    tex_u: f32,
-    tex_v: f32,
-    tex_w: f32,
-    tex_h: f32,
+    atlas_data: assets.AtlasData,
     opts: QuadOptions,
 ) void {
     var flash_rgb = ui.RGBF32.fromValues(-1.0, -1.0, -1.0);
@@ -650,7 +674,7 @@ inline fn drawQuad(
 
     base_vert_data[idx] = BaseVertexData{
         .pos = [2]f32{ -x_cos + x_sin + scaled_x, -y_sin - y_cos + scaled_y },
-        .uv = [2]f32{ tex_u, tex_v + tex_h },
+        .uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v + atlas_data.tex_h },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
         .flash_strength = opts.flash_strength,
@@ -660,7 +684,7 @@ inline fn drawQuad(
 
     base_vert_data[idx + 1] = BaseVertexData{
         .pos = [2]f32{ x_cos + x_sin + scaled_x, y_sin - y_cos + scaled_y },
-        .uv = [2]f32{ tex_u + tex_w, tex_v + tex_h },
+        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w, atlas_data.tex_v + atlas_data.tex_h },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
         .flash_strength = opts.flash_strength,
@@ -670,7 +694,7 @@ inline fn drawQuad(
 
     base_vert_data[idx + 2] = BaseVertexData{
         .pos = [2]f32{ x_cos - x_sin + scaled_x, y_sin + y_cos + scaled_y },
-        .uv = [2]f32{ tex_u + tex_w, tex_v },
+        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w, atlas_data.tex_v },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
         .flash_strength = opts.flash_strength,
@@ -680,7 +704,7 @@ inline fn drawQuad(
 
     base_vert_data[idx + 3] = BaseVertexData{
         .pos = [2]f32{ -x_cos - x_sin + scaled_x, -y_sin + y_cos + scaled_y },
-        .uv = [2]f32{ tex_u, tex_v },
+        .uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
         .flash_strength = opts.flash_strength,
@@ -699,65 +723,58 @@ inline fn drawQuadVerts(
     y3: f32,
     x4: f32,
     y4: f32,
-    tex_u: f32,
-    tex_v: f32,
-    tex_w: f32,
-    tex_h: f32,
-    texel_mult: f32,
-    glow_color: i32,
-    flash_color: i32,
-    flash_strength: f32,
-    alpha_mult: f32,
+    atlas_data: assets.AtlasData,
+    opts: QuadOptions,
 ) void {
     var flash_rgb = ui.RGBF32.fromValues(-1.0, -1.0, -1.0);
-    if (flash_color != -1)
-        flash_rgb = ui.RGBF32.fromInt(flash_color);
+    if (opts.flash_color != -1)
+        flash_rgb = ui.RGBF32.fromInt(opts.flash_color);
 
     var glow_rgb = ui.RGBF32.fromValues(0.0, 0.0, 0.0);
-    if (glow_color != -1)
-        glow_rgb = ui.RGBF32.fromInt(glow_color);
+    if (opts.glow_color != -1)
+        glow_rgb = ui.RGBF32.fromInt(opts.glow_color);
 
-    const texel_w = assets.base_texel_w * texel_mult;
-    const texel_h = assets.base_texel_h * texel_mult;
+    const texel_w = assets.base_texel_w * opts.texel_mult;
+    const texel_h = assets.base_texel_h * opts.texel_mult;
 
     base_vert_data[idx] = BaseVertexData{
         .pos = [2]f32{ x1, y1 },
-        .uv = [2]f32{ tex_u, tex_v },
+        .uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
-        .flash_strength = flash_strength,
+        .flash_strength = opts.flash_strength,
         .glow_color = glow_rgb,
-        .alpha_mult = alpha_mult,
+        .alpha_mult = opts.alpha_mult,
     };
 
     base_vert_data[idx + 1] = BaseVertexData{
         .pos = [2]f32{ x2, y2 },
-        .uv = [2]f32{ tex_u + tex_w, tex_v },
+        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w, atlas_data.tex_v },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
-        .flash_strength = flash_strength,
+        .flash_strength = opts.flash_strength,
         .glow_color = glow_rgb,
-        .alpha_mult = alpha_mult,
+        .alpha_mult = opts.alpha_mult,
     };
 
     base_vert_data[idx + 2] = BaseVertexData{
         .pos = [2]f32{ x3, y3 },
-        .uv = [2]f32{ tex_u + tex_w, tex_v + tex_h },
+        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w, atlas_data.tex_v + atlas_data.tex_h },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
-        .flash_strength = flash_strength,
+        .flash_strength = opts.flash_strength,
         .glow_color = glow_rgb,
-        .alpha_mult = alpha_mult,
+        .alpha_mult = opts.alpha_mult,
     };
 
     base_vert_data[idx + 3] = BaseVertexData{
         .pos = [2]f32{ x4, y4 },
-        .uv = [2]f32{ tex_u, tex_v + tex_h },
+        .uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v + atlas_data.tex_h },
         .texel_size = [2]f32{ texel_w, texel_h },
         .flash_color = flash_rgb,
-        .flash_strength = flash_strength,
+        .flash_strength = opts.flash_strength,
         .glow_color = glow_rgb,
-        .alpha_mult = alpha_mult,
+        .alpha_mult = opts.alpha_mult,
     };
 }
 
@@ -771,12 +788,9 @@ fn drawSquare(
     y3: f32,
     x4: f32,
     y4: f32,
-    tex_u: f32,
-    tex_v: f32,
+    atlas_data: assets.AtlasData,
     u_offset: f32,
     v_offset: f32,
-    tex_w: f32,
-    tex_h: f32,
     left_blend_u: f32,
     left_blend_v: f32,
     top_blend_u: f32,
@@ -788,23 +802,23 @@ fn drawSquare(
 ) void {
     ground_vert_data[idx] = GroundVertexData{
         .pos = [2]f32{ x1, y1 },
-        .uv = [2]f32{ tex_w, tex_h },
+        .uv = [2]f32{ atlas_data.tex_w, atlas_data.tex_h },
         .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
         .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
         .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
-        .base_uv = [2]f32{ tex_u, tex_v },
+        .base_uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
         .uv_offsets = [2]f32{ u_offset, v_offset },
     };
 
     ground_vert_data[idx + 1] = GroundVertexData{
         .pos = [2]f32{ x2, y2 },
-        .uv = [2]f32{ 0, tex_h },
+        .uv = [2]f32{ 0, atlas_data.tex_h },
         .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
         .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
         .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
-        .base_uv = [2]f32{ tex_u, tex_v },
+        .base_uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
         .uv_offsets = [2]f32{ u_offset, v_offset },
     };
 
@@ -815,18 +829,18 @@ fn drawSquare(
         .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
         .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
-        .base_uv = [2]f32{ tex_u, tex_v },
+        .base_uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
         .uv_offsets = [2]f32{ u_offset, v_offset },
     };
 
     ground_vert_data[idx + 3] = GroundVertexData{
         .pos = [2]f32{ x4, y4 },
-        .uv = [2]f32{ tex_w, 0 },
+        .uv = [2]f32{ atlas_data.tex_w, 0 },
         .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
         .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
         .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
-        .base_uv = [2]f32{ tex_u, tex_v },
+        .base_uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
         .uv_offsets = [2]f32{ u_offset, v_offset },
     };
 }
@@ -1110,12 +1124,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     (-sin_half + cos_half + screen_y) * camera.clip_scale_y,
                     (cos_half - sin_half + screen_x) * camera.clip_scale_x,
                     (sin_half + cos_half + screen_y) * camera.clip_scale_y,
-                    square.tex_u,
-                    square.tex_v,
+                    square.atlas_data,
                     u_offset,
                     v_offset,
-                    square.tex_w,
-                    square.tex_h,
                     square.left_blend_u,
                     square.left_blend_v,
                     square.top_blend_u,
@@ -1224,7 +1235,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     const capped_period = @max(0, @min(0.99999, float_period)) * 2.0; // 2 walk cycle frames so * 2
                     const anim_idx: usize = @intFromFloat(capped_period);
 
-                    const rect = switch (action) {
+                    var atlas_data = switch (action) {
                         assets.walk_action => player.anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
                         assets.attack_action => player.anim_data.attack_anims[sec][anim_idx],
                         assets.stand_action => player.anim_data.walk_anims[sec][0],
@@ -1233,7 +1244,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     var x_offset: f32 = 0.0;
                     if (action == assets.attack_action and anim_idx == 1) {
-                        const w = @as(f32, @floatFromInt(rect.w)) * size;
+                        const w = atlas_data.texWRaw() * size;
                         if (sec == assets.left_dir) {
                             x_offset = -assets.padding * size;
                         } else {
@@ -1247,8 +1258,10 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         sink += square.sink;
                     }
 
-                    const w = @as(f32, @floatFromInt(rect.w)) * size;
-                    const h = @as(f32, @floatFromInt(rect.h)) * size / sink;
+                    atlas_data.tex_h /= sink;
+
+                    const w = atlas_data.texWRaw() * size;
+                    const h = atlas_data.texHRaw() * size;
 
                     var screen_pos = camera.rotateAroundCamera(player.x, player.y);
                     screen_pos.x += x_offset;
@@ -1298,10 +1311,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         screen_pos.y,
                         w,
                         h,
-                        @as(f32, @floatFromInt(rect.x)) * assets.base_texel_w,
-                        @as(f32, @floatFromInt(rect.y)) * assets.base_texel_h,
-                        @as(f32, @floatFromInt(rect.w)) * assets.base_texel_w,
-                        @as(f32, @floatFromInt(rect.h)) * assets.base_texel_h / sink,
+                        atlas_data,
                         .{ .texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
                     );
                     idx += 4;
@@ -1312,8 +1322,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     const pad_scale_obj = assets.padding * size * camera.scale;
                     const pad_scale_bar = assets.padding * 2 * camera.scale;
                     if (player.hp >= 0 and player.hp < player.max_hp) {
-                        const hp_bar_w = assets.hp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
-                        const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
+                        const hp_bar_w = assets.hp_bar_data.texWRaw() * 2 * camera.scale;
+                        const hp_bar_h = assets.hp_bar_data.texHRaw() * 2 * camera.scale;
                         const hp_bar_y = screen_pos.y + h - pad_scale_obj + y_pos;
 
                         drawQuad(
@@ -1322,10 +1332,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             hp_bar_y,
                             hp_bar_w,
                             hp_bar_h,
-                            assets.empty_bar_rect.x,
-                            assets.empty_bar_rect.y,
-                            assets.empty_bar_rect.w,
-                            assets.empty_bar_rect.h,
+                            assets.empty_bar_data,
                             .{ .texel_mult = 0.5 },
                         );
                         idx += 4;
@@ -1334,16 +1341,16 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         const float_max_hp: f32 = @floatFromInt(player.max_hp);
                         const hp_perc = 1.0 / (float_hp / float_max_hp);
 
+                        var hp_bar_data = assets.hp_bar_data;
+                        hp_bar_data.tex_w /= hp_perc;
+
                         drawQuad(
                             idx,
                             screen_pos.x - x_offset - hp_bar_w / 2.0,
                             hp_bar_y,
                             hp_bar_w / hp_perc,
                             hp_bar_h,
-                            assets.hp_bar_rect.x,
-                            assets.hp_bar_rect.y,
-                            assets.hp_bar_rect.w / hp_perc,
-                            assets.hp_bar_rect.h,
+                            hp_bar_data,
                             .{ .texel_mult = 0.5 },
                         );
                         idx += 4;
@@ -1352,8 +1359,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     }
 
                     if (player.mp >= 0 and player.mp < player.max_mp) {
-                        const mp_bar_w = assets.mp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
-                        const mp_bar_h = assets.mp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
+                        const mp_bar_w = assets.mp_bar_data.texWRaw() * 2 * camera.scale;
+                        const mp_bar_h = assets.mp_bar_data.texHRaw() * 2 * camera.scale;
                         const mp_bar_y = screen_pos.y + h - pad_scale_obj + y_pos;
 
                         drawQuad(
@@ -1362,10 +1369,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             mp_bar_y,
                             mp_bar_w,
                             mp_bar_h,
-                            assets.empty_bar_rect.x,
-                            assets.empty_bar_rect.y,
-                            assets.empty_bar_rect.w,
-                            assets.empty_bar_rect.h,
+                            assets.empty_bar_data,
                             .{ .texel_mult = 0.5 },
                         );
                         idx += 4;
@@ -1374,16 +1378,16 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         const float_max_mp: f32 = @floatFromInt(player.max_mp);
                         const mp_perc = 1.0 / (float_mp / float_max_mp);
 
+                        var mp_bar_data = assets.mp_bar_data;
+                        mp_bar_data.tex_w /= mp_perc;
+
                         drawQuad(
                             idx,
                             screen_pos.x - x_offset - mp_bar_w / 2.0,
                             mp_bar_y,
                             mp_bar_w / mp_perc,
                             mp_bar_h,
-                            assets.mp_bar_rect.x,
-                            assets.mp_bar_rect.y,
-                            assets.mp_bar_rect.w / mp_perc,
-                            assets.mp_bar_rect.h,
+                            mp_bar_data,
                             .{ .texel_mult = 0.5 },
                         );
                         idx += 4;
@@ -1396,26 +1400,19 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         continue;
                     }
 
-                    var tex_u = bo.tex_u;
-                    var tex_v = bo.tex_v;
-                    var tex_w = bo.tex_w;
-                    var tex_h = bo.tex_h;
                     var screen_pos = camera.rotateAroundCamera(bo.x, bo.y);
                     const size = camera.size_mult * camera.scale * bo.size;
 
                     const square = bo.getSquare();
                     if (bo.draw_on_ground) {
-                        const tile_size = @as(f32, camera.px_per_tile) * 1.5 * camera.scale;
+                        const tile_size = @as(f32, camera.px_per_tile) * camera.scale;
                         drawQuad(
                             idx,
-                            screen_pos.x - tile_size / 2 * camera.scale,
-                            screen_pos.y - tile_size / 2 * camera.scale,
+                            screen_pos.x - tile_size / 2.0,
+                            screen_pos.y - tile_size / 2.0,
                             tile_size,
                             tile_size,
-                            tex_u * assets.base_texel_w,
-                            tex_v * assets.base_texel_h,
-                            tex_w * assets.base_texel_w,
-                            tex_h * assets.base_texel_h,
+                            bo.atlas_data,
                             .{ .rotation = camera.angle },
                         );
                         idx += 4;
@@ -1423,7 +1420,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     }
 
                     if (bo.is_wall) {
-                        idx += drawWall(idx, bo.x, bo.y, bo.tex_u, bo.tex_v, bo.top_tex_u, bo.top_tex_v);
+                        idx += drawWall(idx, bo.x, bo.y, bo.atlas_data, bo.top_atlas_data);
                         continue;
                     }
 
@@ -1464,9 +1461,10 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     const capped_period = @max(0, @min(0.99999, float_period)) * 2.0; // 2 walk cycle frames so * 2
                     const anim_idx: usize = @intFromFloat(capped_period);
 
+                    var atlas_data = bo.atlas_data;
                     var x_offset: f32 = 0.0;
                     if (bo.anim_data) |anim_data| {
-                        const rect = switch (action) {
+                        atlas_data = switch (action) {
                             assets.walk_action => anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
                             assets.attack_action => anim_data.attack_anims[sec][anim_idx],
                             assets.stand_action => anim_data.walk_anims[sec][0],
@@ -1474,18 +1472,13 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         };
 
                         if (action == assets.attack_action and anim_idx == 1) {
-                            const w = @as(f32, @floatFromInt(rect.w)) * size;
+                            const w = atlas_data.texWRaw() * size;
                             if (sec == assets.left_dir) {
                                 x_offset = -assets.padding * size;
                             } else {
                                 x_offset = w / 4.0;
                             }
                         }
-
-                        tex_u = @floatFromInt(rect.x);
-                        tex_v = @floatFromInt(rect.y);
-                        tex_w = @floatFromInt(rect.w);
-                        tex_h = @floatFromInt(rect.h);
                     }
 
                     var sink: f32 = 1.0;
@@ -1493,8 +1486,10 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         sink += square.sink;
                     }
 
-                    const w = tex_w * size;
-                    const h = tex_h * size / sink;
+                    atlas_data.tex_h /= sink;
+
+                    const w = atlas_data.texWRaw() * size;
+                    const h = atlas_data.texHRaw() * size;
 
                     screen_pos.x += x_offset;
                     screen_pos.y += bo.z * -camera.px_per_tile - (h - size * assets.padding);
@@ -1557,10 +1552,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         screen_pos.y,
                         w,
                         h,
-                        tex_u * assets.base_texel_w,
-                        tex_v * assets.base_texel_h,
-                        tex_w * assets.base_texel_w,
-                        tex_h * assets.base_texel_h / sink,
+                        atlas_data,
                         .{ .texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
                     );
                     idx += 4;
@@ -1573,8 +1565,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     const pad_scale_obj = assets.padding * size * camera.scale;
                     const pad_scale_bar = assets.padding * 2 * camera.scale;
                     if (bo.hp >= 0 and bo.hp < bo.max_hp) {
-                        const hp_bar_w = assets.hp_bar_rect.w * assets.atlas_width * 2 * camera.scale;
-                        const hp_bar_h = assets.hp_bar_rect.h * assets.atlas_height * 2 * camera.scale;
+                        const hp_bar_w = assets.hp_bar_data.texWRaw() * 2 * camera.scale;
+                        const hp_bar_h = assets.hp_bar_data.texHRaw() * 2 * camera.scale;
                         const hp_bar_y = screen_pos.y + h - pad_scale_obj + y_pos;
 
                         drawQuad(
@@ -1583,10 +1575,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             hp_bar_y,
                             hp_bar_w,
                             hp_bar_h,
-                            assets.empty_bar_rect.x,
-                            assets.empty_bar_rect.y,
-                            assets.empty_bar_rect.w,
-                            assets.empty_bar_rect.h,
+                            assets.empty_bar_data,
                             .{ .texel_mult = 0.5 },
                         );
                         idx += 4;
@@ -1594,6 +1583,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         const float_hp: f32 = @floatFromInt(bo.hp);
                         const float_max_hp: f32 = @floatFromInt(bo.max_hp);
                         const hp_perc = 1.0 / (float_hp / float_max_hp);
+                        var hp_bar_data = assets.hp_bar_data;
+                        hp_bar_data.tex_w /= hp_perc;
 
                         drawQuad(
                             idx,
@@ -1601,10 +1592,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             hp_bar_y,
                             hp_bar_w / hp_perc,
                             hp_bar_h,
-                            assets.hp_bar_rect.x,
-                            assets.hp_bar_rect.y,
-                            assets.hp_bar_rect.w / hp_perc,
-                            assets.hp_bar_rect.h,
+                            hp_bar_data,
                             .{ .texel_mult = 0.5 },
                         );
                         idx += 4;
@@ -1618,8 +1606,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     }
 
                     const size = camera.size_mult * camera.scale * proj.props.size;
-                    const w = proj.tex_w * assets.atlas_width * size;
-                    const h = proj.tex_h * assets.atlas_height * size;
+                    const w = proj.atlas_data.texWRaw() * size;
+                    const h = proj.atlas_data.texHRaw() * size;
                     var screen_pos = camera.rotateAroundCamera(proj.x, proj.y);
                     screen_pos.y += proj.z * -camera.px_per_tile - (h - size * assets.padding);
                     const rotation = proj.props.rotation;
@@ -1632,10 +1620,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         screen_pos.y,
                         w,
                         h,
-                        proj.tex_u,
-                        proj.tex_v,
-                        proj.tex_w,
-                        proj.tex_h,
+                        proj.atlas_data,
                         .{ .texel_mult = 2.0 / size, .rotation = angle },
                     );
                     idx += 4;
@@ -1643,17 +1628,13 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
         }
 
-        // horrible hack for bg light
         drawQuad(
             idx,
             0,
             0,
             camera.screen_width,
             camera.screen_height,
-            assets.wall_backface_uv[0],
-            assets.wall_backface_uv[1],
-            8.0 * assets.base_texel_w,
-            8.0 * assets.base_texel_h,
+            assets.wall_backface_data,
             .{ .flash_color = map.bg_light_color, .flash_strength = 1.0, .alpha_mult = map.getLightIntensity(time) },
         );
         idx += 4;
