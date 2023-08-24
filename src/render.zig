@@ -1108,18 +1108,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     else => {},
                 }
 
-                const cos_half = camera.pad_cos / 2.0;
-                const sin_half = camera.pad_sin / 2.0;
+                const x_cos = camera.pad_x_cos;
+                const x_sin = camera.pad_x_sin;
+                const y_cos = camera.pad_y_cos;
+                const y_sin = camera.pad_y_sin;
+                const clip_x = screen_x * camera.clip_scale_x;
+                const clip_y = screen_y * camera.clip_scale_y;
                 drawSquare(
                     square_idx,
-                    (cos_half + sin_half + screen_x) * camera.clip_scale_x,
-                    (sin_half - cos_half + screen_y) * camera.clip_scale_y,
-                    (-cos_half + sin_half + screen_x) * camera.clip_scale_x,
-                    (-sin_half - cos_half + screen_y) * camera.clip_scale_y,
-                    (-cos_half - sin_half + screen_x) * camera.clip_scale_x,
-                    (-sin_half + cos_half + screen_y) * camera.clip_scale_y,
-                    (cos_half - sin_half + screen_x) * camera.clip_scale_x,
-                    (sin_half + cos_half + screen_y) * camera.clip_scale_y,
+                    x_cos + x_sin + clip_x,
+                    y_sin - y_cos + clip_y,
+                    -x_cos + x_sin + clip_x,
+                    -y_sin - y_cos + clip_y,
+                    -x_cos - x_sin + clip_x,
+                    -y_sin + y_cos + clip_y,
+                    x_cos - x_sin + clip_x,
+                    y_sin + y_cos + clip_y,
                     square.atlas_data,
                     u_offset,
                     v_offset,

@@ -11,8 +11,6 @@ pub var x: f32 = 0.0;
 pub var y: f32 = 0.0;
 pub var z: f32 = 0.0;
 
-pub var pad_cos: f32 = 0.0;
-pub var pad_sin: f32 = 0.0;
 pub var pad_x_cos: f32 = 0.0;
 pub var pad_y_cos: f32 = 0.0;
 pub var pad_x_sin: f32 = 0.0;
@@ -55,8 +53,8 @@ pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
     const cos_angle = @cos(angle);
     const sin_angle = @sin(angle);
 
-    pad_cos = cos_angle * (px_per_tile + 1) * scale;
-    pad_sin = sin_angle * (px_per_tile + 1) * scale;
+    const pad_cos = cos_angle * (px_per_tile + 1) * scale;
+    const pad_sin = sin_angle * (px_per_tile + 1) * scale;
     pad_x_cos = pad_cos * clip_scale_x * 0.5;
     pad_y_cos = pad_cos * clip_scale_y * 0.5;
     pad_x_sin = pad_sin * clip_scale_x * 0.5;
