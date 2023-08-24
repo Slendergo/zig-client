@@ -200,6 +200,7 @@ const AudioState = struct {
 };
 
 pub var audio_state: *AudioState = undefined;
+pub var main_music: *zaudio.Sound = undefined;
 
 pub var atlas: zstbi.Image = undefined;
 pub var light_tex: zstbi.Image = undefined;
@@ -461,6 +462,7 @@ fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]Ch
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
+    main_music.destroy();
     audio_state.destroy(allocator);
 
     atlas.deinit();
@@ -515,13 +517,13 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try audio_state.engine.start();
 
     if (settings.music_volume > 0.0) {
-        const music = try audio_state.engine.createSoundFromFile(
+        main_music = try audio_state.engine.createSoundFromFile(
             asset_dir ++ "music/sorc.mp3",
             .{},
         );
-        music.setLooping(true);
-        music.setVolume(settings.music_volume);
-        try music.start();
+        main_music.setLooping(true);
+        main_music.setVolume(settings.music_volume);
+        try main_music.start();
     }
 
     light_tex = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/Light.png", 4);
