@@ -276,9 +276,9 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     }
                 } else {
                     if (zgui.beginListBox("Server", .{})) {
-                        for (server_list.?, 0..) |serverData, index| {
+                        for (server_list.?, 0..) |server_data, index| {
                             const i: u32 = @intCast(index);
-                            if (zgui.selectable(serverData.name[0.. :0], .{ .selected = static.server_index == i }))
+                            if (zgui.selectable(server_data.name[0.. :0], .{ .selected = static.server_index == i }))
                                 static.server_index = i;
                         }
                         zgui.endListBox();
@@ -502,17 +502,13 @@ fn renderTick(allocator: std.mem.Allocator) void {
 
 pub fn clear() void {
     map.local_player_id = -1;
-    map.interactive_id = -1;
+    map.interactive_id.store(-1, .Release);
     map.dispose(_allocator);
     map.entities.clear();
 }
 
 pub fn disconnect() void {
     if (server != null) {
-        // deadlock
-        // network_lock.lock();
-        // defer network_lock.unlock();
-
         server.?.deinit();
         server = null;
         selected_server = null;

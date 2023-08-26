@@ -46,9 +46,10 @@ inline fn keyPress(key: zglfw.Key) void {
         if (main.server) |*server|
             server.sendEscape();
     } else if (key == settings.interact.getKey()) {
-        if (map.interactive_id != -1) {
+        const int_id = map.interactive_id.load(.Acquire);
+        if (int_id != -1) {
             if (main.server) |*server|
-                server.sendUsePortal(map.interactive_id);
+                server.sendUsePortal(int_id);
         }
     } else if (key == settings.ability.getKey()) {
         useAbility();
@@ -101,9 +102,10 @@ inline fn mousePress(button: zglfw.MouseButton) void {
         if (main.server) |*server|
             server.sendEscape();
     } else if (button == settings.interact.getMouse()) {
-        if (map.interactive_id != -1) {
+        const int_id = map.interactive_id.load(.Acquire);
+        if (int_id != -1) {
             if (main.server) |*server|
-                server.sendUsePortal(map.interactive_id);
+                server.sendUsePortal(int_id);
         }
     } else if (button == settings.ability.getMouse()) {
         useAbility();

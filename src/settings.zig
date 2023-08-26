@@ -62,6 +62,7 @@ pub var shoot: Button = .{ .mouse = .left };
 pub var ability: Button = .{ .mouse = .right };
 pub var sfx_volume: f32 = 0.0; // 0.33;
 pub var music_volume: f32 = 0.0; // 0.33;
+pub var enable_glow = true;
 
 pub fn init() void {}
 

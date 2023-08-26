@@ -1309,6 +1309,9 @@ inline fn endUiDraw(
 }
 
 pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.TextureView, encoder: zgpu.wgpu.CommandEncoder) void {
+    while (!map.object_lock.tryLock()) {}
+    defer map.object_lock.unlock();
+
     if (!map.validPos(@intFromFloat(camera.x), @intFromFloat(camera.y)))
         return;
 
@@ -1470,9 +1473,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     normalPass: {
         if (map.entities.capacity <= 0)
             break :normalPass;
-
-        while (!map.object_lock.tryLock()) {}
-        defer map.object_lock.unlock();
 
         const vb_info = gctx.lookupResourceInfo(base_vb) orelse break :normalPass;
         const pipeline = gctx.lookupResource(base_pipeline) orelse break :normalPass;
@@ -1848,7 +1848,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             text,
                         );
 
-                        if (is_portal and map.interactive_id == bo.obj_id) {
+                        if (is_portal and map.interactive_id.load(.Acquire) == bo.obj_id) {
                             const enter_text = ui.Text{
                                 .text = @constCast("Enter"), // meh
                                 .text_type = .bold,

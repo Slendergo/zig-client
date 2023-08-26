@@ -1174,7 +1174,7 @@ pub var entities: utils.DynSlice(Entity) = undefined;
 pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
 pub var last_tick_time: i32 = 0;
 pub var local_player_id: i32 = -1;
-pub var interactive_id: i32 = -1;
+pub var interactive_id = std.atomic.Atomic(i32).init(-1);
 pub var name: []const u8 = "";
 pub var seed: u32 = 0;
 pub var width: isize = 0;
@@ -1302,7 +1302,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
     while (!object_lock.tryLock()) {}
     defer object_lock.unlock();
 
-    interactive_id = -1;
+    interactive_id.store(-1, .Release);
 
     for (entities.items(), 0..) |*en, i| {
         switch (en.*) {
@@ -1311,7 +1311,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
                     const dt_x = camera.x - obj.x;
                     const dt_y = camera.y - obj.y;
                     if (dt_x * dt_x + dt_y * dt_y < 1) {
-                        interactive_id = obj.obj_id;
+                        interactive_id.store(obj.obj_id, .Release);
                     }
                 }
 

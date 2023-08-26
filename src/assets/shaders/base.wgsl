@@ -49,27 +49,30 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
       if alpha > 0.0 {
         pixel = vec4(in.glow_color, 1.0);
-      } else if in.alpha_mult != -2.0 { // turbo hacky
-          var sum = 0.0;
-          for (var i = 0.0; i < 7.0; i += 1.0) {
-              let uv_y = in.uv.y + in.texel_size.y * (i - 3.5);
-              let tex_x_2 = in.texel_size.x * 2.0;
-              let tex_x_3 = in.texel_size.x * 3.0;
-              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - tex_x_3, uv_y), dx, dy).a;
-              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - tex_x_2, uv_y), dx, dy).a;
-              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - in.texel_size.x, uv_y), dx, dy).a;
-              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x, uv_y), dx, dy).a;
-              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + in.texel_size.x, uv_y), dx, dy).a;
-              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + tex_x_2, uv_y), dx, dy).a;
-              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + tex_x_3, uv_y), dx, dy).a;
-          }
-      
-          if sum == 0.0 {
-            discard;
-          } else {
-            pixel = vec4(in.glow_color, sum / 49.0);
-          }
+      } else {
+        discard;
       }
+      // } else if in.alpha_mult != -2.0 { // turbo hacky
+      //     var sum = 0.0;
+      //     for (var i = 0.0; i < 7.0; i += 1.0) {
+      //         let uv_y = in.uv.y + in.texel_size.y * (i - 3.5);
+      //         let tex_x_2 = in.texel_size.x * 2.0;
+      //         let tex_x_3 = in.texel_size.x * 3.0;
+      //         sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - tex_x_3, uv_y), dx, dy).a;
+      //         sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - tex_x_2, uv_y), dx, dy).a;
+      //         sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - in.texel_size.x, uv_y), dx, dy).a;
+      //         sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x, uv_y), dx, dy).a;
+      //         sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + in.texel_size.x, uv_y), dx, dy).a;
+      //         sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + tex_x_2, uv_y), dx, dy).a;
+      //         sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + tex_x_3, uv_y), dx, dy).a;
+      //     }
+      
+      //     if sum == 0.0 {
+      //       discard;
+      //     } else {
+      //       pixel = vec4(in.glow_color, sum / 49.0);
+      //     }
+      // }
     } 
   } else {
     if in.flash_color.r >= 0.0 {
