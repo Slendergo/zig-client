@@ -79,6 +79,7 @@ pub const UiRenderType = enum(u32) {
 };
 
 pub var base_pipeline: zgpu.RenderPipelineHandle = .{};
+pub var base_no_glow_pipeline: zgpu.RenderPipelineHandle = .{};
 pub var base_bind_group: zgpu.BindGroupHandle = undefined;
 pub var ground_pipeline: zgpu.RenderPipelineHandle = .{};
 pub var ground_bind_group: zgpu.BindGroupHandle = undefined;
@@ -266,7 +267,6 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         .{ .binding = 6, .texture_view_handle = bold_italic_text_texture_view },
     });
 
-    // create normal pipeline
     {
         const pipeline_layout = gctx.createPipelineLayout(&.{
             base_bind_group_layout,
@@ -321,7 +321,60 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &base_pipeline);
     }
 
-    // create ground pipeline
+    {
+        const pipeline_layout = gctx.createPipelineLayout(&.{
+            base_bind_group_layout,
+        });
+        defer gctx.releaseResource(pipeline_layout);
+
+        const s_mod = zgpu.createWgslShaderModule(gctx.device, @embedFile("./assets/shaders/baseNoGlow.wgsl"), null);
+        defer s_mod.release();
+
+        const color_targets = [_]zgpu.wgpu.ColorTargetState{.{
+            .format = zgpu.GraphicsContext.swapchain_format,
+            .blend = &zgpu.wgpu.BlendState{
+                .color = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha },
+                .alpha = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha },
+            },
+        }};
+
+        const vertex_attributes = [_]zgpu.wgpu.VertexAttribute{
+            .{ .format = .float32x2, .offset = @offsetOf(BaseVertexData, "pos"), .shader_location = 0 },
+            .{ .format = .float32x2, .offset = @offsetOf(BaseVertexData, "uv"), .shader_location = 1 },
+            .{ .format = .float32x2, .offset = @offsetOf(BaseVertexData, "texel_size"), .shader_location = 2 },
+            .{ .format = .float32x3, .offset = @offsetOf(BaseVertexData, "flash_color"), .shader_location = 3 },
+            .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "flash_strength"), .shader_location = 4 },
+            .{ .format = .float32x3, .offset = @offsetOf(BaseVertexData, "glow_color"), .shader_location = 5 },
+            .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "alpha_mult"), .shader_location = 6 },
+        };
+        const vertex_buffers = [_]zgpu.wgpu.VertexBufferLayout{.{
+            .array_stride = @sizeOf(BaseVertexData),
+            .attribute_count = vertex_attributes.len,
+            .attributes = &vertex_attributes,
+        }};
+
+        const pipeline_descriptor = zgpu.wgpu.RenderPipelineDescriptor{
+            .vertex = zgpu.wgpu.VertexState{
+                .module = s_mod,
+                .entry_point = "vs_main",
+                .buffer_count = vertex_buffers.len,
+                .buffers = &vertex_buffers,
+            },
+            .primitive = zgpu.wgpu.PrimitiveState{
+                .front_face = .cw,
+                .cull_mode = .none,
+                .topology = .triangle_list,
+            },
+            .fragment = &zgpu.wgpu.FragmentState{
+                .module = s_mod,
+                .entry_point = "fs_main",
+                .target_count = color_targets.len,
+                .targets = &color_targets,
+            },
+        };
+        gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &base_no_glow_pipeline);
+    }
+
     {
         const pipeline_layout = gctx.createPipelineLayout(&.{
             ground_bind_group_layout,
@@ -373,7 +426,6 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &ground_pipeline);
     }
 
-    // create text pipeline
     {
         const pipeline_layout = gctx.createPipelineLayout(&.{
             text_bind_group_layout,
@@ -430,7 +482,6 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &text_pipeline);
     }
 
-    // create light pipeline
     {
         const pipeline_layout = gctx.createPipelineLayout(&.{
             light_bind_group_layout,
@@ -482,7 +533,6 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &light_pipeline);
     }
 
-    // create ui pipeline
     {
         const pipeline_layout = gctx.createPipelineLayout(&.{
             ui_bind_group_layout,
@@ -1475,7 +1525,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             break :normalPass;
 
         const vb_info = gctx.lookupResourceInfo(base_vb) orelse break :normalPass;
-        const pipeline = gctx.lookupResource(base_pipeline) orelse break :normalPass;
+        const pipeline = gctx.lookupResource(if (settings.enable_glow) base_pipeline else base_no_glow_pipeline) orelse break :normalPass;
         const bind_group = gctx.lookupResource(base_bind_group) orelse break :normalPass;
 
         var idx: u16 = 0;
