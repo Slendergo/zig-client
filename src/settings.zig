@@ -13,6 +13,16 @@ pub const LogType = enum(u8) {
     off = 255,
 };
 
+pub const CursorType = enum(u8) {
+    basic = 0,
+    royal = 1,
+    ranger = 2,
+    aztec = 3,
+    fiery = 4,
+    target_enemy = 5,
+    target_ally = 6,
+};
+
 pub const Button = union(enum) {
     key: zglfw.Key,
     mouse: zglfw.MouseButton,
@@ -63,6 +73,7 @@ pub var ability: Button = .{ .mouse = .right };
 pub var sfx_volume: f32 = 0.33;
 pub var music_volume: f32 = 0.33;
 pub var enable_glow = false;
+pub var selected_cursor = CursorType.aztec;
 
 pub fn init() void {}
 

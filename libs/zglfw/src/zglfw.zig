@@ -286,6 +286,12 @@ pub const Mods = packed struct(i32) {
 // Cursor
 //
 //--------------------------------------------------------------------------------------------------
+pub const Image = extern struct {
+    w: c_int,
+    h: c_int,
+    pixels: [*]u8,
+};
+
 pub const Cursor = opaque {
     pub const Shape = enum(i32) {
         arrow = 0x00036001,
@@ -301,6 +307,13 @@ pub const Cursor = opaque {
         hidden = 0x00034002,
         disabled = 0x00034003,
     };
+
+    pub fn create(image: *const Image, x_hot: c_int, y_hot: c_int) Error!*Cursor {
+        if (glfwCreateCursor(image, x_hot, y_hot)) |ptr| return ptr;
+        try maybeError();
+        unreachable;
+    }
+    extern fn glfwCreateCursor(image: *const Image, x_hot: c_int, y_hot: c_int) ?*Cursor;
 
     /// `pub fn destroy(cursor: *Cursor) void`
     pub const destroy = glfwDestroyCursor;

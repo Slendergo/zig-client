@@ -9,6 +9,7 @@ const builtin = @import("builtin");
 const zaudio = @import("zaudio");
 const utils = @import("utils.zig");
 const main = @import("main.zig");
+const zglfw = @import("zglfw");
 
 pub const padding = 2;
 
@@ -205,6 +206,22 @@ pub var medium_chars: [256]CharacterData = undefined;
 pub var medium_italic_atlas: zstbi.Image = undefined;
 pub var medium_italic_chars: [256]CharacterData = undefined;
 
+// horrible, but no other option since cursor is opaque
+pub var default_cursor_pressed: *zglfw.Cursor = undefined;
+pub var default_cursor: *zglfw.Cursor = undefined;
+pub var royal_cursor_pressed: *zglfw.Cursor = undefined;
+pub var royal_cursor: *zglfw.Cursor = undefined;
+pub var ranger_cursor_pressed: *zglfw.Cursor = undefined;
+pub var ranger_cursor: *zglfw.Cursor = undefined;
+pub var aztec_cursor_pressed: *zglfw.Cursor = undefined;
+pub var aztec_cursor: *zglfw.Cursor = undefined;
+pub var fiery_cursor_pressed: *zglfw.Cursor = undefined;
+pub var fiery_cursor: *zglfw.Cursor = undefined;
+pub var target_enemy_cursor_pressed: *zglfw.Cursor = undefined;
+pub var target_enemy_cursor: *zglfw.Cursor = undefined;
+pub var target_ally_cursor_pressed: *zglfw.Cursor = undefined;
+pub var target_ally_cursor: *zglfw.Cursor = undefined;
+
 pub var sfx_map: std.StringHashMap(*zaudio.Sound) = undefined;
 pub var atlas_data: std.StringHashMap([]AtlasData) = undefined;
 pub var ui_atlas_data: std.StringHashMap([]AtlasData) = undefined;
@@ -231,6 +248,54 @@ fn isImageEmpty(img: zstbi.Image, x: usize, y: usize, w: u32, h: u32) bool {
     }
 
     return true;
+}
+
+inline fn addCursors(comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, allocator: std.mem.Allocator) !void {
+    _ = allocator;
+    var img = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/" ++ image_name, 4);
+    defer img.deinit();
+
+    const img_size = cut_width * cut_height;
+    var len = @divFloor(img.width * img.height, img_size);
+
+    for (0..len) |i| {
+        const cur_src_x = (i * cut_width) % img.width;
+        const cur_src_y = @divFloor(i * cut_width, img.width) * cut_height;
+
+        var temp = try main.stack_allocator.alloc(u8, img_size * 4);
+        defer main.stack_allocator.free(temp);
+
+        for (0..img_size) |j| {
+            const row_count = @divFloor(j, cut_width);
+            const row_idx = j % cut_width;
+            const target_idx = (row_count * cut_width + row_idx) * 4;
+            const src_idx = ((cur_src_y + row_count) * img.width + cur_src_x + row_idx) * 4;
+            @memcpy(temp[target_idx .. target_idx + 4], img.data[src_idx .. src_idx + 4]);
+        }
+
+        var cursor = try zglfw.Cursor.create(
+            &zglfw.Image{ .w = cut_width, .h = cut_height, .pixels = @ptrCast(temp) },
+            cut_width / 2,
+            cut_height / 2,
+        );
+        switch (i) {
+            0 => default_cursor_pressed = cursor,
+            1 => default_cursor = cursor,
+            2 => royal_cursor_pressed = cursor,
+            3 => royal_cursor = cursor,
+            4 => ranger_cursor_pressed = cursor,
+            5 => ranger_cursor = cursor,
+            6 => aztec_cursor_pressed = cursor,
+            7 => aztec_cursor = cursor,
+            8 => fiery_cursor_pressed = cursor,
+            9 => fiery_cursor = cursor,
+            10 => target_enemy_cursor_pressed = cursor,
+            11 => target_enemy_cursor = cursor,
+            12 => target_ally_cursor_pressed = cursor,
+            13 => target_ally_cursor = cursor,
+            else => {},
+        }
+    }
 }
 
 inline fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
@@ -606,6 +671,8 @@ pub fn init(allocator: std.mem.Allocator) !void {
         try main_music.start();
     }
 
+    try addCursors("Cursors.png", 32, 32, allocator);
+
     light_tex = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/Light.png", 4);
 
     atlas = try zstbi.Image.createEmpty(atlas_width, atlas_height, 4, .{});
@@ -632,7 +699,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addImage("textile10x10", "Textile10x10.png", 10, 10, &ctx, allocator);
     try addImage("redLootBag", "RedLootBag.png", 8, 8, &ctx, allocator);
     try addImage("bars", "Bars.png", 24, 8, &ctx, allocator);
-    try addImage("cursors", "Cursors.png", 32, 32, &ctx, allocator);
     try addImage("errorTexture", "ErrorTexture.png", 8, 8, &ctx, allocator);
     try addImage("invisible", "Invisible.png", 8, 8, &ctx, allocator);
     try addImage("groundMasks", "GroundMasks.png", 8, 8, &ctx, allocator);

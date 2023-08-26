@@ -120,10 +120,7 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
     const scale = window.getContentScale();
     const scale_factor = @max(scale[0], scale[1]);
     const font_size = 16.0 * scale_factor;
-    const font_large = zgui.io.addFontFromMemory(embedded_font_data, @floor(font_size * 1.1));
     const font_normal = zgui.io.addFontFromFile(asset_dir ++ "fonts/Ubuntu-Bold.ttf", @floor(font_size));
-    std.debug.assert(zgui.io.getFont(0) == font_large);
-    std.debug.assert(zgui.io.getFont(1) == font_normal);
 
     zgui.backend.initWithConfig(
         window,
@@ -131,7 +128,7 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
         @intFromEnum(zgpu.GraphicsContext.swapchain_format),
         .{ .texture_filter_mode = .linear, .pipeline_multisample_count = 1 },
     );
-
+    zgui.io.setConfigFlags(.{ .no_mouse_cursor_change = true });
     zgui.io.setConfigWindowsMoveFromTitleBarOnly(true);
     zgui.io.setDefaultFont(font_normal);
 
@@ -541,6 +538,16 @@ pub fn main() !void {
     };
     _allocator = allocator; // hack because passing it to input is convoluted
 
+    var buf: [std.math.maxInt(u16)]u8 = undefined;
+    fba = std.heap.FixedBufferAllocator.init(&buf);
+    stack_allocator = fba.allocator();
+
+    zglfw.init() catch |e| {
+        std.log.err("Failed to initialize GLFW library: {any}", .{e});
+        return;
+    };
+    defer zglfw.terminate();
+
     zstbi.init(allocator);
     defer zstbi.deinit();
 
@@ -591,23 +598,21 @@ pub fn main() !void {
     //     .press_callback = callback,
     // });
 
-    var buf: [std.math.maxInt(u16)]u8 = undefined;
-    fba = std.heap.FixedBufferAllocator.init(&buf);
-    stack_allocator = fba.allocator();
-
-    zglfw.init() catch |e| {
-        std.log.err("Failed to initialize GLFW library: {any}", .{e});
-        return;
-    };
-    defer zglfw.terminate();
-
     const window = zglfw.Window.create(1280, 720, "Client", null) catch |e| {
         std.log.err("Failed to create window: {any}", .{e});
         return;
     };
     defer window.destroy();
     window.setSizeLimits(1280, 720, -1, -1);
-
+    window.setCursor(switch (settings.selected_cursor) {
+        .basic => assets.default_cursor,
+        .royal => assets.royal_cursor,
+        .ranger => assets.ranger_cursor,
+        .aztec => assets.aztec_cursor,
+        .fiery => assets.fiery_cursor,
+        .target_enemy => assets.target_enemy_cursor,
+        .target_ally => assets.target_ally_cursor,
+    });
     create(allocator, window) catch |e| {
         std.log.err("Failed to create state: {any}", .{e});
         return;

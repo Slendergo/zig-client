@@ -6,6 +6,7 @@ const main = @import("main.zig");
 const zgui = @import("zgui");
 const camera = @import("camera.zig");
 const ui = @import("ui.zig");
+const assets = @import("assets.zig");
 
 var move_up: f32 = 0.0;
 var move_down: f32 = 0.0;
@@ -150,8 +151,29 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
 }
 
 pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
-    _ = window;
     _ = mods;
+
+    if (action == .press) {
+        window.setCursor(switch (settings.selected_cursor) {
+            .basic => assets.default_cursor_pressed,
+            .royal => assets.royal_cursor_pressed,
+            .ranger => assets.ranger_cursor_pressed,
+            .aztec => assets.aztec_cursor_pressed,
+            .fiery => assets.fiery_cursor_pressed,
+            .target_enemy => assets.target_enemy_cursor_pressed,
+            .target_ally => assets.target_ally_cursor_pressed,
+        });
+    } else if (action == .release) {
+        window.setCursor(switch (settings.selected_cursor) {
+            .basic => assets.default_cursor,
+            .royal => assets.royal_cursor,
+            .ranger => assets.ranger_cursor,
+            .aztec => assets.aztec_cursor,
+            .fiery => assets.fiery_cursor,
+            .target_enemy => assets.target_enemy_cursor,
+            .target_ally => assets.target_ally_cursor,
+        });
+    }
 
     if (main.current_screen != .in_game)
         return;
@@ -196,7 +218,6 @@ pub fn updateState() void {
 
 pub fn mouseMoveEvent(window: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) void {
     _ = window;
-
     mouse_x = xpos;
     mouse_y = ypos;
 
