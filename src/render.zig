@@ -1254,6 +1254,60 @@ inline fn endDraw(
     pass.release();
 }
 
+inline fn endBaseDraw(
+    gctx: *zgpu.GraphicsContext,
+    load_render_pass_info: zgpu.wgpu.RenderPassDescriptor,
+    encoder: zgpu.wgpu.CommandEncoder,
+    vb_info: zgpu.BufferInfo,
+    ib_info: zgpu.BufferInfo,
+    pipeline: zgpu.wgpu.RenderPipeline,
+    bind_group: zgpu.wgpu.BindGroup,
+) void {
+    encoder.writeBuffer(
+        gctx.lookupResource(base_vb).?,
+        0,
+        BaseVertexData,
+        base_vert_data[0..4000],
+    );
+    endDraw(
+        encoder,
+        load_render_pass_info,
+        vb_info,
+        ib_info,
+        pipeline,
+        bind_group,
+        6000,
+        null,
+    );
+}
+
+inline fn endUiDraw(
+    gctx: *zgpu.GraphicsContext,
+    load_render_pass_info: zgpu.wgpu.RenderPassDescriptor,
+    encoder: zgpu.wgpu.CommandEncoder,
+    vb_info: zgpu.BufferInfo,
+    ib_info: zgpu.BufferInfo,
+    pipeline: zgpu.wgpu.RenderPipeline,
+    bind_group: zgpu.wgpu.BindGroup,
+) void {
+    encoder.writeBuffer(
+        gctx.lookupResource(ui_vb).?,
+        0,
+        BaseVertexData,
+        ui_vert_data[0..4000],
+    );
+    endDraw(
+        encoder,
+        load_render_pass_info,
+        vb_info,
+        ib_info,
+        pipeline,
+        bind_group,
+        6000,
+        null,
+    );
+}
+
 pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.TextureView, encoder: zgpu.wgpu.CommandEncoder) void {
     if (!map.validPos(@intFromFloat(camera.x), @intFromFloat(camera.y)))
         return;
@@ -1426,26 +1480,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
         var idx: u16 = 0;
         for (map.entities.items()) |*en| {
-            if (idx == 4000) {
-                encoder.writeBuffer(
-                    gctx.lookupResource(base_vb).?,
-                    0,
-                    BaseVertexData,
-                    base_vert_data[0..4000],
-                );
-                endDraw(
-                    encoder,
-                    load_render_pass_info,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                    6000,
-                    null,
-                );
-                idx = 0;
-            }
-
             switch (en.*) {
                 .player => |*player| {
                     if (!camera.visibleInCamera(player.x, player.y)) {
@@ -1569,6 +1603,11 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     );
                     idx += 4;
 
+                    if (idx == 4000) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        idx = 0;
+                    }
+
                     // todo make sink calculate actual values based on h, pad, etc
                     var y_pos: f32 = 5.0 + if (sink != 1.0) @as(f32, 15.0) else @as(f32, 0.0);
 
@@ -1586,9 +1625,14 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             hp_bar_w,
                             hp_bar_h,
                             assets.empty_bar_data,
-                            .{ .texel_mult = 0.5 },
+                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
                         );
                         idx += 4;
+
+                        if (idx == 4000) {
+                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            idx = 0;
+                        }
 
                         const float_hp: f32 = @floatFromInt(player.hp);
                         const float_max_hp: f32 = @floatFromInt(player.max_hp);
@@ -1604,9 +1648,14 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             hp_bar_w / hp_perc,
                             hp_bar_h,
                             hp_bar_data,
-                            .{ .texel_mult = 0.5 },
+                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
                         );
                         idx += 4;
+
+                        if (idx == 4000) {
+                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            idx = 0;
+                        }
 
                         y_pos += hp_bar_h - pad_scale_bar;
                     }
@@ -1623,9 +1672,14 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             mp_bar_w,
                             mp_bar_h,
                             assets.empty_bar_data,
-                            .{ .texel_mult = 0.5 },
+                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
                         );
                         idx += 4;
+
+                        if (idx == 4000) {
+                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            idx = 0;
+                        }
 
                         const float_mp: f32 = @floatFromInt(player.mp);
                         const float_max_mp: f32 = @floatFromInt(player.max_mp);
@@ -1641,9 +1695,14 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             mp_bar_w / mp_perc,
                             mp_bar_h,
                             mp_bar_data,
-                            .{ .texel_mult = 0.5 },
+                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
                         );
                         idx += 4;
+
+                        if (idx == 4000) {
+                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            idx = 0;
+                        }
 
                         y_pos += mp_bar_h - pad_scale_bar;
                     }
@@ -1669,6 +1728,12 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             .{ .rotation = camera.angle },
                         );
                         idx += 4;
+
+                        if (idx == 4000) {
+                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            idx = 0;
+                        }
+
                         continue;
                     }
 
@@ -1810,6 +1875,11 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     );
                     idx += 4;
 
+                    if (idx == 4000) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        idx = 0;
+                    }
+
                     if (!bo.is_enemy)
                         continue;
 
@@ -1829,9 +1899,14 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             hp_bar_w,
                             hp_bar_h,
                             assets.empty_bar_data,
-                            .{ .texel_mult = 0.5 },
+                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
                         );
                         idx += 4;
+
+                        if (idx == 4000) {
+                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            idx = 0;
+                        }
 
                         const float_hp: f32 = @floatFromInt(bo.hp);
                         const float_max_hp: f32 = @floatFromInt(bo.max_hp);
@@ -1846,9 +1921,14 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             hp_bar_w / hp_perc,
                             hp_bar_h,
                             hp_bar_data,
-                            .{ .texel_mult = 0.5 },
+                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
                         );
                         idx += 4;
+
+                        if (idx == 4000) {
+                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            idx = 0;
+                        }
 
                         y_pos += hp_bar_h - pad_scale_bar;
                     }
@@ -1877,6 +1957,11 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         .{ .texel_mult = 2.0 / size, .rotation = angle, .alpha_mult = QuadOptions.glow_off },
                     );
                     idx += 4;
+
+                    if (idx == 4000) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        idx = 0;
+                    }
                 },
             }
         }
@@ -1952,6 +2037,11 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 image.image_data.atlas_data,
             );
             ui_idx += 4;
+
+            if (ui_idx == 4000) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
         }
 
         for (ui.buttons.items()) |button| {
@@ -1968,13 +2058,28 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             );
             ui_idx += 4;
 
+            if (ui_idx == 4000) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
+
             if (button.text) |text| {
+                if (ui_idx >= 4000 - text.text.len * 4) {
+                    endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                    ui_idx = 0;
+                }
+
                 ui_idx += drawTextUi(
                     ui_idx,
                     button.x + (image_data.width() - text.width()) / 2,
                     button.y - (image_data.height() + text.height()) / 2,
                     text,
                 );
+
+                if (ui_idx == 4000) {
+                    endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                    ui_idx = 0;
+                }
             }
         }
 
@@ -1993,11 +2098,35 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             );
             ui_idx += 4;
 
+            if (ui_idx == 4000) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
+
+            if (ui_idx >= 4000 - balloon.text.text.len * 4) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
+
             ui_idx += drawTextUi(
                 ui_idx,
                 balloon._screen_x + (w - balloon.text.width()) / 2,
                 balloon._screen_y - (h + balloon.text.height()) / 2 - h / 4,
                 balloon.text,
+            );
+        }
+
+        for (ui.status_texts.items()) |status_text| {
+            if (ui_idx >= 4000 - status_text.text.text.len * 4) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
+
+            ui_idx += drawTextUi(
+                ui_idx,
+                status_text._screen_x,
+                status_text._screen_y,
+                status_text.text,
             );
         }
 
@@ -2026,10 +2155,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             const vb_info = gctx.lookupResourceInfo(text_vb) orelse break :textPass;
             const pipeline = gctx.lookupResource(text_pipeline) orelse break :textPass;
             const bind_group = gctx.lookupResource(text_bind_group) orelse break :textPass;
-
-            for (ui.status_texts.items()) |status_text| {
-                text_idx += drawText(text_idx, status_text._screen_x, status_text._screen_y, status_text.text);
-            }
 
             encoder.writeBuffer(
                 gctx.lookupResource(text_vb).?,
