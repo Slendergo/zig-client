@@ -240,6 +240,8 @@ pub const GameObject = struct {
     light_radius: f32 = 1.0,
     class: game_data.ClassType = .game_object,
     show_name: bool = false,
+    hit_sound: []const u8 = &[0]u8{},
+    death_sound: []const u8 = &[0]u8{},
 
     pub fn getSquare(self: GameObject) Square {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -325,6 +327,8 @@ pub const GameObject = struct {
             self.is_enemy = props.is_enemy;
             self.show_name = props.show_name;
             self.name = @constCast(props.display_id);
+            self.hit_sound = props.hit_sound;
+            self.death_sound = props.death_sound;
 
             if (props.draw_on_ground)
                 self.atlas_data.removePadding();
@@ -473,6 +477,8 @@ pub const Player = struct {
     anim_data: assets.AnimPlayerData = undefined,
     move_multiplier: f32 = 1.0,
     sink_level: u16 = 0,
+    hit_sound: []const u8 = &[0]u8{},
+    death_sound: []const u8 = &[0]u8{},
 
     pub fn getSquare(self: Player) Square {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -523,6 +529,8 @@ pub const Player = struct {
             self.light_color = obj_props.light_color;
             self.light_intensity = obj_props.light_intensity;
             self.light_radius = obj_props.light_radius;
+            self.hit_sound = obj_props.hit_sound;
+            self.death_sound = obj_props.death_sound;
         }
 
         entities.add(.{ .player = self.* }) catch |e| {
@@ -553,6 +561,8 @@ pub const Player = struct {
         const attack_delay: i32 = @intFromFloat((1.0 / attackFrequency(self)) * (1.0 / item_props.?.rate_of_fire));
         if (time < self.attack_start + attack_delay)
             return;
+
+        assets.playSfx(item_props.?.old_sound);
 
         const projs_len = item_props.?.num_projectiles;
         const arc_gap = item_props.?.arc_gap;
@@ -1054,6 +1064,7 @@ pub const Projectile = struct {
                 if (main.server) |*server|
                     server.sendPlayerHit(self.bullet_id, self.owner_id);
 
+                assets.playSfx(player.?.hit_sound);
                 if (self.props.damage > 0 or self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;
                     var damage_color: i32 = 0xB02020;
@@ -1061,6 +1072,8 @@ pub const Projectile = struct {
                         damage_color = 0x890AFF;
 
                     const damage_value = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
+                    if (damage_value > player.?.hp)
+                        assets.playSfx(player.?.death_sound);
 
                     const text = ui.Text{
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage_value}) catch unreachable,
@@ -1089,6 +1102,7 @@ pub const Projectile = struct {
                 if (main.server) |*server|
                     server.sendEnemyHit(time, self.bullet_id, object.?.obj_id, dead);
 
+                assets.playSfx(object.?.hit_sound);
                 if (self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;
                     var damage_color: i32 = 0xB02020;
@@ -1101,6 +1115,9 @@ pub const Projectile = struct {
                         self.owner_id,
                         piercing,
                     ));
+
+                    if (damage > object.?.hp)
+                        assets.playSfx(object.?.death_sound);
 
                     const text = ui.Text{
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable,

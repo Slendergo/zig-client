@@ -56,69 +56,6 @@ pub fn DynSlice(comptime T: type) type {
     };
 }
 
-pub const Point = struct {
-    x: f32,
-    y: f32,
-};
-
-pub const Random = struct {
-    seed: u32 = 1,
-
-    pub fn init(seed: u32) Random {
-        return Random{ .seed = seed };
-    }
-
-    pub fn nextIntRange(self: *Random, min: u32, max: u32) u32 {
-        if (min == max)
-            return min;
-        return min + (self.gen() % (max - min));
-    }
-
-    fn gen(self: *Random) u32 {
-        var lo: u32 = 16807 * (self.seed & 0xFFFF);
-        var hi: u32 = 16807 * (self.seed >> 16);
-
-        lo += (hi & 0x7FFF) << 16;
-        lo += hi >> 15;
-
-        if (lo > 0x7FFFFFFF)
-            lo -= 0x7FFFFFFF;
-
-        self.seed = lo;
-        return lo;
-    }
-};
-
-pub var rng = std.rand.DefaultPrng.init(0x99999999);
-
-pub inline fn isInBounds(x: f32, y: f32, bound_x: f32, bound_y: f32, bound_w: f32, bound_h: f32) bool {
-    return x >= bound_x and x <= bound_x + bound_w and y <= bound_y and y >= bound_y - bound_h;
-}
-
-pub fn strlen(str: []const u8) usize {
-    var i: usize = 0;
-    while (str[i] != 0) : (i += 1) {}
-    return i;
-}
-
-pub fn halfBound(angle: f32) f32 {
-    var new_angle = @mod(angle, std.math.tau);
-    new_angle = @mod(new_angle + std.math.tau, std.math.tau);
-    if (new_angle > std.math.pi)
-        new_angle -= std.math.tau;
-    return new_angle;
-}
-
-pub inline fn distSqr(x1: f32, y1: f32, x2: f32, y2: f32) f32 {
-    const x_dt = x2 - x1;
-    const y_dt = y2 - y1;
-    return x_dt * x_dt + y_dt * y_dt;
-}
-
-pub inline fn dist(x1: f32, y1: f32, x2: f32, y2: f32) f32 {
-    return @sqrt(distSqr(x1, y1, x2, y2));
-}
-
 pub const PacketWriter = struct {
     index: u16 = 0,
     length_index: u16 = 0,
@@ -225,3 +162,66 @@ pub const PacketReader = struct {
         return buf;
     }
 };
+
+pub const Point = struct {
+    x: f32,
+    y: f32,
+};
+
+pub const Random = struct {
+    seed: u32 = 1,
+
+    pub fn init(seed: u32) Random {
+        return Random{ .seed = seed };
+    }
+
+    pub fn nextIntRange(self: *Random, min: u32, max: u32) u32 {
+        if (min == max)
+            return min;
+        return min + (self.gen() % (max - min));
+    }
+
+    fn gen(self: *Random) u32 {
+        var lo: u32 = 16807 * (self.seed & 0xFFFF);
+        var hi: u32 = 16807 * (self.seed >> 16);
+
+        lo += (hi & 0x7FFF) << 16;
+        lo += hi >> 15;
+
+        if (lo > 0x7FFFFFFF)
+            lo -= 0x7FFFFFFF;
+
+        self.seed = lo;
+        return lo;
+    }
+};
+
+pub var rng = std.rand.DefaultPrng.init(0x99999999);
+
+pub inline fn isInBounds(x: f32, y: f32, bound_x: f32, bound_y: f32, bound_w: f32, bound_h: f32) bool {
+    return x >= bound_x and x <= bound_x + bound_w and y <= bound_y and y >= bound_y - bound_h;
+}
+
+pub fn strlen(str: []const u8) usize {
+    var i: usize = 0;
+    while (str[i] != 0) : (i += 1) {}
+    return i;
+}
+
+pub fn halfBound(angle: f32) f32 {
+    var new_angle = @mod(angle, std.math.tau);
+    new_angle = @mod(new_angle + std.math.tau, std.math.tau);
+    if (new_angle > std.math.pi)
+        new_angle -= std.math.tau;
+    return new_angle;
+}
+
+pub inline fn distSqr(x1: f32, y1: f32, x2: f32, y2: f32) f32 {
+    const x_dt = x2 - x1;
+    const y_dt = y2 - y1;
+    return x_dt * x_dt + y_dt * y_dt;
+}
+
+pub inline fn dist(x1: f32, y1: f32, x2: f32, y2: f32) f32 {
+    return @sqrt(distSqr(x1, y1, x2, y2));
+}

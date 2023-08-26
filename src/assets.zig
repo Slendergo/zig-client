@@ -8,6 +8,7 @@ const settings = @import("settings.zig");
 const builtin = @import("builtin");
 const zaudio = @import("zaudio");
 const utils = @import("utils.zig");
+const main = @import("main.zig");
 
 pub const padding = 2;
 
@@ -204,6 +205,7 @@ pub var medium_chars: [256]CharacterData = undefined;
 pub var medium_italic_atlas: zstbi.Image = undefined;
 pub var medium_italic_chars: [256]CharacterData = undefined;
 
+pub var sfx_map: std.StringHashMap(*zaudio.Sound) = undefined;
 pub var atlas_data: std.StringHashMap([]AtlasData) = undefined;
 pub var ui_atlas_data: std.StringHashMap([]AtlasData) = undefined;
 pub var anim_enemies: std.StringHashMap([]AnimEnemyData) = undefined;
@@ -510,8 +512,33 @@ fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]Ch
     }
 }
 
+pub fn playSfx(name: []const u8) void {
+    if (settings.sfx_volume <= 0.0)
+        return;
+
+    if (sfx_map.get(name)) |audio| {
+        audio.setVolume(settings.sfx_volume);
+        audio.start() catch return;
+        return;
+    }
+
+    const path = std.fmt.allocPrintZ(main.stack_allocator, "{s}sfx/{s}.mp3", .{ asset_dir, name }) catch return;
+    defer main.stack_allocator.free(path);
+
+    var audio = audio_state.engine.createSoundFromFile(path, .{}) catch return;
+    audio.setVolume(settings.sfx_volume);
+    audio.start() catch return;
+
+    sfx_map.put(name, audio) catch return;
+}
+
 pub fn deinit(allocator: std.mem.Allocator) void {
     main_music.destroy();
+    var audio_iter = sfx_map.valueIterator();
+    while (audio_iter.next()) |audio| {
+        audio.*.destroy();
+    }
+    sfx_map.deinit();
     audio_state.destroy(allocator);
 
     atlas.deinit();
@@ -550,6 +577,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 }
 
 pub fn init(allocator: std.mem.Allocator) !void {
+    sfx_map = std.StringHashMap(*zaudio.Sound).init(allocator);
     atlas_data = std.StringHashMap([]AtlasData).init(allocator);
     ui_atlas_data = std.StringHashMap([]AtlasData).init(allocator);
     anim_enemies = std.StringHashMap([]AnimEnemyData).init(allocator);
