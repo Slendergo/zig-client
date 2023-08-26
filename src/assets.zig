@@ -7,6 +7,7 @@ const game_data = @import("game_data.zig");
 const settings = @import("settings.zig");
 const builtin = @import("builtin");
 const zaudio = @import("zaudio");
+const utils = @import("utils.zig");
 
 pub const padding = 2;
 
@@ -124,7 +125,7 @@ const AudioState = struct {
     engine: *zaudio.Engine,
     mutex: std.Thread.Mutex = .{},
     current_set: u32 = num_sets - 1,
-    samples: std.ArrayList(f32),
+    samples: [num_sets * samples_per_set]f32 = std.mem.zeroes([num_sets * samples_per_set]f32),
 
     fn audioCallback(
         device: *zaudio.Device,
@@ -147,21 +148,11 @@ const AudioState = struct {
 
         var i: u32 = 0;
         while (i < @min(num_frames, usable_samples_per_set)) : (i += 1) {
-            audio.samples.items[base_index + i] = frames[i * num_channels];
+            audio.samples[base_index + i] = frames[i * num_channels];
         }
     }
 
     fn create(allocator: std.mem.Allocator) !*AudioState {
-        const samples = samples: {
-            var samples = std.ArrayList(f32).initCapacity(
-                allocator,
-                num_sets * samples_per_set,
-            ) catch unreachable;
-            samples.expandToCapacity();
-            @memset(samples.items, 0.0);
-            break :samples samples;
-        };
-
         const audio = try allocator.create(AudioState);
 
         const device = device: {
@@ -186,13 +177,11 @@ const AudioState = struct {
         audio.* = .{
             .device = device,
             .engine = engine,
-            .samples = samples,
         };
         return audio;
     }
 
     fn destroy(audio: *AudioState, allocator: std.mem.Allocator) void {
-        audio.samples.deinit();
         audio.engine.destroy();
         audio.device.destroy();
         allocator.destroy(audio);
@@ -203,6 +192,7 @@ pub var audio_state: *AudioState = undefined;
 pub var main_music: *zaudio.Sound = undefined;
 
 pub var atlas: zstbi.Image = undefined;
+pub var ui_atlas: zstbi.Image = undefined;
 pub var light_tex: zstbi.Image = undefined;
 
 pub var bold_atlas: zstbi.Image = undefined;
@@ -215,6 +205,7 @@ pub var medium_italic_atlas: zstbi.Image = undefined;
 pub var medium_italic_chars: [256]CharacterData = undefined;
 
 pub var atlas_data: std.StringHashMap([]AtlasData) = undefined;
+pub var ui_atlas_data: std.StringHashMap([]AtlasData) = undefined;
 pub var anim_enemies: std.StringHashMap([]AnimEnemyData) = undefined;
 pub var anim_players: std.StringHashMap([]AnimPlayerData) = undefined;
 
@@ -225,6 +216,7 @@ pub var empty_bar_data: AtlasData = undefined;
 pub var hp_bar_data: AtlasData = undefined;
 pub var mp_bar_data: AtlasData = undefined;
 pub var particle_data: AtlasData = undefined;
+pub var ui_error_data: AtlasData = undefined;
 pub var error_data: AtlasData = undefined;
 pub var error_anim: AnimEnemyData = undefined;
 
@@ -289,6 +281,63 @@ inline fn addImage(comptime sheet_name: []const u8, comptime image_name: []const
         try atlas_data.put(sheet_name, data);
     } else {
         std.log.err("Could not pack " ++ image_name ++ " into the atlas", .{});
+    }
+}
+
+inline fn addUiImage(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width_base: u32, comptime cut_height_base: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
+    var img = try zstbi.Image.loadFromFile(asset_dir ++ "" ++ image_name, 4);
+    defer img.deinit();
+
+    const imply_size = std.math.maxInt(u32);
+    const cut_width = if (cut_width_base == imply_size) img.width else cut_width_base;
+    const cut_height = if (cut_height_base == imply_size) img.height else cut_height_base;
+
+    const img_size = cut_width * cut_height;
+    var len = @divFloor(img.width * img.height, img_size);
+    var current_rects = try allocator.alloc(zstbrp.PackRect, len);
+    defer allocator.free(current_rects);
+    var data = try allocator.alloc(AtlasData, len);
+
+    for (0..len) |i| {
+        const cur_src_x = (i * cut_width) % img.width;
+        const cur_src_y = @divFloor(i * cut_width, img.width) * cut_height;
+
+        if (!isImageEmpty(img, cur_src_x, cur_src_y, cut_width, cut_height)) {
+            current_rects[i].w = cut_width + padding * 2;
+            current_rects[i].h = cut_height + padding * 2;
+        } else {
+            current_rects[i].w = 0;
+            current_rects[i].h = 0;
+        }
+    }
+
+    if (zstbrp.packRects(ctx, current_rects)) {
+        for (0..len) |i| {
+            const rect = current_rects[i];
+            if (rect.w == 0 or rect.h == 0)
+                continue;
+
+            const cur_atlas_x = rect.x + padding;
+            const cur_atlas_y = rect.y + padding;
+            const cur_src_x = (i * cut_width) % img.width;
+            const cur_src_y = @divFloor(i * cut_width, img.width) * cut_height;
+
+            for (0..img_size) |j| {
+                const row_count = @divFloor(j, cut_width);
+                const row_idx = j % cut_width;
+                const atlas_idx = ((cur_atlas_y + row_count) * atlas_width + cur_atlas_x + row_idx) * 4;
+                const src_idx = ((cur_src_y + row_count) * img.width + cur_src_x + row_idx) * 4;
+                @memcpy(ui_atlas.data[atlas_idx .. atlas_idx + 4], img.data[src_idx .. src_idx + 4]);
+            }
+        }
+
+        for (current_rects, 0..) |rect, i| {
+            data[i] = AtlasData.fromRaw(rect.x, rect.y, rect.w, rect.h);
+        }
+
+        try ui_atlas_data.put(sheet_name, data);
+    } else {
+        std.log.err("Could not pack " ++ image_name ++ " into the ui atlas", .{});
     }
 }
 
@@ -466,6 +515,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     audio_state.destroy(allocator);
 
     atlas.deinit();
+    ui_atlas.deinit();
     light_tex.deinit();
     bold_atlas.deinit();
     bold_italic_atlas.deinit();
@@ -494,12 +544,14 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     }
 
     atlas_data.deinit();
+    ui_atlas_data.deinit();
     anim_enemies.deinit();
     anim_players.deinit();
 }
 
 pub fn init(allocator: std.mem.Allocator) !void {
     atlas_data = std.StringHashMap([]AtlasData).init(allocator);
+    ui_atlas_data = std.StringHashMap([]AtlasData).init(allocator);
     anim_enemies = std.StringHashMap([]AnimEnemyData).init(allocator);
     anim_players = std.StringHashMap([]AnimPlayerData).init(allocator);
 
@@ -516,11 +568,11 @@ pub fn init(allocator: std.mem.Allocator) !void {
     audio_state = try AudioState.create(allocator);
     try audio_state.engine.start();
 
+    main_music = try audio_state.engine.createSoundFromFile(
+        asset_dir ++ "music/sorc.mp3",
+        .{},
+    );
     if (settings.music_volume > 0.0) {
-        main_music = try audio_state.engine.createSoundFromFile(
-            asset_dir ++ "music/sorc.mp3",
-            .{},
-        );
         main_music.setLooping(true);
         main_music.setVolume(settings.music_volume);
         try main_music.start();
@@ -542,6 +594,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     };
 
     var nodes = try allocator.alloc(zstbrp.PackNode, 4096);
+    defer allocator.free(nodes);
     zstbrp.initPack(&ctx, nodes);
 
     try addImage("particle", "Particle.png", 8, 8, &ctx, allocator);
@@ -610,6 +663,45 @@ pub fn init(allocator: std.mem.Allocator) !void {
     if (settings.print_atlas)
         try zstbi.Image.writeToFile(atlas, "atlas.png", .png);
 
+    ui_atlas = try zstbi.Image.createEmpty(atlas_width, atlas_height, 4, .{});
+    var ui_ctx = zstbrp.PackContext{
+        .width = atlas_width,
+        .height = atlas_height,
+        .pack_align = 0,
+        .init_mode = 0,
+        .heuristic = 0,
+        .num_nodes = 100,
+        .active_head = null,
+        .free_head = null,
+        .extra = [2]zstbrp.PackNode{ zstbrp.PackNode{ .x = 0, .y = 0, .next = null }, zstbrp.PackNode{ .x = 0, .y = 0, .next = null } },
+    };
+
+    var ui_nodes = try allocator.alloc(zstbrp.PackNode, 4096);
+    defer allocator.free(ui_nodes);
+    zstbrp.initPack(&ui_ctx, ui_nodes);
+
+    const imply_size = std.math.maxInt(u32);
+    try addUiImage("errorTexture", "sheets/ErrorTexture.png", imply_size, imply_size, &ctx, allocator);
+    try addUiImage("chatboxBackground", "ui/chat/chatboxBackground.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("chatboxCursor", "ui/chat/chatboxCursor.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("chatboxScrollWheel", "ui/chat/chatboxScrollWheel.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("speechBalloons", "ui/chat/speechBalloons.png", 32, 24, &ui_ctx, allocator);
+    try addUiImage("buttonBase", "ui/screens/buttonBase.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("buttonHover", "ui/screens/buttonHover.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("buttonPress", "ui/screens/buttonPress.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("containerView", "ui/containerView.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("minimap", "ui/minimap.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("playerInventory", "ui/playerInventory.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("playerStatusBarFame", "ui/playerStatusBarFame.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("playerStatusBarHealth", "ui/playerStatusBarHealth.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("playerStatusBarMana", "ui/playerStatusBarMana.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("playerStatusBarsDecor", "ui/playerStatusBarsDecor.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("playerStatusBarStatIcon", "ui/playerStatusBarStatIcon.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("playerStatusBarXp", "ui/playerStatusBarXp.png", imply_size, imply_size, &ui_ctx, allocator);
+
+    if (settings.print_ui_atlas)
+        try zstbi.Image.writeToFile(ui_atlas, "ui_atlas.png", .png);
+
     if (atlas_data.get("groundMasks")) |ground_masks| {
         var left_mask_data = ground_masks[0x0];
         left_mask_data.removePadding();
@@ -657,5 +749,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         };
     }
 
-    allocator.free(nodes);
+    if (ui_atlas_data.get("errorTexture")) |error_tex| {
+        ui_error_data = error_tex[0x0];
+    }
 }

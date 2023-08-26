@@ -248,8 +248,11 @@ pub const GameObject = struct {
     }
 
     pub fn addToMap(self: *GameObject) void {
-        while (!object_lock.tryLock()) {}
-        defer object_lock.unlock();
+        const should_lock = entities.isFull();
+        if (should_lock) {
+            while (!object_lock.tryLock()) {}
+        }
+        defer if (should_lock) object_lock.unlock();
 
         texParse: {
             if (game_data.obj_type_to_tex_data.get(self.obj_type)) |tex_list| {
@@ -339,7 +342,7 @@ pub const GameObject = struct {
 
         self.class = game_data.obj_type_to_class.get(self.obj_type) orelse .game_object;
 
-        entities.append(.{ .object = self.* }) catch |e| {
+        entities.add(.{ .object = self.* }) catch |e| {
             std.log.err("Could not add object to map (obj_id={d}, obj_type={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.obj_type, self.x, self.y, e });
         };
     }
@@ -502,8 +505,11 @@ pub const Player = struct {
     }
 
     pub fn addToMap(self: *Player) void {
-        while (!object_lock.tryLock()) {}
-        defer object_lock.unlock();
+        const should_lock = entities.isFull();
+        if (should_lock) {
+            while (!object_lock.tryLock()) {}
+        }
+        defer if (should_lock) object_lock.unlock();
 
         const tex_list = game_data.obj_type_to_tex_data.get(self.obj_type);
         if (tex_list != null) {
@@ -519,7 +525,7 @@ pub const Player = struct {
             self.light_radius = obj_props.light_radius;
         }
 
-        entities.append(.{ .player = self.* }) catch |e| {
+        entities.add(.{ .player = self.* }) catch |e| {
             std.log.err("Could not add player to map (obj_id={d}, obj_type={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.obj_type, self.x, self.y, e });
         };
     }
@@ -849,10 +855,11 @@ pub const Projectile = struct {
     }
 
     pub fn addToMap(self: *Projectile, needs_lock: bool) void {
-        if (needs_lock) {
+        const should_lock = needs_lock and entities.isFull();
+        if (should_lock) {
             while (!object_lock.tryLock()) {}
         }
-        defer if (needs_lock) object_lock.unlock();
+        defer if (should_lock) object_lock.unlock();
 
         const tex_list = self.props.texture_data;
         const tex = tex_list[@as(usize, @intCast(self.obj_id)) % tex_list.len];
@@ -866,7 +873,7 @@ pub const Projectile = struct {
         self.obj_id = Projectile.next_obj_id + 1;
         Projectile.next_obj_id += 1;
 
-        entities.append(.{ .projectile = self.* }) catch |e| {
+        entities.add(.{ .projectile = self.* }) catch |e| {
             std.log.err("Could not add projectile to map (obj_id={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.x, self.y, e });
         };
     }
@@ -874,7 +881,7 @@ pub const Projectile = struct {
     inline fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?*GameObject {
         var min_dist = std.math.floatMax(f32);
         var target: ?*GameObject = null;
-        for (entities.items) |*en| {
+        for (entities.items()) |*en| {
             switch (en.*) {
                 .object => |*obj| {
                     if (obj.is_enemy) {
@@ -895,7 +902,7 @@ pub const Projectile = struct {
     inline fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?*Player {
         var min_dist = std.math.floatMax(f32);
         var target: ?*Player = null;
-        for (entities.items) |*en| {
+        for (entities.items()) |*en| {
             switch (en.*) {
                 .player => |*player| {
                     const dist_sqr = utils.distSqr(player.x, player.y, x, y);
@@ -1062,7 +1069,7 @@ pub const Projectile = struct {
                         .color = damage_color,
                     };
 
-                    ui.status_texts.append(ui.StatusText{
+                    ui.status_texts.add(ui.StatusText{
                         .obj_id = player.?.obj_id,
                         .start_time = time,
                         .text = text,
@@ -1102,7 +1109,7 @@ pub const Projectile = struct {
                         .color = damage_color,
                     };
 
-                    ui.status_texts.append(ui.StatusText{
+                    ui.status_texts.add(ui.StatusText{
                         .obj_id = object.?.obj_id,
                         .start_time = time,
                         .text = text,
@@ -1163,8 +1170,8 @@ const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
 const day_cycle_ms_half: f32 = @floatFromInt(day_cycle_ms / 2);
 
 pub var object_lock: std.Thread.RwLock = .{};
-pub var entities: std.ArrayList(Entity) = undefined;
-pub var entity_indices_to_remove: std.ArrayList(usize) = undefined;
+pub var entities: utils.DynSlice(Entity) = undefined;
+pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
 pub var last_tick_time: i32 = 0;
 pub var local_player_id: i32 = -1;
 pub var interactive_id: i32 = -1;
@@ -1178,19 +1185,19 @@ pub var bg_light_intensity: f32 = 0.0;
 pub var day_light_intensity: f32 = 0.0;
 pub var night_light_intensity: f32 = 0.0;
 pub var server_time_offset: i32 = 0;
-pub var move_records: std.ArrayList(network.TimedPosition) = undefined;
+pub var move_records: utils.DynSlice(network.TimedPosition) = undefined;
 pub var last_records_clear_time: i32 = 0;
 pub var random: utils.Random = utils.Random{};
 var last_sort: i32 = -1;
 
-pub fn init(allocator: std.mem.Allocator) void {
-    entities = std.ArrayList(Entity).init(allocator);
-    entity_indices_to_remove = std.ArrayList(usize).init(allocator);
-    move_records = std.ArrayList(network.TimedPosition).init(allocator);
+pub fn init(allocator: std.mem.Allocator) !void {
+    entities = try utils.DynSlice(Entity).init(5000, allocator);
+    entity_indices_to_remove = try utils.DynSlice(usize).init(100, allocator);
+    move_records = try utils.DynSlice(network.TimedPosition).init(10, allocator);
 }
 
 pub fn dispose(allocator: std.mem.Allocator) void {
-    for (entities.items) |en| {
+    for (entities.items()) |en| {
         switch (en) {
             .object => |obj| {
                 allocator.free(obj.name_override);
@@ -1245,7 +1252,7 @@ pub fn setWH(w: isize, h: isize, allocator: std.mem.Allocator) void {
 }
 
 pub fn findEntity(obj_id: i32) ?*Entity {
-    for (entities.items) |*en| {
+    for (entities.items()) |*en| {
         switch (en.*) {
             inline else => |*obj| {
                 if (obj.obj_id == obj_id)
@@ -1258,11 +1265,11 @@ pub fn findEntity(obj_id: i32) ?*Entity {
 }
 
 pub fn removeEntity(obj_id: i32) ?Entity {
-    for (entities.items, 0..) |*en, i| {
+    for (entities.items(), 0..) |*en, i| {
         switch (en.*) {
             inline else => |*obj| {
                 if (obj.obj_id == obj_id)
-                    return entities.orderedRemove(i);
+                    return entities.remove(i);
             },
         }
     }
@@ -1297,7 +1304,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
 
     interactive_id = -1;
 
-    for (entities.items, 0..) |*en, i| {
+    for (entities.items(), 0..) |*en, i| {
         switch (en.*) {
             .object => |*obj| {
                 if (obj.class == .portal) {
@@ -1325,24 +1332,24 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
             },
             .projectile => |*proj| {
                 if (!proj.update(time, dt, allocator))
-                    entity_indices_to_remove.append(i) catch |e| {
+                    entity_indices_to_remove.add(i) catch |e| {
                         std.log.err("Out of memory: {any}", .{e});
                     };
             },
         }
     }
 
-    std.mem.reverse(usize, entity_indices_to_remove.items);
+    std.mem.reverse(usize, entity_indices_to_remove.items());
 
-    for (entity_indices_to_remove.items) |idx| {
-        _ = entities.orderedRemove(idx);
+    for (entity_indices_to_remove.items()) |idx| {
+        _ = entities.remove(idx);
     }
 
-    entity_indices_to_remove.clearRetainingCapacity();
+    entity_indices_to_remove.clear();
 
     // hack
     if (time - last_sort > 7) {
-        std.sort.pdq(Entity, entities.items, {}, lessThan);
+        std.sort.pdq(Entity, entities.items(), {}, lessThan);
         last_sort = time;
     }
 }
@@ -1420,15 +1427,15 @@ pub fn addMoveRecord(time: i32, position: network.Position) void {
         return;
     }
 
-    if (move_records.items.len == 0) {
-        move_records.append(network.TimedPosition{ .time = time, .position = position });
+    if (move_records.capacity == 0) {
+        move_records.add(network.TimedPosition{ .time = time, .position = position });
         return;
     }
 
-    const curr_record = move_records.items[move_records.items.len - 1];
+    const curr_record = move_records.items()[move_records.capacity - 1];
     const curr_id = getId(curr_record.time);
     if (id != curr_id) {
-        move_records.append(network.TimedPosition{ .time = time, .position = position });
+        move_records.add(network.TimedPosition{ .time = time, .position = position });
         return;
     }
 

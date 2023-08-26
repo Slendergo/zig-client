@@ -36,6 +36,7 @@ pub const build_version = "0.5";
 pub const app_engine_url = "http://127.0.0.1:8080/";
 pub const log_packets = LogType.off;
 pub const print_atlas = false;
+pub const print_ui_atlas = false;
 pub const rotate_speed = 0.002;
 pub const enable_tracy = false;
 
@@ -59,8 +60,8 @@ pub var respond: Button = .{ .key = .F2 };
 pub var toggle_centering: Button = .{ .key = .x };
 pub var shoot: Button = .{ .mouse = .left };
 pub var ability: Button = .{ .mouse = .right };
-pub var sfx_volume: f32 = 0.33;
-pub var music_volume: f32 = 0.33;
+pub var sfx_volume: f32 = 0.0; // 0.33;
+pub var music_volume: f32 = 0.0; // 0.33;
 
 pub fn init() void {}
 

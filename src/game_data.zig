@@ -123,17 +123,17 @@ pub const CharacterClass = struct {
     skins: ?[]CharacterSkin,
 
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !CharacterClass {
-        var slot_list = std.ArrayList(i8).init(allocator);
+        var slot_list = try utils.DynSlice(i8).init(20, allocator);
         defer slot_list.deinit();
         var slot_iter = std.mem.split(u8, node.getValue("SlotTypes") orelse "", ", ");
         while (slot_iter.next()) |s|
-            try slot_list.append(try std.fmt.parseInt(i8, s, 0));
+            try slot_list.add(try std.fmt.parseInt(i8, s, 0));
 
-        var equip_list = std.ArrayList(i16).init(allocator);
+        var equip_list = try utils.DynSlice(i16).init(20, allocator);
         defer equip_list.deinit();
         var equip_iter = std.mem.split(u8, node.getValue("Equipment") orelse "", ", ");
         while (equip_iter.next()) |s|
-            try equip_list.append(try std.fmt.parseInt(i16, s, 0));
+            try equip_list.add(try std.fmt.parseInt(i16, s, 0));
 
         return CharacterClass{
             .obj_type = try node.getAttributeInt("type", u16, 0),
@@ -142,8 +142,8 @@ pub const CharacterClass = struct {
             .hit_sound = try node.getValueAlloc("HitSound", allocator, "Unknown"),
             .death_sound = try node.getValueAlloc("DeathSound", allocator, "Unknown"),
             .blood_prob = try node.getAttributeFloat("BloodProb", f32, 0.0),
-            .slot_types = slot_list.items,
-            .equipment = equip_list.items,
+            .slot_types = slot_list.items(),
+            .equipment = equip_list.items(),
             .texture = try TextureData.parse(node.findChild("AnimatedTexture") orelse @panic("Could not parse CharacterClass"), allocator, false),
             .skins = null,
         };
@@ -170,18 +170,18 @@ pub const AnimProps = struct {
     frames: []AnimFrame,
 
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !AnimProps {
-        var frame_list = std.ArrayList(AnimFrame).init(allocator);
+        var frame_list = utils.DynSlice(AnimFrame).init(5, allocator);
         defer frame_list.deinit();
         var frame_iter = node.iterate(&.{}, "Frame");
         while (frame_iter.next()) |animNode|
-            try frame_list.append(try AnimFrame.parse(animNode, allocator));
+            try frame_list.add(try AnimFrame.parse(animNode, allocator));
 
         return AnimProps{
             .prob = try node.getAttributeFloat("prob", f32, 0.0),
             .period = try node.getAttributeInt("period", u16, 0),
             .period_jitter = try node.getAttributeInt("periodJitter", u16, 0),
             .sync = node.attributeExists("sync"),
-            .frames = frame_list.items,
+            .frames = frame_list.items(),
         };
     }
 };
@@ -310,10 +310,10 @@ pub const ObjProps = struct {
         }
 
         var proj_it = node.iterate(&.{}, "Projectile");
-        var proj_list = std.ArrayList(ProjProps).init(allocator);
+        var proj_list = try utils.DynSlice(ProjProps).init(5, allocator);
         defer proj_list.deinit();
         while (proj_it.next()) |proj_node|
-            try proj_list.append(try ProjProps.parse(proj_node, allocator));
+            try proj_list.add(try ProjProps.parse(proj_node, allocator));
 
         const float_node = node.findChild("Float");
         return ObjProps{
@@ -353,7 +353,7 @@ pub const ObjProps = struct {
             .float_time = try std.fmt.parseInt(u16, if (float_node != null) float_node.?.getAttribute("time") orelse "0" else "0", 0),
             .float_height = try std.fmt.parseFloat(f32, if (float_node != null) float_node.?.getAttribute("height") orelse "0.0" else "0.0"),
             .float_sine = float_node != null and float_node.?.getAttribute("sine") != null,
-            .projectiles = try allocator.dupe(ProjProps, proj_list.items),
+            .projectiles = try allocator.dupe(ProjProps, proj_list.items()),
             .hit_sound = try node.getValueAlloc("HitSound", allocator, "Unknown"),
             .death_sound = try node.getValueAlloc("DeathSound", allocator, "Unknown"),
         };
@@ -560,10 +560,10 @@ pub const ProjProps = struct {
 
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ProjProps {
         var effect_it = node.iterate(&.{}, "ConditionEffect");
-        var effect_list = std.ArrayList(ConditionEffect).init(allocator);
+        var effect_list = try utils.DynSlice(ConditionEffect).init(2, allocator);
         defer effect_list.deinit();
         while (effect_it.next()) |effect_node|
-            try effect_list.append(try ConditionEffect.parse(effect_node));
+            try effect_list.add(try ConditionEffect.parse(effect_node));
 
         return ProjProps{
             .texture_data = try parseTexture(node, allocator),
@@ -580,7 +580,7 @@ pub const ProjProps = struct {
             .damage = try node.getValueInt("Damage", i32, 0),
             .min_damage = try node.getValueInt("MinDamage", i32, 0),
             .max_damage = try node.getValueInt("MaxDamage", i32, 0),
-            .effects = try allocator.dupe(ConditionEffect, effect_list.items),
+            .effects = try allocator.dupe(ConditionEffect, effect_list.items()),
             .piercing = node.elementExists("MultiHit"),
             .passes_cover = node.elementExists("PassesCover"),
             .armor_piercing = node.elementExists("ArmorPiercing"),
@@ -898,22 +898,22 @@ pub const ItemProps = struct {
 
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ItemProps {
         var incr_it = node.iterate(&.{}, "IncrementStat");
-        var incr_list = std.ArrayList(StatIncrementData).init(allocator);
+        var incr_list = try utils.DynSlice(StatIncrementData).init(4, allocator);
         defer incr_list.deinit();
         while (incr_it.next()) |incr_node|
-            try incr_list.append(try StatIncrementData.parse(incr_node));
+            try incr_list.add(try StatIncrementData.parse(incr_node));
 
         var activate_it = node.iterate(&.{}, "Activate");
-        var activate_list = std.ArrayList(ActivationData).init(allocator);
+        var activate_list = try utils.DynSlice(ActivationData).init(4, allocator);
         defer activate_list.deinit();
         while (activate_it.next()) |activate_node|
-            try activate_list.append(try ActivationData.parse(activate_node, allocator));
+            try activate_list.add(try ActivationData.parse(activate_node, allocator));
 
         var extra_tooltip_it = node.iterate(&.{}, "ExtraTooltipData");
-        var extra_tooltip_list = std.ArrayList(EffectInfo).init(allocator);
+        var extra_tooltip_list = try utils.DynSlice(EffectInfo).init(4, allocator);
         defer extra_tooltip_list.deinit();
         while (extra_tooltip_it.next()) |extra_tooltip_node|
-            try extra_tooltip_list.append(try EffectInfo.parse(extra_tooltip_node, allocator));
+            try extra_tooltip_list.add(try EffectInfo.parse(extra_tooltip_node, allocator));
 
         return ItemProps{
             .consumable = node.elementExists("Consumable"),
@@ -932,8 +932,8 @@ pub const ItemProps = struct {
             .rate_of_fire = try node.getValueFloat("RateOfFire", f32, 1.0),
             .texture_data = try TextureData.parse(node.findChild("Texture").?, allocator, false),
             .projectile = if (node.elementExists("Projectile")) try ProjProps.parse(node.findChild("Projectile").?, allocator) else null,
-            .stat_increments = try allocator.dupe(StatIncrementData, incr_list.items),
-            .activations = if (node.elementExists("Activate")) try allocator.dupe(ActivationData, activate_list.items) else null,
+            .stat_increments = try allocator.dupe(StatIncrementData, incr_list.items()),
+            .activations = if (node.elementExists("Activate")) try allocator.dupe(ActivationData, activate_list.items()) else null,
             .sound = try node.getValueAlloc("Sound", allocator, ""),
             .old_sound = try node.getValueAlloc("OldSound", allocator, ""),
             .is_potion = node.elementExists("Potion"),
@@ -945,7 +945,7 @@ pub const ItemProps = struct {
             .lt_boosted = node.elementExists("LTBoosted"),
             .ld_boosted = node.elementExists("LDBoosted"),
             .backpack = node.elementExists("Backpack"),
-            .extra_tooltip_data = if (node.elementExists("ExtraTooltipData")) try allocator.dupe(EffectInfo, extra_tooltip_list.items) else null,
+            .extra_tooltip_data = if (node.elementExists("ExtraTooltipData")) try allocator.dupe(EffectInfo, extra_tooltip_list.items()) else null,
         };
     }
 };
@@ -1041,11 +1041,11 @@ pub fn init(allocator: std.mem.Allocator) !void {
     const player_root = try player_doc.getRootElement();
     var player_root_it = player_root.iterate(&.{}, "Object");
 
-    var class_list = std.ArrayList(CharacterClass).init(allocator);
+    var class_list = try utils.DynSlice(CharacterClass).init(14, allocator);
     defer class_list.deinit();
     while (player_root_it.next()) |node|
-        try class_list.append(try CharacterClass.parse(node, allocator));
-    classes = try allocator.dupe(CharacterClass, class_list.items);
+        try class_list.add(try CharacterClass.parse(node, allocator));
+    classes = try allocator.dupe(CharacterClass, class_list.items());
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
@@ -1189,23 +1189,23 @@ inline fn parseTexture(node: xml.Node, allocator: std.mem.Allocator) ![]TextureD
     const random_tex_child = node.findChild("RandomTexture");
     if (random_tex_child != null) {
         var tex_iter = random_tex_child.?.iterate(&.{}, "Texture");
-        var tex_list = std.ArrayList(TextureData).init(allocator);
+        var tex_list = try utils.DynSlice(TextureData).init(4, allocator);
         defer tex_list.deinit();
         while (tex_iter.next()) |tex_node| {
-            try tex_list.append(try TextureData.parse(tex_node, allocator, false));
+            try tex_list.add(try TextureData.parse(tex_node, allocator, false));
         }
 
-        if (tex_list.items.len > 0) {
-            return try allocator.dupe(TextureData, tex_list.items);
+        if (tex_list.capacity > 0) {
+            return try allocator.dupe(TextureData, tex_list.items());
         } else {
             var anim_tex_iter = random_tex_child.?.iterate(&.{}, "AnimatedTexture");
-            var anim_tex_list = std.ArrayList(TextureData).init(allocator);
+            var anim_tex_list = try utils.DynSlice(TextureData).init(4, allocator);
             defer anim_tex_list.deinit();
             while (anim_tex_iter.next()) |tex_node| {
-                try anim_tex_list.append(try TextureData.parse(tex_node, allocator, true));
+                try anim_tex_list.add(try TextureData.parse(tex_node, allocator, true));
             }
 
-            return try allocator.dupe(TextureData, anim_tex_list.items);
+            return try allocator.dupe(TextureData, anim_tex_list.items());
         }
     } else {
         const tex_child = node.findChild("Texture");
@@ -1271,12 +1271,12 @@ pub fn parseGrounds(doc: xml.Doc, allocator: std.mem.Allocator) !void {
         const random_tex_child = node.findChild("RandomTexture");
         if (random_tex_child != null) {
             var tex_iter = random_tex_child.?.iterate(&.{}, "Texture");
-            var tex_list = std.ArrayList(TextureData).init(allocator);
+            var tex_list = try utils.DynSlice(TextureData).init(4, allocator);
             defer tex_list.deinit();
             while (tex_iter.next()) |tex_node| {
-                try tex_list.append(try TextureData.parse(tex_node, allocator, false));
+                try tex_list.add(try TextureData.parse(tex_node, allocator, false));
             }
-            try ground_type_to_tex_data.put(obj_type, try allocator.dupe(TextureData, tex_list.items));
+            try ground_type_to_tex_data.put(obj_type, try allocator.dupe(TextureData, tex_list.items()));
         } else {
             const tex_child = node.findChild("Texture");
             if (tex_child != null) {

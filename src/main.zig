@@ -307,7 +307,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
 
                 if (zgui.collapsingHeader("World\n", .{ .default_open = true })) {
                     zgui.text("Size: {d}x{d}\n", .{ map.width, map.height });
-                    zgui.text("Entities: {d}\n", .{map.entities.items.len});
+                    zgui.text("Entities: {d}\n", .{map.entities.capacity});
 
                     while (!map.object_lock.tryLockShared()) {}
                     defer map.object_lock.unlockShared();
@@ -504,7 +504,7 @@ pub fn clear() void {
     map.local_player_id = -1;
     map.interactive_id = -1;
     map.dispose(_allocator);
-    map.entities.clearRetainingCapacity();
+    map.entities.clear();
 }
 
 pub fn disconnect() void {
@@ -563,11 +563,37 @@ pub fn main() !void {
     requests.init(allocator);
     defer requests.deinit();
 
-    map.init(allocator);
+    try map.init(allocator);
     defer map.deinit(allocator);
 
-    ui.init(allocator);
+    try ui.init(allocator);
     defer ui.deinit(allocator);
+
+    // try ui.buttons.append(.{
+    //     .x = 500,
+    //     .y = 500,
+    //     .text = .{
+    //         .text = @constCast("Hello"),
+    //         .size = 16,
+    //     },
+    //     .base_image_data = .{
+    //         .scale_x = 10.0,
+    //         .scale_y = 10.0,
+    //         .atlas_data = assets.ui_atlas_data.get("buttonBase").?[0],
+    //     },
+    //     .hover_image_data = .{
+    //         .scale_x = 11.0,
+    //         .scale_y = 11.0,
+    //         .alpha = 0.8,
+    //         .atlas_data = assets.ui_atlas_data.get("buttonHover").?[0],
+    //     },
+    //     .press_image_data = .{
+    //         .scale_x = 9.0,
+    //         .scale_y = 9.0,
+    //         .atlas_data = assets.ui_atlas_data.get("buttonPress").?[0],
+    //     },
+    //     .press_callback = callback,
+    // });
 
     var buf: [std.math.maxInt(u16)]u8 = undefined;
     fba = std.heap.FixedBufferAllocator.init(&buf);
@@ -683,25 +709,25 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
     next_char_id = try list_root.getAttributeInt("nextCharId", u8, 0);
     max_chars = try list_root.getAttributeInt("maxNumChars", u8, 0);
 
-    var char_list = std.ArrayList(CharacterData).init(allocator);
+    var char_list = try utils.DynSlice(CharacterData).init(4, allocator);
     defer char_list.deinit();
 
     var char_iter = list_root.iterate(&.{}, "Char");
     while (char_iter.next()) |node|
-        try char_list.append(try CharacterData.parse(allocator, node, try node.getAttributeInt("id", u32, 0)));
+        try char_list.add(try CharacterData.parse(allocator, node, try node.getAttributeInt("id", u32, 0)));
 
-    character_list = try allocator.dupe(CharacterData, char_list.items);
+    character_list = try allocator.dupe(CharacterData, char_list.items());
 
     const server_root = list_root.findChild("Servers");
     if (server_root != null) {
-        var server_data_list = std.ArrayList(ServerData).init(allocator);
+        var server_data_list = try utils.DynSlice(ServerData).init(4, allocator);
         defer server_data_list.deinit();
 
         var server_iter = server_root.?.iterate(&.{}, "Server");
         while (server_iter.next()) |server_node|
-            try server_data_list.append(try ServerData.parse(server_node, allocator));
+            try server_data_list.add(try ServerData.parse(server_node, allocator));
 
-        server_list = try allocator.dupe(ServerData, server_data_list.items);
+        server_list = try allocator.dupe(ServerData, server_data_list.items());
     }
 
     if (character_list.len > 0) {

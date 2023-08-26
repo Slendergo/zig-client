@@ -2,6 +2,60 @@ const std = @import("std");
 const main = @import("main.zig");
 const builtin = @import("builtin");
 
+pub fn DynSlice(comptime T: type) type {
+    return struct {
+        const Self = @This();
+        const scale_factor = 2;
+
+        capacity: usize,
+        _items: []T,
+        _allocator: std.mem.Allocator,
+
+        pub fn init(comptime default_capacity: usize, allocator: std.mem.Allocator) !Self {
+            return Self{
+                .capacity = 0,
+                ._items = try allocator.alloc(T, @max(1, default_capacity)), // have to alloc at least 1, otherwise we can't scale off of len
+                ._allocator = allocator,
+            };
+        }
+
+        pub fn deinit(self: Self) void {
+            if (@sizeOf(T) > 0) {
+                self._allocator.free(self._items);
+            }
+        }
+
+        pub inline fn clear(self: *Self) void {
+            self.capacity = 0;
+        }
+
+        pub inline fn isFull(self: Self) bool {
+            return self.capacity >= self._items.len;
+        }
+
+        pub inline fn items(self: Self) []T {
+            return self._items[0..self.capacity];
+        }
+
+        pub inline fn add(self: *Self, item: T) !void {
+            if (self.isFull()) {
+                self._items = try self._allocator.realloc(self._items, self.capacity * scale_factor);
+            }
+
+            self._items[self.capacity] = item;
+            self.capacity += 1;
+        }
+
+        pub inline fn remove(self: *Self, idx: usize) T {
+            self.capacity -= 1;
+
+            const old = self._items[idx];
+            self._items[idx] = self._items[self.capacity];
+            return old;
+        }
+    };
+}
+
 pub const Point = struct {
     x: f32,
     y: f32,
@@ -37,6 +91,10 @@ pub const Random = struct {
 
 pub var rng = std.rand.DefaultPrng.init(0x99999999);
 
+pub inline fn isInBounds(x: f32, y: f32, bound_x: f32, bound_y: f32, bound_w: f32, bound_h: f32) bool {
+    return x >= bound_x and x <= bound_x + bound_w and y <= bound_y and y >= bound_y - bound_h;
+}
+
 pub fn strlen(str: []const u8) usize {
     var i: usize = 0;
     while (str[i] != 0) : (i += 1) {}
@@ -44,8 +102,7 @@ pub fn strlen(str: []const u8) usize {
 }
 
 pub fn halfBound(angle: f32) f32 {
-    var new_angle = angle;
-    new_angle = @mod(new_angle, std.math.tau);
+    var new_angle = @mod(angle, std.math.tau);
     new_angle = @mod(new_angle + std.math.tau, std.math.tau);
     if (new_angle > std.math.pi)
         new_angle -= std.math.tau;

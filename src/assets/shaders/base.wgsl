@@ -55,8 +55,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
               let uv_y = in.uv.y + in.texel_size.y * (i - 3.5);
               let tex_x_2 = in.texel_size.x * 2.0;
               let tex_x_3 = in.texel_size.x * 3.0;
-              let tex_x_4 = in.texel_size.x * 4.0;
-              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - tex_x_4, uv_y), dx, dy).a;
               sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - tex_x_3, uv_y), dx, dy).a;
               sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - tex_x_2, uv_y), dx, dy).a;
               sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x - in.texel_size.x, uv_y), dx, dy).a;
@@ -64,13 +62,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
               sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + in.texel_size.x, uv_y), dx, dy).a;
               sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + tex_x_2, uv_y), dx, dy).a;
               sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + tex_x_3, uv_y), dx, dy).a;
-              sum += textureSampleGrad(tex, default_sampler, vec2(in.uv.x + tex_x_4, uv_y), dx, dy).a;
           }
       
           if sum == 0.0 {
             discard;
           } else {
-            pixel = vec4(in.glow_color, sum / 81.0);
+            pixel = vec4(in.glow_color, sum / 49.0);
           }
       }
     } 

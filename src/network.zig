@@ -6,6 +6,7 @@ const map = @import("map.zig");
 const game_data = @import("game_data.zig");
 const ui = @import("ui.zig");
 const camera = @import("camera.zig");
+const assets = @import("assets.zig");
 
 pub const ObjectSlot = extern struct {
     object_id: i32 align(1),
@@ -224,7 +225,7 @@ pub const Server = struct {
                 .quest_obj_id => handleQuestObjId(&self.reader),
                 .server_player_shoot => handleServerPlayerShoot(self),
                 .show_effect => handleShowEffect(&self.reader),
-                .text => handleText(&self.reader),
+                .text => handleText(&self.reader, allocator),
                 .trade_accepted => handleTradeAccepted(&self.reader),
                 .trade_changed => handleTradeChanged(&self.reader),
                 .trade_done => handleTradeDone(&self.reader),
@@ -518,7 +519,7 @@ pub const Server = struct {
                 if (map.findEntity(map.local_player_id)) |en| {
                     switch (en.*) {
                         .player => |player| {
-                            self.sendMove(tick_id, main.last_update, player.x, player.y, map.move_records.items);
+                            self.sendMove(tick_id, main.last_update, player.x, player.y, map.move_records.items());
                         },
                         else => {},
                     }
@@ -606,7 +607,7 @@ pub const Server = struct {
 
             switch (en.*) {
                 .player => |*player| {
-                    ui.status_texts.append(ui.StatusText{
+                    ui.status_texts.add(ui.StatusText{
                         .obj_id = player.obj_id,
                         .start_time = main.current_time,
                         .lifetime = 2000,
@@ -615,7 +616,7 @@ pub const Server = struct {
                     }) catch unreachable;
                 },
                 .object => |*obj| {
-                    ui.status_texts.append(ui.StatusText{
+                    ui.status_texts.add(ui.StatusText{
                         .obj_id = obj.obj_id,
                         .start_time = main.current_time,
                         .lifetime = 2000,
@@ -721,13 +722,45 @@ pub const Server = struct {
             std.log.debug("Recv - ShowEffect: effect_type={any}, target_object_id={d}, x1={e}, y1={e}, x2={e}, y2={e}, color={any}", .{ effect_type, target_object_id, pos1.x, pos1.y, pos2.x, pos2.y, color });
     }
 
-    inline fn handleText(reader: *utils.PacketReader) void {
+    inline fn handleText(reader: *utils.PacketReader, allocator: std.mem.Allocator) void {
         const name = reader.read([]u8);
         const object_id = reader.read(i32);
         const num_stars = reader.read(i32);
         const bubble_time = reader.read(u8);
         const recipient = reader.read([]u8);
-        const text = reader.read([]u8);
+        const text = allocator.dupe(u8, reader.read([]u8)) catch unreachable;
+
+        var atlas_data = assets.error_data;
+        if (assets.ui_atlas_data.get("speechBalloons")) |balloon_data| {
+            while (!map.object_lock.tryLockShared()) {}
+            defer map.object_lock.unlockShared();
+
+            // todo: guild, party and admin balloons
+
+            if (!std.mem.eql(u8, recipient, "")) {
+                atlas_data = balloon_data[1]; // tell balloon
+            } else if (map.findEntity(object_id)) |en| {
+                switch (en.*) {
+                    .object => atlas_data = balloon_data[3], // enemy balloon
+                    else => atlas_data = balloon_data[0], // normal balloon
+                }
+            }
+        }
+
+        ui.speech_balloons.add(ui.SpeechBalloon{
+            .image_data = .{
+                .scale_x = 5.0,
+                .scale_y = 5.0,
+                .atlas_data = atlas_data,
+            },
+            .text = .{
+                .text = text,
+                .size = 16,
+                .max_width = 130,
+            },
+            .target_id = object_id,
+            .start_time = main.current_time,
+        }) catch unreachable;
 
         if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
             std.log.debug("Recv - Text: name={s}, object_id={d}, num_stars={d}, bubble_time={d}, recipient={s}, text={s}", .{ name, object_id, num_stars, bubble_time, recipient, text });
@@ -803,13 +836,13 @@ pub const Server = struct {
                                 }
                             }
 
-                            ui.removeStatusText(obj.obj_id);
+                            ui.removeAttachedUi(obj.obj_id);
 
                             allocator.free(obj.name_override);
                             continue;
                         },
                         .player => |player| {
-                            ui.removeStatusText(player.obj_id);
+                            ui.removeAttachedUi(player.obj_id);
 
                             allocator.free(player.name_override);
                             allocator.free(player.guild);

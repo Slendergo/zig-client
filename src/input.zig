@@ -5,6 +5,7 @@ const map = @import("map.zig");
 const main = @import("main.zig");
 const zgui = @import("zgui");
 const camera = @import("camera.zig");
+const ui = @import("ui.zig");
 
 var move_up: f32 = 0.0;
 var move_down: f32 = 0.0;
@@ -155,8 +156,10 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
 
     if (action == .press) {
         mousePress(button);
+        ui.mousePress(@floatCast(mouse_x), @floatCast(mouse_y));
     } else if (action == .release) {
         mouseRelease(button);
+        ui.mouseRelease(@floatCast(mouse_x), @floatCast(mouse_y));
     }
 
     updateState();
@@ -194,6 +197,8 @@ pub fn mouseMoveEvent(window: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) 
 
     mouse_x = xpos;
     mouse_y = ypos;
+
+    ui.mouseMove(@floatCast(mouse_x), @floatCast(mouse_y));
 }
 
 inline fn useAbility() void {

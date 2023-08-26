@@ -54,10 +54,28 @@ pub const LightVertexData = extern struct {
     intensity: f32,
 };
 
+pub const UiVertexData = extern struct {
+    pos: [2]f32,
+    uv: [2]f32,
+    render_type: f32,
+    color: ui.RGBF32 = ui.RGBF32.fromInt(0),
+    text_type: f32 = 0.0,
+    alpha_mult: f32 = 1.0,
+    shadow_color: ui.RGBF32 = ui.RGBF32.fromInt(0),
+    shadow_alpha_mult: f32 = 0.0,
+    shadow_texel_offset: [2]f32 = [2]f32{ 0.0, 0.0 },
+    distance_factor: f32 = 0.0,
+};
+
 // must be multiples of 16 bytes. be mindful
 pub const GroundUniformData = extern struct {
     left_top_mask_uv: [4]f32,
     right_bottom_mask_uv: [4]f32,
+};
+
+pub const UiRenderType = enum(u32) {
+    normal = 0,
+    text = 1,
 };
 
 pub var base_pipeline: zgpu.RenderPipelineHandle = .{};
@@ -68,17 +86,21 @@ pub var text_pipeline: zgpu.RenderPipelineHandle = .{};
 pub var text_bind_group: zgpu.BindGroupHandle = undefined;
 pub var light_pipeline: zgpu.RenderPipelineHandle = .{};
 pub var light_bind_group: zgpu.BindGroupHandle = undefined;
+pub var ui_pipeline: zgpu.RenderPipelineHandle = .{};
+pub var ui_bind_group: zgpu.BindGroupHandle = undefined;
 
 pub var base_vb: zgpu.BufferHandle = undefined;
 pub var ground_vb: zgpu.BufferHandle = undefined;
 pub var text_vb: zgpu.BufferHandle = undefined;
 pub var light_vb: zgpu.BufferHandle = undefined;
+pub var ui_vb: zgpu.BufferHandle = undefined;
 
 pub var index_buffer: zgpu.BufferHandle = undefined;
 
 pub var base_vert_data: [4000]BaseVertexData = undefined;
 pub var ground_vert_data: [4000]GroundVertexData = undefined;
-// no nice way of having multiple batches
+pub var ui_vert_data: [4000]UiVertexData = undefined;
+// no nice way of having multiple batches for these
 pub var text_vert_data: [40000]TextVertexData = undefined;
 pub var light_vert_data: [8000]LightVertexData = undefined;
 
@@ -92,6 +114,8 @@ pub var medium_italic_text_texture: zgpu.TextureHandle = undefined;
 pub var medium_italic_text_texture_view: zgpu.TextureViewHandle = undefined;
 pub var texture: zgpu.TextureHandle = undefined;
 pub var texture_view: zgpu.TextureViewHandle = undefined;
+pub var ui_texture: zgpu.TextureHandle = undefined;
+pub var ui_texture_view: zgpu.TextureViewHandle = undefined;
 pub var light_texture: zgpu.TextureHandle = undefined;
 pub var light_texture_view: zgpu.TextureViewHandle = undefined;
 
@@ -140,6 +164,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
     createVertexBuffer(gctx, GroundVertexData, &ground_vb, ground_vert_data[0..]);
     createVertexBuffer(gctx, TextVertexData, &text_vb, text_vert_data[0..]);
     createVertexBuffer(gctx, LightVertexData, &light_vb, light_vert_data[0..]);
+    createVertexBuffer(gctx, UiVertexData, &ui_vb, ui_vert_data[0..]);
 
     @setEvalBranchQuota(1100);
     comptime var index_data: [6000]u16 = undefined;
@@ -167,6 +192,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
     createTexture(gctx, &bold_text_texture, &bold_text_texture_view, assets.bold_atlas);
     createTexture(gctx, &bold_italic_text_texture, &bold_italic_text_texture_view, assets.bold_italic_atlas);
     createTexture(gctx, &texture, &texture_view, assets.atlas);
+    createTexture(gctx, &ui_texture, &ui_texture_view, assets.ui_atlas);
     createTexture(gctx, &light_texture, &light_texture_view, assets.light_tex);
 
     sampler = gctx.createSampler(.{});
@@ -218,6 +244,26 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
     light_bind_group = gctx.createBindGroup(light_bind_group_layout, &.{
         .{ .binding = 0, .sampler_handle = linear_sampler },
         .{ .binding = 1, .texture_view_handle = light_texture_view },
+    });
+
+    const ui_bind_group_layout = gctx.createBindGroupLayout(&.{
+        zgpu.samplerEntry(0, .{ .fragment = true }, .filtering),
+        zgpu.samplerEntry(1, .{ .fragment = true }, .filtering),
+        zgpu.textureEntry(2, .{ .fragment = true }, .float, .tvdim_2d, false),
+        zgpu.textureEntry(3, .{ .fragment = true }, .float, .tvdim_2d, false),
+        zgpu.textureEntry(4, .{ .fragment = true }, .float, .tvdim_2d, false),
+        zgpu.textureEntry(5, .{ .fragment = true }, .float, .tvdim_2d, false),
+        zgpu.textureEntry(6, .{ .fragment = true }, .float, .tvdim_2d, false),
+    });
+    defer gctx.releaseResource(ui_bind_group_layout);
+    ui_bind_group = gctx.createBindGroup(ui_bind_group_layout, &.{
+        .{ .binding = 0, .sampler_handle = sampler },
+        .{ .binding = 1, .sampler_handle = linear_sampler },
+        .{ .binding = 2, .texture_view_handle = ui_texture_view },
+        .{ .binding = 3, .texture_view_handle = medium_text_texture_view },
+        .{ .binding = 4, .texture_view_handle = medium_italic_text_texture_view },
+        .{ .binding = 5, .texture_view_handle = bold_text_texture_view },
+        .{ .binding = 6, .texture_view_handle = bold_italic_text_texture_view },
     });
 
     // create normal pipeline
@@ -435,6 +481,64 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         };
         gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &light_pipeline);
     }
+
+    // create ui pipeline
+    {
+        const pipeline_layout = gctx.createPipelineLayout(&.{
+            ui_bind_group_layout,
+        });
+        defer gctx.releaseResource(pipeline_layout);
+
+        const s_mod = zgpu.createWgslShaderModule(gctx.device, @embedFile("./assets/shaders/ui.wgsl"), null);
+        defer s_mod.release();
+
+        const color_targets = [_]zgpu.wgpu.ColorTargetState{.{
+            .format = zgpu.GraphicsContext.swapchain_format,
+            .blend = &zgpu.wgpu.BlendState{
+                .color = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha },
+                .alpha = .{ .src_factor = .src_alpha, .dst_factor = .one_minus_src_alpha },
+            },
+        }};
+
+        const vertex_attributes = [_]zgpu.wgpu.VertexAttribute{
+            .{ .format = .float32x2, .offset = @offsetOf(UiVertexData, "pos"), .shader_location = 0 },
+            .{ .format = .float32x2, .offset = @offsetOf(UiVertexData, "uv"), .shader_location = 1 },
+            .{ .format = .float32x3, .offset = @offsetOf(UiVertexData, "color"), .shader_location = 2 },
+            .{ .format = .float32, .offset = @offsetOf(UiVertexData, "text_type"), .shader_location = 3 },
+            .{ .format = .float32, .offset = @offsetOf(UiVertexData, "alpha_mult"), .shader_location = 4 },
+            .{ .format = .float32x3, .offset = @offsetOf(UiVertexData, "shadow_color"), .shader_location = 5 },
+            .{ .format = .float32, .offset = @offsetOf(UiVertexData, "shadow_alpha_mult"), .shader_location = 6 },
+            .{ .format = .float32x2, .offset = @offsetOf(UiVertexData, "shadow_texel_offset"), .shader_location = 7 },
+            .{ .format = .float32, .offset = @offsetOf(UiVertexData, "distance_factor"), .shader_location = 8 },
+            .{ .format = .float32, .offset = @offsetOf(UiVertexData, "render_type"), .shader_location = 9 },
+        };
+        const vertex_buffers = [_]zgpu.wgpu.VertexBufferLayout{.{
+            .array_stride = @sizeOf(UiVertexData),
+            .attribute_count = vertex_attributes.len,
+            .attributes = &vertex_attributes,
+        }};
+
+        const pipeline_descriptor = zgpu.wgpu.RenderPipelineDescriptor{
+            .vertex = zgpu.wgpu.VertexState{
+                .module = s_mod,
+                .entry_point = "vs_main",
+                .buffer_count = vertex_buffers.len,
+                .buffers = &vertex_buffers,
+            },
+            .primitive = zgpu.wgpu.PrimitiveState{
+                .front_face = .cw,
+                .cull_mode = .none,
+                .topology = .triangle_list,
+            },
+            .fragment = &zgpu.wgpu.FragmentState{
+                .module = s_mod,
+                .entry_point = "fs_main",
+                .target_count = color_targets.len,
+                .targets = &color_targets,
+            },
+        };
+        gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &ui_pipeline);
+    }
 }
 
 inline fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_data: assets.AtlasData) u16 {
@@ -627,6 +731,8 @@ inline fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_a
 }
 
 const QuadOptions = struct {
+    const glow_off: f32 = -2.0;
+
     rotation: f32 = 0.0,
     texel_mult: f32 = 0.0,
     glow_color: i32 = -1,
@@ -855,8 +961,6 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
 
     var idx_new = idx;
     const x_base = x - camera.screen_width / 2.0;
-    var current_text_type = text.text_type;
-    _ = current_text_type;
     var x_pointer = x_base;
     var y_pointer = y - camera.screen_height / 2.0 + line_height;
     for (text.text) |char| {
@@ -941,6 +1045,155 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
     }
 
     return idx_new - idx;
+}
+
+inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
+    const rgb = ui.RGBF32.fromInt(text.color);
+    const shadow_rgb = ui.RGBF32.fromInt(text.shadow_color);
+
+    const shadow_texel_size = [2]f32{
+        text.shadow_texel_offset_mult / assets.CharacterData.atlas_w,
+        text.shadow_texel_offset_mult / assets.CharacterData.atlas_h,
+    };
+
+    const size_scale = text.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
+    const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
+
+    var idx_new = idx;
+    const x_base = x - camera.screen_width / 2.0;
+    var x_pointer = x_base;
+    var y_pointer = y - camera.screen_height / 2.0 + line_height;
+    for (text.text) |char| {
+        const char_data = switch (text.text_type) {
+            .medium => assets.medium_chars[char],
+            .medium_italic => assets.medium_italic_chars[char],
+            .bold => assets.bold_chars[char],
+            .bold_italic => assets.bold_italic_chars[char],
+        };
+
+        const next_x_pointer = x_pointer + char_data.x_advance * size_scale;
+        if (char == '\n' or next_x_pointer - x_base > text.max_width) {
+            x_pointer = x_base;
+            y_pointer += line_height;
+            continue;
+        }
+
+        if (char_data.tex_w <= 0) {
+            x_pointer += char_data.x_advance * size_scale;
+            continue;
+        }
+
+        const w = char_data.width * size_scale;
+        const h = char_data.height * size_scale;
+        const scaled_x = (x_pointer + char_data.x_offset * size_scale + w / 2) * camera.clip_scale_x;
+        const scaled_y = -(y_pointer - char_data.y_offset * size_scale - h / 2) * camera.clip_scale_y;
+        const scaled_w = w * camera.clip_scale_x;
+        const scaled_h = h * camera.clip_scale_y;
+        const px_range = 9.0 / camera.scale;
+        const float_text_type: f32 = @floatFromInt(@intFromEnum(text.text_type));
+        const float_render_type: f32 = @floatFromInt(@intFromEnum(UiRenderType.text));
+
+        x_pointer = next_x_pointer;
+
+        ui_vert_data[idx_new] = UiVertexData{
+            .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
+            .uv = [2]f32{ char_data.tex_u, char_data.tex_v },
+            .color = rgb,
+            .text_type = float_text_type,
+            .alpha_mult = text.alpha,
+            .shadow_color = shadow_rgb,
+            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_texel_offset = shadow_texel_size,
+            .distance_factor = size_scale * px_range,
+            .render_type = float_render_type,
+        };
+
+        ui_vert_data[idx_new + 1] = UiVertexData{
+            .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
+            .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v },
+            .color = rgb,
+            .text_type = float_text_type,
+            .alpha_mult = text.alpha,
+            .shadow_color = shadow_rgb,
+            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_texel_offset = shadow_texel_size,
+            .distance_factor = size_scale * px_range,
+            .render_type = float_render_type,
+        };
+
+        ui_vert_data[idx_new + 2] = UiVertexData{
+            .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
+            .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v + char_data.tex_h },
+            .color = rgb,
+            .text_type = float_text_type,
+            .alpha_mult = text.alpha,
+            .shadow_color = shadow_rgb,
+            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_texel_offset = shadow_texel_size,
+            .distance_factor = size_scale * px_range,
+            .render_type = float_render_type,
+        };
+
+        ui_vert_data[idx_new + 3] = UiVertexData{
+            .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
+            .uv = [2]f32{ char_data.tex_u, char_data.tex_v + char_data.tex_h },
+            .color = rgb,
+            .text_type = float_text_type,
+            .alpha_mult = text.alpha,
+            .shadow_color = shadow_rgb,
+            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_texel_offset = shadow_texel_size,
+            .distance_factor = size_scale * px_range,
+            .render_type = float_render_type,
+        };
+        idx_new += 4;
+    }
+
+    return idx_new - idx;
+}
+
+fn drawQuadUi(
+    idx: u16,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    alpha: f32,
+    atlas_data: assets.AtlasData,
+) void {
+    const scaled_w = w * camera.clip_scale_x;
+    const scaled_h = h * camera.clip_scale_y;
+    const scaled_x = (x - camera.screen_width / 2.0) * camera.clip_scale_x;
+    const scaled_y = -(y - camera.screen_height / 2.0) * camera.clip_scale_y;
+    const float_render_type: f32 = @floatFromInt(@intFromEnum(UiRenderType.normal));
+
+    ui_vert_data[idx] = UiVertexData{
+        .pos = [2]f32{ scaled_x, scaled_y },
+        .uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v + atlas_data.tex_h },
+        .alpha_mult = alpha,
+        .render_type = float_render_type,
+    };
+
+    ui_vert_data[idx + 1] = UiVertexData{
+        .pos = [2]f32{ scaled_x + scaled_w, scaled_y },
+        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w, atlas_data.tex_v + atlas_data.tex_h },
+        .alpha_mult = alpha,
+        .render_type = float_render_type,
+    };
+
+    ui_vert_data[idx + 2] = UiVertexData{
+        .pos = [2]f32{ scaled_x + scaled_w, scaled_y + scaled_h },
+        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w, atlas_data.tex_v },
+        .alpha_mult = alpha,
+        .render_type = float_render_type,
+    };
+
+    ui_vert_data[idx + 3] = UiVertexData{
+        .pos = [2]f32{ scaled_x, scaled_y + scaled_h },
+        .uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
+        .alpha_mult = alpha,
+        .render_type = float_render_type,
+    };
 }
 
 inline fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: i32, intensity: f32) void {
@@ -1161,7 +1414,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     }
 
     normalPass: {
-        if (map.entities.items.len <= 0)
+        if (map.entities.capacity <= 0)
             break :normalPass;
 
         while (!map.object_lock.tryLock()) {}
@@ -1172,7 +1425,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         const bind_group = gctx.lookupResource(base_bind_group) orelse break :normalPass;
 
         var idx: u16 = 0;
-        for (map.entities.items) |*en| {
+        for (map.entities.items()) |*en| {
             if (idx == 4000) {
                 encoder.writeBuffer(
                     gctx.lookupResource(base_vb).?,
@@ -1621,7 +1874,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         w,
                         h,
                         proj.atlas_data,
-                        .{ .texel_mult = 2.0 / size, .rotation = angle },
+                        .{ .texel_mult = 2.0 / size, .rotation = angle, .alpha_mult = QuadOptions.glow_off },
                     );
                     idx += 4;
                 },
@@ -1657,35 +1910,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         );
     }
 
-    if (text_idx != 0) {
-        textPass: {
-            const vb_info = gctx.lookupResourceInfo(text_vb) orelse break :textPass;
-            const pipeline = gctx.lookupResource(text_pipeline) orelse break :textPass;
-            const bind_group = gctx.lookupResource(text_bind_group) orelse break :textPass;
-
-            for (ui.status_texts.items) |status_text| {
-                text_idx += drawText(text_idx, status_text.screen_x, status_text.screen_y, status_text.text);
-            }
-
-            encoder.writeBuffer(
-                gctx.lookupResource(text_vb).?,
-                0,
-                TextVertexData,
-                text_vert_data[0..text_idx],
-            );
-            endDraw(
-                encoder,
-                load_render_pass_info,
-                vb_info,
-                ib_info,
-                pipeline,
-                bind_group,
-                @divFloor(text_idx, 4) * 6,
-                null,
-            );
-        }
-    }
-
     if (light_idx != 0) {
         lightPass: {
             const vb_info = gctx.lookupResourceInfo(light_vb) orelse break :lightPass;
@@ -1706,6 +1930,121 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 pipeline,
                 bind_group,
                 @divFloor(light_idx, 4) * 6,
+                null,
+            );
+        }
+    }
+
+    uiPass: {
+        const vb_info = gctx.lookupResourceInfo(ui_vb) orelse break :uiPass;
+        const pipeline = gctx.lookupResource(ui_pipeline) orelse break :uiPass;
+        const bind_group = gctx.lookupResource(ui_bind_group) orelse break :uiPass;
+
+        var ui_idx: u16 = 0;
+        for (ui.ui_images.items()) |image| {
+            drawQuadUi(
+                ui_idx,
+                image.x,
+                image.y,
+                image.image_data.width(),
+                image.image_data.height(),
+                image.image_data.alpha,
+                image.image_data.atlas_data,
+            );
+            ui_idx += 4;
+        }
+
+        for (ui.buttons.items()) |button| {
+            const image_data = button.imageData();
+
+            drawQuadUi(
+                ui_idx,
+                button.x,
+                button.y,
+                image_data.width(),
+                image_data.height(),
+                image_data.alpha,
+                image_data.atlas_data,
+            );
+            ui_idx += 4;
+
+            if (button.text) |text| {
+                ui_idx += drawTextUi(
+                    ui_idx,
+                    button.x + (image_data.width() - text.width()) / 2,
+                    button.y - (image_data.height() + text.height()) / 2,
+                    text,
+                );
+            }
+        }
+
+        for (ui.speech_balloons.items()) |balloon| {
+            const w = balloon.image_data.width();
+            const h = balloon.image_data.height();
+
+            drawQuadUi(
+                ui_idx,
+                balloon._screen_x,
+                balloon._screen_y,
+                w,
+                h,
+                balloon.image_data.alpha,
+                balloon.image_data.atlas_data,
+            );
+            ui_idx += 4;
+
+            ui_idx += drawTextUi(
+                ui_idx,
+                balloon._screen_x + (w - balloon.text.width()) / 2,
+                balloon._screen_y - (h + balloon.text.height()) / 2 - h / 4,
+                balloon.text,
+            );
+        }
+
+        if (ui_idx != 0) {
+            encoder.writeBuffer(
+                gctx.lookupResource(ui_vb).?,
+                0,
+                UiVertexData,
+                ui_vert_data[0..ui_idx],
+            );
+            endDraw(
+                encoder,
+                load_render_pass_info,
+                vb_info,
+                ib_info,
+                pipeline,
+                bind_group,
+                @divFloor(ui_idx, 4) * 6,
+                null,
+            );
+        }
+    }
+
+    if (text_idx != 0) {
+        textPass: {
+            const vb_info = gctx.lookupResourceInfo(text_vb) orelse break :textPass;
+            const pipeline = gctx.lookupResource(text_pipeline) orelse break :textPass;
+            const bind_group = gctx.lookupResource(text_bind_group) orelse break :textPass;
+
+            for (ui.status_texts.items()) |status_text| {
+                text_idx += drawText(text_idx, status_text._screen_x, status_text._screen_y, status_text.text);
+            }
+
+            encoder.writeBuffer(
+                gctx.lookupResource(text_vb).?,
+                0,
+                TextVertexData,
+                text_vert_data[0..text_idx],
+            );
+            endDraw(
+                encoder,
+                load_render_pass_info,
+                vb_info,
+                ib_info,
+                pipeline,
+                bind_group,
+                @divFloor(text_idx, 4) * 6,
                 null,
             );
         }
