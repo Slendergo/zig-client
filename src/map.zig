@@ -364,6 +364,8 @@ pub const GameObject = struct {
                     break :moveBlock;
                 }
 
+                // keep the / 50.0 in sync with server ms tickrate or better yet copy over the movement from flash 1-1
+
                 const last_tick_var = last_tick_time;
                 const scale_dt = @as(f32, @floatFromInt(time - last_tick_var)) / 200.0;
                 if (scale_dt >= 1.0) {
