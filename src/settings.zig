@@ -74,6 +74,7 @@ pub var sfx_volume: f32 = 0.33;
 pub var music_volume: f32 = 0.33;
 pub var enable_glow = false;
 pub var enable_lights = false;
+pub var enable_vsync = true;
 pub var selected_cursor = CursorType.aztec;
 
 pub fn init() void {}

@@ -206,7 +206,7 @@ pub const GameObject = struct {
     max_hp: i32 = 0,
     hp: i32 = 0,
     defense: i32 = 0,
-    condition: game_data.Condition = game_data.Condition{},
+    condition: utils.Condition = utils.Condition{},
     level: i32 = 0,
     tex_1: i32 = 0,
     tex_2: i32 = 0,
@@ -365,8 +365,7 @@ pub const GameObject = struct {
                     break :moveBlock;
                 }
 
-                const last_tick_var = last_tick_time;
-                const scale_dt = @as(f32, @floatFromInt(time - last_tick_var)) / tick_ms;
+                const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_ms;
                 if (scale_dt >= 1.0) {
                     self.x = self.target_x;
                     self.y = self.target_y;
@@ -444,7 +443,7 @@ pub const Player = struct {
     dexterity_bonus: i32 = 0,
     health_stack_count: i32 = 0,
     magic_stack_count: i32 = 0,
-    condition: game_data.Condition = game_data.Condition{},
+    condition: utils.Condition = utils.Condition{},
     inventory: [20]i32 = [_]i32{-1} ** 20,
     has_backpack: bool = false,
     exp_goal: i32 = 0,

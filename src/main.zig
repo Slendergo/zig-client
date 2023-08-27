@@ -111,7 +111,7 @@ pub var sent_hello = false;
 var _allocator: std.mem.Allocator = undefined;
 
 fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
-    gctx = try zgpu.GraphicsContext.create(allocator, window, .{ .present_mode = .immediate });
+    gctx = try zgpu.GraphicsContext.create(allocator, window, .{ .present_mode = if (settings.enable_vsync) .fifo else .immediate });
     _ = window.setKeyCallback(input.keyEvent);
     _ = window.setCursorPosCallback(input.mouseMoveEvent);
     _ = window.setMouseButtonCallback(input.mouseEvent);
