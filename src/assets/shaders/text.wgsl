@@ -59,6 +59,7 @@ fn sample_msdf(tex: vec4<f32>, dist_factor: f32, alpha_mult: f32) -> f32 {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let use_shadow = in.shadow_texel_offset.x != 0.0 && in.shadow_texel_offset.y != 0.0;
     let dx = dpdx(in.uv);
     let dy = dpdy(in.uv);
 
@@ -73,22 +74,30 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         red_tex = textureSampleGrad(medium_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
         green_tex = textureSampleGrad(medium_tex, default_sampler, in.uv, dx, dy);
         blue_tex = textureSampleGrad(medium_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
-        tex_offset = textureSampleGrad(medium_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        if use_shadow {
+            tex_offset = textureSampleGrad(medium_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        }
     } else if in.text_type == medium_italic_text_type {
         red_tex = textureSampleGrad(medium_italic_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
         green_tex = textureSampleGrad(medium_italic_tex, default_sampler, in.uv, dx, dy);
         blue_tex = textureSampleGrad(medium_italic_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
-        tex_offset = textureSampleGrad(medium_italic_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        if use_shadow {
+            tex_offset = textureSampleGrad(medium_italic_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        }
     } else if in.text_type == bold_text_type {
         red_tex = textureSampleGrad(bold_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
         green_tex = textureSampleGrad(bold_tex, default_sampler, in.uv, dx, dy);
         blue_tex = textureSampleGrad(bold_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
-        tex_offset = textureSampleGrad(bold_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        if use_shadow {
+            tex_offset = textureSampleGrad(bold_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        }
     } else if in.text_type == bold_italic_text_type {
         red_tex = textureSampleGrad(bold_italic_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
         green_tex = textureSampleGrad(bold_italic_tex, default_sampler, in.uv, dx, dy);
         blue_tex = textureSampleGrad(bold_italic_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
-        tex_offset = textureSampleGrad(bold_italic_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        if use_shadow {
+            tex_offset = textureSampleGrad(bold_italic_tex, default_sampler, in.uv - in.shadow_texel_offset, dx, dy);
+        }
     }
 
     let red = sample_msdf(red_tex, in.distance_factor, in.alpha_mult);
@@ -98,9 +107,13 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let alpha = clamp(subpixel * (red + green + blue), 0.0, 1.0);
     let base_pixel = vec4(red * in.color.r, green * in.color.g, blue * in.color.b, alpha);
 
-    // don't subpixel aa the offset, it's supposed to be a shadow
-    let offset_opacity = sample_msdf(tex_offset, in.distance_factor, in.alpha_mult * in.shadow_alpha_mult);
-    let offset_pixel = vec4(in.shadow_color, offset_opacity);
+    if use_shadow {
+        // don't subpixel aa the offset, it's supposed to be a shadow
+        let offset_opacity = sample_msdf(tex_offset, in.distance_factor, in.alpha_mult * in.shadow_alpha_mult);
+        let offset_pixel = vec4(in.shadow_color, offset_opacity);
 
-    return mix(offset_pixel, base_pixel, alpha);
+        return mix(offset_pixel, base_pixel, alpha);
+    } else {
+        return base_pixel;
+    }
 }

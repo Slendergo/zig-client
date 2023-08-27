@@ -1001,11 +1001,6 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
     const rgb = ui.RGBF32.fromInt(text.color);
     const shadow_rgb = ui.RGBF32.fromInt(text.shadow_color);
 
-    const shadow_texel_size = [2]f32{
-        text.shadow_texel_offset_mult / assets.CharacterData.atlas_w,
-        text.shadow_texel_offset_mult / assets.CharacterData.atlas_h,
-    };
-
     const size_scale = text.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
     const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
@@ -1019,6 +1014,11 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .medium_italic => assets.medium_italic_chars[char],
             .bold => assets.bold_chars[char],
             .bold_italic => assets.bold_italic_chars[char],
+        };
+
+        const shadow_texel_size = [2]f32{
+            text.shadow_texel_offset_mult / char_data.atlas_w,
+            text.shadow_texel_offset_mult / char_data.atlas_h,
         };
 
         const next_x_pointer = x_pointer + char_data.x_advance * size_scale;
@@ -1039,7 +1039,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
         const scaled_y = -(y_pointer - char_data.y_offset * size_scale - h / 2) * camera.clip_scale_y;
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
-        const px_range = 9.0 / camera.scale;
+        const px_range = assets.CharacterData.px_range / camera.scale;
         const float_text_type: f32 = @floatFromInt(@intFromEnum(text.text_type));
 
         x_pointer = next_x_pointer;
@@ -1100,12 +1100,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
 inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
     const rgb = ui.RGBF32.fromInt(text.color);
     const shadow_rgb = ui.RGBF32.fromInt(text.shadow_color);
-
-    const shadow_texel_size = [2]f32{
-        text.shadow_texel_offset_mult / assets.CharacterData.atlas_w,
-        text.shadow_texel_offset_mult / assets.CharacterData.atlas_h,
-    };
-
+    
     const size_scale = text.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
     const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
@@ -1119,6 +1114,11 @@ inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .medium_italic => assets.medium_italic_chars[char],
             .bold => assets.bold_chars[char],
             .bold_italic => assets.bold_italic_chars[char],
+        };
+
+        const shadow_texel_size = [2]f32{
+            text.shadow_texel_offset_mult / char_data.atlas_w,
+            text.shadow_texel_offset_mult / char_data.atlas_h,
         };
 
         const next_x_pointer = x_pointer + char_data.x_advance * size_scale;
@@ -1139,7 +1139,7 @@ inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
         const scaled_y = -(y_pointer - char_data.y_offset * size_scale - h / 2) * camera.clip_scale_y;
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
-        const px_range = 9.0 / camera.scale;
+        const px_range = assets.CharacterData.px_range / camera.scale;
         const float_text_type: f32 = @floatFromInt(@intFromEnum(text.text_type));
         const float_render_type: f32 = @floatFromInt(@intFromEnum(UiRenderType.text));
 

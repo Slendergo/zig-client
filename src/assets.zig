@@ -29,13 +29,14 @@ pub const down_dir: u8 = 2;
 pub const up_dir: u8 = 3;
 
 pub const CharacterData = struct {
-    pub const atlas_w = 1024.0;
-    pub const atlas_h = 512.0;
     pub const size = 64.0;
     pub const padding = 8.0;
     pub const padding_mult = 1.0 + CharacterData.padding * 2 / size;
     pub const line_height = 1.149;
+    pub const px_range = 18.0;
 
+    atlas_w: f32,
+    atlas_h: f32,
     x_advance: f32,
     tex_u: f32,
     tex_v: f32,
@@ -46,8 +47,10 @@ pub const CharacterData = struct {
     width: f32,
     height: f32,
 
-    pub fn parse(split: *std.mem.SplitIterator(u8, .sequence)) !CharacterData {
+    pub fn parse(split: *std.mem.SplitIterator(u8, .sequence), atlas_w: f32, atlas_h: f32) !CharacterData {
         var data = CharacterData{
+            .atlas_w = atlas_w,
+            .atlas_h = atlas_h,
             .x_advance = try std.fmt.parseFloat(f32, split.next().?) * size,
             .x_offset = try std.fmt.parseFloat(f32, split.next().?) * size,
             .y_offset = try std.fmt.parseFloat(f32, split.next().?) * size,
@@ -559,7 +562,7 @@ inline fn addAnimPlayer(comptime sheet_name: []const u8, comptime image_name: []
     }
 }
 
-fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]CharacterData) !void {
+fn parseFontData(allocator: std.mem.Allocator, atlas_w: f32, atlas_h: f32, path: []const u8, chars: *[256]CharacterData) !void {
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
 
@@ -573,7 +576,7 @@ fn parseFontData(allocator: std.mem.Allocator, path: []const u8, chars: *[256]Ch
 
         var split = std.mem.splitSequence(u8, line, ",");
         const idx = try std.fmt.parseInt(usize, split.next().?, 0);
-        chars[idx] = try CharacterData.parse(&split);
+        chars[idx] = try CharacterData.parse(&split, atlas_w, atlas_h);
     }
 }
 
@@ -653,10 +656,10 @@ pub fn init(allocator: std.mem.Allocator) !void {
     medium_atlas = try zstbi.Image.loadFromFile(asset_dir ++ "fonts/Ubuntu-Medium.png", 4);
     medium_italic_atlas = try zstbi.Image.loadFromFile(asset_dir ++ "fonts/Ubuntu-MediumItalic.png", 4);
 
-    try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-Bold.csv", &bold_chars);
-    try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-BoldItalic.csv", &bold_italic_chars);
-    try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-Medium.csv", &medium_chars);
-    try parseFontData(allocator, asset_dir ++ "fonts/Ubuntu-MediumItalic.csv", &medium_italic_chars);
+    try parseFontData(allocator, 1024, 1024, asset_dir ++ "fonts/Ubuntu-Bold.csv", &bold_chars);
+    try parseFontData(allocator, 1024, 1024, asset_dir ++ "fonts/Ubuntu-BoldItalic.csv", &bold_italic_chars);
+    try parseFontData(allocator, 1024, 512, asset_dir ++ "fonts/Ubuntu-Medium.csv", &medium_chars);
+    try parseFontData(allocator, 1024, 1024, asset_dir ++ "fonts/Ubuntu-MediumItalic.csv", &medium_italic_chars);
 
     audio_state = try AudioState.create(allocator);
     try audio_state.engine.start();
