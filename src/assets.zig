@@ -782,7 +782,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addUiImage("chatboxBackground", "ui/chat/chatboxBackground.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("chatboxCursor", "ui/chat/chatboxCursor.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("chatboxScrollWheel", "ui/chat/chatboxScrollWheel.png", imply_size, imply_size, &ui_ctx, allocator);
-    try addUiImage("speechBalloons", "ui/chat/speechBalloons.png", 32, 24, &ui_ctx, allocator);
+    try addUiImage("speechBalloons", "ui/chat/speechBalloons.png", 65, 45, &ui_ctx, allocator);
     try addUiImage("buttonBase", "ui/screens/buttonBase.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("buttonHover", "ui/screens/buttonHover.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("buttonPress", "ui/screens/buttonPress.png", imply_size, imply_size, &ui_ctx, allocator);

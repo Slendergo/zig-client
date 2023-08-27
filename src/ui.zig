@@ -348,7 +348,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
             switch (en.*) {
                 inline else => |obj| {
                     speech_balloon._screen_x = obj.screen_x - speech_balloon.width() / 2;
-                    speech_balloon._screen_y = obj.screen_y + speech_balloon.height() / 2 - 25;
+                    speech_balloon._screen_y = obj.screen_y;
                 },
             }
         }

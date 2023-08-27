@@ -749,14 +749,14 @@ pub const Server = struct {
 
         ui.speech_balloons.add(ui.SpeechBalloon{
             .image_data = .{
-                .scale_x = 5.0,
-                .scale_y = 5.0,
+                .scale_x = 3.0,
+                .scale_y = 3.0,
                 .atlas_data = atlas_data,
             },
             .text = .{
                 .text = text,
                 .size = 16,
-                .max_width = 130,
+                .max_width = 160,
             },
             .target_id = object_id,
             .start_time = main.current_time,

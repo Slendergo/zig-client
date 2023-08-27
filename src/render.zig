@@ -2160,10 +2160,11 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 ui_idx = 0;
             }
 
+            const decor_offset = h / 10;
             ui_idx += drawTextUi(
                 ui_idx,
-                balloon._screen_x + (w - balloon.text.width()) / 2,
-                balloon._screen_y - (h + balloon.text.height()) / 2 - h / 4,
+                balloon._screen_x + ((w - assets.padding * balloon.image_data.scale_x) - balloon.text.width()) / 2,
+                balloon._screen_y - (h + balloon.text.height()) / 2 - decor_offset,
                 balloon.text,
             );
         }
