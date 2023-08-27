@@ -73,6 +73,7 @@ pub var ability: Button = .{ .mouse = .right };
 pub var sfx_volume: f32 = 0.33;
 pub var music_volume: f32 = 0.33;
 pub var enable_glow = false;
+pub var enable_lights = false;
 pub var selected_cursor = CursorType.aztec;
 
 pub fn init() void {}
@@ -103,4 +104,5 @@ pub fn resetToDefault() void {
     sfx_volume = 0.33;
     music_volume = 0.33;
     enable_glow = true;
+    enable_lights = true;
 }

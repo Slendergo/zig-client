@@ -1100,7 +1100,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
 inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
     const rgb = ui.RGBF32.fromInt(text.color);
     const shadow_rgb = ui.RGBF32.fromInt(text.shadow_color);
-    
+
     const size_scale = text.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
     const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
@@ -1440,7 +1440,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 const screen_x = screen_pos.x - camera.screen_width / 2.0;
                 const screen_y = -(screen_pos.y - camera.screen_height / 2.0);
 
-                if (square.light_color > 0) {
+                if (settings.enable_lights and square.light_color > 0) {
                     drawLight(
                         light_idx,
                         camera.px_per_tile * square.light_radius,
@@ -1611,7 +1611,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     player.screen_y = screen_pos.y - 30; // account for name
                     player.screen_x = screen_pos.x - x_offset;
 
-                    if (player.light_color > 0) {
+                    if (settings.enable_lights and player.light_color > 0) {
                         drawLight(
                             light_idx,
                             w * player.light_radius,
@@ -1869,7 +1869,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     bo.screen_y = screen_pos.y - 10;
                     bo.screen_x = screen_pos.x - x_offset;
 
-                    if (bo.light_color > 0) {
+                    if (settings.enable_lights and bo.light_color > 0) {
                         drawLight(
                             light_idx,
                             w * bo.light_radius,
@@ -2016,16 +2016,18 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
         }
 
-        drawQuad(
-            idx,
-            0,
-            0,
-            camera.screen_width,
-            camera.screen_height,
-            assets.wall_backface_data,
-            .{ .flash_color = map.bg_light_color, .flash_strength = 1.0, .alpha_mult = map.getLightIntensity(time) },
-        );
-        idx += 4;
+        if (settings.enable_lights) {
+            drawQuad(
+                idx,
+                0,
+                0,
+                camera.screen_width,
+                camera.screen_height,
+                assets.wall_backface_data,
+                .{ .flash_color = map.bg_light_color, .flash_strength = 1.0, .alpha_mult = map.getLightIntensity(time) },
+            );
+            idx += 4;
+        }
 
         encoder.writeBuffer(
             gctx.lookupResource(base_vb).?,
@@ -2045,7 +2047,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         );
     }
 
-    if (light_idx != 0) {
+    if (settings.enable_lights and light_idx != 0) {
         lightPass: {
             const vb_info = gctx.lookupResourceInfo(light_vb) orelse break :lightPass;
             const pipeline = gctx.lookupResource(light_pipeline) orelse break :lightPass;
