@@ -18,6 +18,7 @@ pub const max_attack_freq: f32 = 0.008;
 pub const min_attack_mult: f32 = 0.5;
 pub const max_attack_mult: f32 = 2;
 pub const max_sink_level: u32 = 18;
+const tick_ms = 200.0;
 
 pub const Square = struct {
     tile_type: u16 = 0xFFFF,
@@ -364,10 +365,8 @@ pub const GameObject = struct {
                     break :moveBlock;
                 }
 
-                // keep the / 50.0 in sync with server ms tickrate or better yet copy over the movement from flash 1-1
-
                 const last_tick_var = last_tick_time;
-                const scale_dt = @as(f32, @floatFromInt(time - last_tick_var)) / 200.0;
+                const scale_dt = @as(f32, @floatFromInt(time - last_tick_var)) / tick_ms;
                 if (scale_dt >= 1.0) {
                     self.x = self.target_x;
                     self.y = self.target_y;
@@ -636,8 +635,7 @@ pub const Player = struct {
                         break :moveBlock;
                     }
 
-                    // keep the / 50.0 in sync with server ms tickrate or better yet copy over the movement from flash 1-1
-                    const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / 50.0;
+                    const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_ms;
                     if (scale_dt >= 1.0) {
                         self.x = self.target_x;
                         self.y = self.target_y;
