@@ -1202,6 +1202,123 @@ inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
     return idx_new - idx;
 }
 
+fn drawNineSlice(
+    idx: u16,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    image_data: ui.NineSliceImageData,
+) void {
+    const top_left = image_data.topLeft();
+    const top_left_w = top_left.texWRaw();
+    const top_left_h = top_left.texHRaw();
+    drawQuadUi(
+        idx,
+        x,
+        y,
+        top_left_w,
+        top_left_h,
+        image_data.alpha,
+        top_left,
+    );
+
+    const top_right = image_data.topRight();
+    const top_right_w = top_right.texWRaw();
+    drawQuadUi(
+        idx + 4,
+        x + (w - top_right_w),
+        y,
+        top_right_w,
+        top_right.texHRaw(),
+        image_data.alpha,
+        top_right,
+    );
+
+    const bottom_left = image_data.bottomLeft();
+    const bottom_left_w = bottom_left.texWRaw();
+    const bottom_left_h = bottom_left.texHRaw();
+    drawQuadUi(
+        idx + 2 * 4,
+        x,
+        y + (h - bottom_left_h),
+        bottom_left.texWRaw(),
+        bottom_left_h,
+        image_data.alpha,
+        bottom_left,
+    );
+
+    const bottom_right = image_data.bottomRight();
+    const bottom_right_w = bottom_right.texWRaw();
+    const bottom_right_h = bottom_right.texHRaw();
+    drawQuadUi(
+        idx + 3 * 4,
+        x + (w - bottom_right_w),
+        y + (h - bottom_right_h),
+        bottom_right_w,
+        bottom_right_h,
+        image_data.alpha,
+        bottom_right,
+    );
+
+    const top_center = image_data.topCenter();
+    drawQuadUi(
+        idx + 4 * 4,
+        x + top_left_w,
+        y,
+        w - top_left_w - top_right_w,
+        top_center.texHRaw(),
+        image_data.alpha,
+        top_center,
+    );
+
+    const bottom_center = image_data.bottomCenter();
+    const bottom_center_h = bottom_center.texHRaw();
+    drawQuadUi(
+        idx + 5 * 4,
+        x + bottom_left_w,
+        y + (h - bottom_center_h),
+        w - bottom_left_w - bottom_right_w,
+        bottom_center_h,
+        image_data.alpha,
+        bottom_center,
+    );
+
+    const middle_center = image_data.middleCenter();
+    drawQuadUi(
+        idx + 6 * 4,
+        x + top_left_w,
+        y + top_left_h,
+        w - top_left_w - top_right_w,
+        h - top_left_h - bottom_left_h,
+        image_data.alpha,
+        middle_center,
+    );
+
+    const middle_left = image_data.middleLeft();
+    drawQuadUi(
+        idx + 7 * 4,
+        x,
+        y + top_left_h,
+        middle_left.texWRaw(),
+        h - top_left_h - bottom_left_h,
+        image_data.alpha,
+        middle_left,
+    );
+
+    const middle_right = image_data.middleRight();
+    const middle_right_w = middle_right.texWRaw();
+    drawQuadUi(
+        idx + 8 * 4,
+        x + (w - middle_right_w),
+        y + top_left_h,
+        middle_right_w,
+        h - top_left_h - bottom_left_h,
+        image_data.alpha,
+        middle_right,
+    );
+}
+
 fn drawQuadUi(
     idx: u16,
     x: f32,
@@ -1214,7 +1331,7 @@ fn drawQuadUi(
     const scaled_w = w * camera.clip_scale_x;
     const scaled_h = h * camera.clip_scale_y;
     const scaled_x = (x - camera.screen_width / 2.0) * camera.clip_scale_x;
-    const scaled_y = -(y - camera.screen_height / 2.0) * camera.clip_scale_y;
+    const scaled_y = -(y + h - camera.screen_height / 2.0) * camera.clip_scale_y;
     const float_render_type: f32 = @floatFromInt(@intFromEnum(UiRenderType.normal));
 
     ui_vert_data[idx] = UiVertexData{
@@ -2047,6 +2164,31 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         );
     }
 
+    if (text_idx != 0) {
+        textPass: {
+            const vb_info = gctx.lookupResourceInfo(text_vb) orelse break :textPass;
+            const pipeline = gctx.lookupResource(text_pipeline) orelse break :textPass;
+            const bind_group = gctx.lookupResource(text_bind_group) orelse break :textPass;
+
+            encoder.writeBuffer(
+                gctx.lookupResource(text_vb).?,
+                0,
+                TextVertexData,
+                text_vert_data[0..text_idx],
+            );
+            endDraw(
+                encoder,
+                load_render_pass_info,
+                vb_info,
+                ib_info,
+                pipeline,
+                bind_group,
+                @divFloor(text_idx, 4) * 6,
+                null,
+            );
+        }
+    }
+
     if (settings.enable_lights and light_idx != 0) {
         lightPass: {
             const vb_info = gctx.lookupResourceInfo(light_vb) orelse break :lightPass;
@@ -2079,40 +2221,71 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
         var ui_idx: u16 = 0;
         for (ui.ui_images.items()) |image| {
-            drawQuadUi(
-                ui_idx,
-                image.x,
-                image.y,
-                image.image_data.width(),
-                image.image_data.height(),
-                image.image_data.alpha,
-                image.image_data.atlas_data,
-            );
-            ui_idx += 4;
+            switch (image.image_data) {
+                .nine_slice => |nine_slice| {
+                    if (ui_idx >= 4000 - 9 * 4) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
 
-            if (ui_idx == 4000) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
-                ui_idx = 0;
+                    drawNineSlice(ui_idx, image.x, image.y, nine_slice.w, nine_slice.h, nine_slice);
+                    ui_idx += 9 * 4;
+                },
+                .normal => |image_data| {
+                    drawQuadUi(
+                        ui_idx,
+                        image.x,
+                        image.y,
+                        image_data.width(),
+                        image_data.height(),
+                        image_data.alpha,
+                        image_data.atlas_data,
+                    );
+                    ui_idx += 4;
+
+                    if (ui_idx == 4000) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
+                },
             }
         }
 
         for (ui.buttons.items()) |button| {
-            const image_data = button.imageData();
+            var w: f32 = 0;
+            var h: f32 = 0;
 
-            drawQuadUi(
-                ui_idx,
-                button.x,
-                button.y,
-                image_data.width(),
-                image_data.height(),
-                image_data.alpha,
-                image_data.atlas_data,
-            );
-            ui_idx += 4;
+            switch (button.imageData()) {
+                .nine_slice => |nine_slice| {
+                    w = nine_slice.w;
+                    h = nine_slice.h;
+                    if (ui_idx >= 4000 - 9 * 4) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
 
-            if (ui_idx == 4000) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
-                ui_idx = 0;
+                    drawNineSlice(ui_idx, button.x, button.y, nine_slice.w, nine_slice.h, nine_slice);
+                    ui_idx += 9 * 4;
+                },
+                .normal => |image_data| {
+                    w = image_data.width();
+                    h = image_data.height();
+                    drawQuadUi(
+                        ui_idx,
+                        button.x,
+                        button.y,
+                        image_data.width(),
+                        image_data.height(),
+                        image_data.alpha,
+                        image_data.atlas_data,
+                    );
+                    ui_idx += 4;
+
+                    if (ui_idx == 4000) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
+                },
             }
 
             if (button.text) |text| {
@@ -2123,8 +2296,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                 ui_idx += drawTextUi(
                     ui_idx,
-                    button.x + (image_data.width() - text.width()) / 2,
-                    button.y - (image_data.height() + text.height()) / 2,
+                    button.x + (w - text.width()) / 2,
+                    button.y + (h - text.height()) / 2,
                     text,
                 );
 
@@ -2136,8 +2309,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         }
 
         for (ui.speech_balloons.items()) |balloon| {
-            const w = balloon.image_data.width();
-            const h = balloon.image_data.height();
+            const image_data = balloon.image_data.normal; // assume no 9 slice
+            const w = image_data.width();
+            const h = image_data.height();
 
             drawQuadUi(
                 ui_idx,
@@ -2145,8 +2319,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 balloon._screen_y,
                 w,
                 h,
-                balloon.image_data.alpha,
-                balloon.image_data.atlas_data,
+                image_data.alpha,
+                image_data.atlas_data,
             );
             ui_idx += 4;
 
@@ -2163,8 +2337,8 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             const decor_offset = h / 10;
             ui_idx += drawTextUi(
                 ui_idx,
-                balloon._screen_x + ((w - assets.padding * balloon.image_data.scale_x) - balloon.text.width()) / 2,
-                balloon._screen_y - (h + balloon.text.height()) / 2 - decor_offset,
+                balloon._screen_x + ((w - assets.padding * image_data.scale_x) - balloon.text.width()) / 2,
+                balloon._screen_y + (h - balloon.text.height()) / 2 - decor_offset,
                 balloon.text,
             );
         }
@@ -2198,31 +2372,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 pipeline,
                 bind_group,
                 @divFloor(ui_idx, 4) * 6,
-                null,
-            );
-        }
-    }
-
-    if (text_idx != 0) {
-        textPass: {
-            const vb_info = gctx.lookupResourceInfo(text_vb) orelse break :textPass;
-            const pipeline = gctx.lookupResource(text_pipeline) orelse break :textPass;
-            const bind_group = gctx.lookupResource(text_bind_group) orelse break :textPass;
-
-            encoder.writeBuffer(
-                gctx.lookupResource(text_vb).?,
-                0,
-                TextVertexData,
-                text_vert_data[0..text_idx],
-            );
-            endDraw(
-                encoder,
-                load_render_pass_info,
-                vb_info,
-                ib_info,
-                pipeline,
-                bind_group,
-                @divFloor(text_idx, 4) * 6,
                 null,
             );
         }

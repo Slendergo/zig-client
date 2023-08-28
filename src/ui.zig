@@ -47,34 +47,127 @@ pub const Button = struct {
 
     pub inline fn width(self: Button) f32 {
         if (self.text) |text| {
-            return @max(self.imageData().width(), text.width());
+            return @max(text.width(), switch (self.imageData()) {
+                .nine_slice => |nine_slice| return nine_slice.w,
+                .normal => |image_data| return image_data.width(),
+            });
         } else {
-            return self.imageData().width();
+            return switch (self.imageData()) {
+                .nine_slice => |nine_slice| return nine_slice.w,
+                .normal => |image_data| return image_data.width(),
+            };
         }
     }
 
     pub inline fn height(self: Button) f32 {
         if (self.text) |text| {
-            return @max(self.imageData().height(), text.height());
+            return @max(text.height(), switch (self.imageData()) {
+                .nine_slice => |nine_slice| return nine_slice.h,
+                .normal => |image_data| return image_data.height(),
+            });
         } else {
-            return self.imageData().width();
+            return switch (self.imageData()) {
+                .nine_slice => |nine_slice| return nine_slice.h,
+                .normal => |image_data| return image_data.height(),
+            };
         }
     }
 };
 
-pub const ImageData = struct {
+pub const NineSliceImageData = struct {
+    const top_left_idx = 0;
+    const top_center_idx = 1;
+    const top_right_idx = 2;
+    const middle_left_idx = 3;
+    const middle_center_idx = 4;
+    const middle_right_idx = 5;
+    const bottom_left_idx = 6;
+    const bottom_center_idx = 7;
+    const bottom_right_idx = 8;
+
+    w: f32,
+    h: f32,
+    alpha: f32 = 1.0,
+    atlas_data: [9]assets.AtlasData,
+
+    pub inline fn fromAtlasData(data: assets.AtlasData, w: f32, h: f32, slice_x: f32, slice_y: f32, slice_w: f32, slice_h: f32, alpha: f32) NineSliceImageData {
+        const base_u = data.texURaw() + assets.padding;
+        const base_v = data.texVRaw() + assets.padding;
+        const base_w = data.texWRaw() - assets.padding * 2;
+        const base_h = data.texHRaw() - assets.padding * 2;
+        return NineSliceImageData{
+            .w = w,
+            .h = h,
+            .alpha = alpha,
+            .atlas_data = [9]assets.AtlasData{
+                assets.AtlasData.fromRawF32(base_u, base_v, slice_x, slice_y),
+                assets.AtlasData.fromRawF32(base_u + slice_x, base_v, slice_w, slice_y),
+                assets.AtlasData.fromRawF32(base_u + slice_x + slice_w, base_v, base_w - slice_w - slice_x, slice_y),
+                assets.AtlasData.fromRawF32(base_u, base_v + slice_y, slice_x, slice_h),
+                assets.AtlasData.fromRawF32(base_u + slice_x, base_v + slice_y, slice_w, slice_h),
+                assets.AtlasData.fromRawF32(base_u + slice_x + slice_w, base_v + slice_y, base_w - slice_w - slice_x, slice_h),
+                assets.AtlasData.fromRawF32(base_u, base_v + slice_y + slice_h, slice_x, base_h - slice_h - slice_y),
+                assets.AtlasData.fromRawF32(base_u + slice_x, base_v + slice_y + slice_h, slice_w, base_h - slice_h - slice_y),
+                assets.AtlasData.fromRawF32(base_u + slice_x + slice_w, base_v + slice_y + slice_h, base_w - slice_w - slice_x, base_h - slice_h - slice_y),
+            },
+        };
+    }
+
+    pub inline fn topLeft(self: NineSliceImageData) assets.AtlasData {
+        return self.atlas_data[top_left_idx];
+    }
+
+    pub inline fn topCenter(self: NineSliceImageData) assets.AtlasData {
+        return self.atlas_data[top_center_idx];
+    }
+
+    pub inline fn topRight(self: NineSliceImageData) assets.AtlasData {
+        return self.atlas_data[top_right_idx];
+    }
+
+    pub inline fn middleLeft(self: NineSliceImageData) assets.AtlasData {
+        return self.atlas_data[middle_left_idx];
+    }
+
+    pub inline fn middleCenter(self: NineSliceImageData) assets.AtlasData {
+        return self.atlas_data[middle_center_idx];
+    }
+
+    pub inline fn middleRight(self: NineSliceImageData) assets.AtlasData {
+        return self.atlas_data[middle_right_idx];
+    }
+
+    pub inline fn bottomLeft(self: NineSliceImageData) assets.AtlasData {
+        return self.atlas_data[bottom_left_idx];
+    }
+
+    pub inline fn bottomCenter(self: NineSliceImageData) assets.AtlasData {
+        return self.atlas_data[bottom_center_idx];
+    }
+
+    pub inline fn bottomRight(self: NineSliceImageData) assets.AtlasData {
+        return self.atlas_data[bottom_right_idx];
+    }
+};
+
+pub const NormalImageData = struct {
     scale_x: f32 = 1.0,
     scale_y: f32 = 1.0,
     alpha: f32 = 1.0,
     atlas_data: assets.AtlasData,
 
-    pub inline fn width(self: ImageData) f32 {
+    pub inline fn width(self: NormalImageData) f32 {
         return self.atlas_data.texWRaw() * self.scale_x;
     }
 
-    pub inline fn height(self: ImageData) f32 {
+    pub inline fn height(self: NormalImageData) f32 {
         return self.atlas_data.texHRaw() * self.scale_y;
     }
+};
+
+pub const ImageData = union(enum) {
+    nine_slice: NineSliceImageData,
+    normal: NormalImageData,
 };
 
 pub const Image = struct {
@@ -93,11 +186,17 @@ pub const SpeechBalloon = struct {
     _screen_y: f32 = 0.0,
 
     pub inline fn width(self: SpeechBalloon) f32 {
-        return @max(self.image_data.width(), self.text.width());
+        return @max(self.text.width(), switch (self.image_data) {
+            .nine_slice => |nine_slice| return nine_slice.w,
+            .normal => |image_data| return image_data.width(),
+        });
     }
 
     pub inline fn height(self: SpeechBalloon) f32 {
-        return @max(self.image_data.height(), self.text.height());
+        return @max(self.text.height(), switch (self.image_data) {
+            .nine_slice => |nine_slice| return nine_slice.h,
+            .normal => |image_data| return image_data.height(),
+        });
     }
 };
 
@@ -118,11 +217,11 @@ pub const StatusText = struct {
     _screen_y: f32 = 0.0,
 
     pub inline fn width(self: StatusText) f32 {
-        return self.image.width();
+        return self.text.width();
     }
 
     pub inline fn height(self: StatusText) f32 {
-        return self.image.height();
+        return self.text.height();
     }
 };
 
@@ -342,13 +441,13 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
 
         const frac = @as(f32, @floatFromInt(elapsed)) / @as(f32, lifetime);
         const alpha = 1.0 - frac * 2.0 + 0.9;
-        speech_balloon.image_data.alpha = alpha;
+        speech_balloon.image_data.normal.alpha = alpha; // assume no 9 slice
         speech_balloon.text.alpha = alpha;
         if (map.findEntity(speech_balloon.target_id)) |en| {
             switch (en.*) {
                 inline else => |obj| {
                     speech_balloon._screen_x = obj.screen_x - speech_balloon.width() / 2;
-                    speech_balloon._screen_y = obj.screen_y;
+                    speech_balloon._screen_y = obj.screen_y - speech_balloon.height();
                 },
             }
         }

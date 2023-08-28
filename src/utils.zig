@@ -337,7 +337,7 @@ pub const Random = struct {
 pub var rng = std.rand.DefaultPrng.init(0x99999999);
 
 pub inline fn isInBounds(x: f32, y: f32, bound_x: f32, bound_y: f32, bound_w: f32, bound_h: f32) bool {
-    return x >= bound_x and x <= bound_x + bound_w and y <= bound_y and y >= bound_y - bound_h;
+    return x >= bound_x and x <= bound_x + bound_w and y >= bound_y and y <= bound_y + bound_h;
 }
 
 pub fn strlen(str: []const u8) usize {

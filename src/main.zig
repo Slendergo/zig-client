@@ -573,7 +573,7 @@ pub fn main() !void {
     try ui.init(allocator);
     defer ui.deinit(allocator);
 
-    // try ui.buttons.append(.{
+    // try ui.buttons.add(.{
     //     .x = 500,
     //     .y = 500,
     //     .text = .{
@@ -581,20 +581,40 @@ pub fn main() !void {
     //         .size = 16,
     //     },
     //     .base_image_data = .{
-    //         .scale_x = 10.0,
-    //         .scale_y = 10.0,
-    //         .atlas_data = assets.ui_atlas_data.get("buttonBase").?[0],
+    //         .nine_slice = ui.NineSliceImageData.fromAtlasData(
+    //             assets.ui_atlas_data.get("buttonBase").?[0],
+    //             100,
+    //             100,
+    //             6,
+    //             6,
+    //             7,
+    //             7,
+    //             1.0,
+    //         ),
     //     },
     //     .hover_image_data = .{
-    //         .scale_x = 11.0,
-    //         .scale_y = 11.0,
-    //         .alpha = 0.8,
-    //         .atlas_data = assets.ui_atlas_data.get("buttonHover").?[0],
+    //         .nine_slice = ui.NineSliceImageData.fromAtlasData(
+    //             assets.ui_atlas_data.get("buttonHover").?[0],
+    //             100,
+    //             100,
+    //             6,
+    //             6,
+    //             7,
+    //             7,
+    //             1.0,
+    //         ),
     //     },
     //     .press_image_data = .{
-    //         .scale_x = 9.0,
-    //         .scale_y = 9.0,
-    //         .atlas_data = assets.ui_atlas_data.get("buttonPress").?[0],
+    //         .nine_slice = ui.NineSliceImageData.fromAtlasData(
+    //             assets.ui_atlas_data.get("buttonPress").?[0],
+    //             100,
+    //             100,
+    //             6,
+    //             6,
+    //             7,
+    //             7,
+    //             1.0,
+    //         ),
     //     },
     //     .press_callback = callback,
     // });

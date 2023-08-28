@@ -96,11 +96,15 @@ pub const AtlasData = struct {
     }
 
     pub inline fn fromRaw(u: u32, v: u32, w: u32, h: u32) AtlasData {
+        return fromRawF32(@floatFromInt(u), @floatFromInt(v), @floatFromInt(w), @floatFromInt(h));
+    }
+
+    pub inline fn fromRawF32(u: f32, v: f32, w: f32, h: f32) AtlasData {
         return AtlasData{
-            .tex_u = @as(f32, @floatFromInt(u)) / @as(f32, atlas_width),
-            .tex_v = @as(f32, @floatFromInt(v)) / @as(f32, atlas_height),
-            .tex_w = @as(f32, @floatFromInt(w)) / @as(f32, atlas_width),
-            .tex_h = @as(f32, @floatFromInt(h)) / @as(f32, atlas_height),
+            .tex_u = u / @as(f32, atlas_width),
+            .tex_v = v / @as(f32, atlas_height),
+            .tex_w = w / @as(f32, atlas_width),
+            .tex_h = h / @as(f32, atlas_height),
         };
     }
 
