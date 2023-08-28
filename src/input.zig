@@ -21,6 +21,16 @@ pub var rotate: i8 = 0;
 pub var mouse_x: f64 = 0.0;
 pub var mouse_y: f64 = 0.0;
 
+pub fn reset() void {
+    move_up = 0.0;
+    move_down = 0.0;
+    move_left = 0.0;
+    move_right = 0.0;
+    rotate_left = 0;
+    rotate_right = 0;
+    rotate = 0;
+}
+
 inline fn keyPress(key: zglfw.Key) void {
     if (key == settings.move_up.getKey()) {
         move_up = 1.0;

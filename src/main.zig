@@ -513,6 +513,7 @@ pub fn disconnect() void {
     }
 
     clear();
+    input.reset();
 
     current_screen = .char_select;
 }
