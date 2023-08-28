@@ -29,6 +29,7 @@ pub fn reset() void {
     rotate_left = 0;
     rotate_right = 0;
     rotate = 0;
+    attacking = false;
 }
 
 inline fn keyPress(key: zglfw.Key) void {

@@ -110,6 +110,12 @@ pub var tick_frame = false;
 pub var sent_hello = false;
 var _allocator: std.mem.Allocator = undefined;
 
+var fps_text: *ui.UiText = undefined;
+var chat_decor: *ui.Image = undefined;
+var bars_decor: *ui.Image = undefined;
+var inventory_decor: *ui.Image = undefined;
+var minimap_decor: *ui.Image = undefined;
+
 fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
     gctx = try zgpu.GraphicsContext.create(allocator, window, .{ .present_mode = if (settings.enable_vsync) .fifo else .immediate });
     _ = window.setKeyCallback(input.keyEvent);
@@ -296,107 +302,11 @@ fn updateUi(allocator: std.mem.Allocator) !void {
         },
         ScreenType.map_editor => {},
         ScreenType.in_game => {
+            stack_allocator.free(fps_text.text.text);
+            fps_text.text.text = try std.fmt.allocPrint(stack_allocator, "FPS: {d:.1}\nMemory: {d} MB", .{ gctx.stats.fps, -1 });
+            fps_text.x = camera.screen_width - fps_text.text.width() - 10;
+
             if (zgui.begin("Debug", .{})) {
-                zgui.text(
-                    "{d:.3} ms/frame ({d:.1} fps)\n",
-                    .{ gctx.stats.average_cpu_time, gctx.stats.fps },
-                );
-
-                if (zgui.collapsingHeader("World\n", .{ .default_open = true })) {
-                    zgui.text("Size: {d}x{d}\n", .{ map.width, map.height });
-                    zgui.text("Entities: {d}\n", .{map.entities.capacity});
-
-                    while (!map.object_lock.tryLockShared()) {}
-                    defer map.object_lock.unlockShared();
-
-                    if (map.findEntity(map.local_player_id)) |en| {
-                        switch (en.*) {
-                            .player => |local_player| {
-                                const square = local_player.getSquare();
-                                zgui.text(
-                                    "Tile Speed: {d:.3}\n",
-                                    .{square.speed},
-                                );
-                            },
-                            else => {},
-                        }
-                    }
-                }
-
-                if (zgui.collapsingHeader("Player\n", .{ .default_open = true })) {
-                    while (!map.object_lock.tryLockShared()) {}
-                    defer map.object_lock.unlockShared();
-
-                    if (map.findEntity(map.local_player_id)) |en| {
-                        switch (en.*) {
-                            .player => |local_player| {
-                                zgui.text(
-                                    "Attack Angle: {d:.3}\n",
-                                    .{local_player.attack_angle},
-                                );
-
-                                zgui.text(
-                                    "Position: {d:.3}, {d:.3}\n",
-                                    .{ local_player.x, local_player.x },
-                                );
-
-                                zgui.text(
-                                    "Facing Angle: {d:.3}\n",
-                                    .{local_player.facing},
-                                );
-                                zgui.text(
-                                    "Move Angle: {d:.3}\n",
-                                    .{local_player.move_angle},
-                                );
-
-                                zgui.text(
-                                    "Attack Frequency: {d:.3} | {d} dexterity\n",
-                                    .{ local_player.attackFrequency(), local_player.dexterity },
-                                );
-
-                                zgui.text(
-                                    "Move Speed: {d:.3} | {d} speed\n",
-                                    .{ local_player.moveSpeedMultiplier(), local_player.speed },
-                                );
-
-                                zgui.text(
-                                    "Walk Multiplier: {d:.3}\n",
-                                    .{local_player.walk_speed_multiplier},
-                                );
-
-                                zgui.text(
-                                    "Move Multiplier: {d:.3}\n",
-                                    .{local_player.move_multiplier},
-                                );
-
-                                if (zgui.treeNodeFlags("Animation\n", .{ .default_open = true })) {
-                                    const tex_list = game_data.obj_type_to_tex_data.get(local_player.obj_type);
-                                    if (tex_list != null) {
-                                        const tex = tex_list.?[@as(usize, @intCast(local_player.obj_id)) % tex_list.?.len];
-                                        zgui.text(
-                                            "Texture Sheet: {s}\n",
-                                            .{tex.sheet},
-                                        );
-                                        zgui.text(
-                                            "Texture Index: {d}\n",
-                                            .{tex.index},
-                                        );
-                                    }
-                                    zgui.treePop();
-                                }
-                            },
-                            else => {},
-                        }
-                    }
-                }
-
-                if (zgui.collapsingHeader("Mouse\n", .{ .default_open = true })) {
-                    zgui.text("Screen Position: {d:.3}, {d:.3}\n", .{ input.mouse_x, input.mouse_y });
-
-                    const world_pos = camera.screenToWorld(@floatCast(input.mouse_x), @floatCast(input.mouse_y));
-                    zgui.text("World Position: {d:.3}, {d:.3}\n", .{ world_pos.x, world_pos.y });
-                }
-
                 if (zgui.collapsingHeader("Chat\n", .{ .default_open = true })) {
                     const static = struct {
                         var text_buf: [128]u8 = std.mem.zeroes([128]u8);
@@ -442,17 +352,27 @@ inline fn draw() void {
     const commands = encoder.finish(null);
     gctx.submit(&.{commands});
     if (gctx.present() == .swap_chain_resized) {
-        const float_w: f32 = @floatFromInt(gctx.swapchain_descriptor.width);
-        const float_h: f32 = @floatFromInt(gctx.swapchain_descriptor.height);
-        camera.screen_width = float_w;
-        camera.screen_height = float_h;
-        camera.clip_scale_x = 2.0 / float_w;
-        camera.clip_scale_y = 2.0 / float_h;
+        onResize(@floatFromInt(gctx.swapchain_descriptor.width), @floatFromInt(gctx.swapchain_descriptor.height));
     }
 
     back_buffer.release();
     encoder.release();
     commands.release();
+}
+
+fn onResize(w: f32, h: f32) void {
+    camera.screen_width = w;
+    camera.screen_height = h;
+    camera.clip_scale_x = 2.0 / w;
+    camera.clip_scale_y = 2.0 / h;
+
+    minimap_decor.x = camera.screen_width - minimap_decor.image_data.normal.width() - 10;
+    inventory_decor.x = camera.screen_width - inventory_decor.image_data.normal.width() - 10;
+    inventory_decor.y = camera.screen_height - inventory_decor.image_data.normal.height() - 10;
+    bars_decor.x = (camera.screen_width - bars_decor.image_data.normal.width()) / 2;
+    bars_decor.y = camera.screen_height - bars_decor.image_data.normal.height() - 10;
+    chat_decor.y = camera.screen_height - chat_decor.image_data.normal.height() - 10;
+    fps_text.y = minimap_decor.y + minimap_decor.image_data.normal.height() + 10;
 }
 
 fn networkTick(allocator: std.mem.Allocator) void {
@@ -518,6 +438,73 @@ pub fn disconnect() void {
     current_screen = .char_select;
 }
 
+fn initUi(allocator: std.mem.Allocator) !void {
+    minimap_decor = try allocator.create(ui.Image);
+    const minimap_data = (assets.ui_atlas_data.get("minimap") orelse @panic("Could not find minimap in ui atlas"))[0];
+    minimap_decor.* = ui.Image{
+        .x = camera.screen_width - minimap_data.texWRaw() - 10,
+        .y = 10,
+        .image_data = .{ .normal = .{
+            .atlas_data = minimap_data,
+        } },
+    };
+    try ui.ui_images.add(minimap_decor);
+
+    inventory_decor = try allocator.create(ui.Image);
+    const inventory_data = (assets.ui_atlas_data.get("playerInventory") orelse @panic("Could not find playerInventory in ui atlas"))[0];
+    inventory_decor.* = ui.Image{
+        .x = camera.screen_width - inventory_data.texWRaw() - 10,
+        .y = camera.screen_height - inventory_data.texHRaw() - 10,
+        .image_data = .{ .normal = .{
+            .atlas_data = inventory_data,
+        } },
+    };
+    try ui.ui_images.add(inventory_decor);
+
+    bars_decor = try allocator.create(ui.Image);
+    const bars_data = (assets.ui_atlas_data.get("playerStatusBarsDecor") orelse @panic("Could not find playerStatusBarsDecor in ui atlas"))[0];
+    bars_decor.* = ui.Image{
+        .x = (camera.screen_width - bars_data.texWRaw()) / 2,
+        .y = camera.screen_height - bars_data.texHRaw() - 10,
+        .image_data = .{ .normal = .{
+            .atlas_data = bars_data,
+        } },
+    };
+    try ui.ui_images.add(bars_decor);
+
+    chat_decor = try allocator.create(ui.Image);
+    const chat_data = (assets.ui_atlas_data.get("chatboxBackground") orelse @panic("Could not find chatboxBackground in ui atlas"))[0];
+    chat_decor.* = ui.Image{
+        .x = 10,
+        .y = camera.screen_height - chat_data.texHRaw() - 10,
+        .image_data = .{ .normal = .{
+            .atlas_data = chat_data,
+        } },
+    };
+    try ui.ui_images.add(chat_decor);
+
+    fps_text = try allocator.create(ui.UiText);
+    const text = ui.Text{
+        .text = try std.fmt.allocPrint(stack_allocator, "FPS: {d:.1}\nMemory: {d} MB", .{ gctx.stats.fps, -1 }),
+        .size = 12,
+        .text_type = .bold,
+    };
+    fps_text.* = ui.UiText{
+        .x = camera.screen_width - text.width() - 10,
+        .y = minimap_decor.y + minimap_decor.image_data.normal.height() + 10,
+        .text = text,
+    };
+    try ui.ui_texts.add(fps_text);
+}
+
+fn deinitUi(allocator: std.mem.Allocator) void {
+    allocator.destroy(minimap_decor);
+    allocator.destroy(inventory_decor);
+    allocator.destroy(bars_decor);
+    allocator.destroy(chat_decor);
+    allocator.destroy(fps_text);
+}
+
 pub fn main() !void {
     if (settings.enable_tracy) {
         // needed for tracy to register
@@ -573,52 +560,6 @@ pub fn main() !void {
     try ui.init(allocator);
     defer ui.deinit(allocator);
 
-    // try ui.buttons.add(.{
-    //     .x = 500,
-    //     .y = 500,
-    //     .text = .{
-    //         .text = @constCast("Hello"),
-    //         .size = 16,
-    //     },
-    //     .base_image_data = .{
-    //         .nine_slice = ui.NineSliceImageData.fromAtlasData(
-    //             assets.ui_atlas_data.get("buttonBase").?[0],
-    //             100,
-    //             100,
-    //             6,
-    //             6,
-    //             7,
-    //             7,
-    //             1.0,
-    //         ),
-    //     },
-    //     .hover_image_data = .{
-    //         .nine_slice = ui.NineSliceImageData.fromAtlasData(
-    //             assets.ui_atlas_data.get("buttonHover").?[0],
-    //             100,
-    //             100,
-    //             6,
-    //             6,
-    //             7,
-    //             7,
-    //             1.0,
-    //         ),
-    //     },
-    //     .press_image_data = .{
-    //         .nine_slice = ui.NineSliceImageData.fromAtlasData(
-    //             assets.ui_atlas_data.get("buttonPress").?[0],
-    //             100,
-    //             100,
-    //             6,
-    //             6,
-    //             7,
-    //             7,
-    //             1.0,
-    //         ),
-    //     },
-    //     .press_callback = callback,
-    // });
-
     const window = zglfw.Window.create(1280, 720, "Client", null) catch |e| {
         std.log.err("Failed to create window: {any}", .{e});
         return;
@@ -646,6 +587,9 @@ pub fn main() !void {
     }
 
     render.init(gctx, allocator);
+
+    try initUi(allocator);
+    defer deinitUi(allocator);
 
     network_thread = try std.Thread.spawn(.{}, networkTick, .{allocator});
     defer {

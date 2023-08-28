@@ -297,8 +297,9 @@ pub const Text = struct {
     }
 };
 
-pub var buttons: utils.DynSlice(Button) = undefined;
-pub var ui_images: utils.DynSlice(Image) = undefined;
+pub var buttons: utils.DynSlice(*Button) = undefined;
+pub var ui_images: utils.DynSlice(*Image) = undefined;
+pub var ui_texts: utils.DynSlice(*UiText) = undefined;
 pub var speech_balloons: utils.DynSlice(SpeechBalloon) = undefined;
 pub var speech_balloons_to_remove: utils.DynSlice(usize) = undefined;
 pub var status_texts: utils.DynSlice(StatusText) = undefined;
@@ -306,8 +307,9 @@ pub var status_texts_to_remove: utils.DynSlice(usize) = undefined;
 pub var obj_ids_to_remove: utils.DynSlice(i32) = undefined;
 
 pub fn init(allocator: std.mem.Allocator) !void {
-    buttons = try utils.DynSlice(Button).init(10, allocator);
-    ui_images = try utils.DynSlice(Image).init(10, allocator);
+    buttons = try utils.DynSlice(*Button).init(10, allocator);
+    ui_images = try utils.DynSlice(*Image).init(10, allocator);
+    ui_texts = try utils.DynSlice(*UiText).init(10, allocator);
     speech_balloons = try utils.DynSlice(SpeechBalloon).init(10, allocator);
     speech_balloons_to_remove = try utils.DynSlice(usize).init(10, allocator);
     status_texts = try utils.DynSlice(StatusText).init(30, allocator);
@@ -318,6 +320,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
 pub fn deinit(allocator: std.mem.Allocator) void {
     buttons.deinit();
     ui_images.deinit();
+    ui_texts.deinit();
     speech_balloons.deinit();
     speech_balloons_to_remove.deinit();
     for (status_texts.items()) |status_text| {
@@ -349,7 +352,7 @@ pub fn removeAttachedUi(obj_id: i32) void {
 }
 
 pub fn mouseMove(x: f32, y: f32) void {
-    for (buttons.items()) |*button| {
+    for (buttons.items()) |button| {
         if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
             button.state = .hovered;
         } else {
@@ -359,7 +362,7 @@ pub fn mouseMove(x: f32, y: f32) void {
 }
 
 pub fn mousePress(x: f32, y: f32) void {
-    for (buttons.items()) |*button| {
+    for (buttons.items()) |button| {
         if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
             button.press_callback();
             button.state = .pressed;
@@ -368,7 +371,7 @@ pub fn mousePress(x: f32, y: f32) void {
 }
 
 pub fn mouseRelease(x: f32, y: f32) void {
-    for (buttons.items()) |*button| {
+    for (buttons.items()) |button| {
         if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
             button.state = .none;
         }

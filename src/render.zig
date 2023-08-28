@@ -2308,6 +2308,25 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
         }
 
+        for (ui.ui_texts.items()) |text| {
+            if (ui_idx >= 4000 - text.text.text.len * 4) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
+
+            ui_idx += drawTextUi(
+                ui_idx,
+                text.x,
+                text.y ,
+                text.text,
+            );
+
+            if (ui_idx == 4000) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
+        }
+
         for (ui.speech_balloons.items()) |balloon| {
             const image_data = balloon.image_data.normal; // assume no 9 slice
             const w = image_data.width();
