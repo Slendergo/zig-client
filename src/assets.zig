@@ -609,6 +609,21 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     sfx_map.deinit();
     audio_state.destroy(allocator);
 
+    default_cursor_pressed.destroy();
+    default_cursor.destroy();
+    royal_cursor_pressed.destroy();
+    royal_cursor.destroy();
+    ranger_cursor_pressed.destroy();
+    ranger_cursor.destroy();
+    aztec_cursor_pressed.destroy();
+    aztec_cursor.destroy();
+    fiery_cursor_pressed.destroy();
+    fiery_cursor.destroy();
+    target_enemy_cursor_pressed.destroy();
+    target_enemy_cursor.destroy();
+    target_ally_cursor_pressed.destroy();
+    target_ally_cursor.destroy();
+
     atlas.deinit();
     ui_atlas.deinit();
     light_tex.deinit();
