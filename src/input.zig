@@ -21,6 +21,8 @@ pub var rotate: i8 = 0;
 pub var mouse_x: f64 = 0.0;
 pub var mouse_y: f64 = 0.0;
 
+pub var selected_input_field: ?*ui.InputField = null;
+
 pub fn reset() void {
     move_up = 0.0;
     move_down = 0.0;
@@ -33,6 +35,31 @@ pub fn reset() void {
 }
 
 inline fn keyPress(key: zglfw.Key) void {
+    if (selected_input_field) |input_field| {
+        if (key == .enter) {
+            input_field.enter_callback(input_field.text.text);
+            if (input_field.text.text.len > 0)
+                input_field.allocator.free(input_field.text.text);
+            input_field.text.text = &[0]u8{};
+            return;
+        }
+
+        if (key == .backspace) {
+            const len_sub_1 = input_field.text.text.len - 1;
+            if (len_sub_1 < 0)
+                return;
+
+            const new_text = input_field.allocator.alloc(u8, len_sub_1) catch @panic("Out of memory, input field alloc failed");
+            @memcpy(new_text, input_field.text.text[0..len_sub_1]);
+            if (input_field.text.text.len > 0)
+                input_field.allocator.free(input_field.text.text);
+            input_field.text.text = new_text;
+            return;
+        }
+
+        return;
+    }
+
     if (key == settings.move_up.getKey()) {
         move_up = 1.0;
     } else if (key == settings.move_down.getKey()) {
@@ -144,10 +171,32 @@ inline fn mouseRelease(button: zglfw.MouseButton) void {
     }
 }
 
+pub fn charEvent(window: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
+    _ = window;
+    if (selected_input_field) |input_field| {
+        const char_code = @intFromEnum(char);
+        if (char_code > std.math.maxInt(u8) or char_code < std.math.minInt(u8)) {
+            return;
+        }
+
+        const byte_code: u8 = @intCast(char_code);
+        if (!std.ascii.isASCII(byte_code))
+            return;
+
+        const new_text = input_field.allocator.alloc(u8, input_field.text.text.len + 1) catch @panic("Out of memory, input field alloc failed");
+        std.mem.copy(u8, new_text, input_field.text.text);
+        new_text[new_text.len - 1] = byte_code;
+        if (input_field.text.text.len > 0)
+            input_field.allocator.free(input_field.text.text);
+        input_field.text.text = new_text;
+        return;
+    }
+}
+
 pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
+    _ = mods;
     _ = window;
     _ = scancode;
-    _ = mods;
 
     if (main.current_screen != .in_game)
         return;

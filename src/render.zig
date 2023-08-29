@@ -2317,8 +2317,63 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             ui_idx += drawTextUi(
                 ui_idx,
                 text.x,
-                text.y ,
+                text.y,
                 text.text,
+            );
+
+            if (ui_idx == 4000) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
+        }
+
+        for (ui.input_fields.items()) |input_field| {
+            var w: f32 = 0;
+            var h: f32 = 0;
+
+            switch (input_field.imageData()) {
+                .nine_slice => |nine_slice| {
+                    w = nine_slice.w;
+                    h = nine_slice.h;
+                    if (ui_idx >= 4000 - 9 * 4) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
+
+                    drawNineSlice(ui_idx, input_field.x, input_field.y, nine_slice.w, nine_slice.h, nine_slice);
+                    ui_idx += 9 * 4;
+                },
+                .normal => |image_data| {
+                    w = image_data.width();
+                    h = image_data.height();
+                    drawQuadUi(
+                        ui_idx,
+                        input_field.x,
+                        input_field.y,
+                        image_data.width(),
+                        image_data.height(),
+                        image_data.alpha,
+                        image_data.atlas_data,
+                    );
+                    ui_idx += 4;
+
+                    if (ui_idx == 4000) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
+                },
+            }
+
+            if (ui_idx >= 4000 - input_field.text.text.len * 4) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
+
+            ui_idx += drawTextUi(
+                ui_idx,
+                input_field.x + input_field.text_inlay_x,
+                input_field.y + input_field.text_inlay_y,
+                input_field.text,
             );
 
             if (ui_idx == 4000) {

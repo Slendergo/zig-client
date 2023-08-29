@@ -3,6 +3,7 @@ const camera = @import("camera.zig");
 const assets = @import("assets.zig");
 const map = @import("map.zig");
 const utils = @import("utils.zig");
+const input = @import("input.zig");
 
 pub const RGBF32 = extern struct {
     r: f32,
@@ -22,17 +23,54 @@ pub const RGBF32 = extern struct {
     }
 };
 
-pub const ButtonState = enum(u8) {
+pub const InteractableState = enum(u8) {
     none = 0,
     pressed = 1,
     hovered = 2,
 };
+
+pub const InputField = struct {
+    x: f32,
+    y: f32,
+    text_inlay_x: f32,
+    text_inlay_y: f32,
+    base_decor_data: ImageData,
+    text: Text,
+    allocator: std.mem.Allocator,
+    enter_callback: *const fn ([]u8) void,
+    state: InteractableState = .none,
+    hover_decor_data: ?ImageData = null,
+    press_decor_data: ?ImageData = null,
+
+    pub inline fn imageData(self: InputField) ImageData {
+        switch (self.state) {
+            .none => return self.base_decor_data,
+            .pressed => return self.press_decor_data orelse self.base_decor_data,
+            .hovered => return self.hover_decor_data orelse self.base_decor_data,
+        }
+    }
+
+    pub inline fn width(self: InputField) f32 {
+        return @max(self.text.width(), switch (self.imageData()) {
+            .nine_slice => |nine_slice| return nine_slice.w,
+            .normal => |image_data| return image_data.width(),
+        });
+    }
+
+    pub inline fn height(self: InputField) f32 {
+        return @max(self.text.height(), switch (self.imageData()) {
+            .nine_slice => |nine_slice| return nine_slice.h,
+            .normal => |image_data| return image_data.height(),
+        });
+    }
+};
+
 pub const Button = struct {
     x: f32,
     y: f32,
     base_image_data: ImageData,
     press_callback: *const fn () void,
-    state: ButtonState = .none,
+    state: InteractableState = .none,
     hover_image_data: ?ImageData = null,
     press_image_data: ?ImageData = null,
     text: ?Text = null,
@@ -297,6 +335,7 @@ pub const Text = struct {
     }
 };
 
+pub var input_fields: utils.DynSlice(*InputField) = undefined;
 pub var buttons: utils.DynSlice(*Button) = undefined;
 pub var ui_images: utils.DynSlice(*Image) = undefined;
 pub var ui_texts: utils.DynSlice(*UiText) = undefined;
@@ -307,6 +346,7 @@ pub var status_texts_to_remove: utils.DynSlice(usize) = undefined;
 pub var obj_ids_to_remove: utils.DynSlice(i32) = undefined;
 
 pub fn init(allocator: std.mem.Allocator) !void {
+    input_fields = try utils.DynSlice(*InputField).init(10, allocator);
     buttons = try utils.DynSlice(*Button).init(10, allocator);
     ui_images = try utils.DynSlice(*Image).init(10, allocator);
     ui_texts = try utils.DynSlice(*UiText).init(10, allocator);
@@ -318,6 +358,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
+    input_fields.deinit();
     buttons.deinit();
     ui_images.deinit();
     ui_texts.deinit();
@@ -359,6 +400,14 @@ pub fn mouseMove(x: f32, y: f32) void {
             button.state = .none;
         }
     }
+
+    for (input_fields.items()) |input_field| {
+        if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
+            input_field.state = .hovered;
+        } else {
+            input_field.state = .none;
+        }
+    }
 }
 
 pub fn mousePress(x: f32, y: f32) void {
@@ -368,12 +417,26 @@ pub fn mousePress(x: f32, y: f32) void {
             button.state = .pressed;
         }
     }
+
+    input.selected_input_field = null;
+    for (input_fields.items()) |input_field| {
+        if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
+            input.selected_input_field = input_field;
+            input_field.state = .pressed;
+        }
+    }
 }
 
 pub fn mouseRelease(x: f32, y: f32) void {
     for (buttons.items()) |button| {
         if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
             button.state = .none;
+        }
+    }
+
+    for (input_fields.items()) |input_field| {
+        if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
+            input_field.state = .none;
         }
     }
 }

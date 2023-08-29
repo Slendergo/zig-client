@@ -800,12 +800,16 @@ pub fn init(allocator: std.mem.Allocator) !void {
     const imply_size = std.math.maxInt(u32);
     try addUiImage("errorTexture", "sheets/ErrorTexture.png", imply_size, imply_size, &ctx, allocator);
     try addUiImage("chatboxBackground", "ui/chat/chatboxBackground.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("chatboxInput", "ui/chat/chatboxInput.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("chatboxCursor", "ui/chat/chatboxCursor.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("chatboxScrollWheel", "ui/chat/chatboxScrollWheel.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("speechBalloons", "ui/chat/speechBalloons.png", 65, 45, &ui_ctx, allocator);
     try addUiImage("buttonBase", "ui/screens/buttonBase.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("buttonHover", "ui/screens/buttonHover.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("buttonPress", "ui/screens/buttonPress.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("textInputBase", "ui/screens/textInputBase.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("textInputHover", "ui/screens/textInputHover.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("textInputPress", "ui/screens/textInputPress.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("containerView", "ui/containerView.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("minimap", "ui/minimap.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("playerInventory", "ui/playerInventory.png", imply_size, imply_size, &ui_ctx, allocator);
