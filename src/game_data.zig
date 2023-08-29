@@ -1048,9 +1048,8 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 }
 
 inline fn parseTexture(node: xml.Node, allocator: std.mem.Allocator) ![]TextureData {
-    const random_tex_child = node.findChild("RandomTexture");
-    if (random_tex_child != null) {
-        var tex_iter = random_tex_child.?.iterate(&.{}, "Texture");
+    if (node.findChild("RandomTexture")) |random_tex_child| {
+        var tex_iter = random_tex_child.iterate(&.{}, "Texture");
         var tex_list = try utils.DynSlice(TextureData).init(4, allocator);
         defer tex_list.deinit();
         while (tex_iter.next()) |tex_node| {
@@ -1060,7 +1059,7 @@ inline fn parseTexture(node: xml.Node, allocator: std.mem.Allocator) ![]TextureD
         if (tex_list.capacity > 0) {
             return try allocator.dupe(TextureData, tex_list.items());
         } else {
-            var anim_tex_iter = random_tex_child.?.iterate(&.{}, "AnimatedTexture");
+            var anim_tex_iter = random_tex_child.iterate(&.{}, "AnimatedTexture");
             var anim_tex_list = try utils.DynSlice(TextureData).init(4, allocator);
             defer anim_tex_list.deinit();
             while (anim_tex_iter.next()) |tex_node| {
@@ -1070,16 +1069,14 @@ inline fn parseTexture(node: xml.Node, allocator: std.mem.Allocator) ![]TextureD
             return try allocator.dupe(TextureData, anim_tex_list.items());
         }
     } else {
-        const tex_child = node.findChild("Texture");
-        if (tex_child != null) {
+        if (node.findChild("Texture")) |tex_child| {
             const ret = try allocator.alloc(TextureData, 1);
-            ret[0] = try TextureData.parse(tex_child orelse unreachable, allocator, false);
+            ret[0] = try TextureData.parse(tex_child, allocator, false);
             return ret;
         } else {
-            const anim_tex_child = node.findChild("AnimatedTexture");
-            if (anim_tex_child != null) {
+            if (node.findChild("AnimatedTexture")) |anim_tex_child| {
                 const ret = try allocator.alloc(TextureData, 1);
-                ret[0] = try TextureData.parse(anim_tex_child orelse unreachable, allocator, true);
+                ret[0] = try TextureData.parse(anim_tex_child, allocator, true);
                 return ret;
             }
         }
@@ -1113,9 +1110,8 @@ pub fn parseObjects(doc: xml.Doc, allocator: std.mem.Allocator) !void {
 
         try obj_type_to_tex_data.put(obj_type, try parseTexture(node, allocator));
 
-        const top_tex_child = node.findChild("Top");
-        if (top_tex_child != null) {
-            try obj_type_to_top_tex_data.put(obj_type, try parseTexture(top_tex_child.?, allocator));
+        if (node.findChild("Top")) |top_tex_child| {
+            try obj_type_to_top_tex_data.put(obj_type, try parseTexture(top_tex_child, allocator));
         }
     }
 }
@@ -1130,9 +1126,8 @@ pub fn parseGrounds(doc: xml.Doc, allocator: std.mem.Allocator) !void {
         try ground_type_to_props.put(obj_type, try GroundProps.parse(node, allocator));
         try ground_type_to_name.put(obj_type, id);
 
-        const random_tex_child = node.findChild("RandomTexture");
-        if (random_tex_child != null) {
-            var tex_iter = random_tex_child.?.iterate(&.{}, "Texture");
+        if (node.findChild("RandomTexture")) |random_tex_child| {
+            var tex_iter = random_tex_child.iterate(&.{}, "Texture");
             var tex_list = try utils.DynSlice(TextureData).init(4, allocator);
             defer tex_list.deinit();
             while (tex_iter.next()) |tex_node| {
@@ -1140,10 +1135,9 @@ pub fn parseGrounds(doc: xml.Doc, allocator: std.mem.Allocator) !void {
             }
             try ground_type_to_tex_data.put(obj_type, try allocator.dupe(TextureData, tex_list.items()));
         } else {
-            const tex_child = node.findChild("Texture");
-            if (tex_child != null) {
+            if (node.findChild("Texture")) |tex_child| {
                 const ret = try allocator.alloc(TextureData, 1);
-                ret[0] = try TextureData.parse(tex_child orelse unreachable, allocator, false);
+                ret[0] = try TextureData.parse(tex_child, allocator, false);
                 try ground_type_to_tex_data.put(obj_type, ret);
             }
         }

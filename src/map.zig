@@ -271,7 +271,7 @@ pub const GameObject = struct {
                         self.anim_data = anim_data[tex.index];
                     } else {
                         std.log.err("Could not find anim sheet {s} for object with type {d}. Using error texture", .{ tex.sheet, self.obj_type });
-                        self.anim_data = assets.error_anim;
+                        self.anim_data = assets.error_data_enemy;
                     }
                 } else {
                     if (assets.atlas_data.get(tex.sheet)) |data| {
@@ -517,10 +517,14 @@ pub const Player = struct {
         }
         defer if (should_lock) object_lock.unlock();
 
-        const tex_list = game_data.obj_type_to_tex_data.get(self.obj_type);
-        if (tex_list != null) {
-            const tex = tex_list.?[@as(usize, @intCast(self.obj_id)) % tex_list.?.len];
-            self.anim_data = assets.anim_players.get(tex.sheet).?[tex.index];
+        if (game_data.obj_type_to_tex_data.get(self.obj_type)) |tex_list| {
+            const tex = tex_list[@as(usize, @intCast(self.obj_id)) % tex_list.len];
+            if (assets.anim_players.get(tex.sheet)) |anim_data| {
+                self.anim_data = anim_data[tex.index];
+            } else {
+                std.log.err("Could not find anim sheet {s} for player with type {d}. Using error texture", .{ tex.sheet, self.obj_type });
+                self.anim_data = assets.error_data_player;
+            }
         }
 
         const props = game_data.obj_type_to_props.get(self.obj_type);
@@ -934,16 +938,22 @@ pub const Projectile = struct {
             var target_y: f32 = -1.0;
 
             if (self.damage_players) {
-                const player = findTargetPlayer(self.x, self.y, self.props.heat_seek_radius * self.props.heat_seek_radius);
-                if (player != null) {
-                    target_x = player.?.x;
-                    target_y = player.?.y;
+                if (findTargetPlayer(
+                    self.x,
+                    self.y,
+                    self.props.heat_seek_radius * self.props.heat_seek_radius,
+                )) |player| {
+                    target_x = player.x;
+                    target_y = player.y;
                 }
             } else {
-                const object = findTargetObject(self.x, self.y, self.props.heat_seek_radius * self.props.heat_seek_radius);
-                if (object != null) {
-                    target_x = object.?.x;
-                    target_y = object.?.y;
+                if (findTargetObject(
+                    self.x,
+                    self.y,
+                    self.props.heat_seek_radius * self.props.heat_seek_radius,
+                )) |object| {
+                    target_x = object.x;
+                    target_y = object.y;
                 }
             }
 
@@ -1059,12 +1069,11 @@ pub const Projectile = struct {
         }
 
         if (self.damage_players) {
-            const player = findTargetPlayer(self.x, self.y, 0.33);
-            if (player != null) {
+            if (findTargetPlayer(self.x, self.y, 0.33)) |player| {
                 if (main.server) |*server|
                     server.sendPlayerHit(self.bullet_id, self.owner_id);
 
-                assets.playSfx(player.?.hit_sound);
+                assets.playSfx(player.hit_sound);
                 if (self.props.damage > 0 or self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;
                     var damage_color: i32 = 0xB02020;
@@ -1072,8 +1081,8 @@ pub const Projectile = struct {
                         damage_color = 0x890AFF;
 
                     const damage_value = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
-                    if (damage_value > player.?.hp)
-                        assets.playSfx(player.?.death_sound);
+                    if (damage_value > player.hp)
+                        assets.playSfx(player.death_sound);
 
                     const text = ui.Text{
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage_value}) catch unreachable,
@@ -1083,7 +1092,7 @@ pub const Projectile = struct {
                     };
 
                     ui.status_texts.add(ui.StatusText{
-                        .obj_id = player.?.obj_id,
+                        .obj_id = player.obj_id,
                         .start_time = time,
                         .text = text,
                         .initial_size = 22,
@@ -1095,14 +1104,13 @@ pub const Projectile = struct {
                 return false;
             }
         } else {
-            const object = findTargetObject(self.x, self.y, 0.33);
-            if (object != null and main.server != null) {
-                const dead = object.?.hp <= self.props.min_damage;
+            if (findTargetObject(self.x, self.y, 0.33)) |object| {
+                const dead = object.hp <= self.props.min_damage;
 
                 if (main.server) |*server|
-                    server.sendEnemyHit(time, self.bullet_id, object.?.obj_id, dead);
+                    server.sendEnemyHit(time, self.bullet_id, object.obj_id, dead);
 
-                assets.playSfx(object.?.hit_sound);
+                assets.playSfx(object.hit_sound);
                 if (self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;
                     var damage_color: i32 = 0xB02020;
@@ -1111,13 +1119,13 @@ pub const Projectile = struct {
 
                     const damage = @as(i32, calculateDamage(
                         self,
-                        object.?.obj_id,
+                        object.obj_id,
                         self.owner_id,
                         piercing,
                     ));
 
-                    if (damage > object.?.hp)
-                        assets.playSfx(object.?.death_sound);
+                    if (damage > object.hp)
+                        assets.playSfx(object.death_sound);
 
                     const text = ui.Text{
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable,
@@ -1127,7 +1135,7 @@ pub const Projectile = struct {
                     };
 
                     ui.status_texts.add(ui.StatusText{
-                        .obj_id = object.?.obj_id,
+                        .obj_id = object.obj_id,
                         .start_time = time,
                         .text = text,
                         .initial_size = 22,

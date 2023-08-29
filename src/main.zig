@@ -101,7 +101,6 @@ pub var next_char_id: u32 = 0;
 pub var max_chars: u32 = 0;
 pub var current_time: i32 = 0;
 pub var last_update: i32 = 0;
-pub var network_lock: std.Thread.Mutex = .{};
 pub var network_thread: std.Thread = undefined;
 pub var tick_network = true;
 pub var render_thread: std.Thread = undefined;
@@ -241,19 +240,22 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     }
                 } else {
                     if (zgui.beginListBox("Server", .{})) {
-                        for (server_list.?, 0..) |serverData, index| {
-                            const i: u32 = @intCast(index);
-                            if (zgui.selectable(serverData.name[0..], .{ .selected = static.server_index == i }))
-                                static.server_index = i;
+                        if (server_list) |srv_list| {
+                            for (srv_list, 0..) |server_data, index| {
+                                const i: u32 = @intCast(index);
+                                if (zgui.selectable(server_data.name[0..], .{ .selected = static.server_index == i }))
+                                    static.server_index = i;
+                            }
+                            zgui.endListBox();
                         }
-                        zgui.endListBox();
                     }
 
                     if (zgui.button("Play", .{ .w = 150.0 })) {
                         current_screen = ScreenType.in_game;
                         selected_char_id = character_list[static.char_index].id;
-                        if (server_list != null)
-                            selected_server = server_list.?[static.server_index];
+                        if (server_list) |srv_list| {
+                            selected_server = srv_list[static.server_index];
+                        }
                     }
                 }
             }
@@ -315,8 +317,8 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     _ = zgui.inputText("Message", .{ .buf = static.text_buf[0..] });
 
                     if (zgui.button("Send message", .{ .w = 150.0 })) {
-                        if (server != null) {
-                            server.?.sendPlayerText(static.text_buf[0..utils.strlen(static.text_buf[0..])]);
+                        if (server) |*srv| {
+                            srv.sendPlayerText(static.text_buf[0..utils.strlen(static.text_buf[0..])]);
                         }
                         static.text_buf = std.mem.zeroes([128]u8);
                     }
@@ -377,18 +379,15 @@ fn onResize(w: f32, h: f32) void {
 
 fn networkTick(allocator: std.mem.Allocator) void {
     while (tick_network) {
-        std.time.sleep(101 * std.time.ns_per_ms);
+        std.time.sleep(100 * std.time.ns_per_ms);
 
-        if (selected_server != null) {
-            network_lock.lock();
-            defer network_lock.unlock();
-
+        if (selected_server) |sel_srv| {
             if (server == null)
-                server = network.Server.init(selected_server.?.dns, selected_server.?.port); // dialog maybe
+                server = network.Server.init(sel_srv.dns, sel_srv.port); // dialog maybe
 
-            if (server != null) {
+            if (server) |*srv| {
                 if (selected_char_id != 65535 and !sent_hello) {
-                    server.?.sendHello(
+                    srv.sendHello(
                         settings.build_version,
                         -2,
                         current_account.email,
@@ -401,7 +400,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
                     sent_hello = true;
                 }
 
-                server.?.accept(allocator);
+                srv.accept(allocator);
             }
         }
     }
@@ -425,8 +424,8 @@ pub fn clear() void {
 }
 
 pub fn disconnect() void {
-    if (server != null) {
-        server.?.deinit();
+    if (server) |*srv| {
+        srv.deinit();
         server = null;
         selected_server = null;
         sent_hello = false;
@@ -619,8 +618,8 @@ pub fn main() !void {
         defer allocator.free(current_account.name);
     }
 
-    if (server != null) {
-        defer server.?.deinit();
+    if (server) |*srv| {
+        defer srv.deinit();
     }
 
     if (character_list.len > 0) {
@@ -630,12 +629,12 @@ pub fn main() !void {
         defer allocator.free(character_list);
     }
 
-    if (server_list != null) {
-        for (server_list.?) |srv| {
+    if (server_list) |srv_list| {
+        for (srv_list) |srv| {
             defer allocator.free(srv.name);
             defer allocator.free(srv.dns);
         }
-        defer allocator.free(server_list.?);
+        defer allocator.free(srv_list);
     }
 }
 
@@ -685,11 +684,11 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
     character_list = try allocator.dupe(CharacterData, char_list.items());
 
     const server_root = list_root.findChild("Servers");
-    if (server_root != null) {
+    if (server_root) |srv_root| {
         var server_data_list = try utils.DynSlice(ServerData).init(4, allocator);
         defer server_data_list.deinit();
 
-        var server_iter = server_root.?.iterate(&.{}, "Server");
+        var server_iter = srv_root.iterate(&.{}, "Server");
         while (server_iter.next()) |server_node|
             try server_data_list.add(try ServerData.parse(server_node, allocator));
 

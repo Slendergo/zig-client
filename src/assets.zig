@@ -244,7 +244,8 @@ pub var mp_bar_data: AtlasData = undefined;
 pub var particle_data: AtlasData = undefined;
 pub var ui_error_data: AtlasData = undefined;
 pub var error_data: AtlasData = undefined;
-pub var error_anim: AnimEnemyData = undefined;
+pub var error_data_enemy: AnimEnemyData = undefined;
+pub var error_data_player: AnimPlayerData = undefined;
 
 fn isImageEmpty(img: zstbi.Image, x: usize, y: usize, w: u32, h: u32) bool {
     for (y..y + h) |loop_y| {
@@ -853,12 +854,28 @@ pub fn init(allocator: std.mem.Allocator) !void {
 
     if (atlas_data.get("errorTexture")) |error_tex| {
         error_data = error_tex[0x0];
-        error_anim = AnimEnemyData{
+
+        error_data_enemy = AnimEnemyData{
             .walk_anims = [2][3]AtlasData{
                 [_]AtlasData{ error_data, error_data, error_data },
                 [_]AtlasData{ error_data, error_data, error_data },
             },
             .attack_anims = [2][2]AtlasData{
+                [_]AtlasData{ error_data, error_data },
+                [_]AtlasData{ error_data, error_data },
+            },
+        };
+
+        error_data_player = AnimPlayerData{
+            .walk_anims = [4][3]AtlasData{
+                [_]AtlasData{ error_data, error_data, error_data },
+                [_]AtlasData{ error_data, error_data, error_data },
+                [_]AtlasData{ error_data, error_data, error_data },
+                [_]AtlasData{ error_data, error_data, error_data },
+            },
+            .attack_anims = [4][2]AtlasData{
+                [_]AtlasData{ error_data, error_data },
+                [_]AtlasData{ error_data, error_data },
                 [_]AtlasData{ error_data, error_data },
                 [_]AtlasData{ error_data, error_data },
             },
