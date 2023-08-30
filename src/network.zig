@@ -186,7 +186,6 @@ pub const Server = struct {
         if (size < 2)
             return;
 
-        self.reader.index = 0;
         while (self.reader.index < self.buffer_idx) {
             if (self.message_len == 65535)
                 self.message_len = self.reader.read(u16);
@@ -234,6 +233,7 @@ pub const Server = struct {
                 .update => handleUpdate(self, allocator),
                 else => {
                     std.log.err("Unknown S2CPacketId: id={any}, size={d}, len={d}", .{ packet_id, self.buffer_idx, self.message_len });
+                    self.reader.index = 0;
                     self.buffer_idx = 0;
                     return;
                 },
@@ -244,6 +244,7 @@ pub const Server = struct {
         }
 
         main.fba.reset();
+        self.reader.index = 0;
         self.buffer_idx = 0;
     }
 
