@@ -563,15 +563,28 @@ pub fn init(allocator: std.mem.Allocator) !void {
 pub fn deinit(allocator: std.mem.Allocator) void {
     allocator.destroy(minimap_decor);
     allocator.destroy(inventory_decor);
+    allocator.destroy(container_decor);
     allocator.destroy(bars_decor);
     allocator.destroy(stats_button);
+    if (level_text.text.text.len > 0)
+        allocator.free(level_text.text.text);
     allocator.destroy(level_text);
+    if (xp_bar.text.text.len > 0)
+        allocator.free(xp_bar.text.text);
     allocator.destroy(xp_bar);
+    if (fame_bar.text.text.len > 0)
+        allocator.free(fame_bar.text.text);
     allocator.destroy(fame_bar);
+    if (health_bar.text.text.len > 0)
+        allocator.free(health_bar.text.text);
     allocator.destroy(health_bar);
-    allocator.destroy(fame_bar);
+    if (mana_bar.text.text.len > 0)
+        allocator.free(mana_bar.text.text);
+    allocator.destroy(mana_bar);
     allocator.destroy(chat_decor);
     allocator.destroy(chat_input);
+    if (fps_text.text.text.len > 0)
+        allocator.free(fps_text.text.text);
     allocator.destroy(fps_text);
 
     bars.deinit();
