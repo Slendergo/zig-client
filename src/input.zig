@@ -296,7 +296,7 @@ inline fn useAbility() void {
                     server.sendUseItem(main.current_time, .{
                         .object_id = local_player.obj_id,
                         .slot_id = 1,
-                        .object_type = @intCast(local_player.inventory[1]),
+                        .object_type = local_player.inventory[1],
                     }, .{ .x = world_pos.x, .y = world_pos.y }, 0);
                 },
                 else => {},

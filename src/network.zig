@@ -11,7 +11,7 @@ const assets = @import("assets.zig");
 pub const ObjectSlot = extern struct {
     object_id: i32 align(1),
     slot_id: u8 align(1),
-    object_type: u16 align(1),
+    object_type: i32 align(1),
 };
 
 pub const Position = extern struct {
@@ -186,7 +186,6 @@ pub const Server = struct {
         if (size < 2)
             return;
 
-        self.reader.index = 0;
         while (self.reader.index < self.buffer_idx) {
             if (self.message_len == 65535)
                 self.message_len = self.reader.read(u16);
@@ -198,6 +197,7 @@ pub const Server = struct {
             const byte_id = self.reader.read(u8);
             const packet_id = std.meta.intToEnum(S2CPacketId, byte_id) catch |e| {
                 std.log.err("Error parsing S2CPacketId ({any}): id={d}, size={d}, len={d}", .{ e, byte_id, self.buffer_idx, self.message_len });
+                self.reader.index = 0;
                 self.buffer_idx = 0;
                 return;
             };
@@ -234,6 +234,7 @@ pub const Server = struct {
                 .update => handleUpdate(self, allocator),
                 else => {
                     std.log.err("Unknown S2CPacketId: id={any}, size={d}, len={d}", .{ packet_id, self.buffer_idx, self.message_len });
+                    self.reader.index = 0;
                     self.buffer_idx = 0;
                     return;
                 },
@@ -244,6 +245,7 @@ pub const Server = struct {
         }
 
         main.fba.reset();
+        self.reader.index = 0;
         self.buffer_idx = 0;
     }
 
@@ -922,7 +924,10 @@ pub const Server = struct {
             .condition => plr.condition = reader.read(utils.Condition),
             .inv_0, .inv_1, .inv_2, .inv_3, .inv_4, .inv_5, .inv_6, .inv_7, .inv_8, .inv_9, .inv_10, .inv_11 => {
                 const inv_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.inv_0);
-                plr.inventory[inv_idx] = reader.read(i32);
+                const item = reader.read(i32);
+                plr.inventory[inv_idx] = item;
+                if (plr.obj_id == map.local_player_id)
+                    ui.setInvItem(item, inv_idx);
             },
             .stars => plr.stars = reader.read(i32),
             .name => plr.name_override = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
@@ -951,7 +956,10 @@ pub const Server = struct {
             .magic_stack_count => plr.magic_stack_count = reader.read(i32),
             .backpack_0, .backpack_1, .backpack_2, .backpack_3, .backpack_4, .backpack_5, .backpack_6, .backpack_7 => {
                 const backpack_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.backpack_0) + 12;
-                plr.inventory[backpack_idx] = reader.read(i32);
+                const item = reader.read(i32);
+                plr.inventory[backpack_idx] = item;
+                if (plr.obj_id == map.local_player_id)
+                    ui.setInvItem(item, backpack_idx);
             },
             .has_backpack => plr.has_backpack = reader.read(bool),
             .skin => plr.skin = reader.read(i32),

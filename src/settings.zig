@@ -36,7 +36,7 @@ pub const Button = union(enum) {
 
     pub fn getMouse(self: Button) zglfw.MouseButton {
         switch (self) {
-            .key => |_| return .eight,
+            .key => |_| return .unknown,
             .mouse => |mouse| return mouse,
         }
     }
@@ -44,7 +44,7 @@ pub const Button = union(enum) {
 
 pub const build_version = "0.5";
 pub const app_engine_url = "http://127.0.0.1:8080/";
-pub const log_packets = LogType.all_non_tick;
+pub const log_packets = LogType.off;
 pub const print_atlas = false;
 pub const print_ui_atlas = false;
 pub const rotate_speed = 0.002;

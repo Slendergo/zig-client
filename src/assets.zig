@@ -742,7 +742,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addImage("lofiObj4", "LofiObj4.png", 8, 8, &ctx, allocator);
     try addImage("lofiObj5", "LofiObj5.png", 8, 8, &ctx, allocator);
     try addImage("lofiObj6", "LofiObj6.png", 8, 8, &ctx, allocator);
-    try addImage("lofiObj40x40", "LofiObj40x40.png", 40, 40, &ctx, allocator);
     try addImage("lofiObjBig", "LofiObjBig.png", 16, 16, &ctx, allocator);
     try addImage("lofiParts", "LofiParts.png", 8, 8, &ctx, allocator);
     try addImage("lofiProjs", "LofiProjs.png", 8, 8, &ctx, allocator);
@@ -797,6 +796,14 @@ pub fn init(allocator: std.mem.Allocator) !void {
     zstbrp.initPack(&ui_ctx, ui_nodes);
 
     const imply_size = std.math.maxInt(u32);
+    try addUiImage("lofiInterface", "sheets/LofiInterface.png", 8, 8, &ctx, allocator);
+    try addUiImage("lofiInterface2", "sheets/LofiInterface2.png", 8, 8, &ctx, allocator);
+    try addUiImage("lofiObj", "sheets/LofiObj.png", 8, 8, &ctx, allocator);
+    try addUiImage("lofiObj2", "sheets/LofiObj2.png", 8, 8, &ctx, allocator);
+    try addUiImage("lofiObj3", "sheets/LofiObj3.png", 8, 8, &ctx, allocator);
+    try addUiImage("lofiObj4", "sheets/LofiObj4.png", 8, 8, &ctx, allocator);
+    try addUiImage("lofiObj5", "sheets/LofiObj5.png", 8, 8, &ctx, allocator);
+    try addUiImage("lofiObj6", "sheets/LofiObj6.png", 8, 8, &ctx, allocator);
     try addUiImage("errorTexture", "sheets/ErrorTexture.png", imply_size, imply_size, &ctx, allocator);
     try addUiImage("chatboxBackground", "ui/chat/chatboxBackground.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("chatboxInput", "ui/chat/chatboxInput.png", imply_size, imply_size, &ui_ctx, allocator);
