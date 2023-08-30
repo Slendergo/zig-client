@@ -75,7 +75,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         return vec4(pixel.rgb, pixel.a * in.alpha_mult);
     }
 
-    const subpixel = 1.0 / 3.0;
+    const subpixel = 1.0 / 2.0;
     let subpixel_width = (abs(dx.x) + abs(dy.x)) * subpixel; // this is just fwidth(in.uv).x * subpixel
 
     var red_tex = vec4(0.0, 0.0, 0.0, 0.0);
@@ -108,7 +108,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let green = sample_msdf(green_tex, in.distance_factor, in.alpha_mult);
     let blue = sample_msdf(blue_tex, in.distance_factor, in.alpha_mult);
 
-    let alpha = clamp(subpixel * (red + green + blue), 0.0, 1.0);
+    let alpha = clamp((red + green + blue) / 3.0, 0.0, 1.0);
     let base_pixel = vec4(red * in.color.r, green * in.color.g, blue * in.color.b, alpha);
 
     // don't subpixel aa the offset, it's supposed to be a shadow
