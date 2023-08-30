@@ -752,7 +752,7 @@ pub const Server = struct {
                 .scale_x = 3.0,
                 .scale_y = 3.0,
                 .atlas_data = atlas_data,
-            }},
+            } },
             .text = .{
                 .text = text,
                 .size = 16,

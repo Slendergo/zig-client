@@ -4,6 +4,7 @@ const assets = @import("assets.zig");
 const map = @import("map.zig");
 const utils = @import("utils.zig");
 const input = @import("input.zig");
+const main = @import("main.zig");
 
 pub const RGBF32 = extern struct {
     r: f32,
@@ -41,6 +42,7 @@ pub const InputField = struct {
     state: InteractableState = .none,
     hover_decor_data: ?ImageData = null,
     press_decor_data: ?ImageData = null,
+    visible: bool = true,
 
     pub inline fn imageData(self: InputField) ImageData {
         switch (self.state) {
@@ -74,6 +76,7 @@ pub const Button = struct {
     hover_image_data: ?ImageData = null,
     press_image_data: ?ImageData = null,
     text: ?Text = null,
+    visible: bool = true,
 
     pub inline fn imageData(self: Button) ImageData {
         switch (self.state) {
@@ -212,6 +215,17 @@ pub const Image = struct {
     x: f32,
     y: f32,
     image_data: ImageData,
+    max_width: f32 = std.math.maxInt(u32),
+    visible: bool = true,
+};
+
+pub const Bar = struct {
+    x: f32,
+    y: f32,
+    image_data: ImageData,
+    max_width: f32 = std.math.maxInt(u32),
+    visible: bool = true,
+    text: Text,
 };
 
 pub const SpeechBalloon = struct {
@@ -219,6 +233,7 @@ pub const SpeechBalloon = struct {
     text: Text,
     target_id: i32,
     start_time: i32,
+    visible: bool = true,
     // the texts' internal x/y, don't touch outside of ui.update()
     _screen_x: f32 = 0.0,
     _screen_y: f32 = 0.0,
@@ -242,6 +257,7 @@ pub const UiText = struct {
     x: f32,
     y: f32,
     text: Text,
+    visible: bool = true,
 };
 
 pub const StatusText = struct {
@@ -250,6 +266,7 @@ pub const StatusText = struct {
     lifetime: i32 = 500,
     start_time: i32 = 0,
     obj_id: i32 = -1,
+    visible: bool = true,
     // the texts' internal x/y, don't touch outside of ui.update()
     _screen_x: f32 = 0.0,
     _screen_y: f32 = 0.0,
@@ -335,6 +352,7 @@ pub const Text = struct {
     }
 };
 
+pub var bars: utils.DynSlice(*Bar) = undefined;
 pub var input_fields: utils.DynSlice(*InputField) = undefined;
 pub var buttons: utils.DynSlice(*Button) = undefined;
 pub var ui_images: utils.DynSlice(*Image) = undefined;
@@ -345,7 +363,36 @@ pub var status_texts: utils.DynSlice(StatusText) = undefined;
 pub var status_texts_to_remove: utils.DynSlice(usize) = undefined;
 pub var obj_ids_to_remove: utils.DynSlice(i32) = undefined;
 
+pub var fps_text: *UiText = undefined;
+var chat_input: *InputField = undefined;
+var chat_decor: *Image = undefined;
+var bars_decor: *Image = undefined;
+var stats_button: *Button = undefined;
+var level_text: *UiText = undefined;
+var xp_bar: *Bar = undefined;
+var fame_bar: *Bar = undefined;
+var health_bar: *Bar = undefined;
+var mana_bar: *Bar = undefined;
+var inventory_decor: *Image = undefined;
+var container_decor: *Image = undefined;
+var minimap_decor: *Image = undefined;
+
+var last_level: i32 = -1;
+var last_xp: i32 = -1;
+var last_xp_goal: i32 = -1;
+var last_fame: i32 = -1;
+var last_fame_goal: i32 = -1;
+var last_hp: i32 = -1;
+var last_max_hp: i32 = -1;
+var last_mp: i32 = -1;
+var last_max_mp: i32 = -1;
+
+var _allocator: std.mem.Allocator = undefined;
+
 pub fn init(allocator: std.mem.Allocator) !void {
+    _allocator = allocator;
+
+    bars = try utils.DynSlice(*Bar).init(10, allocator);
     input_fields = try utils.DynSlice(*InputField).init(10, allocator);
     buttons = try utils.DynSlice(*Button).init(10, allocator);
     ui_images = try utils.DynSlice(*Image).init(10, allocator);
@@ -355,9 +402,179 @@ pub fn init(allocator: std.mem.Allocator) !void {
     status_texts = try utils.DynSlice(StatusText).init(30, allocator);
     status_texts_to_remove = try utils.DynSlice(usize).init(30, allocator);
     obj_ids_to_remove = try utils.DynSlice(i32).init(40, allocator);
+
+    minimap_decor = try allocator.create(Image);
+    const minimap_data = (assets.ui_atlas_data.get("minimap") orelse @panic("Could not find minimap in ui atlas"))[0];
+    minimap_decor.* = Image{
+        .x = camera.screen_width - minimap_data.texWRaw() - 10,
+        .y = 10,
+        .image_data = .{ .normal = .{ .atlas_data = minimap_data } },
+    };
+    try ui_images.add(minimap_decor);
+
+    inventory_decor = try allocator.create(Image);
+    const inventory_data = (assets.ui_atlas_data.get("playerInventory") orelse @panic("Could not find playerInventory in ui atlas"))[0];
+    inventory_decor.* = Image{
+        .x = camera.screen_width - inventory_data.texWRaw() - 10,
+        .y = camera.screen_height - inventory_data.texHRaw() - 10,
+        .image_data = .{ .normal = .{ .atlas_data = inventory_data } },
+    };
+    try ui_images.add(inventory_decor);
+
+    container_decor = try allocator.create(Image);
+    const container_data = (assets.ui_atlas_data.get("containerView") orelse @panic("Could not find containerView in ui atlas"))[0];
+    container_decor.* = Image{
+        .x = inventory_decor.x - container_data.texWRaw() - 10,
+        .y = camera.screen_height - container_data.texHRaw() - 10,
+        .image_data = .{ .normal = .{ .atlas_data = container_data } },
+        .visible = false,
+    };
+    try ui_images.add(container_decor);
+
+    bars_decor = try allocator.create(Image);
+    const bars_data = (assets.ui_atlas_data.get("playerStatusBarsDecor") orelse @panic("Could not find playerStatusBarsDecor in ui atlas"))[0];
+    bars_decor.* = Image{
+        .x = (camera.screen_width - bars_data.texWRaw()) / 2,
+        .y = camera.screen_height - bars_data.texHRaw() - 10,
+        .image_data = .{ .normal = .{ .atlas_data = bars_data } },
+    };
+    try ui_images.add(bars_decor);
+
+    stats_button = try allocator.create(Button);
+    const stats_data = (assets.ui_atlas_data.get("playerStatusBarStatIcon") orelse @panic("Could not find playerStatusBarStatIcon in ui atlas"))[0];
+    stats_button.* = Button{
+        .x = bars_decor.x + 7,
+        .y = bars_decor.y + 8,
+        .base_image_data = .{ .normal = .{ .atlas_data = stats_data } },
+        .press_callback = statsCallback,
+    };
+    try buttons.add(stats_button);
+
+    level_text = try allocator.create(UiText);
+    const level = Text{
+        .text = "",
+        .size = 12,
+        .text_type = .bold,
+    };
+    level_text.* = UiText{
+        .x = bars_decor.x + 181,
+        .y = bars_decor.y + 13,
+        .text = level,
+    };
+    try ui_texts.add(level_text);
+
+    xp_bar = try allocator.create(Bar);
+    const xp_bar_data = (assets.ui_atlas_data.get("playerStatusBarXp") orelse @panic("Could not find playerStatusBarXp in ui atlas"))[0];
+    xp_bar.* = Bar{
+        .x = bars_decor.x + 42,
+        .y = bars_decor.y + 12,
+        .image_data = .{ .normal = .{ .atlas_data = xp_bar_data } },
+        .text = .{
+            .text = "",
+            .size = 12,
+            .text_type = .bold,
+        },
+    };
+    try bars.add(xp_bar);
+
+    fame_bar = try allocator.create(Bar);
+    const fame_bar_data = (assets.ui_atlas_data.get("playerStatusBarFame") orelse @panic("Could not find playerStatusBarFame in ui atlas"))[0];
+    fame_bar.* = Bar{
+        .x = bars_decor.x + 42,
+        .y = bars_decor.y + 12,
+        .image_data = .{ .normal = .{ .atlas_data = fame_bar_data } },
+        .text = .{
+            .text = "",
+            .size = 12,
+            .text_type = .bold,
+        },
+    };
+    try bars.add(fame_bar);
+
+    health_bar = try allocator.create(Bar);
+    const health_bar_data = (assets.ui_atlas_data.get("playerStatusBarHealth") orelse @panic("Could not find playerStatusBarHealth in ui atlas"))[0];
+    health_bar.* = Bar{
+        .x = bars_decor.x + 8,
+        .y = bars_decor.y + 47,
+        .image_data = .{ .normal = .{ .atlas_data = health_bar_data } },
+        .text = .{
+            .text = "",
+            .size = 12,
+            .text_type = .bold,
+        },
+    };
+    try bars.add(health_bar);
+
+    mana_bar = try allocator.create(Bar);
+    const mana_bar_data = (assets.ui_atlas_data.get("playerStatusBarMana") orelse @panic("Could not find playerStatusBarMana in ui atlas"))[0];
+    mana_bar.* = Bar{
+        .x = bars_decor.x + 8,
+        .y = bars_decor.y + 73,
+        .image_data = .{ .normal = .{ .atlas_data = mana_bar_data } },
+        .text = .{
+            .text = "",
+            .size = 12,
+            .text_type = .bold,
+        },
+    };
+    try bars.add(mana_bar);
+
+    chat_decor = try allocator.create(Image);
+    const chat_data = (assets.ui_atlas_data.get("chatboxBackground") orelse @panic("Could not find chatboxBackground in ui atlas"))[0];
+    const input_data = (assets.ui_atlas_data.get("chatboxInput") orelse @panic("Could not find chatboxInput in ui atlas"))[0];
+    chat_decor.* = Image{
+        .x = 10,
+        .y = camera.screen_height - chat_data.texHRaw() - input_data.texHRaw() - 10,
+        .image_data = .{ .normal = .{ .atlas_data = chat_data } },
+    };
+    try ui_images.add(chat_decor);
+
+    chat_input = try allocator.create(InputField);
+    chat_input.* = InputField{
+        .x = chat_decor.x,
+        .y = chat_decor.y + chat_decor.image_data.normal.height(),
+        .text_inlay_x = 9,
+        .text_inlay_y = 8,
+        .base_decor_data = .{ .normal = .{ .atlas_data = input_data } },
+        .text = .{
+            .text = "",
+            .size = 12,
+            .text_type = .bold,
+        },
+        .allocator = allocator,
+        .enter_callback = chatCallback,
+    };
+    try input_fields.add(chat_input);
+
+    fps_text = try allocator.create(UiText);
+    const text = Text{
+        .text = "",
+        .size = 12,
+        .text_type = .bold,
+    };
+    fps_text.* = UiText{
+        .x = camera.screen_width - text.width() - 10,
+        .y = minimap_decor.y + minimap_decor.image_data.normal.height() + 10,
+        .text = text,
+    };
+    try ui_texts.add(fps_text);
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
+    allocator.destroy(minimap_decor);
+    allocator.destroy(inventory_decor);
+    allocator.destroy(bars_decor);
+    allocator.destroy(stats_button);
+    allocator.destroy(level_text);
+    allocator.destroy(xp_bar);
+    allocator.destroy(fame_bar);
+    allocator.destroy(health_bar);
+    allocator.destroy(fame_bar);
+    allocator.destroy(chat_decor);
+    allocator.destroy(chat_input);
+    allocator.destroy(fps_text);
+
+    bars.deinit();
     input_fields.deinit();
     buttons.deinit();
     ui_images.deinit();
@@ -370,6 +587,42 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     status_texts.deinit();
     status_texts_to_remove.deinit();
     obj_ids_to_remove.deinit();
+}
+
+pub fn resize(w: f32, h: f32) void {
+    minimap_decor.x = w - minimap_decor.image_data.normal.width() - 10;
+    inventory_decor.x = w - inventory_decor.image_data.normal.width() - 10;
+    inventory_decor.y = h - inventory_decor.image_data.normal.height() - 10;
+    container_decor.x = inventory_decor.x - container_decor.image_data.normal.width() - 10;
+    container_decor.y = h - container_decor.image_data.normal.height() - 10;
+    bars_decor.x = (w - bars_decor.image_data.normal.width()) / 2;
+    bars_decor.y = h - bars_decor.image_data.normal.height() - 10;
+    stats_button.x = bars_decor.x + 7;
+    stats_button.y = bars_decor.y + 8;
+    level_text.x = bars_decor.x + 181;
+    level_text.y = bars_decor.y + 13;
+    xp_bar.x = bars_decor.x + 42;
+    xp_bar.y = bars_decor.y + 12;
+    fame_bar.x = bars_decor.x + 42;
+    fame_bar.y = bars_decor.y + 12;
+    health_bar.x = bars_decor.x + 8;
+    health_bar.y = bars_decor.y + 47;
+    mana_bar.x = bars_decor.x + 8;
+    mana_bar.y = bars_decor.y + 73;
+    const chat_decor_h = chat_decor.image_data.normal.height();
+    chat_decor.y = h - chat_decor_h - chat_input.imageData().normal.height() - 10;
+    chat_input.y = chat_decor.y + chat_decor_h;
+    fps_text.y = minimap_decor.y + minimap_decor.image_data.normal.height() + 10;
+}
+
+fn statsCallback() void {
+    std.log.debug("stats pressed", .{});
+}
+
+fn chatCallback(input_text: []u8) void {
+    if (main.server) |*srv| {
+        srv.sendPlayerText(input_text);
+    }
 }
 
 pub fn removeAttachedUi(obj_id: i32) void {
@@ -394,6 +647,9 @@ pub fn removeAttachedUi(obj_id: i32) void {
 
 pub fn mouseMove(x: f32, y: f32) void {
     for (buttons.items()) |button| {
+        if (!button.visible)
+            continue;
+
         if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
             button.state = .hovered;
         } else {
@@ -402,6 +658,9 @@ pub fn mouseMove(x: f32, y: f32) void {
     }
 
     for (input_fields.items()) |input_field| {
+        if (!input_field.visible)
+            continue;
+
         if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
             input_field.state = .hovered;
         } else {
@@ -410,42 +669,124 @@ pub fn mouseMove(x: f32, y: f32) void {
     }
 }
 
-pub fn mousePress(x: f32, y: f32) void {
+pub fn mousePress(x: f32, y: f32) bool {
     for (buttons.items()) |button| {
+        if (!button.visible)
+            continue;
+
         if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
             button.press_callback();
             button.state = .pressed;
+            return true;
         }
     }
 
     input.selected_input_field = null;
     for (input_fields.items()) |input_field| {
+        if (!input_field.visible)
+            continue;
+
         if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
             input.selected_input_field = input_field;
             input_field.state = .pressed;
+            return true;
         }
     }
+
+    return false;
 }
 
 pub fn mouseRelease(x: f32, y: f32) void {
     for (buttons.items()) |button| {
+        if (!button.visible)
+            continue;
+
         if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
             button.state = .none;
         }
     }
 
     for (input_fields.items()) |input_field| {
+        if (!input_field.visible)
+            continue;
+
         if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
             input_field.state = .none;
         }
     }
 }
 
-pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
+pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
     _ = dt;
 
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();
+
+    if (map.findEntity(map.local_player_id)) |en| {
+        switch (en.*) {
+            .player => |local_player| {
+                if (last_level != local_player.level) {
+                    if (level_text.text.text.len > 0)
+                        _allocator.free(level_text.text.text);
+                    level_text.text.text = try std.fmt.allocPrint(_allocator, "{d}", .{local_player.level});
+
+                    last_level = local_player.level;
+                }
+
+                const max_level = local_player.level >= 20;
+                if (max_level) {
+                    if (last_fame != local_player.fame or last_fame_goal != local_player.fame_goal) {
+                        fame_bar.visible = true;
+                        xp_bar.visible = false;
+                        const fame_perc = @as(f32, @floatFromInt(local_player.fame)) / @as(f32, @floatFromInt(local_player.fame_goal));
+                        fame_bar.max_width = fame_bar.image_data.normal.width() * fame_perc;
+                        if (fame_bar.text.text.len > 0)
+                            _allocator.free(fame_bar.text.text);
+                        fame_bar.text.text = try std.fmt.allocPrint(_allocator, "{d}/{d} Fame", .{ local_player.fame, local_player.fame_goal });
+
+                        last_fame = local_player.fame;
+                        last_fame_goal = local_player.fame_goal;
+                    }
+                } else {
+                    if (last_xp != local_player.exp or last_xp_goal != local_player.exp_goal) {
+                        xp_bar.visible = true;
+                        fame_bar.visible = false;
+                        const exp_perc = @as(f32, @floatFromInt(local_player.exp)) / @as(f32, @floatFromInt(local_player.exp_goal));
+                        xp_bar.max_width = xp_bar.image_data.normal.width() * exp_perc;
+                        if (xp_bar.text.text.len > 0)
+                            _allocator.free(xp_bar.text.text);
+                        xp_bar.text.text = try std.fmt.allocPrint(_allocator, "{d}/{d} XP", .{ local_player.exp, local_player.exp_goal });
+
+                        last_xp = local_player.exp;
+                        last_xp_goal = local_player.exp_goal;
+                    }
+                }
+
+                if (last_hp != local_player.hp or last_max_hp != local_player.max_hp) {
+                    const hp_perc = @as(f32, @floatFromInt(local_player.hp)) / @as(f32, @floatFromInt(local_player.max_hp));
+                    health_bar.max_width = health_bar.image_data.normal.width() * hp_perc;
+                    if (health_bar.text.text.len > 0)
+                        _allocator.free(health_bar.text.text);
+                    health_bar.text.text = try std.fmt.allocPrint(_allocator, "{d}/{d} HP", .{ local_player.hp, local_player.max_hp });
+
+                    last_hp = local_player.hp;
+                    last_max_hp = local_player.max_hp;
+                }
+
+                if (last_mp != local_player.mp or last_max_mp != local_player.max_mp) {
+                    const mp_perc = @as(f32, @floatFromInt(local_player.mp)) / @as(f32, @floatFromInt(local_player.max_mp));
+                    mana_bar.max_width = mana_bar.image_data.normal.width() * mp_perc;
+                    if (mana_bar.text.text.len > 0)
+                        _allocator.free(mana_bar.text.text);
+                    mana_bar.text.text = try std.fmt.allocPrint(_allocator, "{d}/{d} MP", .{ local_player.mp, local_player.max_mp });
+
+                    last_mp = local_player.mp;
+                    last_max_mp = local_player.max_mp;
+                }
+            },
+            else => {},
+        }
+    }
 
     textUpdate: for (status_texts.items(), 0..) |*status_text, i| {
         for (obj_ids_to_remove.items()) |obj_id| {

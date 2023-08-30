@@ -109,13 +109,6 @@ pub var tick_frame = false;
 pub var sent_hello = false;
 var _allocator: std.mem.Allocator = undefined;
 
-var chat_input: *ui.InputField = undefined;
-var fps_text: *ui.UiText = undefined;
-var chat_decor: *ui.Image = undefined;
-var bars_decor: *ui.Image = undefined;
-var inventory_decor: *ui.Image = undefined;
-var minimap_decor: *ui.Image = undefined;
-
 fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
     gctx = try zgpu.GraphicsContext.create(allocator, window, .{ .present_mode = if (settings.enable_vsync) .fifo else .immediate });
     _ = window.setKeyCallback(input.keyEvent);
@@ -305,11 +298,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
             zgui.end();
         },
         ScreenType.map_editor => {},
-        ScreenType.in_game => {
-            stack_allocator.free(fps_text.text.text);
-            fps_text.text.text = try std.fmt.allocPrint(stack_allocator, "FPS: {d:.1}\nMemory: {d} MB", .{ gctx.stats.fps, -1 });
-            fps_text.x = camera.screen_width - fps_text.text.width() - 10;
-        },
+        ScreenType.in_game => {},
     }
 }
 
@@ -352,15 +341,7 @@ fn onResize(w: f32, h: f32) void {
     camera.clip_scale_x = 2.0 / w;
     camera.clip_scale_y = 2.0 / h;
 
-    minimap_decor.x = camera.screen_width - minimap_decor.image_data.normal.width() - 10;
-    inventory_decor.x = camera.screen_width - inventory_decor.image_data.normal.width() - 10;
-    inventory_decor.y = camera.screen_height - inventory_decor.image_data.normal.height() - 10;
-    bars_decor.x = (camera.screen_width - bars_decor.image_data.normal.width()) / 2;
-    bars_decor.y = camera.screen_height - bars_decor.image_data.normal.height() - 10;
-    const chat_decor_h = chat_decor.image_data.normal.height();
-    chat_decor.y = camera.screen_height - chat_decor_h - chat_input.imageData().normal.height() - 10;
-    chat_input.y = chat_decor.y + chat_decor_h;
-    fps_text.y = minimap_decor.y + minimap_decor.image_data.normal.height() + 10;
+    ui.resize(w, h);
 }
 
 fn networkTick(allocator: std.mem.Allocator) void {
@@ -392,11 +373,15 @@ fn networkTick(allocator: std.mem.Allocator) void {
     }
 }
 
-fn renderTick(allocator: std.mem.Allocator) void {
+fn renderTick(allocator: std.mem.Allocator) !void {
     while (tick_render) {
-        updateUi(allocator) catch |e| {
-            std.log.err("UI update failed: {any}", .{e});
-        };
+        try updateUi(allocator);
+
+        // this has to be updated on render thread to avoid headaches
+        if (ui.fps_text.text.text.len > 0)
+            _allocator.free(ui.fps_text.text.text);
+        ui.fps_text.text.text = try std.fmt.allocPrint(_allocator, "FPS: {d:.1}\nMemory: {d} MB", .{ gctx.stats.fps, -1 });
+        ui.fps_text.x = camera.screen_width - ui.fps_text.text.width() - 10;
 
         draw();
     }
@@ -423,99 +408,6 @@ pub fn disconnect() void {
     current_screen = .char_select;
 }
 
-fn initUi(allocator: std.mem.Allocator) !void {
-    minimap_decor = try allocator.create(ui.Image);
-    const minimap_data = (assets.ui_atlas_data.get("minimap") orelse @panic("Could not find minimap in ui atlas"))[0];
-    minimap_decor.* = ui.Image{
-        .x = camera.screen_width - minimap_data.texWRaw() - 10,
-        .y = 10,
-        .image_data = .{ .normal = .{
-            .atlas_data = minimap_data,
-        } },
-    };
-    try ui.ui_images.add(minimap_decor);
-
-    inventory_decor = try allocator.create(ui.Image);
-    const inventory_data = (assets.ui_atlas_data.get("playerInventory") orelse @panic("Could not find playerInventory in ui atlas"))[0];
-    inventory_decor.* = ui.Image{
-        .x = camera.screen_width - inventory_data.texWRaw() - 10,
-        .y = camera.screen_height - inventory_data.texHRaw() - 10,
-        .image_data = .{ .normal = .{
-            .atlas_data = inventory_data,
-        } },
-    };
-    try ui.ui_images.add(inventory_decor);
-
-    bars_decor = try allocator.create(ui.Image);
-    const bars_data = (assets.ui_atlas_data.get("playerStatusBarsDecor") orelse @panic("Could not find playerStatusBarsDecor in ui atlas"))[0];
-    bars_decor.* = ui.Image{
-        .x = (camera.screen_width - bars_data.texWRaw()) / 2,
-        .y = camera.screen_height - bars_data.texHRaw() - 10,
-        .image_data = .{ .normal = .{
-            .atlas_data = bars_data,
-        } },
-    };
-    try ui.ui_images.add(bars_decor);
-
-    chat_decor = try allocator.create(ui.Image);
-    const chat_data = (assets.ui_atlas_data.get("chatboxBackground") orelse @panic("Could not find chatboxBackground in ui atlas"))[0];
-    const input_data = (assets.ui_atlas_data.get("chatboxInput") orelse @panic("Could not find chatboxInput in ui atlas"))[0];
-    chat_decor.* = ui.Image{
-        .x = 10,
-        .y = camera.screen_height - chat_data.texHRaw() - input_data.texHRaw() - 10,
-        .image_data = .{ .normal = .{
-            .atlas_data = chat_data,
-        } },
-    };
-    try ui.ui_images.add(chat_decor);
-
-    chat_input = try allocator.create(ui.InputField);
-    const input_text = ui.Text{
-        .text = try std.fmt.allocPrint(allocator, "", .{}),
-        .size = 12,
-        .text_type = .bold,
-    };
-    chat_input.* = ui.InputField{
-        .x = chat_decor.x,
-        .y = chat_decor.y + chat_decor.image_data.normal.height(),
-        .text_inlay_x = 9,
-        .text_inlay_y = 8,
-        .base_decor_data = .{ .normal = .{ .atlas_data = input_data } },
-        .text = input_text,
-        .allocator = allocator,
-        .enter_callback = chatCallback,
-    };
-    try ui.input_fields.add(chat_input);
-
-    fps_text = try allocator.create(ui.UiText);
-    const text = ui.Text{
-        .text = try std.fmt.allocPrint(stack_allocator, "FPS: {d:.1}\nMemory: {d} MB", .{ gctx.stats.fps, -1 }),
-        .size = 12,
-        .text_type = .bold,
-    };
-    fps_text.* = ui.UiText{
-        .x = camera.screen_width - text.width() - 10,
-        .y = minimap_decor.y + minimap_decor.image_data.normal.height() + 10,
-        .text = text,
-    };
-    try ui.ui_texts.add(fps_text);
-}
-
-fn chatCallback(input_text: []u8) void {
-    if (server) |*srv| {
-        srv.sendPlayerText(input_text);
-    }
-}
-
-fn deinitUi(allocator: std.mem.Allocator) void {
-    allocator.destroy(minimap_decor);
-    allocator.destroy(inventory_decor);
-    allocator.destroy(bars_decor);
-    allocator.destroy(chat_decor);
-    allocator.destroy(chat_input);
-    allocator.destroy(fps_text);
-}
-
 pub fn main() !void {
     if (settings.enable_tracy) {
         // needed for tracy to register
@@ -535,7 +427,7 @@ pub fn main() !void {
         .ReleaseSafe => std.heap.c_allocator,
         .ReleaseFast, .ReleaseSmall => std.heap.raw_c_allocator,
     };
-    _allocator = allocator; // hack because passing it to input is convoluted
+    _allocator = allocator;
 
     var buf: [std.math.maxInt(u16)]u8 = undefined;
     fba = std.heap.FixedBufferAllocator.init(&buf);
@@ -600,9 +492,6 @@ pub fn main() !void {
 
     render.init(gctx, allocator);
 
-    try initUi(allocator);
-    defer deinitUi(allocator);
-
     network_thread = try std.Thread.spawn(.{}, networkTick, .{allocator});
     defer {
         tick_network = false;
@@ -622,7 +511,7 @@ pub fn main() !void {
             current_time = @intCast(std.time.milliTimestamp() - start_time);
             const dt = current_time - last_update;
             map.update(current_time, dt, allocator);
-            ui.update(current_time, dt, allocator);
+            try ui.update(current_time, dt, allocator);
             last_update = current_time;
         }
     }

@@ -258,8 +258,7 @@ fn isImageEmpty(img: zstbi.Image, x: usize, y: usize, w: u32, h: u32) bool {
     return true;
 }
 
-inline fn addCursors(comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, allocator: std.mem.Allocator) !void {
-    _ = allocator;
+inline fn addCursors(comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32) !void {
     var img = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/" ++ image_name, 4);
     defer img.deinit();
 
@@ -694,7 +693,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         try main_music.start();
     }
 
-    try addCursors("Cursors.png", 32, 32, allocator);
+    try addCursors("Cursors.png", 32, 32);
 
     light_tex = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/Light.png", 4);
 
@@ -807,9 +806,23 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addUiImage("buttonBase", "ui/screens/buttonBase.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("buttonHover", "ui/screens/buttonHover.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("buttonPress", "ui/screens/buttonPress.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("checkedBoxBase", "ui/screens/checkedBoxBase.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("checkedBoxHover", "ui/screens/checkedBoxHover.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("checkedBoxPress", "ui/screens/checkedBoxPress.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("textInputBase", "ui/screens/textInputBase.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("textInputHover", "ui/screens/textInputHover.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("textInputPress", "ui/screens/textInputPress.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("toggleSliderBaseOff", "ui/screens/toggleSliderBaseOff.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("toggleSliderHoverOff", "ui/screens/toggleSliderHoverOff.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("toggleSliderPressOff", "ui/screens/toggleSliderPressOff.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("toggleSliderBaseOn", "ui/screens/toggleSliderBaseOn.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("toggleSliderHoverOn", "ui/screens/toggleSliderHoverOn.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("toggleSliderPressOn", "ui/screens/toggleSliderPressOn.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("tooltipBackground", "ui/screens/tooltipBackground.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("tooltipLineSpacer", "ui/screens/tooltipLineSpacer.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("uncheckedBoxBase", "ui/screens/uncheckedBoxBase.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("uncheckedBoxHover", "ui/screens/uncheckedBoxHover.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("uncheckedBoxPress", "ui/screens/uncheckedBoxPress.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("containerView", "ui/containerView.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("minimap", "ui/minimap.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("playerInventory", "ui/playerInventory.png", imply_size, imply_size, &ui_ctx, allocator);

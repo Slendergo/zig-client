@@ -2221,6 +2221,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
         var ui_idx: u16 = 0;
         for (ui.ui_images.items()) |image| {
+            if (!image.visible)
+                continue;
+
             switch (image.image_data) {
                 .nine_slice => |nine_slice| {
                     if (ui_idx >= 4000 - 9 * 4) {
@@ -2232,14 +2235,21 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     ui_idx += 9 * 4;
                 },
                 .normal => |image_data| {
+                    var atlas_data = image_data.atlas_data;
+                    var w = image_data.width();
+                    if (w > image.max_width) {
+                        const scale = image.max_width / w;
+                        atlas_data.tex_w *= scale;
+                        w *= scale;
+                    }
                     drawQuadUi(
                         ui_idx,
                         image.x,
                         image.y,
-                        image_data.width(),
+                        w,
                         image_data.height(),
                         image_data.alpha,
-                        image_data.atlas_data,
+                        atlas_data,
                     );
                     ui_idx += 4;
 
@@ -2251,7 +2261,73 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
         }
 
+        for (ui.bars.items()) |bar| {
+            if (!bar.visible)
+                continue;
+
+            var w: f32 = 0;
+            var h: f32 = 0;
+            switch (bar.image_data) {
+                .nine_slice => |nine_slice| {
+                    w = nine_slice.w;
+                    h = nine_slice.h;
+                    if (ui_idx >= 4000 - 9 * 4) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
+
+                    drawNineSlice(ui_idx, bar.x, bar.y, nine_slice.w, nine_slice.h, nine_slice);
+                    ui_idx += 9 * 4;
+                },
+                .normal => |image_data| {
+                    w = image_data.width();
+                    h = image_data.height();
+                    var atlas_data = image_data.atlas_data;
+                    var scale: f32 = 1.0;
+                    if (w > bar.max_width) {
+                        scale = bar.max_width / w;
+                        atlas_data.tex_w *= scale;
+                    }
+                    drawQuadUi(
+                        ui_idx,
+                        bar.x,
+                        bar.y,
+                        w * scale,
+                        image_data.height(),
+                        image_data.alpha,
+                        atlas_data,
+                    );
+                    ui_idx += 4;
+
+                    if (ui_idx == 4000) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
+                },
+            }
+
+            if (ui_idx >= 4000 - bar.text.text.len * 4) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
+
+            ui_idx += drawTextUi(
+                ui_idx,
+                bar.x + (w - bar.text.width()) / 2,
+                bar.y + (h - bar.text.height()) / 2,
+                bar.text,
+            );
+
+            if (ui_idx == 4000) {
+                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                ui_idx = 0;
+            }
+        }
+
         for (ui.buttons.items()) |button| {
+            if (!button.visible)
+                continue;
+
             var w: f32 = 0;
             var h: f32 = 0;
 
@@ -2309,6 +2385,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         }
 
         for (ui.ui_texts.items()) |text| {
+            if (!text.visible)
+                continue;
+
             if (ui_idx >= 4000 - text.text.text.len * 4) {
                 endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
                 ui_idx = 0;
@@ -2328,6 +2407,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         }
 
         for (ui.input_fields.items()) |input_field| {
+            if (!input_field.visible)
+                continue;
+
             var w: f32 = 0;
             var h: f32 = 0;
 
@@ -2383,6 +2465,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         }
 
         for (ui.speech_balloons.items()) |balloon| {
+            if (!balloon.visible)
+                continue;
+
             const image_data = balloon.image_data.normal; // assume no 9 slice
             const w = image_data.width();
             const h = image_data.height();
@@ -2418,6 +2503,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         }
 
         for (ui.status_texts.items()) |status_text| {
+            if (!status_text.visible)
+                continue;
+
             if (ui_idx >= 4000 - status_text.text.text.len * 4) {
                 endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
                 ui_idx = 0;

@@ -41,17 +41,16 @@ inline fn keyPress(key: zglfw.Key) void {
             if (input_field.text.text.len > 0)
                 input_field.allocator.free(input_field.text.text);
             input_field.text.text = &[0]u8{};
+            selected_input_field = null;
             return;
         }
 
-        if (key == .backspace) {
-            const len_sub_1 = input_field.text.text.len - 1;
-            if (len_sub_1 < 0)
-                return;
-
+        const len = input_field.text.text.len;
+        if (key == .backspace and len > 0) {
+            const len_sub_1 = len - 1;
             const new_text = input_field.allocator.alloc(u8, len_sub_1) catch @panic("Out of memory, input field alloc failed");
             @memcpy(new_text, input_field.text.text[0..len_sub_1]);
-            if (input_field.text.text.len > 0)
+            if (len > 0)
                 input_field.allocator.free(input_field.text.text);
             input_field.text.text = new_text;
             return;
@@ -239,11 +238,11 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
         return;
 
     if (action == .press) {
-        mousePress(button);
-        ui.mousePress(@floatCast(mouse_x), @floatCast(mouse_y));
+        if (!ui.mousePress(@floatCast(mouse_x), @floatCast(mouse_y)))
+            mousePress(button);
     } else if (action == .release) {
-        mouseRelease(button);
         ui.mouseRelease(@floatCast(mouse_x), @floatCast(mouse_y));
+        mouseRelease(button);
     }
 
     updateState();
