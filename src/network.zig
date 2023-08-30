@@ -283,6 +283,7 @@ pub const Server = struct {
                         proj.addToMap(true);
                     }
 
+                    // if this is too slow for ya in large crowds hardcode it to 100
                     const attack_period: i32 = @intFromFloat((1.0 / player.attackFrequency()) * (1.0 / item_props.?.rate_of_fire));
                     player.attack_period = attack_period;
                     player.attack_angle = angle - camera.angle;
