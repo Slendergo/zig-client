@@ -282,7 +282,12 @@ pub const Server = struct {
                         };
                         proj.addToMap(true);
                     }
+
+                    // if this is too slow for ya in large crowds hardcode it to 100
+                    const attack_period: i32 = @intFromFloat((1.0 / player.attackFrequency()) * (1.0 / item_props.?.rate_of_fire));
+                    player.attack_period = attack_period;
                     player.attack_angle = angle - camera.angle;
+                    player.attack_angle_raw = angle;
                     player.attack_start = main.current_time;
                 },
                 else => {},
@@ -546,6 +551,7 @@ pub const Server = struct {
                             const y_dt = position.y - player.y;
                             const x_dt = position.x - player.x;
                             player.move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
+                            player.move_angle_camera_included = camera.angle_unbound + player.move_angle;
                         }
 
                         for (0..stats_len) |_| {

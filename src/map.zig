@@ -635,6 +635,7 @@ pub const Player = struct {
                         self.y = self.target_y;
                         self.target_x = -1;
                         self.target_y = -1;
+                        self.move_angle = std.math.nan(f32);
                         break :moveBlock;
                     }
 
@@ -644,6 +645,7 @@ pub const Player = struct {
                         self.y = self.target_y;
                         self.target_x = -1;
                         self.target_y = -1;
+                        self.move_angle = std.math.nan(f32);
                         break :moveBlock;
                     }
                     self.x = scale_dt * self.target_x + (1.0 - scale_dt) * self.tick_x;
