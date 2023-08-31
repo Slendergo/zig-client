@@ -59,11 +59,11 @@ fn sample_msdf(tex: vec4<f32>, dist_factor: f32, alpha_mult: f32) -> f32 {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let use_shadow = in.shadow_texel_offset.x != 0.0 && in.shadow_texel_offset.y != 0.0;
+    let use_shadow = in.shadow_texel_offset.x != 0.0 || in.shadow_texel_offset.y != 0.0;
     let dx = dpdx(in.uv);
     let dy = dpdy(in.uv);
 
-    const subpixel = 1.0 / 2.0;
+    const subpixel = 1.0 / 3.0;
     let subpixel_width = (abs(dx.x) + abs(dy.x)) * subpixel; // this is just fwidth(in.uv).x * subpixel
 
     var red_tex = vec4(0.0, 0.0, 0.0, 0.0);
