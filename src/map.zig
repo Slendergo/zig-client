@@ -206,7 +206,7 @@ pub const GameObject = struct {
     max_hp: i32 = 0,
     hp: i32 = 0,
     defense: i32 = 0,
-    condition: utils.Condition = utils.Condition{},
+    condition: utils.Condition = .{},
     level: i32 = 0,
     tex_1: i32 = 0,
     tex_2: i32 = 0,
@@ -219,7 +219,7 @@ pub const GameObject = struct {
     merchant_rem_minute: i32 = 0,
     merchant_discount: i32 = 0,
     sellable_price: i32 = 0,
-    sellable_currency: game_data.Currency = game_data.Currency.Gold,
+    sellable_currency: game_data.Currency = .gold,
     sellable_rank_req: i32 = 0,
     portal_active: bool = false,
     object_connection: i32 = 0,
@@ -277,7 +277,7 @@ pub const GameObject = struct {
                     if (assets.atlas_data.get(tex.sheet)) |data| {
                         self.atlas_data = data[tex.index];
                     } else {
-                        std.log.err("Could not find sheet {s} for object with type {d}. Using error texture", .{ tex.sheet, self.obj_type });
+                        std.log.err("Could not find sheet {s} for object with type 0x{x}. Using error texture", .{ tex.sheet, self.obj_type });
                         self.atlas_data = assets.error_data;
                     }
 
@@ -396,7 +396,7 @@ pub const GameObject = struct {
                 if (assets.atlas_data.get(tex.sheet)) |data| {
                     self.atlas_data = data[tex.index];
                 } else {
-                    std.log.err("Could not find sheet {s} for merchant with type {d}. Using error texture", .{ tex.sheet, self.merchant_obj_type });
+                    std.log.err("Could not find sheet {s} for merchant with type 0x{x}. Using error texture", .{ tex.sheet, self.merchant_obj_type });
                     self.atlas_data = assets.error_data;
                 }
             }
@@ -445,6 +445,7 @@ pub const Player = struct {
     magic_stack_count: i32 = 0,
     condition: utils.Condition = utils.Condition{},
     inventory: [20]i32 = [_]i32{-1} ** 20,
+    slot_types: [20]i8 = [_]i8{0} ** 20,
     has_backpack: bool = false,
     exp_goal: i32 = 0,
     exp: i32 = 0,
@@ -537,6 +538,12 @@ pub const Player = struct {
             self.death_sound = obj_props.death_sound;
         }
 
+        for (game_data.classes) |class| {
+            if (class.obj_type == self.obj_type and class.slot_types.len >= 20) {
+                self.slot_types = class.slot_types[0..20].*;
+            }
+        }
+
         entities.add(.{ .player = self.* }) catch |e| {
             std.log.err("Could not add player to map (obj_id={d}, obj_type={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.obj_type, self.x, self.y, e });
         };
@@ -589,9 +596,13 @@ pub const Player = struct {
             };
             proj.addToMap(false);
 
-            if (main.server) |*server| {
-                server.sendPlayerShoot(time, bullet_id, @intCast(weapon), network.Position{ .x = x, .y = y }, current_angle);
-            }
+            network.sendPlayerShoot(
+                time,
+                bullet_id,
+                @intCast(weapon),
+                network.Position{ .x = x, .y = y },
+                current_angle,
+            );
 
             current_angle += arc_gap;
         }
@@ -621,8 +632,7 @@ pub const Player = struct {
                 if (validPos(floor_x, floor_y)) {
                     const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
                     if (square.tile_type != 0xFFFF and square.tile_type != 0xFF and square.damage > 0) {
-                        if (main.server) |*server|
-                            server.sendGroundDamage(time, .{ .x = self.x, .y = self.y });
+                        network.sendGroundDamage(time, .{ .x = self.x, .y = self.y });
                         self.last_ground_damage = time;
                     }
                 }
@@ -1054,12 +1064,9 @@ pub const Projectile = struct {
         if (validPos(floor_x, floor_y)) {
             const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
             if (square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.blocking) {
-                // if (main.server) |*server| {
-                //     server.otherHit(time, self.bullet_id, self.owner_id) catch |e| {
-                //         std.log.err("Could not send other hit: {any}", .{e});
-                //     };
-                // }
-
+                // network.otherHit(time, self.bullet_id, self.owner_id) catch |e| {
+                //     std.log.err("Could not send other hit: {any}", .{e});
+                // };
                 return false;
             }
         }
@@ -1072,9 +1079,7 @@ pub const Projectile = struct {
 
         if (self.damage_players) {
             if (findTargetPlayer(self.x, self.y, 0.33)) |player| {
-                if (main.server) |*server|
-                    server.sendPlayerHit(self.bullet_id, self.owner_id);
-
+                network.sendPlayerHit(self.bullet_id, self.owner_id);
                 assets.playSfx(player.hit_sound);
                 if (self.props.damage > 0 or self.props.min_damage > 0) {
                     const piercing: bool = self.props.piercing;
@@ -1086,7 +1091,7 @@ pub const Projectile = struct {
                     if (damage_value > player.hp)
                         assets.playSfx(player.death_sound);
 
-                    const text = ui.Text{
+                    const text_data = ui.TextData{
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage_value}) catch unreachable,
                         .text_type = .bold,
                         .size = 22,
@@ -1096,7 +1101,7 @@ pub const Projectile = struct {
                     ui.status_texts.add(ui.StatusText{
                         .obj_id = player.obj_id,
                         .start_time = time,
-                        .text = text,
+                        .text_data = text_data,
                         .initial_size = 22,
                     }) catch |e| {
                         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
@@ -1109,8 +1114,7 @@ pub const Projectile = struct {
             if (findTargetObject(self.x, self.y, 0.33)) |object| {
                 const dead = object.hp <= self.props.min_damage;
 
-                if (main.server) |*server|
-                    server.sendEnemyHit(time, self.bullet_id, object.obj_id, dead);
+                network.sendEnemyHit(time, self.bullet_id, object.obj_id, dead);
 
                 assets.playSfx(object.hit_sound);
                 if (self.props.min_damage > 0) {
@@ -1129,7 +1133,7 @@ pub const Projectile = struct {
                     if (damage > object.hp)
                         assets.playSfx(object.death_sound);
 
-                    const text = ui.Text{
+                    const text_data = ui.TextData{
                         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable,
                         .text_type = .bold,
                         .size = 22,
@@ -1139,7 +1143,7 @@ pub const Projectile = struct {
                     ui.status_texts.add(ui.StatusText{
                         .obj_id = object.obj_id,
                         .start_time = time,
-                        .text = text,
+                        .text_data = text_data,
                         .initial_size = 22,
                     }) catch |e| {
                         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage, e });
@@ -1202,6 +1206,7 @@ pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
 pub var last_tick_time: i32 = 0;
 pub var local_player_id: i32 = -1;
 pub var interactive_id = std.atomic.Atomic(i32).init(-1);
+pub var interactive_type = std.atomic.Atomic(game_data.ClassType).init(.game_object);
 pub var name: []const u8 = "";
 pub var seed: u32 = 0;
 pub var width: isize = 0;
@@ -1330,15 +1335,32 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
     defer object_lock.unlock();
 
     interactive_id.store(-1, .Release);
+    interactive_type.store(.game_object, .Release);
 
+    var interactive_set = false;
     for (entities.items(), 0..) |*en, i| {
         switch (en.*) {
             .object => |*obj| {
-                if (obj.class == .portal) {
+                const is_container = obj.class == .container;
+                if (!interactive_set and (obj.class == .portal or is_container)) {
                     const dt_x = camera.x - obj.x;
                     const dt_y = camera.y - obj.y;
                     if (dt_x * dt_x + dt_y * dt_y < 1) {
                         interactive_id.store(obj.obj_id, .Release);
+                        interactive_type.store(obj.class, .Release);
+
+                        if (is_container) {
+                            if (ui.container_id != obj.obj_id) {
+                                inline for (0..8) |idx| {
+                                    ui.setContainerItem(obj.inventory[idx], idx);
+                                }
+                            }
+
+                            ui.container_id = obj.obj_id;
+                            ui.setContainerVisible(true);
+                        }
+
+                        interactive_set = true;
                     }
                 }
 
@@ -1364,6 +1386,17 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
                     };
             },
         }
+    }
+
+    if (!interactive_set) {
+        if (ui.container_id != -1) {
+            inline for (0..8) |idx| {
+                ui.setContainerItem(-1, idx);
+            }
+        }
+
+        ui.container_id = -1;
+        ui.setContainerVisible(false);
     }
 
     std.mem.reverse(usize, entity_indices_to_remove.items());
@@ -1413,7 +1446,7 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
                 ground_data.removePadding();
                 square.atlas_data = ground_data;
             } else {
-                std.log.err("Could not find sheet {s} for square with type {d}. Using error texture", .{ tex.sheet, tile_type });
+                std.log.err("Could not find sheet {s} for square with type 0x{x}. Using error texture", .{ tex.sheet, tile_type });
                 square.atlas_data = assets.error_data;
             }
 

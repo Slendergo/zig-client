@@ -6,6 +6,8 @@ const utils = @import("utils.zig");
 const input = @import("input.zig");
 const main = @import("main.zig");
 const game_data = @import("game_data.zig");
+const network = @import("network.zig");
+const zglfw = @import("zglfw");
 
 pub const RGBF32 = extern struct {
     r: f32,
@@ -37,7 +39,7 @@ pub const InputField = struct {
     text_inlay_x: f32,
     text_inlay_y: f32,
     base_decor_data: ImageData,
-    text: Text,
+    text_data: TextData,
     allocator: std.mem.Allocator,
     enter_callback: *const fn ([]u8) void,
     state: InteractableState = .none,
@@ -54,14 +56,14 @@ pub const InputField = struct {
     }
 
     pub inline fn width(self: InputField) f32 {
-        return @max(self.text.width(), switch (self.imageData()) {
+        return @max(self.text_data.width(), switch (self.imageData()) {
             .nine_slice => |nine_slice| return nine_slice.w,
             .normal => |image_data| return image_data.width(),
         });
     }
 
     pub inline fn height(self: InputField) f32 {
-        return @max(self.text.height(), switch (self.imageData()) {
+        return @max(self.text_data.height(), switch (self.imageData()) {
             .nine_slice => |nine_slice| return nine_slice.h,
             .normal => |image_data| return image_data.height(),
         });
@@ -76,7 +78,7 @@ pub const Button = struct {
     state: InteractableState = .none,
     hover_image_data: ?ImageData = null,
     press_image_data: ?ImageData = null,
-    text: ?Text = null,
+    text_data: ?TextData = null,
     visible: bool = true,
 
     pub inline fn imageData(self: Button) ImageData {
@@ -88,7 +90,7 @@ pub const Button = struct {
     }
 
     pub inline fn width(self: Button) f32 {
-        if (self.text) |text| {
+        if (self.text_data) |text| {
             return @max(text.width(), switch (self.imageData()) {
                 .nine_slice => |nine_slice| return nine_slice.w,
                 .normal => |image_data| return image_data.width(),
@@ -102,7 +104,7 @@ pub const Button = struct {
     }
 
     pub inline fn height(self: Button) f32 {
-        if (self.text) |text| {
+        if (self.text_data) |text| {
             return @max(text.height(), switch (self.imageData()) {
                 .nine_slice => |nine_slice| return nine_slice.h,
                 .normal => |image_data| return image_data.height(),
@@ -218,13 +220,6 @@ pub const Image = struct {
     image_data: ImageData,
     max_width: f32 = std.math.maxInt(u32),
     visible: bool = true,
-    draggable: bool = false,
-    drag_end_callback: ?*const fn (*Image) void = null,
-    _is_dragging: bool = false,
-    _drag_start_x: f32 = 0,
-    _drag_start_y: f32 = 0,
-    _drag_offset_x: f32 = 0,
-    _drag_offset_y: f32 = 0,
 
     pub inline fn width(self: Image) f32 {
         switch (self.image_data) {
@@ -241,13 +236,46 @@ pub const Image = struct {
     }
 };
 
+pub const Item = struct {
+    x: f32,
+    y: f32,
+    image_data: ImageData,
+    drag_end_callback: *const fn (*Item) void,
+    double_click_callback: *const fn (*Item) void,
+    shift_click_callback: *const fn (*Item) void,
+    tier_text: ?UiText = null, // ui text because the text is offset
+    visible: bool = true,
+    draggable: bool = false,
+    _is_dragging: bool = false,
+    _drag_start_x: f32 = 0,
+    _drag_start_y: f32 = 0,
+    _drag_offset_x: f32 = 0,
+    _drag_offset_y: f32 = 0,
+    _last_click_time: i32 = 0,
+    _item: i32 = -1,
+
+    pub inline fn width(self: Item) f32 {
+        switch (self.image_data) {
+            .nine_slice => |nine_slice| return nine_slice.w,
+            .normal => |image_data| return image_data.width(),
+        }
+    }
+
+    pub inline fn height(self: Item) f32 {
+        switch (self.image_data) {
+            .nine_slice => |nine_slice| return nine_slice.h,
+            .normal => |image_data| return image_data.height(),
+        }
+    }
+};
+
 pub const Bar = struct {
     x: f32,
     y: f32,
     image_data: ImageData,
     max_width: f32 = std.math.maxInt(u32),
     visible: bool = true,
-    text: Text,
+    text_data: TextData,
 
     pub inline fn width(self: Bar) f32 {
         switch (self.image_data) {
@@ -266,7 +294,7 @@ pub const Bar = struct {
 
 pub const SpeechBalloon = struct {
     image_data: ImageData,
-    text: Text,
+    text_data: TextData,
     target_id: i32,
     start_time: i32,
     visible: bool = true,
@@ -275,14 +303,14 @@ pub const SpeechBalloon = struct {
     _screen_y: f32 = 0.0,
 
     pub inline fn width(self: SpeechBalloon) f32 {
-        return @max(self.text.width(), switch (self.image_data) {
+        return @max(self.text_data.width(), switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.w,
             .normal => |image_data| return image_data.width(),
         });
     }
 
     pub inline fn height(self: SpeechBalloon) f32 {
-        return @max(self.text.height(), switch (self.image_data) {
+        return @max(self.text_data.height(), switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.h,
             .normal => |image_data| return image_data.height(),
         });
@@ -292,12 +320,12 @@ pub const SpeechBalloon = struct {
 pub const UiText = struct {
     x: f32,
     y: f32,
-    text: Text,
+    text_data: TextData,
     visible: bool = true,
 };
 
 pub const StatusText = struct {
-    text: Text,
+    text_data: TextData,
     initial_size: f32,
     lifetime: i32 = 500,
     start_time: i32 = 0,
@@ -308,11 +336,11 @@ pub const StatusText = struct {
     _screen_y: f32 = 0.0,
 
     pub inline fn width(self: StatusText) f32 {
-        return self.text.width();
+        return self.text_data.width();
     }
 
     pub inline fn height(self: StatusText) f32 {
-        return self.text.height();
+        return self.text_data.height();
     }
 };
 
@@ -323,7 +351,7 @@ pub const TextType = enum(u32) {
     bold_italic = 3,
 };
 
-pub const Text = struct {
+pub const TextData = struct {
     text: []u8,
     size: f32,
     text_type: TextType = .medium,
@@ -334,7 +362,7 @@ pub const Text = struct {
     shadow_texel_offset_mult: f32 = 6.0,
     max_width: f32 = @as(f32, std.math.maxInt(u32)),
 
-    pub fn width(self: Text) f32 {
+    pub fn width(self: TextData) f32 {
         const size_scale = self.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
 
         var x_max: f32 = 0.0;
@@ -360,7 +388,7 @@ pub const Text = struct {
         return @min(x_max, self.max_width);
     }
 
-    pub fn height(self: Text) f32 {
+    pub fn height(self: TextData) f32 {
         const size_scale = self.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
         const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
@@ -388,6 +416,81 @@ pub const Text = struct {
     }
 };
 
+pub const Slot = struct {
+    idx: u8,
+    is_container: bool = false,
+
+    fn findInvSlotId(x: f32, y: f32) u8 {
+        for (0..20) |i| {
+            const data = inventory_pos_data[i];
+            if (utils.isInBounds(
+                x,
+                y,
+                inventory_decor.x + data.x - data.w_pad,
+                inventory_decor.y + data.y - data.h_pad,
+                data.w + data.w_pad * 2,
+                data.h + data.h_pad * 2,
+            )) {
+                return @intCast(i);
+            }
+        }
+
+        return 255;
+    }
+
+    fn findContainerSlotId(x: f32, y: f32) u8 {
+        if (!container_visible)
+            return 255;
+
+        for (0..8) |i| {
+            const data = container_pos_data[i];
+            if (utils.isInBounds(
+                x,
+                y,
+                container_decor.x + data.x - data.w_pad,
+                container_decor.y + data.y - data.h_pad,
+                data.w + data.w_pad * 2,
+                data.h + data.h_pad * 2,
+            )) {
+                return @intCast(i);
+            }
+        }
+
+        return 255;
+    }
+
+    pub fn findSlotId(x: f32, y: f32) Slot {
+        const inv_slot = findInvSlotId(x, y);
+        if (inv_slot != 255) {
+            return Slot{ .idx = inv_slot };
+        }
+
+        const container_slot = findContainerSlotId(x, y);
+        if (container_slot != 255) {
+            return Slot{ .idx = container_slot, .is_container = true };
+        }
+
+        return Slot{ .idx = 255 };
+    }
+
+    pub fn nextEquippableSlot(slot_types: [20]i8, base_slot_type: i8) Slot {
+        for (0..20) |idx| {
+            if (slot_types[idx] > 0 and game_data.ItemType.slotsMatch(slot_types[idx], base_slot_type))
+                return Slot{ .idx = @intCast(idx) };
+        }
+        return Slot{ .idx = 255 };
+    }
+
+    pub fn nextAvailableSlot() Slot {
+        for (0..20) |idx| {
+            if (inventory_items[idx]._item == -1)
+                return Slot{ .idx = @intCast(idx) };
+        }
+        return Slot{ .idx = 255 };
+    }
+};
+
+pub var items: utils.DynSlice(*Item) = undefined;
 pub var bars: utils.DynSlice(*Bar) = undefined;
 pub var input_fields: utils.DynSlice(*InputField) = undefined;
 pub var buttons: utils.DynSlice(*Button) = undefined;
@@ -400,7 +503,7 @@ pub var status_texts_to_remove: utils.DynSlice(usize) = undefined;
 pub var obj_ids_to_remove: utils.DynSlice(i32) = undefined;
 
 pub var fps_text: *UiText = undefined;
-var chat_input: *InputField = undefined;
+pub var chat_input: *InputField = undefined;
 var chat_decor: *Image = undefined;
 var bars_decor: *Image = undefined;
 var stats_button: *Button = undefined;
@@ -410,10 +513,14 @@ var fame_bar: *Bar = undefined;
 var health_bar: *Bar = undefined;
 var mana_bar: *Bar = undefined;
 var inventory_decor: *Image = undefined;
-var inventory_items: [20]Image = undefined;
+var inventory_items: [20]Item = undefined;
+var health_potion: *Image = undefined;
+var health_potion_text: *UiText = undefined;
+var magic_potion: *Image = undefined;
+var magic_potion_text: *UiText = undefined;
 var container_decor: *Image = undefined;
 var container_name: *UiText = undefined;
-var container_items: [8]Image = undefined;
+var container_items: [8]Item = undefined;
 var minimap_decor: *Image = undefined;
 
 var inventory_pos_data: [20]utils.Rect = undefined;
@@ -428,6 +535,8 @@ var last_hp: i32 = -1;
 var last_max_hp: i32 = -1;
 var last_mp: i32 = -1;
 var last_max_mp: i32 = -1;
+pub var container_visible = false;
+pub var container_id: i32 = -1;
 
 var _allocator: std.mem.Allocator = undefined;
 
@@ -436,16 +545,17 @@ pub fn init(allocator: std.mem.Allocator) !void {
 
     parseItemRects();
 
-    bars = try utils.DynSlice(*Bar).init(10, allocator);
-    input_fields = try utils.DynSlice(*InputField).init(10, allocator);
-    buttons = try utils.DynSlice(*Button).init(10, allocator);
-    ui_images = try utils.DynSlice(*Image).init(10, allocator);
-    ui_texts = try utils.DynSlice(*UiText).init(10, allocator);
-    speech_balloons = try utils.DynSlice(SpeechBalloon).init(10, allocator);
-    speech_balloons_to_remove = try utils.DynSlice(usize).init(10, allocator);
-    status_texts = try utils.DynSlice(StatusText).init(30, allocator);
-    status_texts_to_remove = try utils.DynSlice(usize).init(30, allocator);
-    obj_ids_to_remove = try utils.DynSlice(i32).init(40, allocator);
+    items = try utils.DynSlice(*Item).init(16, allocator);
+    bars = try utils.DynSlice(*Bar).init(8, allocator);
+    input_fields = try utils.DynSlice(*InputField).init(8, allocator);
+    buttons = try utils.DynSlice(*Button).init(8, allocator);
+    ui_images = try utils.DynSlice(*Image).init(8, allocator);
+    ui_texts = try utils.DynSlice(*UiText).init(8, allocator);
+    speech_balloons = try utils.DynSlice(SpeechBalloon).init(16, allocator);
+    speech_balloons_to_remove = try utils.DynSlice(usize).init(16, allocator);
+    status_texts = try utils.DynSlice(StatusText).init(32, allocator);
+    status_texts_to_remove = try utils.DynSlice(usize).init(32, allocator);
+    obj_ids_to_remove = try utils.DynSlice(i32).init(64, allocator);
 
     minimap_decor = try allocator.create(Image);
     const minimap_data = (assets.ui_atlas_data.get("minimap") orelse @panic("Could not find minimap in ui atlas"))[0];
@@ -466,7 +576,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try ui_images.add(inventory_decor);
 
     for (0..20) |i| {
-        inventory_items[i] = Image{
+        inventory_items[i] = Item{
             .x = inventory_decor.x + inventory_pos_data[i].x + (inventory_pos_data[i].w - assets.ui_error_data.texWRaw() * 4.0 + assets.padding * 2) / 2,
             .y = inventory_decor.y + inventory_pos_data[i].y + (inventory_pos_data[i].h - assets.ui_error_data.texHRaw() * 4.0 + assets.padding * 2) / 2,
             .image_data = .{ .normal = .{
@@ -474,11 +584,23 @@ pub fn init(allocator: std.mem.Allocator) !void {
                 .scale_y = 4.0,
                 .atlas_data = assets.ui_error_data,
             } },
-            .visible = true,
+            .tier_text = .{
+                .text_data = .{
+                    .text = "",
+                    .size = 10,
+                    .text_type = .bold,
+                },
+                .visible = false,
+                .x = 0,
+                .y = 0,
+            },
+            .visible = false,
             .draggable = true,
             .drag_end_callback = itemDragEndCallback,
+            .double_click_callback = itemDoubleClickCallback,
+            .shift_click_callback = itemShiftClickCallback,
         };
-        try ui_images.add(&inventory_items[i]);
+        try items.add(&inventory_items[i]);
     }
 
     container_decor = try allocator.create(Image);
@@ -490,6 +612,34 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .visible = false,
     };
     try ui_images.add(container_decor);
+
+    for (0..8) |i| {
+        container_items[i] = Item{
+            .x = container_decor.x + container_pos_data[i].x + (container_pos_data[i].w - assets.ui_error_data.texWRaw() * 4.0 + assets.padding * 2) / 2,
+            .y = container_decor.y + container_pos_data[i].y + (container_pos_data[i].h - assets.ui_error_data.texHRaw() * 4.0 + assets.padding * 2) / 2,
+            .image_data = .{ .normal = .{
+                .scale_x = 4.0,
+                .scale_y = 4.0,
+                .atlas_data = assets.ui_error_data,
+            } },
+            .tier_text = .{
+                .text_data = .{
+                    .text = "",
+                    .size = 10,
+                    .text_type = .bold,
+                },
+                .visible = false,
+                .x = 0,
+                .y = 0,
+            },
+            .visible = false,
+            .draggable = true,
+            .drag_end_callback = itemDragEndCallback,
+            .double_click_callback = itemDoubleClickCallback,
+            .shift_click_callback = itemShiftClickCallback,
+        };
+        try items.add(&container_items[i]);
+    }
 
     bars_decor = try allocator.create(Image);
     const bars_data = (assets.ui_atlas_data.get("playerStatusBarsDecor") orelse @panic("Could not find playerStatusBarsDecor in ui atlas"))[0];
@@ -511,7 +661,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try buttons.add(stats_button);
 
     level_text = try allocator.create(UiText);
-    const level = Text{
+    const level_text_data = TextData{
         .text = "",
         .size = 12,
         .text_type = .bold,
@@ -519,7 +669,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     level_text.* = UiText{
         .x = bars_decor.x + 181,
         .y = bars_decor.y + 13,
-        .text = level,
+        .text_data = level_text_data,
     };
     try ui_texts.add(level_text);
 
@@ -529,10 +679,10 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .x = bars_decor.x + 42,
         .y = bars_decor.y + 12,
         .image_data = .{ .normal = .{ .atlas_data = xp_bar_data } },
-        .text = .{
+        .text_data = .{
             .text = "",
             .size = 12,
-            .text_type = .bold,
+            .text_type = .bold_italic,
         },
     };
     try bars.add(xp_bar);
@@ -543,10 +693,10 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .x = bars_decor.x + 42,
         .y = bars_decor.y + 12,
         .image_data = .{ .normal = .{ .atlas_data = fame_bar_data } },
-        .text = .{
+        .text_data = .{
             .text = "",
             .size = 12,
-            .text_type = .bold,
+            .text_type = .bold_italic,
         },
     };
     try bars.add(fame_bar);
@@ -557,10 +707,10 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .x = bars_decor.x + 8,
         .y = bars_decor.y + 47,
         .image_data = .{ .normal = .{ .atlas_data = health_bar_data } },
-        .text = .{
+        .text_data = .{
             .text = "",
             .size = 12,
-            .text_type = .bold,
+            .text_type = .bold_italic,
         },
     };
     try bars.add(health_bar);
@@ -571,10 +721,10 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .x = bars_decor.x + 8,
         .y = bars_decor.y + 73,
         .image_data = .{ .normal = .{ .atlas_data = mana_bar_data } },
-        .text = .{
+        .text_data = .{
             .text = "",
             .size = 12,
-            .text_type = .bold,
+            .text_type = .bold_italic,
         },
     };
     try bars.add(mana_bar);
@@ -596,7 +746,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .text_inlay_x = 9,
         .text_inlay_y = 8,
         .base_decor_data = .{ .normal = .{ .atlas_data = input_data } },
-        .text = .{
+        .text_data = .{
             .text = "",
             .size = 12,
             .text_type = .bold,
@@ -607,15 +757,15 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try input_fields.add(chat_input);
 
     fps_text = try allocator.create(UiText);
-    const text = Text{
+    const fps_text_data = TextData{
         .text = "",
         .size = 12,
         .text_type = .bold,
     };
     fps_text.* = UiText{
-        .x = camera.screen_width - text.width() - 10,
+        .x = camera.screen_width - fps_text_data.width() - 10,
         .y = minimap_decor.y + minimap_decor.height() + 10,
-        .text = text,
+        .text_data = fps_text_data,
     };
     try ui_texts.add(fps_text);
 }
@@ -626,26 +776,42 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     allocator.destroy(container_decor);
     allocator.destroy(bars_decor);
     allocator.destroy(stats_button);
-    if (level_text.text.text.len > 0)
-        allocator.free(level_text.text.text);
+    if (level_text.text_data.text.len > 0)
+        allocator.free(level_text.text_data.text);
     allocator.destroy(level_text);
-    if (xp_bar.text.text.len > 0)
-        allocator.free(xp_bar.text.text);
+    if (xp_bar.text_data.text.len > 0)
+        allocator.free(xp_bar.text_data.text);
     allocator.destroy(xp_bar);
-    if (fame_bar.text.text.len > 0)
-        allocator.free(fame_bar.text.text);
+    if (fame_bar.text_data.text.len > 0)
+        allocator.free(fame_bar.text_data.text);
     allocator.destroy(fame_bar);
-    if (health_bar.text.text.len > 0)
-        allocator.free(health_bar.text.text);
+    if (health_bar.text_data.text.len > 0)
+        allocator.free(health_bar.text_data.text);
     allocator.destroy(health_bar);
-    if (mana_bar.text.text.len > 0)
-        allocator.free(mana_bar.text.text);
+    if (mana_bar.text_data.text.len > 0)
+        allocator.free(mana_bar.text_data.text);
     allocator.destroy(mana_bar);
     allocator.destroy(chat_decor);
     allocator.destroy(chat_input);
-    if (fps_text.text.text.len > 0)
-        allocator.free(fps_text.text.text);
+    if (fps_text.text_data.text.len > 0)
+        allocator.free(fps_text.text_data.text);
     allocator.destroy(fps_text);
+
+    for (inventory_items) |item| {
+        if (item.tier_text) |tier_text| {
+            if (tier_text.text_data.text.len > 0) {
+                allocator.free(tier_text.text_data.text);
+            }
+        }
+    }
+
+    for (container_items) |item| {
+        if (item.tier_text) |tier_text| {
+            if (tier_text.text_data.text.len > 0) {
+                allocator.free(tier_text.text_data.text);
+            }
+        }
+    }
 
     bars.deinit();
     input_fields.deinit();
@@ -655,7 +821,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     speech_balloons.deinit();
     speech_balloons_to_remove.deinit();
     for (status_texts.items()) |status_text| {
-        allocator.free(status_text.text.text);
+        allocator.free(status_text.text_data.text);
     }
     status_texts.deinit();
     status_texts_to_remove.deinit();
@@ -686,6 +852,16 @@ pub fn resize(w: f32, h: f32) void {
     chat_decor.y = h - chat_decor_h - chat_input.imageData().normal.height() - 10;
     chat_input.y = chat_decor.y + chat_decor_h;
     fps_text.y = minimap_decor.y + minimap_decor.height() + 10;
+
+    for (0..20) |idx| {
+        inventory_items[idx].x = inventory_decor.x + inventory_pos_data[idx].x + (inventory_pos_data[idx].w - inventory_items[idx].width() + assets.padding * 2) / 2;
+        inventory_items[idx].y = inventory_decor.y + inventory_pos_data[idx].y + (inventory_pos_data[idx].h - inventory_items[idx].height() + assets.padding * 2) / 2;
+    }
+
+    for (0..8) |idx| {
+        container_items[idx].x = container_decor.x + container_pos_data[idx].x + (container_pos_data[idx].w - container_items[idx].width() + assets.padding * 2) / 2;
+        container_items[idx].y = container_decor.y + container_pos_data[idx].y + (container_pos_data[idx].h - container_items[idx].height() + assets.padding * 2) / 2;
+    }
 }
 
 fn parseItemRects() void {
@@ -698,6 +874,8 @@ fn parseItemRects() void {
                 .y = 8,
                 .w = 40,
                 .h = 40,
+                .w_pad = 2,
+                .h_pad = 13,
             };
         } else {
             inventory_pos_data[i] = utils.Rect{
@@ -705,72 +883,97 @@ fn parseItemRects() void {
                 .y = 63 + (vert_idx - 1) * 44,
                 .w = 40,
                 .h = 40,
+                .w_pad = 2,
+                .h_pad = 2,
             };
         }
     }
 
     for (0..8) |i| {
-        _ = i;
-        //container_pos_data[i] = utils.Rect{};
+        const hori_idx: f32 = @floatFromInt(@mod(i, 4));
+        const vert_idx: f32 = @floatFromInt(@divFloor(i, 4));
+        container_pos_data[i] = utils.Rect{
+            .x = 5 + hori_idx * 44,
+            .y = 8 + vert_idx * 44,
+            .w = 40,
+            .h = 40,
+            .w_pad = 2,
+            .h_pad = 2,
+        };
     }
 }
 
-fn findSlotId(x: f32, y: f32) u8 {
-    for (0..20) |i| {
-        if (utils.isInBounds(
-            x,
-            y,
-            inventory_decor.x + inventory_pos_data[i].x,
-            inventory_decor.y + inventory_pos_data[i].y,
-            inventory_pos_data[i].w,
-            inventory_pos_data[i].h,
-        )) {
-            return @intCast(i);
+fn swapSlots(start_slot: Slot, end_slot: Slot) void {
+    const int_id = map.interactive_id.load(.Acquire);
+
+    if (end_slot.idx == 255) {
+        if (start_slot.is_container) {
+            setContainerItem(-1, start_slot.idx);
+            network.sendInvDrop(.{
+                .object_id = int_id,
+                .slot_id = start_slot.idx,
+                .object_type = container_items[start_slot.idx]._item,
+            });
+        } else {
+            setInvItem(-1, start_slot.idx);
+            network.sendInvDrop(.{
+                .object_id = map.local_player_id,
+                .slot_id = start_slot.idx,
+                .object_type = inventory_items[start_slot.idx]._item,
+            });
         }
-    }
+    } else {
+        while (!map.object_lock.tryLockShared()) {}
+        defer map.object_lock.unlockShared();
 
-    return 255;
-}
-
-fn itemDragEndCallback(img: *Image) void {
-    if (main.server) |*srv| {
         if (map.findEntity(map.local_player_id)) |en| {
             switch (en.*) {
                 .player => |local_player| {
-                    const start_slot_id = findSlotId(img._drag_start_x + 4, img._drag_start_y + 4); // trollart
-                    const end_slot_id = findSlotId(img.x - img._drag_offset_x, img.y - img._drag_offset_y);
-                    if (end_slot_id == 255) {
-                        setInvItem(-1, start_slot_id);
-                        srv.sendInvDrop(.{
-                            .object_id = map.local_player_id,
-                            .slot_id = start_slot_id,
-                            .object_type = local_player.inventory[start_slot_id],
-                        });
-                    } else {
-                        const start_item = local_player.inventory[start_slot_id];
-                        if (end_slot_id >= 12 and !local_player.has_backpack) {
-                            setInvItem(start_item, start_slot_id);
-                            return;
-                        }
+                    const start_item = if (start_slot.is_container)
+                        container_items[start_slot.idx]._item
+                    else
+                        inventory_items[start_slot.idx]._item;
 
-                        const end_item = local_player.inventory[end_slot_id];
-                        setInvItem(end_item, start_slot_id);
-                        setInvItem(start_item, end_slot_id);
-                        srv.sendInvSwap(
-                            main.current_time,
-                            .{ .x = local_player.x, .y = local_player.y },
-                            .{
-                                .object_id = map.local_player_id,
-                                .slot_id = start_slot_id,
-                                .object_type = start_item,
-                            },
-                            .{
-                                .object_id = map.local_player_id,
-                                .slot_id = end_slot_id,
-                                .object_type = end_item,
-                            },
-                        );
+                    if (end_slot.idx >= 12 and !local_player.has_backpack) {
+                        if (start_slot.is_container) {
+                            setContainerItem(start_item, start_slot.idx);
+                        } else {
+                            setInvItem(start_item, start_slot.idx);
+                        }
+                        return;
                     }
+
+                    const end_item = if (end_slot.is_container)
+                        container_items[end_slot.idx]._item
+                    else
+                        inventory_items[end_slot.idx]._item;
+
+                    if (start_slot.is_container) {
+                        setContainerItem(end_item, start_slot.idx);
+                    } else {
+                        setInvItem(end_item, start_slot.idx);
+                    }
+
+                    if (end_slot.is_container) {
+                        setContainerItem(start_item, end_slot.idx);
+                    } else {
+                        setInvItem(start_item, end_slot.idx);
+                    }
+
+                    network.sendInvSwap(
+                        main.current_time,
+                        .{ .x = local_player.x, .y = local_player.y },
+                        .{
+                            .object_id = if (start_slot.is_container) int_id else map.local_player_id,
+                            .slot_id = start_slot.idx,
+                            .object_type = start_item,
+                        },
+                        .{
+                            .object_id = if (end_slot.is_container) int_id else map.local_player_id,
+                            .slot_id = end_slot.idx,
+                            .object_type = end_item,
+                        },
+                    );
                 },
                 else => {},
             }
@@ -778,18 +981,197 @@ fn itemDragEndCallback(img: *Image) void {
     }
 }
 
+fn itemDragEndCallback(item: *Item) void {
+    const start_slot = Slot.findSlotId(item._drag_start_x + 4, item._drag_start_y + 4);
+    const end_slot = Slot.findSlotId(item.x - item._drag_offset_x, item.y - item._drag_offset_y);
+    if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
+        item.x = item._drag_start_x;
+        item.y = item._drag_start_y;
+        return;
+    }
+
+    swapSlots(start_slot, end_slot);
+}
+
+fn itemShiftClickCallback(item: *Item) void {
+    const slot = Slot.findSlotId(item.x + 4, item.y + 4);
+
+    if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
+        if (props.consumable) {
+            while (!map.object_lock.tryLockShared()) {}
+            defer map.object_lock.unlockShared();
+
+            if (map.findEntity(map.local_player_id)) |en| {
+                switch (en.*) {
+                    .player => |local_player| {
+                        network.sendUseItem(
+                            main.current_time,
+                            .{
+                                .object_id = if (slot.is_container) container_id else map.local_player_id,
+                                .slot_id = slot.idx,
+                                .object_type = item._item,
+                            },
+                            .{
+                                .x = local_player.x,
+                                .y = local_player.y,
+                            },
+                            0,
+                        );
+                    },
+                    else => {},
+                }
+            }
+
+            return;
+        }
+    }
+}
+
+pub fn useItem(idx: u8) void {
+    itemDoubleClickCallback(&inventory_items[idx]);
+}
+
+fn itemDoubleClickCallback(item: *Item) void {
+    const start_slot = Slot.findSlotId(item.x + 4, item.y + 4);
+    if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
+        if (props.consumable and !start_slot.is_container) {
+            while (!map.object_lock.tryLockShared()) {}
+            defer map.object_lock.unlockShared();
+
+            if (map.findEntity(map.local_player_id)) |en| {
+                switch (en.*) {
+                    .player => |local_player| {
+                        network.sendUseItem(
+                            main.current_time,
+                            .{
+                                .object_id = map.local_player_id,
+                                .slot_id = start_slot.idx,
+                                .object_type = item._item,
+                            },
+                            .{
+                                .x = local_player.x,
+                                .y = local_player.y,
+                            },
+                            0,
+                        );
+                    },
+                    else => {},
+                }
+            }
+
+            return;
+        }
+    }
+
+    if (start_slot.is_container) {
+        const end_slot = Slot.nextAvailableSlot();
+        if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
+            item.x = item._drag_start_x;
+            item.y = item._drag_start_y;
+            return;
+        }
+
+        swapSlots(start_slot, end_slot);
+    } else {
+        if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
+            while (!map.object_lock.tryLockShared()) {}
+            defer map.object_lock.unlockShared();
+
+            if (map.findEntity(map.local_player_id)) |en| {
+                switch (en.*) {
+                    .player => |local_player| {
+                        const end_slot = Slot.nextEquippableSlot(local_player.slot_types, props.slot_type);
+                        if (end_slot.idx == 255 or // we don't want to drop
+                            start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container)
+                        {
+                            item.x = item._drag_start_x;
+                            item.y = item._drag_start_y;
+                            return;
+                        }
+
+                        swapSlots(start_slot, end_slot);
+                    },
+                    else => {},
+                }
+            }
+        }
+    }
+
+    std.log.err("test double {any}", .{start_slot});
+}
+
 fn statsCallback() void {
     std.log.debug("stats pressed", .{});
 }
 
 fn chatCallback(input_text: []u8) void {
-    if (main.server) |*srv| {
-        srv.sendPlayerText(input_text);
+    network.sendPlayerText(input_text);
+}
+
+pub inline fn setContainerVisible(visible: bool) void {
+    container_visible = visible;
+    container_decor.visible = visible;
+}
+
+pub fn setContainerItem(item: i32, idx: u8) void {
+    if (item == -1) {
+        container_items[idx]._item = -1;
+        container_items[idx].visible = false;
+        return;
     }
+
+    container_items[idx].visible = true;
+
+    if (game_data.item_type_to_props.get(@intCast(item))) |props| {
+        if (assets.ui_atlas_data.get(props.texture_data.sheet)) |data| {
+            const atlas_data = data[props.texture_data.index];
+            const base_x = container_decor.x + container_pos_data[idx].x;
+            const base_y = container_decor.y + container_pos_data[idx].y;
+            const pos_w = container_pos_data[idx].w;
+            const pos_h = container_pos_data[idx].h;
+
+            container_items[idx]._item = item;
+            container_items[idx].image_data.normal.atlas_data = atlas_data;
+            container_items[idx].x = base_x + (pos_w - container_items[idx].width() + assets.padding * 2) / 2;
+            container_items[idx].y = base_y + (pos_h - container_items[idx].height() + assets.padding * 2) / 2;
+
+            if (container_items[idx].tier_text) |*tier_text| {
+                var tier_base: []u8 = &[0]u8{};
+                if (std.mem.eql(u8, props.tier, "UT")) {
+                    tier_base = _allocator.dupe(u8, props.tier) catch @panic("Out of memory, tier alloc failed");
+                    tier_text.text_data.color = 0x8A2BE2;
+                } else {
+                    tier_base = std.fmt.allocPrint(_allocator, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
+                }
+
+                if (tier_text.text_data.text.len > 0)
+                    _allocator.free(tier_text.text_data.text);
+                tier_text.text_data.text = tier_base;
+
+                // the positioning is relative to parent
+                tier_text.x = pos_w - tier_text.text_data.width();
+                tier_text.y = pos_h - tier_text.text_data.height() + 4;
+                tier_text.visible = true;
+            }
+
+            return;
+        } else {
+            std.log.err("Could not find ui sheet {s} for item with type 0x{x}, index {d}", .{ props.texture_data.sheet, item, idx });
+        }
+    } else {
+        std.log.err("Attempted to populate inventory index {d} with item 0x{x}, but props was not found", .{ idx, item });
+    }
+
+    const atlas_data = assets.ui_error_data;
+    container_items[idx]._item = -1;
+    container_items[idx].image_data.normal.atlas_data = atlas_data;
+    container_items[idx].x = container_decor.x + container_pos_data[idx].x + (container_pos_data[idx].w - container_items[idx].width() + assets.padding * 2) / 2;
+    container_items[idx].y = container_decor.y + container_pos_data[idx].y + (container_pos_data[idx].h - container_items[idx].height() + assets.padding * 2) / 2;
 }
 
 pub fn setInvItem(item: i32, idx: u8) void {
     if (item == -1) {
+        inventory_items[idx]._item = -1;
         inventory_items[idx].visible = false;
         return;
     }
@@ -799,23 +1181,47 @@ pub fn setInvItem(item: i32, idx: u8) void {
     if (game_data.item_type_to_props.get(@intCast(item))) |props| {
         if (assets.ui_atlas_data.get(props.texture_data.sheet)) |data| {
             const atlas_data = data[props.texture_data.index];
+            const base_x = inventory_decor.x + inventory_pos_data[idx].x;
+            const base_y = inventory_decor.y + inventory_pos_data[idx].y;
+            const pos_w = inventory_pos_data[idx].w;
+            const pos_h = inventory_pos_data[idx].h;
+
+            inventory_items[idx]._item = item;
             inventory_items[idx].image_data.normal.atlas_data = atlas_data;
-            inventory_items[idx].x = inventory_decor.x + inventory_pos_data[idx].x + (inventory_pos_data[idx].w - inventory_items[idx].width() + assets.padding * 2) / 2;
-            inventory_items[idx].y = inventory_decor.y + inventory_pos_data[idx].y + (inventory_pos_data[idx].h - inventory_items[idx].height() + assets.padding * 2) / 2;
+            inventory_items[idx].x = base_x + (pos_w - inventory_items[idx].width() + assets.padding * 2) / 2;
+            inventory_items[idx].y = base_y + (pos_h - inventory_items[idx].height() + assets.padding * 2) / 2;
+
+            if (inventory_items[idx].tier_text) |*tier_text| {
+                var tier_base: []u8 = &[0]u8{};
+                if (std.mem.eql(u8, props.tier, "UT")) {
+                    tier_base = _allocator.dupe(u8, props.tier) catch @panic("Out of memory, tier alloc failed");
+                    tier_text.text_data.color = 0x8A2BE2;
+                } else {
+                    tier_base = std.fmt.allocPrint(_allocator, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
+                }
+
+                if (tier_text.text_data.text.len > 0)
+                    _allocator.free(tier_text.text_data.text);
+                tier_text.text_data.text = tier_base;
+
+                // the positioning is relative to parent
+                tier_text.x = pos_w - tier_text.text_data.width();
+                tier_text.y = pos_h - tier_text.text_data.height() + 4;
+                tier_text.visible = true;
+            }
+            return;
         } else {
-            std.log.err("Could not find ui sheet {s} for item with type {x}, index {d}", .{ props.texture_data.sheet, item, idx });
-            const atlas_data = assets.ui_error_data;
-            inventory_items[idx].image_data.normal.atlas_data = atlas_data;
-            inventory_items[idx].x = inventory_decor.x + inventory_pos_data[idx].x + (inventory_pos_data[idx].w - inventory_items[idx].width() + assets.padding * 2) / 2;
-            inventory_items[idx].y = inventory_decor.y + inventory_pos_data[idx].y + (inventory_pos_data[idx].h - inventory_items[idx].height() + assets.padding * 2) / 2;
+            std.log.err("Could not find ui sheet {s} for item with type 0x{x}, index {d}", .{ props.texture_data.sheet, item, idx });
         }
     } else {
-        std.log.err("Attempted to populate inventory index {d} with item {x}, but props was not found", .{ idx, item });
-        const atlas_data = assets.ui_error_data;
-        inventory_items[idx].image_data.normal.atlas_data = atlas_data;
-        inventory_items[idx].x = inventory_decor.x + inventory_pos_data[idx].x + (inventory_pos_data[idx].w - inventory_items[idx].width() + assets.padding * 2) / 2;
-        inventory_items[idx].y = inventory_decor.y + inventory_pos_data[idx].y + (inventory_pos_data[idx].h - inventory_items[idx].height() + assets.padding * 2) / 2;
+        std.log.err("Attempted to populate inventory index {d} with item 0x{x}, but props was not found", .{ idx, item });
     }
+
+    const atlas_data = assets.ui_error_data;
+    inventory_items[idx]._item = -1;
+    inventory_items[idx].image_data.normal.atlas_data = atlas_data;
+    inventory_items[idx].x = inventory_decor.x + inventory_pos_data[idx].x + (inventory_pos_data[idx].w - inventory_items[idx].width() + assets.padding * 2) / 2;
+    inventory_items[idx].y = inventory_decor.y + inventory_pos_data[idx].y + (inventory_pos_data[idx].h - inventory_items[idx].height() + assets.padding * 2) / 2;
 }
 
 pub fn removeAttachedUi(obj_id: i32) void {
@@ -839,12 +1245,12 @@ pub fn removeAttachedUi(obj_id: i32) void {
 }
 
 pub fn mouseMove(x: f32, y: f32) void {
-    for (ui_images.items()) |image| {
-        if (!image.visible or !image._is_dragging)
+    for (items.items()) |item| {
+        if (!item.visible or !item._is_dragging)
             continue;
 
-        image.x = x + image._drag_offset_x;
-        image.y = y + image._drag_offset_y;
+        item.x = x + item._drag_offset_x;
+        item.y = y + item._drag_offset_y;
     }
 
     for (buttons.items()) |button| {
@@ -870,17 +1276,28 @@ pub fn mouseMove(x: f32, y: f32) void {
     }
 }
 
-pub fn mousePress(x: f32, y: f32) bool {
-    for (ui_images.items()) |image| {
-        if (!image.visible or !image.draggable)
+pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
+    for (items.items()) |item| {
+        if (!item.visible or !item.draggable)
             continue;
 
-        if (utils.isInBounds(x, y, image.x, image.y, image.width(), image.height())) {
-            image._is_dragging = true;
-            image._drag_start_x = image.x;
-            image._drag_start_y = image.y;
-            image._drag_offset_x = image.x - x;
-            image._drag_offset_y = image.y - y;
+        if (utils.isInBounds(x, y, item.x, item.y, item.width(), item.height())) {
+            if (mods.shift) {
+                item.shift_click_callback(item);
+                return true;
+            }
+
+            if (item._last_click_time + 333 > main.current_time) {
+                item.double_click_callback(item);
+                return true;
+            }
+
+            item._is_dragging = true;
+            item._drag_start_x = item.x;
+            item._drag_start_y = item.y;
+            item._drag_offset_x = item.x - x;
+            item._drag_offset_y = item.y - y;
+            item._last_click_time = main.current_time;
             return true;
         }
     }
@@ -912,14 +1329,12 @@ pub fn mousePress(x: f32, y: f32) bool {
 }
 
 pub fn mouseRelease(x: f32, y: f32) void {
-    for (ui_images.items()) |image| {
-        if (!image._is_dragging)
+    for (items.items()) |item| {
+        if (!item._is_dragging)
             continue;
 
-        image._is_dragging = false;
-        if (image.drag_end_callback) |cb| {
-            cb(image);
-        }
+        item._is_dragging = false;
+        item.drag_end_callback(item);
     }
 
     for (buttons.items()) |button| {
@@ -951,9 +1366,9 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
         switch (en.*) {
             .player => |local_player| {
                 if (last_level != local_player.level) {
-                    if (level_text.text.text.len > 0)
-                        _allocator.free(level_text.text.text);
-                    level_text.text.text = try std.fmt.allocPrint(_allocator, "{d}", .{local_player.level});
+                    if (level_text.text_data.text.len > 0)
+                        _allocator.free(level_text.text_data.text);
+                    level_text.text_data.text = try std.fmt.allocPrint(_allocator, "{d}", .{local_player.level});
 
                     last_level = local_player.level;
                 }
@@ -965,9 +1380,9 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
                         xp_bar.visible = false;
                         const fame_perc = @as(f32, @floatFromInt(local_player.fame)) / @as(f32, @floatFromInt(local_player.fame_goal));
                         fame_bar.max_width = fame_bar.width() * fame_perc;
-                        if (fame_bar.text.text.len > 0)
-                            _allocator.free(fame_bar.text.text);
-                        fame_bar.text.text = try std.fmt.allocPrint(_allocator, "{d}/{d} Fame", .{ local_player.fame, local_player.fame_goal });
+                        if (fame_bar.text_data.text.len > 0)
+                            _allocator.free(fame_bar.text_data.text);
+                        fame_bar.text_data.text = try std.fmt.allocPrint(_allocator, "{d}/{d} Fame", .{ local_player.fame, local_player.fame_goal });
 
                         last_fame = local_player.fame;
                         last_fame_goal = local_player.fame_goal;
@@ -978,9 +1393,9 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
                         fame_bar.visible = false;
                         const exp_perc = @as(f32, @floatFromInt(local_player.exp)) / @as(f32, @floatFromInt(local_player.exp_goal));
                         xp_bar.max_width = xp_bar.width() * exp_perc;
-                        if (xp_bar.text.text.len > 0)
-                            _allocator.free(xp_bar.text.text);
-                        xp_bar.text.text = try std.fmt.allocPrint(_allocator, "{d}/{d} XP", .{ local_player.exp, local_player.exp_goal });
+                        if (xp_bar.text_data.text.len > 0)
+                            _allocator.free(xp_bar.text_data.text);
+                        xp_bar.text_data.text = try std.fmt.allocPrint(_allocator, "{d}/{d} XP", .{ local_player.exp, local_player.exp_goal });
 
                         last_xp = local_player.exp;
                         last_xp_goal = local_player.exp_goal;
@@ -990,9 +1405,9 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
                 if (last_hp != local_player.hp or last_max_hp != local_player.max_hp) {
                     const hp_perc = @as(f32, @floatFromInt(local_player.hp)) / @as(f32, @floatFromInt(local_player.max_hp));
                     health_bar.max_width = health_bar.width() * hp_perc;
-                    if (health_bar.text.text.len > 0)
-                        _allocator.free(health_bar.text.text);
-                    health_bar.text.text = try std.fmt.allocPrint(_allocator, "{d}/{d} HP", .{ local_player.hp, local_player.max_hp });
+                    if (health_bar.text_data.text.len > 0)
+                        _allocator.free(health_bar.text_data.text);
+                    health_bar.text_data.text = try std.fmt.allocPrint(_allocator, "{d}/{d} HP", .{ local_player.hp, local_player.max_hp });
 
                     last_hp = local_player.hp;
                     last_max_hp = local_player.max_hp;
@@ -1001,9 +1416,9 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
                 if (last_mp != local_player.mp or last_max_mp != local_player.max_mp) {
                     const mp_perc = @as(f32, @floatFromInt(local_player.mp)) / @as(f32, @floatFromInt(local_player.max_mp));
                     mana_bar.max_width = mana_bar.width() * mp_perc;
-                    if (mana_bar.text.text.len > 0)
-                        _allocator.free(mana_bar.text.text);
-                    mana_bar.text.text = try std.fmt.allocPrint(_allocator, "{d}/{d} MP", .{ local_player.mp, local_player.max_mp });
+                    if (mana_bar.text_data.text.len > 0)
+                        _allocator.free(mana_bar.text_data.text);
+                    mana_bar.text_data.text = try std.fmt.allocPrint(_allocator, "{d}/{d} MP", .{ local_player.mp, local_player.max_mp });
 
                     last_mp = local_player.mp;
                     last_max_mp = local_player.max_mp;
@@ -1032,13 +1447,13 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
         }
 
         const frac = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(status_text.lifetime));
-        status_text.text.size = status_text.initial_size * @min(1.0, @max(0.7, 1.0 - frac * 0.3 + 0.075));
-        status_text.text.alpha = 1.0 - frac + 0.33;
+        status_text.text_data.size = status_text.initial_size * @min(1.0, @max(0.7, 1.0 - frac * 0.3 + 0.075));
+        status_text.text_data.alpha = 1.0 - frac + 0.33;
         if (map.findEntity(status_text.obj_id)) |en| {
             switch (en.*) {
                 inline else => |obj| {
-                    status_text._screen_x = obj.screen_x - status_text.text.width() / 2;
-                    status_text._screen_y = obj.screen_y - status_text.text.height() - frac * 40;
+                    status_text._screen_x = obj.screen_x - status_text.text_data.width() / 2;
+                    status_text._screen_y = obj.screen_y - status_text.text_data.height() - frac * 40;
                 },
             }
         }
@@ -1047,7 +1462,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
     std.mem.reverse(usize, status_texts_to_remove.items());
 
     for (status_texts_to_remove.items()) |idx| {
-        allocator.free(status_texts.remove(idx).text.text);
+        allocator.free(status_texts.remove(idx).text_data.text);
     }
 
     status_texts_to_remove.clear();
@@ -1074,7 +1489,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
         const frac = @as(f32, @floatFromInt(elapsed)) / @as(f32, lifetime);
         const alpha = 1.0 - frac * 2.0 + 0.9;
         speech_balloon.image_data.normal.alpha = alpha; // assume no 9 slice
-        speech_balloon.text.alpha = alpha;
+        speech_balloon.text_data.alpha = alpha;
         if (map.findEntity(speech_balloon.target_id)) |en| {
             switch (en.*) {
                 inline else => |obj| {
@@ -1088,7 +1503,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
     std.mem.reverse(usize, speech_balloons_to_remove.items());
 
     for (speech_balloons_to_remove.items()) |idx| {
-        allocator.free(speech_balloons.remove(idx).text.text);
+        allocator.free(speech_balloons.remove(idx).text_data.text);
     }
 
     speech_balloons_to_remove.clear();

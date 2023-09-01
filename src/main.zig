@@ -89,7 +89,6 @@ pub var current_screen = ScreenType.main_menu;
 pub var gctx: *zgpu.GraphicsContext = undefined;
 pub var fba: std.heap.FixedBufferAllocator = undefined;
 pub var stack_allocator: std.mem.Allocator = undefined;
-pub var server: ?network.Server = undefined;
 pub var current_account = AccountData{};
 pub var character_list: []CharacterData = undefined;
 pub var server_list: ?[]ServerData = null;
@@ -349,12 +348,12 @@ fn networkTick(allocator: std.mem.Allocator) void {
         std.time.sleep(100 * std.time.ns_per_ms);
 
         if (selected_server) |sel_srv| {
-            if (server == null)
-                server = network.Server.init(sel_srv.dns, sel_srv.port); // dialog maybe
+            if (!network.connected)
+                network.init(sel_srv.dns, sel_srv.port);
 
-            if (server) |*srv| {
+            if (network.connected) {
                 if (selected_char_id != 65535 and !sent_hello) {
-                    srv.sendHello(
+                    network.sendHello(
                         settings.build_version,
                         -2,
                         current_account.email,
@@ -367,7 +366,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
                     sent_hello = true;
                 }
 
-                srv.accept(allocator);
+                network.accept(allocator);
             }
         }
     }
@@ -378,10 +377,10 @@ fn renderTick(allocator: std.mem.Allocator) !void {
         try updateUi(allocator);
 
         // this has to be updated on render thread to avoid headaches
-        if (ui.fps_text.text.text.len > 0)
-            _allocator.free(ui.fps_text.text.text);
-        ui.fps_text.text.text = try std.fmt.allocPrint(_allocator, "FPS: {d:.1}\nMemory: {d} MB", .{ gctx.stats.fps, -1 });
-        ui.fps_text.x = camera.screen_width - ui.fps_text.text.width() - 10;
+        if (ui.fps_text.text_data.text.len > 0)
+            _allocator.free(ui.fps_text.text_data.text);
+        ui.fps_text.text_data.text = try std.fmt.allocPrint(_allocator, "FPS: {d:.1}\nMemory: {d} MB", .{ gctx.stats.fps, -1 });
+        ui.fps_text.x = camera.screen_width - ui.fps_text.text_data.width() - 10;
 
         draw();
     }
@@ -390,14 +389,14 @@ fn renderTick(allocator: std.mem.Allocator) !void {
 pub fn clear() void {
     map.local_player_id = -1;
     map.interactive_id.store(-1, .Release);
+    map.interactive_type.store(.game_object, .Release);
     map.dispose(_allocator);
     map.entities.clear();
 }
 
 pub fn disconnect() void {
-    if (server) |*srv| {
-        srv.deinit();
-        server = null;
+    if (network.connected) {
+        network.deinit();
         selected_server = null;
         sent_hello = false;
     }
@@ -520,8 +519,8 @@ pub fn main() !void {
         defer allocator.free(current_account.name);
     }
 
-    if (server) |*srv| {
-        defer srv.deinit();
+    if (network.connected) {
+        defer network.deinit();
     }
 
     if (character_list.len > 0) {

@@ -997,19 +997,19 @@ fn drawSquare(
     };
 }
 
-inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
-    const rgb = ui.RGBF32.fromInt(text.color);
-    const shadow_rgb = ui.RGBF32.fromInt(text.shadow_color);
+inline fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
+    const rgb = ui.RGBF32.fromInt(text_data.color);
+    const shadow_rgb = ui.RGBF32.fromInt(text_data.shadow_color);
 
-    const size_scale = text.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
+    const size_scale = text_data.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
     const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
     var idx_new = idx;
     const x_base = x - camera.screen_width / 2.0;
     var x_pointer = x_base;
     var y_pointer = y - camera.screen_height / 2.0 + line_height;
-    for (text.text) |char| {
-        const char_data = switch (text.text_type) {
+    for (text_data.text) |char| {
+        const char_data = switch (text_data.text_type) {
             .medium => assets.medium_chars[char],
             .medium_italic => assets.medium_italic_chars[char],
             .bold => assets.bold_chars[char],
@@ -1017,12 +1017,12 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
         };
 
         const shadow_texel_size = [2]f32{
-            text.shadow_texel_offset_mult / char_data.atlas_w,
-            text.shadow_texel_offset_mult / char_data.atlas_h,
+            text_data.shadow_texel_offset_mult / char_data.atlas_w,
+            text_data.shadow_texel_offset_mult / char_data.atlas_h,
         };
 
         const next_x_pointer = x_pointer + char_data.x_advance * size_scale;
-        if (char == '\n' or next_x_pointer - x_base > text.max_width) {
+        if (char == '\n' or next_x_pointer - x_base > text_data.max_width) {
             x_pointer = x_base;
             y_pointer += line_height;
             continue;
@@ -1040,7 +1040,7 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
         const px_range = assets.CharacterData.px_range / camera.scale;
-        const float_text_type: f32 = @floatFromInt(@intFromEnum(text.text_type));
+        const float_text_type: f32 = @floatFromInt(@intFromEnum(text_data.text_type));
 
         x_pointer = next_x_pointer;
 
@@ -1049,9 +1049,9 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .uv = [2]f32{ char_data.tex_u, char_data.tex_v },
             .color = rgb,
             .text_type = float_text_type,
-            .alpha_mult = text.alpha,
+            .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_alpha_mult = text_data.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
             .distance_factor = size_scale * px_range,
         };
@@ -1061,9 +1061,9 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v },
             .color = rgb,
             .text_type = float_text_type,
-            .alpha_mult = text.alpha,
+            .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_alpha_mult = text_data.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
             .distance_factor = size_scale * px_range,
         };
@@ -1073,9 +1073,9 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v + char_data.tex_h },
             .color = rgb,
             .text_type = float_text_type,
-            .alpha_mult = text.alpha,
+            .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_alpha_mult = text_data.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
             .distance_factor = size_scale * px_range,
         };
@@ -1085,9 +1085,9 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .uv = [2]f32{ char_data.tex_u, char_data.tex_v + char_data.tex_h },
             .color = rgb,
             .text_type = float_text_type,
-            .alpha_mult = text.alpha,
+            .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_alpha_mult = text_data.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
             .distance_factor = size_scale * px_range,
         };
@@ -1097,19 +1097,19 @@ inline fn drawText(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
     return idx_new - idx;
 }
 
-inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
-    const rgb = ui.RGBF32.fromInt(text.color);
-    const shadow_rgb = ui.RGBF32.fromInt(text.shadow_color);
+inline fn drawTextUi(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
+    const rgb = ui.RGBF32.fromInt(text_data.color);
+    const shadow_rgb = ui.RGBF32.fromInt(text_data.shadow_color);
 
-    const size_scale = text.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
+    const size_scale = text_data.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
     const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
     var idx_new = idx;
     const x_base = x - camera.screen_width / 2.0;
     var x_pointer = x_base;
     var y_pointer = y - camera.screen_height / 2.0 + line_height;
-    for (text.text) |char| {
-        const char_data = switch (text.text_type) {
+    for (text_data.text) |char| {
+        const char_data = switch (text_data.text_type) {
             .medium => assets.medium_chars[char],
             .medium_italic => assets.medium_italic_chars[char],
             .bold => assets.bold_chars[char],
@@ -1117,12 +1117,12 @@ inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
         };
 
         const shadow_texel_size = [2]f32{
-            text.shadow_texel_offset_mult / char_data.atlas_w,
-            text.shadow_texel_offset_mult / char_data.atlas_h,
+            text_data.shadow_texel_offset_mult / char_data.atlas_w,
+            text_data.shadow_texel_offset_mult / char_data.atlas_h,
         };
 
         const next_x_pointer = x_pointer + char_data.x_advance * size_scale;
-        if (char == '\n' or next_x_pointer - x_base > text.max_width) {
+        if (char == '\n' or next_x_pointer - x_base > text_data.max_width) {
             x_pointer = x_base;
             y_pointer += line_height;
             continue;
@@ -1140,7 +1140,7 @@ inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
         const px_range = assets.CharacterData.px_range / camera.scale;
-        const float_text_type: f32 = @floatFromInt(@intFromEnum(text.text_type));
+        const float_text_type: f32 = @floatFromInt(@intFromEnum(text_data.text_type));
         const float_render_type: f32 = @floatFromInt(@intFromEnum(UiRenderType.text));
 
         x_pointer = next_x_pointer;
@@ -1150,9 +1150,9 @@ inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .uv = [2]f32{ char_data.tex_u, char_data.tex_v },
             .color = rgb,
             .text_type = float_text_type,
-            .alpha_mult = text.alpha,
+            .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_alpha_mult = text_data.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
             .distance_factor = size_scale * px_range,
             .render_type = float_render_type,
@@ -1163,9 +1163,9 @@ inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v },
             .color = rgb,
             .text_type = float_text_type,
-            .alpha_mult = text.alpha,
+            .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_alpha_mult = text_data.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
             .distance_factor = size_scale * px_range,
             .render_type = float_render_type,
@@ -1176,9 +1176,9 @@ inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v + char_data.tex_h },
             .color = rgb,
             .text_type = float_text_type,
-            .alpha_mult = text.alpha,
+            .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_alpha_mult = text_data.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
             .distance_factor = size_scale * px_range,
             .render_type = float_render_type,
@@ -1189,9 +1189,9 @@ inline fn drawTextUi(idx: u16, x: f32, y: f32, text: ui.Text) u16 {
             .uv = [2]f32{ char_data.tex_u, char_data.tex_v + char_data.tex_h },
             .color = rgb,
             .text_type = float_text_type,
-            .alpha_mult = text.alpha,
+            .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
-            .shadow_alpha_mult = text.shadow_alpha_mult,
+            .shadow_alpha_mult = text_data.shadow_alpha_mult,
             .shadow_texel_offset = shadow_texel_size,
             .distance_factor = size_scale * px_range,
             .render_type = float_render_type,
@@ -1743,7 +1743,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     const name = if (player.name_override.len > 0) player.name_override else player.name;
                     if (name.len > 0) {
-                        const text = ui.Text{
+                        const text_data = ui.TextData{
                             .text = name,
                             .text_type = .bold,
                             .size = 16,
@@ -1753,9 +1753,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                         text_idx += drawText(
                             text_idx,
-                            screen_pos.x - x_offset - text.width() / 2,
-                            screen_pos.y - text.height(),
-                            text,
+                            screen_pos.x - x_offset - text_data.width() / 2,
+                            screen_pos.y - text_data.height(),
+                            text_data,
                         );
                     }
 
@@ -2002,7 +2002,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     const is_portal = bo.class == .portal;
                     const name = if (bo.name_override.len > 0) bo.name_override else bo.name;
                     if (name.len > 0 and (bo.show_name or is_portal)) {
-                        const text = ui.Text{
+                        const text_data = ui.TextData{
                             .text = name,
                             .text_type = .bold,
                             .size = 16,
@@ -2010,13 +2010,13 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                         text_idx += drawText(
                             text_idx,
-                            screen_pos.x - x_offset - text.width() / 2,
-                            screen_pos.y - text.height(),
-                            text,
+                            screen_pos.x - x_offset - text_data.width() / 2,
+                            screen_pos.y - text_data.height(),
+                            text_data,
                         );
 
                         if (is_portal and map.interactive_id.load(.Acquire) == bo.obj_id) {
-                            const enter_text = ui.Text{
+                            const enter_text_data = ui.TextData{
                                 .text = @constCast("Enter"), // meh
                                 .text_type = .bold,
                                 .size = 16,
@@ -2024,9 +2024,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             text_idx += drawText(
                                 text_idx,
-                                screen_pos.x - x_offset - enter_text.width() / 2,
+                                screen_pos.x - x_offset - enter_text_data.width() / 2,
                                 screen_pos.y + h + 5,
-                                enter_text,
+                                enter_text_data,
                             );
                         }
                     }
@@ -2261,6 +2261,65 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
         }
 
+        for (ui.items.items()) |item| {
+            if (!item.visible)
+                continue;
+
+            switch (item.image_data) {
+                .nine_slice => |nine_slice| {
+                    if (ui_idx >= 4000 - 9 * 4) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
+
+                    drawNineSlice(ui_idx, item.x, item.y, nine_slice.w, nine_slice.h, nine_slice);
+                    ui_idx += 9 * 4;
+                },
+                .normal => |image_data| {
+                    drawQuadUi(
+                        ui_idx,
+                        item.x,
+                        item.y,
+                        image_data.width(),
+                        image_data.height(),
+                        image_data.alpha,
+                        image_data.atlas_data,
+                    );
+                    ui_idx += 4;
+
+                    if (ui_idx == 4000) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
+                },
+            }
+
+            textDraw: {
+                if (item.tier_text) |tier_text| {
+                    const text_len = tier_text.text_data.text.len;
+                    if (text_len <= 0)
+                        break :textDraw;
+
+                    if (ui_idx >= 4000 - text_len * 4) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
+
+                    ui_idx += drawTextUi(
+                        ui_idx,
+                        item.x + tier_text.x,
+                        item.y + tier_text.y,
+                        tier_text.text_data,
+                    );
+
+                    if (ui_idx == 4000) {
+                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        ui_idx = 0;
+                    }
+                }
+            }  
+        }
+
         for (ui.bars.items()) |bar| {
             if (!bar.visible)
                 continue;
@@ -2306,16 +2365,16 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 },
             }
 
-            if (ui_idx >= 4000 - bar.text.text.len * 4) {
+            if (ui_idx >= 4000 - bar.text_data.text.len * 4) {
                 endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
                 ui_idx = 0;
             }
 
             ui_idx += drawTextUi(
                 ui_idx,
-                bar.x + (w - bar.text.width()) / 2,
-                bar.y + (h - bar.text.height()) / 2,
-                bar.text,
+                bar.x + (w - bar.text_data.width()) / 2,
+                bar.y + (h - bar.text_data.height()) / 2,
+                bar.text_data,
             );
 
             if (ui_idx == 4000) {
@@ -2364,17 +2423,17 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 },
             }
 
-            if (button.text) |text| {
-                if (ui_idx >= 4000 - text.text.len * 4) {
+            if (button.text_data) |text_data| {
+                if (ui_idx >= 4000 - text_data.text.len * 4) {
                     endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
                     ui_idx = 0;
                 }
 
                 ui_idx += drawTextUi(
                     ui_idx,
-                    button.x + (w - text.width()) / 2,
-                    button.y + (h - text.height()) / 2,
-                    text,
+                    button.x + (w - text_data.width()) / 2,
+                    button.y + (h - text_data.height()) / 2,
+                    text_data,
                 );
 
                 if (ui_idx == 4000) {
@@ -2388,7 +2447,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             if (!text.visible)
                 continue;
 
-            if (ui_idx >= 4000 - text.text.text.len * 4) {
+            if (ui_idx >= 4000 - text.text_data.text.len * 4) {
                 endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
                 ui_idx = 0;
             }
@@ -2397,7 +2456,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 ui_idx,
                 text.x,
                 text.y,
-                text.text,
+                text.text_data,
             );
 
             if (ui_idx == 4000) {
@@ -2446,7 +2505,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 },
             }
 
-            if (ui_idx >= 4000 - input_field.text.text.len * 4) {
+            if (ui_idx >= 4000 - input_field.text_data.text.len * 4) {
                 endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
                 ui_idx = 0;
             }
@@ -2455,7 +2514,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 ui_idx,
                 input_field.x + input_field.text_inlay_x,
                 input_field.y + input_field.text_inlay_y,
-                input_field.text,
+                input_field.text_data,
             );
 
             if (ui_idx == 4000) {
@@ -2488,7 +2547,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 ui_idx = 0;
             }
 
-            if (ui_idx >= 4000 - balloon.text.text.len * 4) {
+            if (ui_idx >= 4000 - balloon.text_data.text.len * 4) {
                 endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
                 ui_idx = 0;
             }
@@ -2496,9 +2555,9 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             const decor_offset = h / 10;
             ui_idx += drawTextUi(
                 ui_idx,
-                balloon._screen_x + ((w - assets.padding * image_data.scale_x) - balloon.text.width()) / 2,
-                balloon._screen_y + (h - balloon.text.height()) / 2 - decor_offset,
-                balloon.text,
+                balloon._screen_x + ((w - assets.padding * image_data.scale_x) - balloon.text_data.width()) / 2,
+                balloon._screen_y + (h - balloon.text_data.height()) / 2 - decor_offset,
+                balloon.text_data,
             );
         }
 
@@ -2506,7 +2565,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             if (!status_text.visible)
                 continue;
 
-            if (ui_idx >= 4000 - status_text.text.text.len * 4) {
+            if (ui_idx >= 4000 - status_text.text_data.text.len * 4) {
                 endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
                 ui_idx = 0;
             }
@@ -2515,7 +2574,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 ui_idx,
                 status_text._screen_x,
                 status_text._screen_y,
-                status_text.text,
+                status_text.text_data,
             );
         }
 

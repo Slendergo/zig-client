@@ -311,6 +311,8 @@ pub const Rect = struct {
     y: f32,
     w: f32,
     h: f32,
+    w_pad: f32,
+    h_pad: f32,
 };
 
 pub const Random = struct {

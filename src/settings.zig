@@ -44,12 +44,20 @@ pub const Button = union(enum) {
 
 pub const build_version = "0.5";
 pub const app_engine_url = "http://127.0.0.1:8080/";
-pub const log_packets = LogType.off;
+pub const log_packets = LogType.all_non_tick;
 pub const print_atlas = false;
 pub const print_ui_atlas = false;
 pub const rotate_speed = 0.002;
 pub const enable_tracy = false;
 
+pub var inv_0: Button = .{ .key = .one };
+pub var inv_1: Button = .{ .key = .two };
+pub var inv_2: Button = .{ .key = .three };
+pub var inv_3: Button = .{ .key = .four };
+pub var inv_4: Button = .{ .key = .five };
+pub var inv_5: Button = .{ .key = .six };
+pub var inv_6: Button = .{ .key = .seven };
+pub var inv_7: Button = .{ .key = .eight };
 pub var move_left: Button = .{ .key = .a };
 pub var move_right: Button = .{ .key = .d };
 pub var move_up: Button = .{ .key = .w };
@@ -70,8 +78,8 @@ pub var respond: Button = .{ .key = .F2 };
 pub var toggle_centering: Button = .{ .key = .x };
 pub var shoot: Button = .{ .mouse = .left };
 pub var ability: Button = .{ .mouse = .right };
-pub var sfx_volume: f32 = 0.0; //0.33;
-pub var music_volume: f32 = 0.0; //0.33;
+pub var sfx_volume: f32 = 0.0; // 0.33;
+pub var music_volume: f32 = 0.0; // 0.33;
 pub var enable_glow = false;
 pub var enable_lights = false;
 pub var enable_vsync = false;

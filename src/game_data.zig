@@ -142,8 +142,8 @@ pub const CharacterClass = struct {
             .hit_sound = try node.getValueAlloc("HitSound", allocator, "Unknown"),
             .death_sound = try node.getValueAlloc("DeathSound", allocator, "Unknown"),
             .blood_prob = try node.getAttributeFloat("BloodProb", f32, 0.0),
-            .slot_types = slot_list.items(),
-            .equipment = equip_list.items(),
+            .slot_types = try allocator.dupe(i8, slot_list.items()),
+            .equipment = try allocator.dupe(i16, equip_list.items()),
             .texture = try TextureData.parse(node.findChild("AnimatedTexture") orelse @panic("Could not parse CharacterClass"), allocator, false),
             .skins = null,
         };
@@ -782,7 +782,7 @@ pub const ItemProps = struct {
             .untradeable = node.elementExists("Soulbound"),
             .usable = node.elementExists("Usable"),
             .slot_type = try node.getValueInt("SlotType", i8, 0),
-            .tier = try node.getValueAlloc("Tier", allocator, "Unknown"),
+            .tier = try node.getValueAlloc("Tier", allocator, "UT"),
             .bag_type = try node.getValueInt("BagType", u8, 0),
             .num_projectiles = try node.getValueInt("NumProjectiles", u8, 1),
             .arc_gap = std.math.degreesToRadians(f32, try node.getValueFloat("ArcGap", f32, 11.25)),
@@ -813,21 +813,46 @@ pub const ItemProps = struct {
 };
 
 pub const ItemType = enum(i8) {
-    Weapon,
-    Ability,
-    Armor,
-    Ring,
-    Potion,
-    StatPot,
-    Other,
-    None,
+    no_item = -1,
+    any = 0,
+    sword = 1,
+    bow = 3,
+    tome = 4,
+    shield = 5,
+    leather = 6,
+    heavy = 7,
+    wand = 8,
+    ring = 9,
+    consumable = 10,
+    spell = 11,
+    seal = 12,
+    cloak = 13,
+    robe = 14,
+    quiver = 15,
+    helm = 16,
+    staff = 17,
+    poison = 18,
+    skull = 19,
+    trap = 20,
+    orb = 21,
+    prism = 22,
+    scepter = 23,
+    shuriken = 24,
+
+    pub inline fn slotsMatch(slot_1: i8, slot_2: i8) bool {
+        if (slot_1 == @intFromEnum(ItemType.any) or slot_2 == @intFromEnum(ItemType.any)) {
+            return true;
+        }
+
+        return slot_1 == slot_2;
+    }
 };
 
 pub const Currency = enum(u8) {
-    Gold = 0,
-    Fame = 1,
-    GuildFame = 2,
-    Tokens = 3,
+    gold = 0,
+    fame = 1,
+    guild_fame = 2,
+    tokens = 3,
 };
 
 pub var classes: []CharacterClass = undefined;
@@ -1025,6 +1050,8 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         allocator.free(class.death_sound);
         allocator.free(class.name);
         allocator.free(class.desc);
+        allocator.free(class.slot_types);
+        allocator.free(class.equipment);
     }
 
     allocator.free(classes);
