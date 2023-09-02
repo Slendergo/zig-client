@@ -505,10 +505,12 @@ pub fn main() !void {
 
         if (tick_frame) {
             current_time = std.time.microTimestamp() - start_time;
-            const dt = current_time - last_update;
-            map.update(current_time, dt, allocator);
-            try ui.update(current_time, dt, allocator);
-            last_update = current_time;
+            if (current_time - last_update >= 7 * std.time.us_per_ms) {
+                const dt = current_time - last_update;
+                map.update(current_time, dt, allocator);
+                try ui.update(current_time, dt, allocator);
+                last_update = current_time;
+            }
         }
     }
 
