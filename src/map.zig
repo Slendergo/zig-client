@@ -1226,8 +1226,8 @@ pub var random: utils.Random = utils.Random{};
 var last_sort: i64 = -1;
 
 pub fn init(allocator: std.mem.Allocator) !void {
-    entities = try utils.DynSlice(Entity).init(5000, allocator);
-    entity_indices_to_remove = try utils.DynSlice(usize).init(100, allocator);
+    entities = try utils.DynSlice(Entity).init(16384, allocator);
+    entity_indices_to_remove = try utils.DynSlice(usize).init(256, allocator);
     move_records = try utils.DynSlice(network.TimedPosition).init(10, allocator);
 }
 
