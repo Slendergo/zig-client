@@ -1413,11 +1413,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
 
     entity_indices_to_remove.clear();
 
-    // hack
-    if (time - last_sort > 7) {
-        std.sort.pdq(Entity, entities.items(), {}, lessThan);
-        last_sort = time;
-    }
+    std.sort.pdq(Entity, entities.items(), {}, lessThan);
 }
 
 pub inline fn validPos(x: isize, y: isize) bool {
