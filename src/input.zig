@@ -38,11 +38,14 @@ pub fn reset() void {
 inline fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     if (selected_input_field) |input_field| {
         if (key == .enter) {
-            input_field.enter_callback(input_field.text_data.text);
-            if (input_field.text_data.text.len > 0)
-                input_field.allocator.free(input_field.text_data.text);
-            input_field.text_data.text = &[0]u8{};
-            selected_input_field = null;
+            if (input_field.enter_callback) |enter_cb| {
+                enter_cb(input_field.text_data.text);
+                if (input_field.text_data.text.len > 0)
+                    input_field.allocator.free(input_field.text_data.text);
+                input_field.text_data.text = &[0]u8{};
+                selected_input_field = null;
+            }
+
             return;
         }
 
@@ -59,6 +62,9 @@ inline fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void
 
         return;
     }
+
+    if (ui.current_screen != .in_game)
+        return;
 
     if (key == settings.move_up.getKey()) {
         move_up = 1.0;
@@ -118,6 +124,9 @@ inline fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void
 }
 
 inline fn keyRelease(key: zglfw.Key) void {
+    if (ui.current_screen != .in_game)
+        return;
+
     if (key == settings.move_up.getKey()) {
         move_up = 0.0;
     } else if (key == settings.move_down.getKey()) {
@@ -138,6 +147,9 @@ inline fn keyRelease(key: zglfw.Key) void {
 }
 
 inline fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods) void {
+    if (ui.current_screen != .in_game)
+        return;
+
     if (button == settings.move_up.getMouse()) {
         move_up = 1.0;
     } else if (button == settings.move_down.getMouse()) {
@@ -196,6 +208,9 @@ inline fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zgl
 }
 
 inline fn mouseRelease(button: zglfw.MouseButton) void {
+    if (ui.current_screen != .in_game)
+        return;
+
     if (button == settings.move_up.getMouse()) {
         move_up = 0.0;
     } else if (button == settings.move_down.getMouse()) {
@@ -240,9 +255,6 @@ pub fn charEvent(window: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
 pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
     _ = scancode;
 
-    if (ui.current_screen != .in_game)
-        return;
-
     if (action == .press) {
         keyPress(window, key, mods);
     } else if (action == .release) {
@@ -274,9 +286,6 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
             .target_ally => assets.target_ally_cursor,
         });
     }
-
-    if (ui.current_screen != .in_game)
-        return;
 
     if (action == .press) {
         if (!ui.mousePress(@floatCast(mouse_x), @floatCast(mouse_y), mods))

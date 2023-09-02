@@ -1373,6 +1373,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                 obj.update(ms_time, ms_dt);
             },
             .player => |*player| {
+                player.update(ms_time, ms_dt);
                 if (player.obj_id == local_player_id) {
                     camera.update(player.x, player.y, ms_dt, input.rotate);
                     if (input.attacking) {
@@ -1382,8 +1383,6 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                         player.shoot(shoot_angle, time);
                     }
                 }
-
-                player.update(ms_time, ms_dt);
             },
             .projectile => |*proj| {
                 if (!proj.update(ms_time, ms_dt, allocator))

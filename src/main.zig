@@ -141,6 +141,7 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
 }
 
 fn updateUi(allocator: std.mem.Allocator) !void {
+    _ = allocator;
     zgui.backend.newFrame(
         gctx.swapchain_descriptor.width,
         gctx.swapchain_descriptor.height,
@@ -155,53 +156,53 @@ fn updateUi(allocator: std.mem.Allocator) !void {
 
     switch (ui.current_screen) {
         .main_menu => {
-            if (zgui.begin("Main Menu", .{})) {
-                {
-                    const LoginStatic = struct {
-                        var email_buf: [128]u8 = undefined;
-                        var password_buf: [128]u8 = undefined;
-                    };
+            // if (zgui.begin("Main Menu", .{})) {
+            //     {
+            //         const LoginStatic = struct {
+            //             var email_buf: [128]u8 = undefined;
+            //             var password_buf: [128]u8 = undefined;
+            //         };
 
-                    _ = zgui.inputText("E-mail", .{ .buf = LoginStatic.email_buf[0..] });
-                    _ = zgui.inputText("Password", .{ .buf = LoginStatic.password_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
-                    if (zgui.button("Login", .{ .w = 150.0 })) {
-                        const email = LoginStatic.email_buf[0..utils.strlen(LoginStatic.email_buf[0..])];
-                        const password = LoginStatic.password_buf[0..utils.strlen(LoginStatic.password_buf[0..])];
-                        if (email.len > 0 and password.len > 0) {
-                            const logged_in = try login(allocator, email, password);
-                            if (logged_in) {
-                                ui.switchScreen(.char_select);
-                            }
-                        }
-                    }
-                }
+            //         _ = zgui.inputText("E-mail", .{ .buf = LoginStatic.email_buf[0..] });
+            //         _ = zgui.inputText("Password", .{ .buf = LoginStatic.password_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
+            //         if (zgui.button("Login", .{ .w = 150.0 })) {
+            //             const email = LoginStatic.email_buf[0..utils.strlen(LoginStatic.email_buf[0..])];
+            //             const password = LoginStatic.password_buf[0..utils.strlen(LoginStatic.password_buf[0..])];
+            //             if (email.len > 0 and password.len > 0) {
+            //                 const logged_in = try login(allocator, email, password);
+            //                 if (logged_in) {
+            //                     ui.switchScreen(.char_select);
+            //                 }
+            //             }
+            //         }
+            //     }
 
-                const RegisterStatic = struct {
-                    var username_buf: [128]u8 = undefined;
-                    var email_buf: [128]u8 = undefined;
-                    var password_buf: [128]u8 = undefined;
-                    var confirm_pw_buf: [128]u8 = undefined;
-                };
+            //     const RegisterStatic = struct {
+            //         var username_buf: [128]u8 = undefined;
+            //         var email_buf: [128]u8 = undefined;
+            //         var password_buf: [128]u8 = undefined;
+            //         var confirm_pw_buf: [128]u8 = undefined;
+            //     };
 
-                _ = zgui.inputText("Name", .{ .buf = RegisterStatic.username_buf[0..] });
-                _ = zgui.inputText("E-mail##Register", .{ .buf = RegisterStatic.email_buf[0..] });
-                _ = zgui.inputText("Password##Register", .{ .buf = RegisterStatic.password_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
-                _ = zgui.inputText("Confirm Password", .{ .buf = RegisterStatic.confirm_pw_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
+            //     _ = zgui.inputText("Name", .{ .buf = RegisterStatic.username_buf[0..] });
+            //     _ = zgui.inputText("E-mail##Register", .{ .buf = RegisterStatic.email_buf[0..] });
+            //     _ = zgui.inputText("Password##Register", .{ .buf = RegisterStatic.password_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
+            //     _ = zgui.inputText("Confirm Password", .{ .buf = RegisterStatic.confirm_pw_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
 
-                if (zgui.button("Register", .{ .w = 150.0 })) {
-                    const name = RegisterStatic.username_buf[0..utils.strlen(RegisterStatic.username_buf[0..])];
-                    const email = RegisterStatic.email_buf[0..utils.strlen(RegisterStatic.email_buf[0..])];
-                    const password = RegisterStatic.password_buf[0..utils.strlen(RegisterStatic.password_buf[0..])];
-                    const response = try requests.sendAccountRegister(email, password, name);
-                    if (std.mem.indexOf(u8, "<Success />", response) != null) {
-                        const logged_in = try login(allocator, email, password);
-                        if (logged_in) {
-                            ui.switchScreen(.char_select);
-                        }
-                    }
-                }
-            }
-            zgui.end();
+            //     if (zgui.button("Register", .{ .w = 150.0 })) {
+            //         const name = RegisterStatic.username_buf[0..utils.strlen(RegisterStatic.username_buf[0..])];
+            //         const email = RegisterStatic.email_buf[0..utils.strlen(RegisterStatic.email_buf[0..])];
+            //         const password = RegisterStatic.password_buf[0..utils.strlen(RegisterStatic.password_buf[0..])];
+            //         const response = try requests.sendAccountRegister(email, password, name);
+            //         if (std.mem.indexOf(u8, "<Success />", response) != null) {
+            //             const logged_in = try login(allocator, email, password);
+            //             if (logged_in) {
+            //                 ui.switchScreen(.char_select);
+            //             }
+            //         }
+            //     }
+            // }
+            // zgui.end();
         },
         .char_select => {
             if (zgui.begin("Character", .{})) {
@@ -538,7 +539,7 @@ pub fn main() !void {
     }
 }
 
-fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) !bool {
+pub fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) !bool {
     const response = try requests.sendAccountVerify(email, password);
     if (std.mem.eql(u8, response, "<Error />")) {
         std.log.err("Login failed: {s}", .{response});

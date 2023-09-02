@@ -41,7 +41,7 @@ pub const InputField = struct {
     base_decor_data: ImageData,
     text_data: TextData,
     allocator: std.mem.Allocator,
-    enter_callback: *const fn ([]u8) void,
+    enter_callback: ?*const fn ([]u8) void = null,
     state: InteractableState = .none,
     hover_decor_data: ?ImageData = null,
     press_decor_data: ?ImageData = null,
@@ -518,6 +518,8 @@ var email_text: *UiText = undefined;
 var email_input: *InputField = undefined;
 var password_text: *UiText = undefined;
 var password_input: *InputField = undefined;
+var username_text: *UiText = undefined;
+var username_input: *InputField = undefined;
 var password_repeat_text: *UiText = undefined;
 var password_repeat_input: *InputField = undefined;
 var login_button: *Button = undefined;
@@ -591,6 +593,171 @@ pub fn init(allocator: std.mem.Allocator) !void {
         } },
     };
     try ui_images.add(menu_background);
+
+    email_input = try allocator.create(InputField);
+    const input_data_base = (assets.ui_atlas_data.get("textInputBase") orelse @panic("Could not find textInputBase in ui atlas"))[0];
+    const input_data_hover = (assets.ui_atlas_data.get("textInputHover") orelse @panic("Could not find textInputHover in ui atlas"))[0];
+    const input_data_press = (assets.ui_atlas_data.get("textInputPress") orelse @panic("Could not find textInputPress in ui atlas"))[0];
+    email_input.* = InputField{
+        .x = (camera.screen_width - input_data_base.texWRaw()) / 2,
+        .y = 200,
+        .text_inlay_x = 9,
+        .text_inlay_y = 8,
+        .base_decor_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+            input_data_base,
+            200,
+            50,
+            8,
+            8,
+            32,
+            32,
+            1.0,
+        ) },
+        .hover_decor_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+            input_data_hover,
+            200,
+            50,
+            8,
+            8,
+            32,
+            32,
+            1.0,
+        ) },
+        .press_decor_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+            input_data_press,
+            200,
+            50,
+            8,
+            8,
+            32,
+            32,
+            1.0,
+        ) },
+        .text_data = .{
+            .text = "",
+            .size = 12,
+            .text_type = .bold,
+        },
+        .allocator = allocator,
+    };
+    try input_fields.add(email_input);
+
+    email_text = try allocator.create(UiText);
+    const email_text_data = TextData{
+        .text = @constCast("E-mail"),
+        .size = 16,
+        .text_type = .bold,
+    };
+    email_text.* = UiText{
+        .x = (camera.screen_width - email_text_data.width()) / 2,
+        .y = 150,
+        .text_data = email_text_data,
+    };
+    try ui_texts.add(email_text);
+
+    password_input = try allocator.create(InputField);
+    password_input.* = InputField{
+        .x = (camera.screen_width - input_data_base.texWRaw()) / 2,
+        .y = 350,
+        .text_inlay_x = 9,
+        .text_inlay_y = 8,
+        .base_decor_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+            input_data_base,
+            200,
+            50,
+            8,
+            8,
+            32,
+            32,
+            1.0,
+        ) },
+        .hover_decor_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+            input_data_hover,
+            200,
+            50,
+            8,
+            8,
+            32,
+            32,
+            1.0,
+        ) },
+        .press_decor_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+            input_data_press,
+            200,
+            50,
+            8,
+            8,
+            32,
+            32,
+            1.0,
+        ) },
+        .text_data = .{
+            .text = "",
+            .size = 12,
+            .text_type = .bold,
+        },
+        .allocator = allocator,
+    };
+    try input_fields.add(password_input);
+
+    password_text = try allocator.create(UiText);
+    const password_text_data = TextData{
+        .text = @constCast("Password"),
+        .size = 16,
+        .text_type = .bold,
+    };
+    password_text.* = UiText{
+        .x = (camera.screen_width - password_text_data.width()) / 2,
+        .y = 300,
+        .text_data = password_text_data,
+    };
+    try ui_texts.add(password_text);
+
+    login_button = try allocator.create(Button);
+    const button_data_base = (assets.ui_atlas_data.get("buttonBase") orelse @panic("Could not find buttonBase in ui atlas"))[0];
+    const button_data_hover = (assets.ui_atlas_data.get("buttonHover") orelse @panic("Could not find buttonHover in ui atlas"))[0];
+    const button_data_press = (assets.ui_atlas_data.get("buttonPress") orelse @panic("Could not find buttonPress in ui atlas"))[0];
+    login_button.* = Button{
+        .x = (camera.screen_width - button_data_base.texWRaw()) / 2,
+        .y = 400,
+        .base_image_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+            button_data_base,
+            150,
+            75,
+            6,
+            6,
+            7,
+            7,
+            1.0,
+        ) },
+        .hover_image_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+            button_data_hover,
+            150,
+            75,
+            6,
+            6,
+            7,
+            7,
+            1.0,
+        ) },
+        .press_image_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+            button_data_press,
+            150,
+            75,
+            6,
+            6,
+            7,
+            7,
+            1.0,
+        ) },
+        .text_data = TextData{
+            .text = @constCast("Login"),
+            .size = 16,
+            .text_type = .bold,
+        },
+        .press_callback = loginCallback,
+    };
+    try buttons.add(login_button);
 
     minimap_decor = try allocator.create(Image);
     const minimap_data = (assets.ui_atlas_data.get("minimap") orelse @panic("Could not find minimap in ui atlas"))[0];
@@ -907,13 +1074,13 @@ pub fn switchScreen(screen_type: ScreenType) void {
 
     menu_background.visible = false;
 
-    // email_text.visible = false;
-    // email_input.visible.false;
-    // password_text.visible = false;
-    // password_input.visible = false;
+    email_text.visible = false;
+    email_input.visible = false;
+    password_text.visible = false;
+    password_input.visible = false;
     // password_repeat_input.visible = false;
     // password_repeat_text.visible = false;
-    // login_button.visible = false;
+    login_button.visible = false;
     // register_button.visible = false;
 
     fps_text.visible = false;
@@ -944,13 +1111,13 @@ pub fn switchScreen(screen_type: ScreenType) void {
     switch (screen_type) {
         .main_menu => {
             menu_background.visible = true;
-            // email_text.visible = true;
-            // email_input.visible.true;
-            // password_text.visible = true;
-            // password_input.visible = true;
+            email_text.visible = true;
+            email_input.visible = true;
+            password_text.visible = true;
+            password_input.visible = true;
             // password_repeat_input.visible = true;
             // password_repeat_text.visible = true;
-            // login_button.visible = true;
+            login_button.visible = true;
             // register_button.visible = true;
         },
         .char_select => {
@@ -1096,6 +1263,12 @@ fn swapSlots(start_slot: Slot, end_slot: Slot) void {
             }
         }
     }
+}
+
+fn loginCallback() void {
+    _ = main.login(_allocator, email_input.text_data.text, password_input.text_data.text) catch |e| {
+        std.log.err("Login failed: {any}", .{e});
+    };
 }
 
 fn itemDragEndCallback(item: *Item) void {
