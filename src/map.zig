@@ -1201,7 +1201,7 @@ pub const Entity = union(enum) {
 };
 
 const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
-const day_cycle_ms_half: f32 = @floatFromInt(day_cycle_ms / 2);
+const day_cycle_ms_half: f32 = @as(f32, day_cycle_ms) / 2;
 
 pub var object_lock: std.Thread.RwLock = .{};
 pub var entities: utils.DynSlice(Entity) = undefined;

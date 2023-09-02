@@ -161,6 +161,7 @@ inline fn createTexture(gctx: *zgpu.GraphicsContext, tex: *zgpu.TextureHandle, v
 }
 
 pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
+    _ = allocator;
     createVertexBuffer(gctx, BaseVertexData, &base_vb, base_vert_data[0..]);
     createVertexBuffer(gctx, GroundVertexData, &ground_vb, ground_vert_data[0..]);
     createVertexBuffer(gctx, TextVertexData, &text_vb, text_vert_data[0..]);
@@ -318,7 +319,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
                 .targets = &color_targets,
             },
         };
-        gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &base_pipeline);
+        base_pipeline = gctx.createRenderPipeline(pipeline_layout, pipeline_descriptor);
     }
 
     {
@@ -372,7 +373,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
                 .targets = &color_targets,
             },
         };
-        gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &base_no_glow_pipeline);
+        base_no_glow_pipeline = gctx.createRenderPipeline(pipeline_layout, pipeline_descriptor);
     }
 
     {
@@ -423,7 +424,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
                 .targets = &color_targets,
             },
         };
-        gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &ground_pipeline);
+        ground_pipeline = gctx.createRenderPipeline(pipeline_layout, pipeline_descriptor);
     }
 
     {
@@ -479,7 +480,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
                 .targets = &color_targets,
             },
         };
-        gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &text_pipeline);
+        text_pipeline = gctx.createRenderPipeline(pipeline_layout, pipeline_descriptor);
     }
 
     {
@@ -530,7 +531,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
                 .targets = &color_targets,
             },
         };
-        gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &light_pipeline);
+        light_pipeline = gctx.createRenderPipeline(pipeline_layout, pipeline_descriptor);
     }
 
     {
@@ -587,7 +588,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
                 .targets = &color_targets,
             },
         };
-        gctx.createRenderPipelineAsync(allocator, pipeline_layout, pipeline_descriptor, &ui_pipeline);
+        ui_pipeline = gctx.createRenderPipeline(pipeline_layout, pipeline_descriptor);
     }
 }
 
