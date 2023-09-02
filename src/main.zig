@@ -218,7 +218,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
             zgui.pushStyleVar1f(.{ .idx = .window_rounding, .v = 12.0 });
             zgui.pushStyleVar2f(.{ .idx = .window_padding, .v = .{ 20.0, 20.0 } });
             defer zgui.popStyleVar(.{ .count = 2 });
-            
+
             if (zgui.begin("Character Creation", .{})) {
                 const static = struct {
                     var server_index: u32 = 0;
@@ -343,7 +343,7 @@ fn renderTick(allocator: std.mem.Allocator) !void {
         // this has to be updated on render thread to avoid headaches
         if (ui.fps_text.text_data.text.len > 0)
             _allocator.free(ui.fps_text.text_data.text);
-        ui.fps_text.text_data.text = try std.fmt.allocPrint(_allocator, "FPS: {d:.1}\nMemory: {d} MB", .{ gctx.stats.fps, -1 });
+        ui.fps_text.text_data.text = try std.fmt.allocPrint(_allocator, "FPS: {d:.1}\nMemory: {d:.1} MB", .{ gctx.stats.fps, try utils.currentMemoryUse() });
         ui.fps_text.x = camera.screen_width - ui.fps_text.text_data.width() - 10;
 
         draw();
@@ -467,17 +467,6 @@ pub fn main() !void {
     defer {
         tick_render = false;
         render_thread.join();
-    }
-
-    switch (builtin.os.tag) {
-        .windows => {
-            const mem_info = try std.os.windows.GetProcessMemoryInfo(std.os.windows.self_process_handle);
-            std.log.err("mem_info {any}", .{mem_info});
-        },
-        else => {
-            const ru = std.os.getrusage(std.os.system.rusage.SELF);
-            std.log.err("ru {any}", .{ru});
-        },
     }
 
     while (!window.shouldClose()) {

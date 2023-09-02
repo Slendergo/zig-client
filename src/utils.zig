@@ -348,7 +348,66 @@ pub const Random = struct {
     }
 };
 
+pub const VM_COUNTERS_EX = extern struct {
+    PeakVirtualSize: std.os.windows.SIZE_T,
+    VirtualSize: std.os.windows.SIZE_T,
+    PageFaultCount: std.os.windows.ULONG,
+    PeakWorkingSetSize: std.os.windows.SIZE_T,
+    WorkingSetSize: std.os.windows.SIZE_T,
+    QuotaPeakPagedPoolUsage: std.os.windows.SIZE_T,
+    QuotaPagedPoolUsage: std.os.windows.SIZE_T,
+    QuotaPeakNonPagedPoolUsage: std.os.windows.SIZE_T,
+    QuotaNonPagedPoolUsage: std.os.windows.SIZE_T,
+    PagefileUsage: std.os.windows.SIZE_T,
+    PeakPagefileUsage: std.os.windows.SIZE_T,
+    PrivateUsage: std.os.windows.SIZE_T,
+};
+
 pub var rng = std.rand.DefaultPrng.init(0x99999999);
+
+var last_memory_access: i64 = -1;
+var last_memory_value: f32 = -1.0;
+
+pub fn currentMemoryUse() !f32 {
+    if (main.current_time - last_memory_access < 5000 * std.time.us_per_ms)
+        return last_memory_value;
+
+    // todo figure out why the values are all wrong
+    var memory_value: f32 = -1.0;
+    switch (builtin.os.tag) {
+        .windows => {
+            var vmc_ex: VM_COUNTERS_EX = undefined;
+            const rc = std.os.windows.ntdll.NtQueryInformationProcess(
+                std.os.windows.self_process_handle,
+                .ProcessVmCounters,
+                &vmc_ex,
+                @sizeOf(VM_COUNTERS_EX),
+                null,
+            );
+            if (rc == .SUCCESS) {
+                memory_value = @as(f32, @floatFromInt(vmc_ex.WorkingSetSize)) / 1024.0 / 1024.0;
+            } else {
+                std.log.err("Could not get windows memory information: {any}", .{rc});
+            }
+        },
+        else => {
+            const file = try std.fs.cwd().openFile("/proc/self/statm", .{});
+            defer file.close();
+
+            const data = try file.readToEndAlloc(main.stack_allocator, std.math.maxInt(u8));
+            defer main.stack_allocator.free(data);
+
+            var split_iter = std.mem.split(u8, data, " ");
+            _ = split_iter.next(); // total size
+            const rss: f32 = @floatFromInt(try std.fmt.parseInt(u32, split_iter.next().?, 0));
+            memory_value = rss / 1024.0;
+        },
+    }
+
+    last_memory_access = main.current_time;
+    last_memory_value = memory_value;
+    return memory_value;
+}
 
 pub fn isInBounds(x: f32, y: f32, bound_x: f32, bound_y: f32, bound_w: f32, bound_h: f32) bool {
     return x >= bound_x and x <= bound_x + bound_w and y >= bound_y and y <= bound_y + bound_h;
