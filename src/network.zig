@@ -591,7 +591,7 @@ inline fn handleNewTick(allocator: std.mem.Allocator) void {
         return;
     }
 
-    map.last_tick_time = main.current_time;
+    map.last_tick_time = @divFloor(main.current_time, std.time.us_per_ms);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
         std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });
@@ -692,7 +692,7 @@ inline fn handleServerPlayerShoot() void {
                         .damage = damage,
                         .props = proj_props,
                         .angle = current_angle,
-                        .start_time = main.current_time,
+                        .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                         .bullet_id = bullet_id +% @as(u8, @intCast(i)), // this is wrong but whatever
                         .owner_id = owner_id,
                     };
@@ -763,7 +763,7 @@ inline fn handleText(allocator: std.mem.Allocator) void {
                 .max_width = 160,
             },
             .target_id = object_id,
-            .start_time = main.current_time,
+            .start_time = @divFloor(main.current_time, std.time.us_per_ms),
         }) catch unreachable;
     }
 

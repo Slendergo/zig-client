@@ -1480,10 +1480,12 @@ pub fn mouseRelease(x: f32, y: f32) void {
 }
 
 pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
-    _ = dt;
-
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();
+
+    const ms_time = @divFloor(time, std.time.us_per_ms);
+    const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
+    _ = ms_dt;
 
     if (map.findEntity(map.local_player_id)) |en| {
         switch (en.*) {
@@ -1561,7 +1563,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
             }
         }
 
-        const elapsed = time - status_text.start_time;
+        const elapsed = ms_time - status_text.start_time;
         if (elapsed > status_text.lifetime) {
             status_texts_to_remove.add(i) catch |e| {
                 std.log.err("Status text disposing failed: {any}", .{e});
@@ -1600,7 +1602,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
             }
         }
 
-        const elapsed = time - speech_balloon.start_time;
+        const elapsed = ms_time - speech_balloon.start_time;
         const lifetime = 5000;
         if (elapsed > lifetime) {
             speech_balloons_to_remove.add(i) catch |e| {

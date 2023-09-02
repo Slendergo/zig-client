@@ -18,7 +18,7 @@ pub const max_attack_freq: f32 = 0.008;
 pub const min_attack_mult: f32 = 0.5;
 pub const max_attack_mult: f32 = 2;
 pub const max_sink_level: u32 = 18;
-const tick_us = 200.0 * std.time.us_per_ms;
+const tick_ms = 200.0;
 
 pub const Square = struct {
     tile_type: u16 = 0xFFFF,
@@ -365,7 +365,7 @@ pub const GameObject = struct {
                     break :moveBlock;
                 }
 
-                const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_us;
+                const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_ms;
                 if (scale_dt >= 1.0) {
                     self.x = self.target_x;
                     self.y = self.target_y;
@@ -590,7 +590,7 @@ pub const Player = struct {
                 .y = y,
                 .props = proj_props,
                 .angle = current_angle,
-                .start_time = time,
+                .start_time = @divFloor(time, std.time.us_per_ms),
                 .bullet_id = bullet_id,
                 .owner_id = self.obj_id,
             };
@@ -648,7 +648,7 @@ pub const Player = struct {
                         break :moveBlock;
                     }
 
-                    const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_us;
+                    const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_ms;
                     if (scale_dt >= 1.0) {
                         self.x = self.target_x;
                         self.y = self.target_y;
@@ -1050,7 +1050,7 @@ pub const Projectile = struct {
     }
 
     pub fn update(self: *Projectile, time: i64, dt: f32, allocator: std.mem.Allocator) bool {
-        const elapsed = time - @divFloor(self.start_time, std.time.us_per_ms);
+        const elapsed = time - self.start_time;
         if (elapsed >= self.props.lifetime_ms)
             return false;
 
