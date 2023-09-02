@@ -490,6 +490,14 @@ pub const Slot = struct {
     }
 };
 
+pub const ScreenType = enum(u8) {
+    main_menu,
+    char_select,
+    char_creation,
+    map_editor,
+    in_game,
+};
+
 pub var items: utils.DynSlice(*Item) = undefined;
 pub var bars: utils.DynSlice(*Bar) = undefined;
 pub var input_fields: utils.DynSlice(*InputField) = undefined;
@@ -501,7 +509,20 @@ pub var speech_balloons_to_remove: utils.DynSlice(usize) = undefined;
 pub var status_texts: utils.DynSlice(StatusText) = undefined;
 pub var status_texts_to_remove: utils.DynSlice(usize) = undefined;
 pub var obj_ids_to_remove: utils.DynSlice(i32) = undefined;
+pub var current_screen = ScreenType.main_menu;
 
+// shared
+var menu_background: *Image = undefined;
+// account screen
+var email_text: *UiText = undefined;
+var email_input: *InputField = undefined;
+var password_text: *UiText = undefined;
+var password_input: *InputField = undefined;
+var password_repeat_text: *UiText = undefined;
+var password_repeat_input: *InputField = undefined;
+var login_button: *Button = undefined;
+var register_button: *Button = undefined;
+// in game
 pub var fps_text: *UiText = undefined;
 pub var chat_input: *InputField = undefined;
 var chat_decor: *Image = undefined;
@@ -556,6 +577,20 @@ pub fn init(allocator: std.mem.Allocator) !void {
     status_texts = try utils.DynSlice(StatusText).init(32, allocator);
     status_texts_to_remove = try utils.DynSlice(usize).init(32, allocator);
     obj_ids_to_remove = try utils.DynSlice(i32).init(64, allocator);
+
+    menu_background = try allocator.create(Image);
+    var menu_bg_data = (assets.ui_atlas_data.get("menuBackground") orelse @panic("Could not find menuBackground in ui atlas"))[0];
+    menu_bg_data.removePadding();
+    menu_background.* = Image{
+        .x = 0,
+        .y = 0,
+        .image_data = .{ .normal = .{
+            .scale_x = camera.screen_width / menu_bg_data.texWRaw(),
+            .scale_y = camera.screen_height / menu_bg_data.texHRaw(),
+            .atlas_data = menu_bg_data,
+        } },
+    };
+    try ui_images.add(menu_background);
 
     minimap_decor = try allocator.create(Image);
     const minimap_data = (assets.ui_atlas_data.get("minimap") orelse @panic("Could not find minimap in ui atlas"))[0];
@@ -829,6 +864,9 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 }
 
 pub fn resize(w: f32, h: f32) void {
+    menu_background.image_data.normal.scale_x = camera.screen_width / menu_background.image_data.normal.atlas_data.texWRaw();
+    menu_background.image_data.normal.scale_y = camera.screen_height / menu_background.image_data.normal.atlas_data.texHRaw();
+
     minimap_decor.x = w - minimap_decor.width() - 10;
     inventory_decor.x = w - inventory_decor.width() - 10;
     inventory_decor.y = h - inventory_decor.height() - 10;
@@ -861,6 +899,85 @@ pub fn resize(w: f32, h: f32) void {
     for (0..8) |idx| {
         container_items[idx].x = container_decor.x + container_pos_data[idx].x + (container_pos_data[idx].w - container_items[idx].width() + assets.padding * 2) / 2;
         container_items[idx].y = container_decor.y + container_pos_data[idx].y + (container_pos_data[idx].h - container_items[idx].height() + assets.padding * 2) / 2;
+    }
+}
+
+pub fn switchScreen(screen_type: ScreenType) void {
+    current_screen = screen_type;
+
+    menu_background.visible = false;
+
+    // email_text.visible = false;
+    // email_input.visible.false;
+    // password_text.visible = false;
+    // password_input.visible = false;
+    // password_repeat_input.visible = false;
+    // password_repeat_text.visible = false;
+    // login_button.visible = false;
+    // register_button.visible = false;
+
+    fps_text.visible = false;
+    chat_input.visible = false;
+    chat_decor.visible = false;
+    bars_decor.visible = false;
+    stats_button.visible = false;
+    level_text.visible = false;
+    xp_bar.visible = false;
+    fame_bar.visible = false;
+    health_bar.visible = false;
+    mana_bar.visible = false;
+    inventory_decor.visible = false;
+    for (&inventory_items) |*item| {
+        item.visible = false;
+    }
+    // health_potion.visible = false;
+    // health_potion_text.visible = false;
+    // magic_potion.visible = false;
+    // magic_potion_text.visible = false;
+    container_decor.visible = false;
+    // container_name.visible = false;
+    for (&container_items) |*item| {
+        item.visible = false;
+    }
+    minimap_decor.visible = false;
+
+    switch (screen_type) {
+        .main_menu => {
+            menu_background.visible = true;
+            // email_text.visible = true;
+            // email_input.visible.true;
+            // password_text.visible = true;
+            // password_input.visible = true;
+            // password_repeat_input.visible = true;
+            // password_repeat_text.visible = true;
+            // login_button.visible = true;
+            // register_button.visible = true;
+        },
+        .char_select => {
+            menu_background.visible = true;
+        },
+        .char_creation => {
+            menu_background.visible = true;
+        },
+        .map_editor => {},
+        .in_game => {
+            fps_text.visible = true;
+            chat_input.visible = true;
+            chat_decor.visible = true;
+            bars_decor.visible = true;
+            stats_button.visible = true;
+            level_text.visible = true;
+            health_bar.visible = true;
+            mana_bar.visible = true;
+            inventory_decor.visible = true;
+            // health_potion.visible = true;
+            // health_potion_text.visible = true;
+            // magic_potion.visible = true;
+            // magic_potion_text.visible = true;
+            container_decor.visible = true;
+            // container_name.visible = true;
+            minimap_decor.visible = true;
+        },
     }
 }
 

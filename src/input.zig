@@ -240,7 +240,7 @@ pub fn charEvent(window: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
 pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
     _ = scancode;
 
-    if (main.current_screen != .in_game)
+    if (ui.current_screen != .in_game)
         return;
 
     if (action == .press) {
@@ -275,7 +275,7 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
         });
     }
 
-    if (main.current_screen != .in_game)
+    if (ui.current_screen != .in_game)
         return;
 
     if (action == .press) {

@@ -81,11 +81,8 @@ pub const CharacterData = struct {
     }
 };
 
-pub const ScreenType = enum(u8) { main_menu, char_select, char_creation, map_editor, in_game };
-
 const embedded_font_data = @embedFile(asset_dir ++ "fonts/Ubuntu-Medium.ttf");
 
-pub var current_screen = ScreenType.main_menu;
 pub var gctx: *zgpu.GraphicsContext = undefined;
 pub var fba: std.heap.FixedBufferAllocator = undefined;
 pub var stack_allocator: std.mem.Allocator = undefined;
@@ -156,8 +153,8 @@ fn updateUi(allocator: std.mem.Allocator) !void {
     zgui.pushStyleVar2f(.{ .idx = .window_padding, .v = .{ 20.0, 20.0 } });
     defer zgui.popStyleVar(.{ .count = 2 });
 
-    switch (current_screen) {
-        ScreenType.main_menu => {
+    switch (ui.current_screen) {
+        .main_menu => {
             if (zgui.begin("Main Menu", .{})) {
                 {
                     const LoginStatic = struct {
@@ -173,7 +170,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                         if (email.len > 0 and password.len > 0) {
                             const logged_in = try login(allocator, email, password);
                             if (logged_in) {
-                                current_screen = ScreenType.char_select;
+                                ui.switchScreen(.char_select);
                             }
                         }
                     }
@@ -199,17 +196,17 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     if (std.mem.indexOf(u8, "<Success />", response) != null) {
                         const logged_in = try login(allocator, email, password);
                         if (logged_in) {
-                            current_screen = ScreenType.char_select;
+                            ui.switchScreen(.char_select);
                         }
                     }
                 }
             }
             zgui.end();
         },
-        ScreenType.char_select => {
+        .char_select => {
             if (zgui.begin("Character", .{})) {
                 if (character_list.len < 1) {
-                    current_screen = ScreenType.char_creation;
+                    ui.switchScreen(.char_creation);
                 }
 
                 const static = struct {
@@ -230,7 +227,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 if (server_list == null or server_list.?.len == 0) {
                     zgui.text("No servers available", .{});
                     if (zgui.button("Return", .{})) {
-                        current_screen = .main_menu;
+                        ui.switchScreen(.main_menu);
                     }
                 } else {
                     if (zgui.beginListBox("Server", .{})) {
@@ -245,7 +242,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     }
 
                     if (zgui.button("Play", .{ .w = 150.0 })) {
-                        current_screen = ScreenType.in_game;
+                        ui.switchScreen(.in_game);
                         selected_char_id = character_list[static.char_index].id;
                         if (server_list) |srv_list| {
                             selected_server = srv_list[static.server_index];
@@ -255,7 +252,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
             }
             zgui.end();
         },
-        ScreenType.char_creation => {
+        .char_creation => {
             if (zgui.begin("Character Creation", .{})) {
                 const static = struct {
                     var server_index: u32 = 0;
@@ -271,7 +268,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                 if (server_list == null or server_list.?.len == 0) {
                     zgui.text("No servers available", .{});
                     if (zgui.button("Return", .{})) {
-                        current_screen = .main_menu;
+                        ui.switchScreen(.main_menu);
                     }
                 } else {
                     if (zgui.beginListBox("Server", .{})) {
@@ -284,7 +281,7 @@ fn updateUi(allocator: std.mem.Allocator) !void {
                     }
 
                     if (zgui.button("Create Character", .{ .w = 150.0 })) {
-                        current_screen = ScreenType.in_game;
+                        ui.switchScreen(.in_game);
                         char_create_type = @as(u16, @intCast(static.char_type));
                         char_create_skin_type = @as(u16, @intCast(static.skin_type));
                         selected_char_id = next_char_id;
@@ -296,8 +293,8 @@ fn updateUi(allocator: std.mem.Allocator) !void {
             }
             zgui.end();
         },
-        ScreenType.map_editor => {},
-        ScreenType.in_game => {},
+        .map_editor => {},
+        .in_game => {},
     }
 }
 
@@ -305,9 +302,7 @@ inline fn draw() void {
     const back_buffer = gctx.swapchain.getCurrentTextureView();
     const encoder = gctx.device.createCommandEncoder(null);
 
-    if (current_screen == .in_game and tick_frame) {
-        render.draw(current_time, gctx, back_buffer, encoder);
-    }
+    render.draw(current_time, gctx, back_buffer, encoder);
 
     const color_attachments = [_]wgpu.RenderPassColorAttachment{.{
         .view = back_buffer,
@@ -404,7 +399,7 @@ pub fn disconnect() void {
     clear();
     input.reset();
 
-    current_screen = .char_select;
+    ui.switchScreen(.char_select);
 }
 
 pub fn main() !void {
@@ -461,6 +456,8 @@ pub fn main() !void {
 
     try ui.init(allocator);
     defer ui.deinit(allocator);
+
+    ui.switchScreen(.main_menu);
 
     const window = zglfw.Window.create(1280, 720, "Client", null) catch |e| {
         std.log.err("Failed to create window: {any}", .{e});
@@ -597,9 +594,9 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
     }
 
     if (character_list.len > 0) {
-        current_screen = ScreenType.char_select;
+        ui.switchScreen(.char_select);
     } else {
-        current_screen = ScreenType.char_creation;
+        ui.switchScreen(.char_creation);
     }
 
     return true;

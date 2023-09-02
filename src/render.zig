@@ -1479,9 +1479,6 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     while (!map.object_lock.tryLock()) {}
     defer map.object_lock.unlock();
 
-    if (!map.validPos(@intFromFloat(camera.x), @intFromFloat(camera.y)))
-        return;
-
     const ib_info = gctx.lookupResourceInfo(index_buffer) orelse return;
 
     const clear_color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
@@ -1507,455 +1504,201 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     var light_idx: u16 = 0;
     var text_idx: u16 = 0;
 
-    groundPass: {
-        const vb_info = gctx.lookupResourceInfo(ground_vb) orelse break :groundPass;
-        const pipeline = gctx.lookupResource(ground_pipeline) orelse break :groundPass;
-        const bind_group = gctx.lookupResource(ground_bind_group) orelse break :groundPass;
+    const no_in_game_render = !main.tick_frame or !map.validPos(@intFromFloat(camera.x), @intFromFloat(camera.y));
+    inGamePass: {
+        if (no_in_game_render)
+            break :inGamePass;
 
-        const mem = gctx.uniformsAllocate(GroundUniformData, 1);
-        mem.slice[0] = .{
-            .left_top_mask_uv = assets.left_top_mask_uv,
-            .right_bottom_mask_uv = assets.right_bottom_mask_uv,
-        };
+        groundPass: {
+            const vb_info = gctx.lookupResourceInfo(ground_vb) orelse break :groundPass;
+            const pipeline = gctx.lookupResource(ground_pipeline) orelse break :groundPass;
+            const bind_group = gctx.lookupResource(ground_bind_group) orelse break :groundPass;
 
-        var first: bool = false;
-        var square_idx: u16 = 0;
-        for (camera.min_y..camera.max_y) |y| {
-            for (camera.min_x..camera.max_x) |x| {
-                if (square_idx == 4000) {
-                    encoder.writeBuffer(
-                        gctx.lookupResource(ground_vb).?,
-                        0,
-                        GroundVertexData,
-                        ground_vert_data[0..4000],
-                    );
-                    endDraw(
-                        encoder,
-                        if (first) clear_render_pass_info else load_render_pass_info,
-                        vb_info,
-                        ib_info,
-                        pipeline,
-                        bind_group,
-                        6000,
-                        &.{mem.offset},
-                    );
-                    square_idx = 0;
-                    first = false;
-                }
+            const mem = gctx.uniformsAllocate(GroundUniformData, 1);
+            mem.slice[0] = .{
+                .left_top_mask_uv = assets.left_top_mask_uv,
+                .right_bottom_mask_uv = assets.right_bottom_mask_uv,
+            };
 
-                const dx = camera.x - @as(f32, @floatFromInt(x)) - 0.5;
-                const dy = camera.y - @as(f32, @floatFromInt(y)) - 0.5;
-                if (dx * dx + dy * dy > camera.max_dist_sq)
-                    continue;
+            var first: bool = false;
+            var square_idx: u16 = 0;
+            for (camera.min_y..camera.max_y) |y| {
+                for (camera.min_x..camera.max_x) |x| {
+                    if (square_idx == 4000) {
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ground_vb).?,
+                            0,
+                            GroundVertexData,
+                            ground_vert_data[0..4000],
+                        );
+                        endDraw(
+                            encoder,
+                            if (first) clear_render_pass_info else load_render_pass_info,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                            6000,
+                            &.{mem.offset},
+                        );
+                        square_idx = 0;
+                        first = false;
+                    }
 
-                const map_square_idx = x + y * @as(usize, @intCast(map.width));
-                const square = map.squares[map_square_idx];
-                if (square.tile_type == 0xFFFF or square.tile_type == 0xFF)
-                    continue;
-
-                const screen_pos = camera.rotateAroundCamera(square.x, square.y);
-                const screen_x = screen_pos.x - camera.screen_width / 2.0;
-                const screen_y = -(screen_pos.y - camera.screen_height / 2.0);
-
-                if (settings.enable_lights and square.light_color > 0) {
-                    drawLight(
-                        light_idx,
-                        camera.px_per_tile * square.light_radius,
-                        camera.px_per_tile * square.light_radius,
-                        screen_pos.x,
-                        screen_pos.y,
-                        square.light_color,
-                        square.light_intensity,
-                    );
-                    light_idx += 4;
-                }
-
-                var u_offset = square.u_offset;
-                var v_offset = square.v_offset;
-                const float_time: f32 = @floatFromInt(time);
-                switch (square.anim_type) {
-                    .wave => {
-                        u_offset += @sin(square.anim_dx * float_time / 1000.0) * assets.base_texel_w;
-                        v_offset += @sin(square.anim_dy * float_time / 1000.0) * assets.base_texel_h;
-                    },
-                    .flow => {
-                        u_offset += (square.anim_dx * float_time / 1000.0) * assets.base_texel_w;
-                        v_offset += (square.anim_dy * float_time / 1000.0) * assets.base_texel_h;
-                    },
-                    else => {},
-                }
-
-                const x_cos = camera.pad_x_cos;
-                const x_sin = camera.pad_x_sin;
-                const y_cos = camera.pad_y_cos;
-                const y_sin = camera.pad_y_sin;
-                const clip_x = screen_x * camera.clip_scale_x;
-                const clip_y = screen_y * camera.clip_scale_y;
-                drawSquare(
-                    square_idx,
-                    x_cos + x_sin + clip_x,
-                    y_sin - y_cos + clip_y,
-                    -x_cos + x_sin + clip_x,
-                    -y_sin - y_cos + clip_y,
-                    -x_cos - x_sin + clip_x,
-                    -y_sin + y_cos + clip_y,
-                    x_cos - x_sin + clip_x,
-                    y_sin + y_cos + clip_y,
-                    square.atlas_data,
-                    u_offset,
-                    v_offset,
-                    square.left_blend_u,
-                    square.left_blend_v,
-                    square.top_blend_u,
-                    square.top_blend_v,
-                    square.right_blend_u,
-                    square.right_blend_v,
-                    square.bottom_blend_u,
-                    square.bottom_blend_v,
-                );
-                square_idx += 4;
-            }
-        }
-
-        if (square_idx > 0) {
-            encoder.writeBuffer(
-                gctx.lookupResource(ground_vb).?,
-                0,
-                GroundVertexData,
-                ground_vert_data[0..square_idx],
-            );
-            endDraw(
-                encoder,
-                if (first) clear_render_pass_info else load_render_pass_info,
-                vb_info,
-                ib_info,
-                pipeline,
-                bind_group,
-                @divFloor(square_idx, 4) * 6,
-                &.{mem.offset},
-            );
-        }
-    }
-
-    normalPass: {
-        if (map.entities.capacity <= 0)
-            break :normalPass;
-
-        const vb_info = gctx.lookupResourceInfo(base_vb) orelse break :normalPass;
-        const pipeline = gctx.lookupResource(if (settings.enable_glow) base_pipeline else base_no_glow_pipeline) orelse break :normalPass;
-        const bind_group = gctx.lookupResource(base_bind_group) orelse break :normalPass;
-
-        var idx: u16 = 0;
-        for (map.entities.items()) |*en| {
-            switch (en.*) {
-                .player => |*player| {
-                    if (!camera.visibleInCamera(player.x, player.y)) {
+                    const dx = camera.x - @as(f32, @floatFromInt(x)) - 0.5;
+                    const dy = camera.y - @as(f32, @floatFromInt(y)) - 0.5;
+                    if (dx * dx + dy * dy > camera.max_dist_sq)
                         continue;
-                    }
 
-                    const size = camera.size_mult * camera.scale * player.size;
+                    const map_square_idx = x + y * @as(usize, @intCast(map.width));
+                    const square = map.squares[map_square_idx];
+                    if (square.tile_type == 0xFFFF or square.tile_type == 0xFF)
+                        continue;
 
-                    var action: u8 = assets.stand_action;
-                    var float_period: f32 = 0.0;
+                    const screen_pos = camera.rotateAroundCamera(square.x, square.y);
+                    const screen_x = screen_pos.x - camera.screen_width / 2.0;
+                    const screen_y = -(screen_pos.y - camera.screen_height / 2.0);
 
-                    if (time < player.attack_start + player.attack_period) {
-                        player.facing = player.attack_angle_raw;
-                        const time_dt: f32 = @floatFromInt(time - player.attack_start);
-                        float_period = @floatFromInt(player.attack_period);
-                        float_period = @mod(time_dt, float_period) / float_period;
-                        action = assets.attack_action;
-                    } else if (!std.math.isNan(player.move_angle)) {
-                        const walk_period = 3.5 / player.moveSpeedMultiplier();
-                        const float_time: f32 = @floatFromInt(time);
-                        float_period = @mod(float_time, walk_period) / walk_period;
-                        player.facing = player.move_angle_camera_included;
-                        action = assets.walk_action;
-                    }
-
-                    const angle = utils.halfBound(player.facing - camera.angle_unbound);
-                    const pi_over_4 = std.math.pi / 4.0;
-                    const angle_div = (angle / pi_over_4) + 4;
-
-                    var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(@round(angle_div))) % 8;
-
-                    sec = switch (sec) {
-                        0, 7 => assets.left_dir,
-                        1, 2 => assets.up_dir,
-                        3, 4 => assets.right_dir,
-                        5, 6 => assets.down_dir,
-                        else => unreachable,
-                    };
-
-                    const capped_period = @max(0, @min(0.99999, float_period)) * 2.0; // 2 walk cycle frames so * 2
-                    const anim_idx: usize = @intFromFloat(capped_period);
-
-                    var atlas_data = switch (action) {
-                        assets.walk_action => player.anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
-                        assets.attack_action => player.anim_data.attack_anims[sec][anim_idx],
-                        assets.stand_action => player.anim_data.walk_anims[sec][0],
-                        else => unreachable,
-                    };
-
-                    var x_offset: f32 = 0.0;
-                    if (action == assets.attack_action and anim_idx == 1) {
-                        const w = atlas_data.texWRaw() * size;
-                        if (sec == assets.left_dir) {
-                            x_offset = -assets.padding * size;
-                        } else {
-                            x_offset = w / 4.0;
-                        }
-                    }
-
-                    const square = player.getSquare();
-                    var sink: f32 = 1.0;
-                    if (square.tile_type != 0xFFFF) {
-                        sink += square.sink;
-                    }
-
-                    atlas_data.tex_h /= sink;
-
-                    const w = atlas_data.texWRaw() * size;
-                    const h = atlas_data.texHRaw() * size;
-
-                    var screen_pos = camera.rotateAroundCamera(player.x, player.y);
-                    screen_pos.x += x_offset;
-                    screen_pos.y += player.z * -camera.px_per_tile - (h - size * assets.padding);
-
-                    var alpha_mult: f32 = -1.0;
-                    if (player.condition.invisible)
-                        alpha_mult = 0.6;
-
-                    player.screen_y = screen_pos.y - 30; // account for name
-                    player.screen_x = screen_pos.x - x_offset;
-
-                    if (settings.enable_lights and player.light_color > 0) {
+                    if (settings.enable_lights and square.light_color > 0) {
                         drawLight(
                             light_idx,
-                            w * player.light_radius,
-                            h * player.light_radius,
+                            camera.px_per_tile * square.light_radius,
+                            camera.px_per_tile * square.light_radius,
                             screen_pos.x,
                             screen_pos.y,
-                            player.light_color,
-                            player.light_intensity,
+                            square.light_color,
+                            square.light_intensity,
                         );
                         light_idx += 4;
                     }
 
-                    const name = if (player.name_override.len > 0) player.name_override else player.name;
-                    if (name.len > 0) {
-                        const text_data = ui.TextData{
-                            .text = name,
-                            .text_type = .bold,
-                            .size = 16,
-                            .color = 0xFCDF00,
-                            .max_width = 200,
-                        };
-
-                        text_idx += drawText(
-                            text_idx,
-                            screen_pos.x - x_offset - text_data.width() / 2,
-                            screen_pos.y - text_data.height(),
-                            text_data,
-                        );
+                    var u_offset = square.u_offset;
+                    var v_offset = square.v_offset;
+                    const float_time: f32 = @floatFromInt(time);
+                    switch (square.anim_type) {
+                        .wave => {
+                            u_offset += @sin(square.anim_dx * float_time / 1000.0) * assets.base_texel_w;
+                            v_offset += @sin(square.anim_dy * float_time / 1000.0) * assets.base_texel_h;
+                        },
+                        .flow => {
+                            u_offset += (square.anim_dx * float_time / 1000.0) * assets.base_texel_w;
+                            v_offset += (square.anim_dy * float_time / 1000.0) * assets.base_texel_h;
+                        },
+                        else => {},
                     }
 
-                    drawQuad(
-                        idx,
-                        screen_pos.x - w / 2.0,
-                        screen_pos.y,
-                        w,
-                        h,
-                        atlas_data,
-                        .{ .texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
+                    const x_cos = camera.pad_x_cos;
+                    const x_sin = camera.pad_x_sin;
+                    const y_cos = camera.pad_y_cos;
+                    const y_sin = camera.pad_y_sin;
+                    const clip_x = screen_x * camera.clip_scale_x;
+                    const clip_y = screen_y * camera.clip_scale_y;
+                    drawSquare(
+                        square_idx,
+                        x_cos + x_sin + clip_x,
+                        y_sin - y_cos + clip_y,
+                        -x_cos + x_sin + clip_x,
+                        -y_sin - y_cos + clip_y,
+                        -x_cos - x_sin + clip_x,
+                        -y_sin + y_cos + clip_y,
+                        x_cos - x_sin + clip_x,
+                        y_sin + y_cos + clip_y,
+                        square.atlas_data,
+                        u_offset,
+                        v_offset,
+                        square.left_blend_u,
+                        square.left_blend_v,
+                        square.top_blend_u,
+                        square.top_blend_v,
+                        square.right_blend_u,
+                        square.right_blend_v,
+                        square.bottom_blend_u,
+                        square.bottom_blend_v,
                     );
-                    idx += 4;
+                    square_idx += 4;
+                }
+            }
 
-                    if (idx == 4000) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
-                        idx = 0;
-                    }
+            if (square_idx > 0) {
+                encoder.writeBuffer(
+                    gctx.lookupResource(ground_vb).?,
+                    0,
+                    GroundVertexData,
+                    ground_vert_data[0..square_idx],
+                );
+                endDraw(
+                    encoder,
+                    if (first) clear_render_pass_info else load_render_pass_info,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                    @divFloor(square_idx, 4) * 6,
+                    &.{mem.offset},
+                );
+            }
+        }
 
-                    // todo make sink calculate actual values based on h, pad, etc
-                    var y_pos: f32 = 5.0 + if (sink != 1.0) @as(f32, 15.0) else @as(f32, 0.0);
+        normalPass: {
+            if (map.entities.capacity <= 0)
+                break :normalPass;
 
-                    const pad_scale_obj = assets.padding * size * camera.scale;
-                    const pad_scale_bar = assets.padding * 2 * camera.scale;
-                    if (player.hp >= 0 and player.hp < player.max_hp) {
-                        const hp_bar_w = assets.hp_bar_data.texWRaw() * 2 * camera.scale;
-                        const hp_bar_h = assets.hp_bar_data.texHRaw() * 2 * camera.scale;
-                        const hp_bar_y = screen_pos.y + h - pad_scale_obj + y_pos;
+            const vb_info = gctx.lookupResourceInfo(base_vb) orelse break :normalPass;
+            const pipeline = gctx.lookupResource(if (settings.enable_glow) base_pipeline else base_no_glow_pipeline) orelse break :normalPass;
+            const bind_group = gctx.lookupResource(base_bind_group) orelse break :normalPass;
 
-                        drawQuad(
-                            idx,
-                            screen_pos.x - x_offset - hp_bar_w / 2.0,
-                            hp_bar_y,
-                            hp_bar_w,
-                            hp_bar_h,
-                            assets.empty_bar_data,
-                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
-                        );
-                        idx += 4;
-
-                        if (idx == 4000) {
-                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
-                            idx = 0;
+            var idx: u16 = 0;
+            for (map.entities.items()) |*en| {
+                switch (en.*) {
+                    .player => |*player| {
+                        if (!camera.visibleInCamera(player.x, player.y)) {
+                            continue;
                         }
 
-                        const float_hp: f32 = @floatFromInt(player.hp);
-                        const float_max_hp: f32 = @floatFromInt(player.max_hp);
-                        const hp_perc = 1.0 / (float_hp / float_max_hp);
+                        const size = camera.size_mult * camera.scale * player.size;
 
-                        var hp_bar_data = assets.hp_bar_data;
-                        hp_bar_data.tex_w /= hp_perc;
+                        var action: u8 = assets.stand_action;
+                        var float_period: f32 = 0.0;
 
-                        drawQuad(
-                            idx,
-                            screen_pos.x - x_offset - hp_bar_w / 2.0,
-                            hp_bar_y,
-                            hp_bar_w / hp_perc,
-                            hp_bar_h,
-                            hp_bar_data,
-                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
-                        );
-                        idx += 4;
-
-                        if (idx == 4000) {
-                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
-                            idx = 0;
+                        if (time < player.attack_start + player.attack_period) {
+                            player.facing = player.attack_angle_raw;
+                            const time_dt: f32 = @floatFromInt(time - player.attack_start);
+                            float_period = @floatFromInt(player.attack_period);
+                            float_period = @mod(time_dt, float_period) / float_period;
+                            action = assets.attack_action;
+                        } else if (!std.math.isNan(player.move_angle)) {
+                            const walk_period = 3.5 / player.moveSpeedMultiplier();
+                            const float_time: f32 = @floatFromInt(time);
+                            float_period = @mod(float_time, walk_period) / walk_period;
+                            player.facing = player.move_angle_camera_included;
+                            action = assets.walk_action;
                         }
 
-                        y_pos += hp_bar_h - pad_scale_bar;
-                    }
+                        const angle = utils.halfBound(player.facing - camera.angle_unbound);
+                        const pi_over_4 = std.math.pi / 4.0;
+                        const angle_div = (angle / pi_over_4) + 4;
 
-                    if (player.mp >= 0 and player.mp < player.max_mp) {
-                        const mp_bar_w = assets.mp_bar_data.texWRaw() * 2 * camera.scale;
-                        const mp_bar_h = assets.mp_bar_data.texHRaw() * 2 * camera.scale;
-                        const mp_bar_y = screen_pos.y + h - pad_scale_obj + y_pos;
+                        var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(@round(angle_div))) % 8;
 
-                        drawQuad(
-                            idx,
-                            screen_pos.x - x_offset - mp_bar_w / 2.0,
-                            mp_bar_y,
-                            mp_bar_w,
-                            mp_bar_h,
-                            assets.empty_bar_data,
-                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
-                        );
-                        idx += 4;
-
-                        if (idx == 4000) {
-                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
-                            idx = 0;
-                        }
-
-                        const float_mp: f32 = @floatFromInt(player.mp);
-                        const float_max_mp: f32 = @floatFromInt(player.max_mp);
-                        const mp_perc = 1.0 / (float_mp / float_max_mp);
-
-                        var mp_bar_data = assets.mp_bar_data;
-                        mp_bar_data.tex_w /= mp_perc;
-
-                        drawQuad(
-                            idx,
-                            screen_pos.x - x_offset - mp_bar_w / 2.0,
-                            mp_bar_y,
-                            mp_bar_w / mp_perc,
-                            mp_bar_h,
-                            mp_bar_data,
-                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
-                        );
-                        idx += 4;
-
-                        if (idx == 4000) {
-                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
-                            idx = 0;
-                        }
-
-                        y_pos += mp_bar_h - pad_scale_bar;
-                    }
-                },
-                .object => |*bo| {
-                    if (!camera.visibleInCamera(bo.x, bo.y)) {
-                        continue;
-                    }
-
-                    var screen_pos = camera.rotateAroundCamera(bo.x, bo.y);
-                    const size = camera.size_mult * camera.scale * bo.size;
-
-                    const square = bo.getSquare();
-                    if (bo.draw_on_ground) {
-                        const tile_size = @as(f32, camera.px_per_tile) * camera.scale;
-                        drawQuad(
-                            idx,
-                            screen_pos.x - tile_size / 2.0,
-                            screen_pos.y - tile_size / 2.0,
-                            tile_size,
-                            tile_size,
-                            bo.atlas_data,
-                            .{ .rotation = camera.angle },
-                        );
-                        idx += 4;
-
-                        if (idx == 4000) {
-                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
-                            idx = 0;
-                        }
-
-                        continue;
-                    }
-
-                    if (bo.is_wall) {
-                        idx += drawWall(idx, bo.x, bo.y, bo.atlas_data, bo.top_atlas_data);
-                        continue;
-                    }
-
-                    var action: u8 = assets.stand_action;
-                    var float_period: f32 = 0.0;
-
-                    if (time < bo.attack_start + object_attack_period) {
-                        // if(!bo.dont_face_attacks){
-                        bo.facing = bo.attack_angle;
-                        // }
-                        const time_dt: f32 = @floatFromInt(time - bo.attack_start);
-                        float_period = @mod(time_dt, object_attack_period) / object_attack_period;
-                        action = assets.attack_action;
-                    } else if (!std.math.isNan(bo.move_angle)) {
-                        var move_period = 0.5 / utils.distSqr(bo.tick_x, bo.tick_y, bo.target_x, bo.target_y);
-                        move_period += 400 - @mod(move_period, 400);
-                        const float_time: f32 = @floatFromInt(time);
-                        float_period = @mod(float_time, move_period) / move_period;
-                        // if(!bo.dont_face_attacks){
-                        bo.facing = bo.move_angle;
-                        // }
-                        action = assets.walk_action;
-                    }
-
-                    const angle = utils.halfBound(bo.facing);
-                    const pi_over_4 = std.math.pi / 4.0;
-                    const angle_div = @divFloor(angle, pi_over_4);
-
-                    var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(angle_div + 4)) % 8;
-
-                    sec = switch (sec) {
-                        0, 1, 6, 7 => assets.left_dir,
-                        2, 3, 4, 5 => assets.right_dir,
-                        else => unreachable,
-                    };
-
-                    // 2 frames so multiply by 2
-                    const capped_period = @max(0, @min(0.99999, float_period)) * 2.0; // 2 walk cycle frames so * 2
-                    const anim_idx: usize = @intFromFloat(capped_period);
-
-                    var atlas_data = bo.atlas_data;
-                    var x_offset: f32 = 0.0;
-                    if (bo.anim_data) |anim_data| {
-                        atlas_data = switch (action) {
-                            assets.walk_action => anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
-                            assets.attack_action => anim_data.attack_anims[sec][anim_idx],
-                            assets.stand_action => anim_data.walk_anims[sec][0],
+                        sec = switch (sec) {
+                            0, 7 => assets.left_dir,
+                            1, 2 => assets.up_dir,
+                            3, 4 => assets.right_dir,
+                            5, 6 => assets.down_dir,
                             else => unreachable,
                         };
 
+                        const capped_period = @max(0, @min(0.99999, float_period)) * 2.0; // 2 walk cycle frames so * 2
+                        const anim_idx: usize = @intFromFloat(capped_period);
+
+                        var atlas_data = switch (action) {
+                            assets.walk_action => player.anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
+                            assets.attack_action => player.anim_data.attack_anims[sec][anim_idx],
+                            assets.stand_action => player.anim_data.walk_anims[sec][0],
+                            else => unreachable,
+                        };
+
+                        var x_offset: f32 = 0.0;
                         if (action == assets.attack_action and anim_idx == 1) {
                             const w = atlas_data.texWRaw() * size;
                             if (sec == assets.left_dir) {
@@ -1964,109 +1707,340 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                                 x_offset = w / 4.0;
                             }
                         }
-                    }
 
-                    var sink: f32 = 1.0;
-                    if (square.tile_type != 0xFFFF) {
-                        sink += square.sink;
-                    }
+                        const square = player.getSquare();
+                        var sink: f32 = 1.0;
+                        if (square.tile_type != 0xFFFF) {
+                            sink += square.sink;
+                        }
 
-                    atlas_data.tex_h /= sink;
+                        atlas_data.tex_h /= sink;
 
-                    const w = atlas_data.texWRaw() * size;
-                    const h = atlas_data.texHRaw() * size;
+                        const w = atlas_data.texWRaw() * size;
+                        const h = atlas_data.texHRaw() * size;
 
-                    screen_pos.x += x_offset;
-                    screen_pos.y += bo.z * -camera.px_per_tile - (h - size * assets.padding);
+                        var screen_pos = camera.rotateAroundCamera(player.x, player.y);
+                        screen_pos.x += x_offset;
+                        screen_pos.y += player.z * -camera.px_per_tile - (h - size * assets.padding);
 
-                    var alpha_mult: f32 = -1.0;
-                    if (bo.condition.invisible)
-                        alpha_mult = 0.6;
+                        var alpha_mult: f32 = -1.0;
+                        if (player.condition.invisible)
+                            alpha_mult = 0.6;
 
-                    bo.screen_y = screen_pos.y - 10;
-                    bo.screen_x = screen_pos.x - x_offset;
+                        player.screen_y = screen_pos.y - 30; // account for name
+                        player.screen_x = screen_pos.x - x_offset;
 
-                    if (settings.enable_lights and bo.light_color > 0) {
-                        drawLight(
-                            light_idx,
-                            w * bo.light_radius,
-                            h * bo.light_radius,
-                            screen_pos.x,
-                            screen_pos.y + h / 2.0,
-                            bo.light_color,
-                            bo.light_intensity,
+                        if (settings.enable_lights and player.light_color > 0) {
+                            drawLight(
+                                light_idx,
+                                w * player.light_radius,
+                                h * player.light_radius,
+                                screen_pos.x,
+                                screen_pos.y,
+                                player.light_color,
+                                player.light_intensity,
+                            );
+                            light_idx += 4;
+                        }
+
+                        const name = if (player.name_override.len > 0) player.name_override else player.name;
+                        if (name.len > 0) {
+                            const text_data = ui.TextData{
+                                .text = name,
+                                .text_type = .bold,
+                                .size = 16,
+                                .color = 0xFCDF00,
+                                .max_width = 200,
+                            };
+
+                            text_idx += drawText(
+                                text_idx,
+                                screen_pos.x - x_offset - text_data.width() / 2,
+                                screen_pos.y - text_data.height(),
+                                text_data,
+                            );
+                        }
+
+                        drawQuad(
+                            idx,
+                            screen_pos.x - w / 2.0,
+                            screen_pos.y,
+                            w,
+                            h,
+                            atlas_data,
+                            .{ .texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
                         );
-                        light_idx += 4;
-                    }
+                        idx += 4;
 
-                    const is_portal = bo.class == .portal;
-                    const name = if (bo.name_override.len > 0) bo.name_override else bo.name;
-                    if (name.len > 0 and (bo.show_name or is_portal)) {
-                        const text_data = ui.TextData{
-                            .text = name,
-                            .text_type = .bold,
-                            .size = 16,
+                        if (idx == 4000) {
+                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            idx = 0;
+                        }
+
+                        // todo make sink calculate actual values based on h, pad, etc
+                        var y_pos: f32 = 5.0 + if (sink != 1.0) @as(f32, 15.0) else @as(f32, 0.0);
+
+                        const pad_scale_obj = assets.padding * size * camera.scale;
+                        const pad_scale_bar = assets.padding * 2 * camera.scale;
+                        if (player.hp >= 0 and player.hp < player.max_hp) {
+                            const hp_bar_w = assets.hp_bar_data.texWRaw() * 2 * camera.scale;
+                            const hp_bar_h = assets.hp_bar_data.texHRaw() * 2 * camera.scale;
+                            const hp_bar_y = screen_pos.y + h - pad_scale_obj + y_pos;
+
+                            drawQuad(
+                                idx,
+                                screen_pos.x - x_offset - hp_bar_w / 2.0,
+                                hp_bar_y,
+                                hp_bar_w,
+                                hp_bar_h,
+                                assets.empty_bar_data,
+                                .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
+                            );
+                            idx += 4;
+
+                            if (idx == 4000) {
+                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                idx = 0;
+                            }
+
+                            const float_hp: f32 = @floatFromInt(player.hp);
+                            const float_max_hp: f32 = @floatFromInt(player.max_hp);
+                            const hp_perc = 1.0 / (float_hp / float_max_hp);
+
+                            var hp_bar_data = assets.hp_bar_data;
+                            hp_bar_data.tex_w /= hp_perc;
+
+                            drawQuad(
+                                idx,
+                                screen_pos.x - x_offset - hp_bar_w / 2.0,
+                                hp_bar_y,
+                                hp_bar_w / hp_perc,
+                                hp_bar_h,
+                                hp_bar_data,
+                                .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
+                            );
+                            idx += 4;
+
+                            if (idx == 4000) {
+                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                idx = 0;
+                            }
+
+                            y_pos += hp_bar_h - pad_scale_bar;
+                        }
+
+                        if (player.mp >= 0 and player.mp < player.max_mp) {
+                            const mp_bar_w = assets.mp_bar_data.texWRaw() * 2 * camera.scale;
+                            const mp_bar_h = assets.mp_bar_data.texHRaw() * 2 * camera.scale;
+                            const mp_bar_y = screen_pos.y + h - pad_scale_obj + y_pos;
+
+                            drawQuad(
+                                idx,
+                                screen_pos.x - x_offset - mp_bar_w / 2.0,
+                                mp_bar_y,
+                                mp_bar_w,
+                                mp_bar_h,
+                                assets.empty_bar_data,
+                                .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
+                            );
+                            idx += 4;
+
+                            if (idx == 4000) {
+                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                idx = 0;
+                            }
+
+                            const float_mp: f32 = @floatFromInt(player.mp);
+                            const float_max_mp: f32 = @floatFromInt(player.max_mp);
+                            const mp_perc = 1.0 / (float_mp / float_max_mp);
+
+                            var mp_bar_data = assets.mp_bar_data;
+                            mp_bar_data.tex_w /= mp_perc;
+
+                            drawQuad(
+                                idx,
+                                screen_pos.x - x_offset - mp_bar_w / 2.0,
+                                mp_bar_y,
+                                mp_bar_w / mp_perc,
+                                mp_bar_h,
+                                mp_bar_data,
+                                .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
+                            );
+                            idx += 4;
+
+                            if (idx == 4000) {
+                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                idx = 0;
+                            }
+
+                            y_pos += mp_bar_h - pad_scale_bar;
+                        }
+                    },
+                    .object => |*bo| {
+                        if (!camera.visibleInCamera(bo.x, bo.y)) {
+                            continue;
+                        }
+
+                        var screen_pos = camera.rotateAroundCamera(bo.x, bo.y);
+                        const size = camera.size_mult * camera.scale * bo.size;
+
+                        const square = bo.getSquare();
+                        if (bo.draw_on_ground) {
+                            const tile_size = @as(f32, camera.px_per_tile) * camera.scale;
+                            drawQuad(
+                                idx,
+                                screen_pos.x - tile_size / 2.0,
+                                screen_pos.y - tile_size / 2.0,
+                                tile_size,
+                                tile_size,
+                                bo.atlas_data,
+                                .{ .rotation = camera.angle },
+                            );
+                            idx += 4;
+
+                            if (idx == 4000) {
+                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                idx = 0;
+                            }
+
+                            continue;
+                        }
+
+                        if (bo.is_wall) {
+                            idx += drawWall(idx, bo.x, bo.y, bo.atlas_data, bo.top_atlas_data);
+                            continue;
+                        }
+
+                        var action: u8 = assets.stand_action;
+                        var float_period: f32 = 0.0;
+
+                        if (time < bo.attack_start + object_attack_period) {
+                            // if(!bo.dont_face_attacks){
+                            bo.facing = bo.attack_angle;
+                            // }
+                            const time_dt: f32 = @floatFromInt(time - bo.attack_start);
+                            float_period = @mod(time_dt, object_attack_period) / object_attack_period;
+                            action = assets.attack_action;
+                        } else if (!std.math.isNan(bo.move_angle)) {
+                            var move_period = 0.5 / utils.distSqr(bo.tick_x, bo.tick_y, bo.target_x, bo.target_y);
+                            move_period += 400 - @mod(move_period, 400);
+                            const float_time: f32 = @floatFromInt(time);
+                            float_period = @mod(float_time, move_period) / move_period;
+                            // if(!bo.dont_face_attacks){
+                            bo.facing = bo.move_angle;
+                            // }
+                            action = assets.walk_action;
+                        }
+
+                        const angle = utils.halfBound(bo.facing);
+                        const pi_over_4 = std.math.pi / 4.0;
+                        const angle_div = @divFloor(angle, pi_over_4);
+
+                        var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(angle_div + 4)) % 8;
+
+                        sec = switch (sec) {
+                            0, 1, 6, 7 => assets.left_dir,
+                            2, 3, 4, 5 => assets.right_dir,
+                            else => unreachable,
                         };
 
-                        text_idx += drawText(
-                            text_idx,
-                            screen_pos.x - x_offset - text_data.width() / 2,
-                            screen_pos.y - text_data.height(),
-                            text_data,
-                        );
+                        // 2 frames so multiply by 2
+                        const capped_period = @max(0, @min(0.99999, float_period)) * 2.0; // 2 walk cycle frames so * 2
+                        const anim_idx: usize = @intFromFloat(capped_period);
 
-                        if (is_portal and map.interactive_id.load(.Acquire) == bo.obj_id) {
-                            const enter_text_data = ui.TextData{
-                                .text = @constCast("Enter"), // meh
+                        var atlas_data = bo.atlas_data;
+                        var x_offset: f32 = 0.0;
+                        if (bo.anim_data) |anim_data| {
+                            atlas_data = switch (action) {
+                                assets.walk_action => anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
+                                assets.attack_action => anim_data.attack_anims[sec][anim_idx],
+                                assets.stand_action => anim_data.walk_anims[sec][0],
+                                else => unreachable,
+                            };
+
+                            if (action == assets.attack_action and anim_idx == 1) {
+                                const w = atlas_data.texWRaw() * size;
+                                if (sec == assets.left_dir) {
+                                    x_offset = -assets.padding * size;
+                                } else {
+                                    x_offset = w / 4.0;
+                                }
+                            }
+                        }
+
+                        var sink: f32 = 1.0;
+                        if (square.tile_type != 0xFFFF) {
+                            sink += square.sink;
+                        }
+
+                        atlas_data.tex_h /= sink;
+
+                        const w = atlas_data.texWRaw() * size;
+                        const h = atlas_data.texHRaw() * size;
+
+                        screen_pos.x += x_offset;
+                        screen_pos.y += bo.z * -camera.px_per_tile - (h - size * assets.padding);
+
+                        var alpha_mult: f32 = -1.0;
+                        if (bo.condition.invisible)
+                            alpha_mult = 0.6;
+
+                        bo.screen_y = screen_pos.y - 10;
+                        bo.screen_x = screen_pos.x - x_offset;
+
+                        if (settings.enable_lights and bo.light_color > 0) {
+                            drawLight(
+                                light_idx,
+                                w * bo.light_radius,
+                                h * bo.light_radius,
+                                screen_pos.x,
+                                screen_pos.y + h / 2.0,
+                                bo.light_color,
+                                bo.light_intensity,
+                            );
+                            light_idx += 4;
+                        }
+
+                        const is_portal = bo.class == .portal;
+                        const name = if (bo.name_override.len > 0) bo.name_override else bo.name;
+                        if (name.len > 0 and (bo.show_name or is_portal)) {
+                            const text_data = ui.TextData{
+                                .text = name,
                                 .text_type = .bold,
                                 .size = 16,
                             };
 
                             text_idx += drawText(
                                 text_idx,
-                                screen_pos.x - x_offset - enter_text_data.width() / 2,
-                                screen_pos.y + h + 5,
-                                enter_text_data,
+                                screen_pos.x - x_offset - text_data.width() / 2,
+                                screen_pos.y - text_data.height(),
+                                text_data,
                             );
+
+                            if (is_portal and map.interactive_id.load(.Acquire) == bo.obj_id) {
+                                const enter_text_data = ui.TextData{
+                                    .text = @constCast("Enter"), // meh
+                                    .text_type = .bold,
+                                    .size = 16,
+                                };
+
+                                text_idx += drawText(
+                                    text_idx,
+                                    screen_pos.x - x_offset - enter_text_data.width() / 2,
+                                    screen_pos.y + h + 5,
+                                    enter_text_data,
+                                );
+                            }
                         }
-                    }
-
-                    drawQuad(
-                        idx,
-                        screen_pos.x - w / 2.0,
-                        screen_pos.y,
-                        w,
-                        h,
-                        atlas_data,
-                        .{ .texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
-                    );
-                    idx += 4;
-
-                    if (idx == 4000) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
-                        idx = 0;
-                    }
-
-                    if (!bo.is_enemy)
-                        continue;
-
-                    var y_pos: f32 = 5.0 + if (sink != 1.0) @as(f32, 15.0) else @as(f32, 0.0);
-
-                    const pad_scale_obj = assets.padding * size * camera.scale;
-                    const pad_scale_bar = assets.padding * 2 * camera.scale;
-                    if (bo.hp >= 0 and bo.hp < bo.max_hp) {
-                        const hp_bar_w = assets.hp_bar_data.texWRaw() * 2 * camera.scale;
-                        const hp_bar_h = assets.hp_bar_data.texHRaw() * 2 * camera.scale;
-                        const hp_bar_y = screen_pos.y + h - pad_scale_obj + y_pos;
 
                         drawQuad(
                             idx,
-                            screen_pos.x - x_offset - hp_bar_w / 2.0,
-                            hp_bar_y,
-                            hp_bar_w,
-                            hp_bar_h,
-                            assets.empty_bar_data,
-                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
+                            screen_pos.x - w / 2.0,
+                            screen_pos.y,
+                            w,
+                            h,
+                            atlas_data,
+                            .{ .texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
                         );
                         idx += 4;
 
@@ -2075,20 +2049,81 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             idx = 0;
                         }
 
-                        const float_hp: f32 = @floatFromInt(bo.hp);
-                        const float_max_hp: f32 = @floatFromInt(bo.max_hp);
-                        const hp_perc = 1.0 / (float_hp / float_max_hp);
-                        var hp_bar_data = assets.hp_bar_data;
-                        hp_bar_data.tex_w /= hp_perc;
+                        if (!bo.is_enemy)
+                            continue;
+
+                        var y_pos: f32 = 5.0 + if (sink != 1.0) @as(f32, 15.0) else @as(f32, 0.0);
+
+                        const pad_scale_obj = assets.padding * size * camera.scale;
+                        const pad_scale_bar = assets.padding * 2 * camera.scale;
+                        if (bo.hp >= 0 and bo.hp < bo.max_hp) {
+                            const hp_bar_w = assets.hp_bar_data.texWRaw() * 2 * camera.scale;
+                            const hp_bar_h = assets.hp_bar_data.texHRaw() * 2 * camera.scale;
+                            const hp_bar_y = screen_pos.y + h - pad_scale_obj + y_pos;
+
+                            drawQuad(
+                                idx,
+                                screen_pos.x - x_offset - hp_bar_w / 2.0,
+                                hp_bar_y,
+                                hp_bar_w,
+                                hp_bar_h,
+                                assets.empty_bar_data,
+                                .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
+                            );
+                            idx += 4;
+
+                            if (idx == 4000) {
+                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                idx = 0;
+                            }
+
+                            const float_hp: f32 = @floatFromInt(bo.hp);
+                            const float_max_hp: f32 = @floatFromInt(bo.max_hp);
+                            const hp_perc = 1.0 / (float_hp / float_max_hp);
+                            var hp_bar_data = assets.hp_bar_data;
+                            hp_bar_data.tex_w /= hp_perc;
+
+                            drawQuad(
+                                idx,
+                                screen_pos.x - x_offset - hp_bar_w / 2.0,
+                                hp_bar_y,
+                                hp_bar_w / hp_perc,
+                                hp_bar_h,
+                                hp_bar_data,
+                                .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
+                            );
+                            idx += 4;
+
+                            if (idx == 4000) {
+                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                idx = 0;
+                            }
+
+                            y_pos += hp_bar_h - pad_scale_bar;
+                        }
+                    },
+                    .projectile => |proj| {
+                        if (!camera.visibleInCamera(proj.x, proj.y)) {
+                            continue;
+                        }
+
+                        const size = camera.size_mult * camera.scale * proj.props.size;
+                        const w = proj.atlas_data.texWRaw() * size;
+                        const h = proj.atlas_data.texHRaw() * size;
+                        var screen_pos = camera.rotateAroundCamera(proj.x, proj.y);
+                        screen_pos.y += proj.z * -camera.px_per_tile - (h - size * assets.padding);
+                        const rotation = proj.props.rotation;
+                        const angle = -(proj.visual_angle + proj.props.angle_correction +
+                            (if (rotation == 0) 0 else @as(f32, @floatFromInt(time)) / rotation) - camera.angle);
 
                         drawQuad(
                             idx,
-                            screen_pos.x - x_offset - hp_bar_w / 2.0,
-                            hp_bar_y,
-                            hp_bar_w / hp_perc,
-                            hp_bar_h,
-                            hp_bar_data,
-                            .{ .texel_mult = 0.5, .alpha_mult = QuadOptions.glow_off },
+                            screen_pos.x - w / 2.0,
+                            screen_pos.y,
+                            w,
+                            h,
+                            proj.atlas_data,
+                            .{ .texel_mult = 2.0 / size, .rotation = angle, .alpha_mult = QuadOptions.glow_off },
                         );
                         idx += 4;
 
@@ -2096,121 +2131,89 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
                             idx = 0;
                         }
+                    },
+                }
+            }
 
-                        y_pos += hp_bar_h - pad_scale_bar;
-                    }
-                },
-                .projectile => |proj| {
-                    if (!camera.visibleInCamera(proj.x, proj.y)) {
-                        continue;
-                    }
+            if (settings.enable_lights) {
+                drawQuad(
+                    idx,
+                    0,
+                    0,
+                    camera.screen_width,
+                    camera.screen_height,
+                    assets.wall_backface_data,
+                    .{ .flash_color = map.bg_light_color, .flash_strength = 1.0, .alpha_mult = map.getLightIntensity(time) },
+                );
+                idx += 4;
+            }
 
-                    const size = camera.size_mult * camera.scale * proj.props.size;
-                    const w = proj.atlas_data.texWRaw() * size;
-                    const h = proj.atlas_data.texHRaw() * size;
-                    var screen_pos = camera.rotateAroundCamera(proj.x, proj.y);
-                    screen_pos.y += proj.z * -camera.px_per_tile - (h - size * assets.padding);
-                    const rotation = proj.props.rotation;
-                    const angle = -(proj.visual_angle + proj.props.angle_correction +
-                        (if (rotation == 0) 0 else @as(f32, @floatFromInt(time)) / rotation) - camera.angle);
+            encoder.writeBuffer(
+                gctx.lookupResource(base_vb).?,
+                0,
+                BaseVertexData,
+                base_vert_data[0..idx],
+            );
+            endDraw(
+                encoder,
+                load_render_pass_info,
+                vb_info,
+                ib_info,
+                pipeline,
+                bind_group,
+                @divFloor(idx, 4) * 6,
+                null,
+            );
+        }
 
-                    drawQuad(
-                        idx,
-                        screen_pos.x - w / 2.0,
-                        screen_pos.y,
-                        w,
-                        h,
-                        proj.atlas_data,
-                        .{ .texel_mult = 2.0 / size, .rotation = angle, .alpha_mult = QuadOptions.glow_off },
-                    );
-                    idx += 4;
+        if (text_idx != 0) {
+            textPass: {
+                const vb_info = gctx.lookupResourceInfo(text_vb) orelse break :textPass;
+                const pipeline = gctx.lookupResource(text_pipeline) orelse break :textPass;
+                const bind_group = gctx.lookupResource(text_bind_group) orelse break :textPass;
 
-                    if (idx == 4000) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
-                        idx = 0;
-                    }
-                },
+                encoder.writeBuffer(
+                    gctx.lookupResource(text_vb).?,
+                    0,
+                    TextVertexData,
+                    text_vert_data[0..text_idx],
+                );
+                endDraw(
+                    encoder,
+                    load_render_pass_info,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                    @divFloor(text_idx, 4) * 6,
+                    null,
+                );
             }
         }
 
-        if (settings.enable_lights) {
-            drawQuad(
-                idx,
-                0,
-                0,
-                camera.screen_width,
-                camera.screen_height,
-                assets.wall_backface_data,
-                .{ .flash_color = map.bg_light_color, .flash_strength = 1.0, .alpha_mult = map.getLightIntensity(time) },
-            );
-            idx += 4;
-        }
+        if (settings.enable_lights and light_idx != 0) {
+            lightPass: {
+                const vb_info = gctx.lookupResourceInfo(light_vb) orelse break :lightPass;
+                const pipeline = gctx.lookupResource(light_pipeline) orelse break :lightPass;
+                const bind_group = gctx.lookupResource(light_bind_group) orelse break :lightPass;
 
-        encoder.writeBuffer(
-            gctx.lookupResource(base_vb).?,
-            0,
-            BaseVertexData,
-            base_vert_data[0..idx],
-        );
-        endDraw(
-            encoder,
-            load_render_pass_info,
-            vb_info,
-            ib_info,
-            pipeline,
-            bind_group,
-            @divFloor(idx, 4) * 6,
-            null,
-        );
-    }
-
-    if (text_idx != 0) {
-        textPass: {
-            const vb_info = gctx.lookupResourceInfo(text_vb) orelse break :textPass;
-            const pipeline = gctx.lookupResource(text_pipeline) orelse break :textPass;
-            const bind_group = gctx.lookupResource(text_bind_group) orelse break :textPass;
-
-            encoder.writeBuffer(
-                gctx.lookupResource(text_vb).?,
-                0,
-                TextVertexData,
-                text_vert_data[0..text_idx],
-            );
-            endDraw(
-                encoder,
-                load_render_pass_info,
-                vb_info,
-                ib_info,
-                pipeline,
-                bind_group,
-                @divFloor(text_idx, 4) * 6,
-                null,
-            );
-        }
-    }
-
-    if (settings.enable_lights and light_idx != 0) {
-        lightPass: {
-            const vb_info = gctx.lookupResourceInfo(light_vb) orelse break :lightPass;
-            const pipeline = gctx.lookupResource(light_pipeline) orelse break :lightPass;
-            const bind_group = gctx.lookupResource(light_bind_group) orelse break :lightPass;
-
-            encoder.writeBuffer(
-                gctx.lookupResource(light_vb).?,
-                0,
-                LightVertexData,
-                light_vert_data[0..light_idx],
-            );
-            endDraw(
-                encoder,
-                load_render_pass_info,
-                vb_info,
-                ib_info,
-                pipeline,
-                bind_group,
-                @divFloor(light_idx, 4) * 6,
-                null,
-            );
+                encoder.writeBuffer(
+                    gctx.lookupResource(light_vb).?,
+                    0,
+                    LightVertexData,
+                    light_vert_data[0..light_idx],
+                );
+                endDraw(
+                    encoder,
+                    load_render_pass_info,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                    @divFloor(light_idx, 4) * 6,
+                    null,
+                );
+            }
         }
     }
 
@@ -2219,6 +2222,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
         const pipeline = gctx.lookupResource(ui_pipeline) orelse break :uiPass;
         const bind_group = gctx.lookupResource(ui_bind_group) orelse break :uiPass;
 
+        var needs_clear = no_in_game_render;
         var ui_idx: u16 = 0;
         for (ui.ui_images.items()) |image| {
             if (!image.visible)
@@ -2227,7 +2231,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             switch (image.image_data) {
                 .nine_slice => |nine_slice| {
                     if (ui_idx >= 4000 - 9 * 4) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
 
@@ -2254,7 +2273,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     ui_idx += 4;
 
                     if (ui_idx == 4000) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
                 },
@@ -2268,7 +2302,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             switch (item.image_data) {
                 .nine_slice => |nine_slice| {
                     if (ui_idx >= 4000 - 9 * 4) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
 
@@ -2288,7 +2337,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     ui_idx += 4;
 
                     if (ui_idx == 4000) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
                 },
@@ -2301,7 +2365,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         break :textDraw;
 
                     if (ui_idx >= 4000 - text_len * 4) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
 
@@ -2313,11 +2392,26 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     );
 
                     if (ui_idx == 4000) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
                 }
-            }  
+            }
         }
 
         for (ui.bars.items()) |bar| {
@@ -2331,7 +2425,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     w = nine_slice.w;
                     h = nine_slice.h;
                     if (ui_idx >= 4000 - 9 * 4) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
 
@@ -2359,14 +2468,44 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     ui_idx += 4;
 
                     if (ui_idx == 4000) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
                 },
             }
 
             if (ui_idx >= 4000 - bar.text_data.text.len * 4) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                encoder.writeBuffer(
+                    gctx.lookupResource(ui_vb).?,
+                    0,
+                    UiVertexData,
+                    ui_vert_data[0..4000],
+                );
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
                 ui_idx = 0;
             }
 
@@ -2378,7 +2517,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             );
 
             if (ui_idx == 4000) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                encoder.writeBuffer(
+                    gctx.lookupResource(ui_vb).?,
+                    0,
+                    UiVertexData,
+                    ui_vert_data[0..4000],
+                );
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
                 ui_idx = 0;
             }
         }
@@ -2395,7 +2549,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     w = nine_slice.w;
                     h = nine_slice.h;
                     if (ui_idx >= 4000 - 9 * 4) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
 
@@ -2417,7 +2586,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     ui_idx += 4;
 
                     if (ui_idx == 4000) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
                 },
@@ -2425,7 +2609,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
             if (button.text_data) |text_data| {
                 if (ui_idx >= 4000 - text_data.text.len * 4) {
-                    endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                    encoder.writeBuffer(
+                        gctx.lookupResource(ui_vb).?,
+                        0,
+                        UiVertexData,
+                        ui_vert_data[0..4000],
+                    );
+                    endBaseDraw(
+                        gctx,
+                        if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                        encoder,
+                        vb_info,
+                        ib_info,
+                        pipeline,
+                        bind_group,
+                    );
+                    needs_clear = false;
                     ui_idx = 0;
                 }
 
@@ -2437,7 +2636,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 );
 
                 if (ui_idx == 4000) {
-                    endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                    encoder.writeBuffer(
+                        gctx.lookupResource(ui_vb).?,
+                        0,
+                        UiVertexData,
+                        ui_vert_data[0..4000],
+                    );
+                    endBaseDraw(
+                        gctx,
+                        if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                        encoder,
+                        vb_info,
+                        ib_info,
+                        pipeline,
+                        bind_group,
+                    );
+                    needs_clear = false;
                     ui_idx = 0;
                 }
             }
@@ -2448,7 +2662,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 continue;
 
             if (ui_idx >= 4000 - text.text_data.text.len * 4) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                encoder.writeBuffer(
+                    gctx.lookupResource(ui_vb).?,
+                    0,
+                    UiVertexData,
+                    ui_vert_data[0..4000],
+                );
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
                 ui_idx = 0;
             }
 
@@ -2460,7 +2689,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             );
 
             if (ui_idx == 4000) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                encoder.writeBuffer(
+                    gctx.lookupResource(ui_vb).?,
+                    0,
+                    UiVertexData,
+                    ui_vert_data[0..4000],
+                );
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
                 ui_idx = 0;
             }
         }
@@ -2477,7 +2721,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     w = nine_slice.w;
                     h = nine_slice.h;
                     if (ui_idx >= 4000 - 9 * 4) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
 
@@ -2499,14 +2758,44 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     ui_idx += 4;
 
                     if (ui_idx == 4000) {
-                        endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
                         ui_idx = 0;
                     }
                 },
             }
 
             if (ui_idx >= 4000 - input_field.text_data.text.len * 4) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                encoder.writeBuffer(
+                    gctx.lookupResource(ui_vb).?,
+                    0,
+                    UiVertexData,
+                    ui_vert_data[0..4000],
+                );
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
                 ui_idx = 0;
             }
 
@@ -2518,7 +2807,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             );
 
             if (ui_idx == 4000) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                encoder.writeBuffer(
+                    gctx.lookupResource(ui_vb).?,
+                    0,
+                    UiVertexData,
+                    ui_vert_data[0..4000],
+                );
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
                 ui_idx = 0;
             }
         }
@@ -2543,12 +2847,42 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             ui_idx += 4;
 
             if (ui_idx == 4000) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                encoder.writeBuffer(
+                    gctx.lookupResource(ui_vb).?,
+                    0,
+                    UiVertexData,
+                    ui_vert_data[0..4000],
+                );
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
                 ui_idx = 0;
             }
 
             if (ui_idx >= 4000 - balloon.text_data.text.len * 4) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                encoder.writeBuffer(
+                    gctx.lookupResource(ui_vb).?,
+                    0,
+                    UiVertexData,
+                    ui_vert_data[0..4000],
+                );
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
                 ui_idx = 0;
             }
 
@@ -2566,7 +2900,22 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 continue;
 
             if (ui_idx >= 4000 - status_text.text_data.text.len * 4) {
-                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                encoder.writeBuffer(
+                    gctx.lookupResource(ui_vb).?,
+                    0,
+                    UiVertexData,
+                    ui_vert_data[0..4000],
+                );
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
                 ui_idx = 0;
             }
 
@@ -2587,7 +2936,7 @@ pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             );
             endDraw(
                 encoder,
-                load_render_pass_info,
+                if (needs_clear) clear_render_pass_info else load_render_pass_info,
                 vb_info,
                 ib_info,
                 pipeline,
