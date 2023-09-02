@@ -142,69 +142,22 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
 
 fn updateUi(allocator: std.mem.Allocator) !void {
     _ = allocator;
-    zgui.backend.newFrame(
-        gctx.swapchain_descriptor.width,
-        gctx.swapchain_descriptor.height,
-    );
-
-    zgui.setNextWindowPos(.{ .x = 20.0, .y = 20.0, .cond = .first_use_ever });
-    zgui.setNextWindowSize(.{ .w = -1.0, .h = -1.0, .cond = .first_use_ever });
-
-    zgui.pushStyleVar1f(.{ .idx = .window_rounding, .v = 12.0 });
-    zgui.pushStyleVar2f(.{ .idx = .window_padding, .v = .{ 20.0, 20.0 } });
-    defer zgui.popStyleVar(.{ .count = 2 });
 
     switch (ui.current_screen) {
-        .main_menu => {
-            // if (zgui.begin("Main Menu", .{})) {
-            //     {
-            //         const LoginStatic = struct {
-            //             var email_buf: [128]u8 = undefined;
-            //             var password_buf: [128]u8 = undefined;
-            //         };
-
-            //         _ = zgui.inputText("E-mail", .{ .buf = LoginStatic.email_buf[0..] });
-            //         _ = zgui.inputText("Password", .{ .buf = LoginStatic.password_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
-            //         if (zgui.button("Login", .{ .w = 150.0 })) {
-            //             const email = LoginStatic.email_buf[0..utils.strlen(LoginStatic.email_buf[0..])];
-            //             const password = LoginStatic.password_buf[0..utils.strlen(LoginStatic.password_buf[0..])];
-            //             if (email.len > 0 and password.len > 0) {
-            //                 const logged_in = try login(allocator, email, password);
-            //                 if (logged_in) {
-            //                     ui.switchScreen(.char_select);
-            //                 }
-            //             }
-            //         }
-            //     }
-
-            //     const RegisterStatic = struct {
-            //         var username_buf: [128]u8 = undefined;
-            //         var email_buf: [128]u8 = undefined;
-            //         var password_buf: [128]u8 = undefined;
-            //         var confirm_pw_buf: [128]u8 = undefined;
-            //     };
-
-            //     _ = zgui.inputText("Name", .{ .buf = RegisterStatic.username_buf[0..] });
-            //     _ = zgui.inputText("E-mail##Register", .{ .buf = RegisterStatic.email_buf[0..] });
-            //     _ = zgui.inputText("Password##Register", .{ .buf = RegisterStatic.password_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
-            //     _ = zgui.inputText("Confirm Password", .{ .buf = RegisterStatic.confirm_pw_buf[0..], .flags = zgui.InputTextFlags{ .password = true } });
-
-            //     if (zgui.button("Register", .{ .w = 150.0 })) {
-            //         const name = RegisterStatic.username_buf[0..utils.strlen(RegisterStatic.username_buf[0..])];
-            //         const email = RegisterStatic.email_buf[0..utils.strlen(RegisterStatic.email_buf[0..])];
-            //         const password = RegisterStatic.password_buf[0..utils.strlen(RegisterStatic.password_buf[0..])];
-            //         const response = try requests.sendAccountRegister(email, password, name);
-            //         if (std.mem.indexOf(u8, "<Success />", response) != null) {
-            //             const logged_in = try login(allocator, email, password);
-            //             if (logged_in) {
-            //                 ui.switchScreen(.char_select);
-            //             }
-            //         }
-            //     }
-            // }
-            // zgui.end();
-        },
+        .main_menu => {},
         .char_select => {
+            zgui.backend.newFrame(
+                gctx.swapchain_descriptor.width,
+                gctx.swapchain_descriptor.height,
+            );
+
+            zgui.setNextWindowPos(.{ .x = 20.0, .y = 20.0, .cond = .first_use_ever });
+            zgui.setNextWindowSize(.{ .w = -1.0, .h = -1.0, .cond = .first_use_ever });
+
+            zgui.pushStyleVar1f(.{ .idx = .window_rounding, .v = 12.0 });
+            zgui.pushStyleVar2f(.{ .idx = .window_padding, .v = .{ 20.0, 20.0 } });
+            defer zgui.popStyleVar(.{ .count = 2 });
+
             if (zgui.begin("Character", .{})) {
                 if (character_list.len < 1) {
                     ui.switchScreen(.char_creation);
@@ -254,6 +207,18 @@ fn updateUi(allocator: std.mem.Allocator) !void {
             zgui.end();
         },
         .char_creation => {
+            zgui.backend.newFrame(
+                gctx.swapchain_descriptor.width,
+                gctx.swapchain_descriptor.height,
+            );
+
+            zgui.setNextWindowPos(.{ .x = 20.0, .y = 20.0, .cond = .first_use_ever });
+            zgui.setNextWindowSize(.{ .w = -1.0, .h = -1.0, .cond = .first_use_ever });
+
+            zgui.pushStyleVar1f(.{ .idx = .window_rounding, .v = 12.0 });
+            zgui.pushStyleVar2f(.{ .idx = .window_padding, .v = .{ 20.0, 20.0 } });
+            defer zgui.popStyleVar(.{ .count = 2 });
+            
             if (zgui.begin("Character Creation", .{})) {
                 const static = struct {
                     var server_index: u32 = 0;
@@ -305,19 +270,22 @@ inline fn draw() void {
 
     render.draw(current_time, gctx, back_buffer, encoder);
 
-    const color_attachments = [_]wgpu.RenderPassColorAttachment{.{
-        .view = back_buffer,
-        .load_op = .load,
-        .store_op = .store,
-    }};
-    const render_pass_info = wgpu.RenderPassDescriptor{
-        .color_attachment_count = color_attachments.len,
-        .color_attachments = &color_attachments,
-    };
-    const pass = encoder.beginRenderPass(render_pass_info);
-    zgui.backend.draw(pass);
-    pass.end();
-    pass.release();
+    if (ui.current_screen == .char_select or ui.current_screen == .char_creation) {
+        const color_attachments = [_]wgpu.RenderPassColorAttachment{.{
+            .view = back_buffer,
+            .load_op = .load,
+            .store_op = .store,
+        }};
+        const render_pass_info = wgpu.RenderPassDescriptor{
+            .color_attachment_count = color_attachments.len,
+            .color_attachments = &color_attachments,
+        };
+
+        const pass = encoder.beginRenderPass(render_pass_info);
+        zgui.backend.draw(pass);
+        pass.end();
+        pass.release();
+    }
 
     const commands = encoder.finish(null);
     gctx.submit(&.{commands});
@@ -499,6 +467,17 @@ pub fn main() !void {
     defer {
         tick_render = false;
         render_thread.join();
+    }
+
+    switch (builtin.os.tag) {
+        .windows => {
+            const mem_info = try std.os.windows.GetProcessMemoryInfo(std.os.windows.self_process_handle);
+            std.log.err("mem_info {any}", .{mem_info});
+        },
+        else => {
+            const ru = std.os.getrusage(std.os.system.rusage.SELF);
+            std.log.err("ru {any}", .{ru});
+        },
     }
 
     while (!window.shouldClose()) {
