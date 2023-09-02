@@ -1072,8 +1072,12 @@ pub const Projectile = struct {
 
         if (last_x == 0 and last_y == 0) {
             self.visual_angle = self.angle;
-        } else if (self.y - last_y != 0 or self.x - last_x != 0) {
-            self.visual_angle = std.math.atan2(f32, self.y - last_y, self.x - last_x);
+        } else {
+            const y_dt: f32 = self.y - last_y;
+            const x_dt: f32 = self.x - last_x;
+            if (y_dt > 0.0 or x_dt != 0) {
+                self.visual_angle = std.math.atan2(f32, y_dt, x_dt);
+            }
         }
 
         if (self.damage_players) {

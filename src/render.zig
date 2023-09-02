@@ -1574,15 +1574,15 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     var u_offset = square.u_offset;
                     var v_offset = square.v_offset;
-                    const float_time: f32 = @floatFromInt(time);
+                    const float_time_ms = @as(f32, @floatFromInt(time)) / std.time.us_per_ms;
                     switch (square.anim_type) {
                         .wave => {
-                            u_offset += @sin(square.anim_dx * float_time / 1000.0) * assets.base_texel_w;
-                            v_offset += @sin(square.anim_dy * float_time / 1000.0) * assets.base_texel_h;
+                            u_offset += @sin(square.anim_dx * float_time_ms / 1000.0) * assets.base_texel_w;
+                            v_offset += @sin(square.anim_dy * float_time_ms / 1000.0) * assets.base_texel_h;
                         },
                         .flow => {
-                            u_offset += (square.anim_dx * float_time / 1000.0) * assets.base_texel_w;
-                            v_offset += (square.anim_dy * float_time / 1000.0) * assets.base_texel_h;
+                            u_offset += (square.anim_dx * float_time_ms / 1000.0) * assets.base_texel_w;
+                            v_offset += (square.anim_dy * float_time_ms / 1000.0) * assets.base_texel_h;
                         },
                         else => {},
                     }

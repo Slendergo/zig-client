@@ -1410,7 +1410,7 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                 return true;
             }
 
-            if (item._last_click_time + 333 > main.current_time) {
+            if (item._last_click_time + @divFloor(333, std.time.us_per_ms) > main.current_time) {
                 item.double_click_callback(item);
                 return true;
             }

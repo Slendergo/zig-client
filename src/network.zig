@@ -272,7 +272,7 @@ inline fn handleAllyShoot() void {
                         .y = player.y,
                         .props = proj_props,
                         .angle = angle,
-                        .start_time = main.current_time,
+                        .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                         .bullet_id = @intCast(bullet_id),
                         .owner_id = player.obj_id,
                     };
@@ -384,7 +384,7 @@ inline fn handleEnemyShoot() void {
             .damage = damage,
             .props = proj_props,
             .angle = current_angle,
-            .start_time = main.current_time,
+            .start_time = @divFloor(main.current_time, std.time.us_per_ms),
             .bullet_id = bullet_id +% @as(u8, @intCast(i)),
             .owner_id = owner_id,
             .damage_players = true,
@@ -614,7 +614,7 @@ inline fn handleNotification(allocator: std.mem.Allocator) void {
             .player => |*player| {
                 ui.status_texts.add(ui.StatusText{
                     .obj_id = player.obj_id,
-                    .start_time = main.current_time,
+                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                     .lifetime = 2000,
                     .text_data = text_data,
                     .initial_size = 22,
@@ -623,7 +623,7 @@ inline fn handleNotification(allocator: std.mem.Allocator) void {
             .object => |*obj| {
                 ui.status_texts.add(ui.StatusText{
                     .obj_id = obj.obj_id,
-                    .start_time = main.current_time,
+                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                     .lifetime = 2000,
                     .text_data = text_data,
                     .initial_size = 22,
