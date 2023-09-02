@@ -18,7 +18,7 @@ pub const max_attack_freq: f32 = 0.008;
 pub const min_attack_mult: f32 = 0.5;
 pub const max_attack_mult: f32 = 2;
 pub const max_sink_level: u32 = 18;
-const tick_ms = 200.0;
+const tick_us = 200.0 * std.time.us_per_ms;
 
 pub const Square = struct {
     tile_type: u16 = 0xFFFF,
@@ -352,7 +352,7 @@ pub const GameObject = struct {
         };
     }
 
-    pub fn update(self: *GameObject, time: i64, dt: i64) void {
+    pub fn update(self: *GameObject, time: i64, dt: f32) void {
         _ = dt;
 
         moveBlock: {
@@ -365,7 +365,7 @@ pub const GameObject = struct {
                     break :moveBlock;
                 }
 
-                const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_ms;
+                const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_us;
                 if (scale_dt >= 1.0) {
                     self.x = self.target_x;
                     self.y = self.target_y;
@@ -463,7 +463,7 @@ pub const Player = struct {
     guild_rank: i32 = 0,
     oxygen_bar: i32 = 0,
     attack_start: i64 = 0,
-    attack_period: i32 = 0,
+    attack_period: i64 = 0,
     attack_angle: f32 = 0,
     attack_angle_raw: f32 = 0,
     next_bullet_id: u8 = 0,
@@ -569,7 +569,7 @@ pub const Player = struct {
         if (item_props == null or item_props.?.projectile == null)
             return;
 
-        const attack_delay: i32 = @intFromFloat((1.0 / attackFrequency(self)) * (1.0 / item_props.?.rate_of_fire));
+        const attack_delay: i64 = @intFromFloat((1.0 / attackFrequency(self)) * (1.0 / item_props.?.rate_of_fire) * std.time.us_per_ms);
         if (time < self.attack_start + attack_delay)
             return;
 
@@ -613,15 +613,14 @@ pub const Player = struct {
         self.attack_start = time;
     }
 
-    pub inline fn update(self: *Player, time: i64, dt: i64) void {
+    pub inline fn update(self: *Player, time: i64, dt: f32) void {
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
                 const move_speed = self.moveSpeedMultiplier();
                 const total_angle = camera.angle_unbound + self.move_angle;
-                const float_dt: f32 = @floatFromInt(dt);
-                const next_x = self.x + move_speed * float_dt * @cos(total_angle);
-                const next_y = self.y + move_speed * float_dt * @sin(total_angle);
+                const next_x = self.x + move_speed * dt * @cos(total_angle);
+                const next_y = self.y + move_speed * dt * @sin(total_angle);
                 self.move_angle_camera_included = total_angle;
                 modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
@@ -649,7 +648,7 @@ pub const Player = struct {
                         break :moveBlock;
                     }
 
-                    const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_ms;
+                    const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_us;
                     if (scale_dt >= 1.0) {
                         self.x = self.target_x;
                         self.y = self.target_y;
@@ -944,7 +943,7 @@ pub const Projectile = struct {
         return target;
     }
 
-    inline fn updatePosition(self: *Projectile, elapsed: i64, dt: f64) void {
+    inline fn updatePosition(self: *Projectile, elapsed: i64, dt: f32) void {
         if (self.props.heat_seek_radius > 0 and elapsed >= self.props.heat_seek_delay and !self.heat_seek_fired) {
             var target_x: f32 = -1.0;
             var target_y: f32 = -1.0;
@@ -977,12 +976,12 @@ pub const Projectile = struct {
 
         var angle_change: f32 = 0.0;
         if (self.props.angle_change != 0 and elapsed < self.props.angle_change_end and elapsed >= self.props.angle_change_delay) {
-            angle_change += @floatCast(dt / 1000.0 * self.props.angle_change);
+            angle_change += dt / 1000.0 * self.props.angle_change;
         }
 
         if (self.props.angle_change_accel != 0 and elapsed >= self.props.angle_change_accel_delay) {
             const time_in_accel: f32 = @floatFromInt(elapsed - self.props.angle_change_accel_delay);
-            angle_change += @floatCast(dt / 1000.0 * self.props.angle_change_accel * time_in_accel / 1000.0);
+            angle_change += dt / 1000.0 * self.props.angle_change_accel * time_in_accel / 1000.0;
         }
 
         if (angle_change != 0.0) {
@@ -996,14 +995,14 @@ pub const Projectile = struct {
             }
         }
 
-        var dist: f64 = 0.0;
+        var dist: f32 = 0.0;
         const uses_zero_vel = self.props.zero_velocity_delay != -1;
         if (!uses_zero_vel or self.props.zero_velocity_delay > elapsed) {
             const base_speed = if (self.heat_seek_fired) self.props.heat_seek_speed else self.props.speed;
             if (self.props.accel == 0.0 or elapsed < self.props.accel_delay) {
-                dist = @floatCast(dt * base_speed);
+                dist = dt * base_speed;
             } else {
-                const time_in_accel: f64 = @floatFromInt(elapsed - self.props.accel_delay);
+                const time_in_accel: f32 = @floatFromInt(elapsed - self.props.accel_delay);
                 const accel_dist = dt * ((self.props.speed * 10000.0 + self.props.accel * time_in_accel / 1000.0) / 10000.0);
                 if (self.props.speed_clamp != -1) {
                     dist = accel_dist;
@@ -1023,8 +1022,8 @@ pub const Projectile = struct {
         }
 
         if (self.heat_seek_fired) {
-            self.x += @floatCast(dist * @cos(self.angle));
-            self.y += @floatCast(dist * @sin(self.angle));
+            self.x += dist * @cos(self.angle);
+            self.y += dist * @sin(self.angle);
         } else {
             if (self.props.parametric) {
                 const t = @as(f32, @floatFromInt(@divTrunc(elapsed, self.props.lifetime_ms))) * 2.0 * std.math.pi;
@@ -1036,8 +1035,8 @@ pub const Projectile = struct {
                 if (self.props.boomerang and elapsed > self.props.lifetime_ms / 2)
                     dist = -dist;
 
-                self.x += @floatCast(dist * @cos(self.angle));
-                self.y += @floatCast(dist * @sin(self.angle));
+                self.x += dist * @cos(self.angle);
+                self.y += dist * @sin(self.angle);
                 if (self.props.amplitude != 0) {
                     const phase: f32 = if (self.bullet_id % 2 == 0) 0.0 else std.math.pi;
                     const time_ratio: f32 = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(self.props.lifetime_ms));
@@ -1050,15 +1049,15 @@ pub const Projectile = struct {
         }
     }
 
-    pub inline fn update(self: *Projectile, time: i64, dt: i64, allocator: std.mem.Allocator) bool {
-        const elapsed = (time - self.start_time) * std.time.us_per_ms;
+    pub fn update(self: *Projectile, time: i64, dt: f32, allocator: std.mem.Allocator) bool {
+        const elapsed = time - @divFloor(self.start_time, std.time.us_per_ms);
         if (elapsed >= self.props.lifetime_ms)
             return false;
 
         const last_x = self.x;
         const last_y = self.y;
 
-        self.updatePosition(elapsed, @floatFromInt(dt * std.time.us_per_ms));
+        self.updatePosition(elapsed, dt);
         const floor_y: u32 = @intFromFloat(@floor(self.y));
         const floor_x: u32 = @intFromFloat(@floor(self.x));
         if (validPos(floor_x, floor_y)) {
@@ -1337,6 +1336,9 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     interactive_id.store(-1, .Release);
     interactive_type.store(.game_object, .Release);
 
+    const ms_time = @divFloor(time, std.time.us_per_ms);
+    const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
+
     var interactive_set = false;
     for (entities.items(), 0..) |*en, i| {
         switch (en.*) {
@@ -1364,11 +1366,11 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                     }
                 }
 
-                obj.update(time, dt);
+                obj.update(ms_time, ms_dt);
             },
             .player => |*player| {
                 if (player.obj_id == local_player_id) {
-                    camera.update(player.x, player.y, dt, input.rotate);
+                    camera.update(player.x, player.y, ms_dt, input.rotate);
                     if (input.attacking) {
                         const y: f32 = @floatCast(input.mouse_y);
                         const x: f32 = @floatCast(input.mouse_x);
@@ -1377,10 +1379,10 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                     }
                 }
 
-                player.update(time, dt);
+                player.update(ms_time, ms_dt);
             },
             .projectile => |*proj| {
-                if (!proj.update(time, dt, allocator))
+                if (!proj.update(ms_time, ms_dt, allocator))
                     entity_indices_to_remove.add(i) catch |e| {
                         std.log.err("Out of memory: {any}", .{e});
                     };

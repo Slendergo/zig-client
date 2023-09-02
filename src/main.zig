@@ -504,7 +504,7 @@ pub fn main() !void {
         zglfw.pollEvents();
 
         if (tick_frame) {
-            current_time = @intCast(std.time.microTimestamp() - start_time);
+            current_time = std.time.microTimestamp() - start_time;
             const dt = current_time - last_update;
             map.update(current_time, dt, allocator);
             try ui.update(current_time, dt, allocator);

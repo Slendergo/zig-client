@@ -1663,11 +1663,11 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         if (time < player.attack_start + player.attack_period) {
                             player.facing = player.attack_angle_raw;
                             const time_dt: f32 = @floatFromInt(time - player.attack_start);
-                            float_period = @floatFromInt(player.attack_period);
+                            float_period = @as(f32, @floatFromInt(player.attack_period));
                             float_period = @mod(time_dt, float_period) / float_period;
                             action = assets.attack_action;
                         } else if (!std.math.isNan(player.move_angle)) {
-                            const walk_period = 3.5 / player.moveSpeedMultiplier();
+                            const walk_period = 3.5 * std.time.us_per_ms / player.moveSpeedMultiplier();
                             const float_time: f32 = @floatFromInt(time);
                             float_period = @mod(float_time, walk_period) / walk_period;
                             player.facing = player.move_angle_camera_included;

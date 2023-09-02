@@ -143,12 +143,12 @@ const S2CPacketId = enum(u8) {
     update = 34,
 };
 
-pub var connected: bool = false;
+pub var connected = false;
 var message_len: u16 = 65535;
 var buffer_idx: usize = 0;
 var stream: std.net.Stream = undefined;
-var reader: utils.PacketReader = utils.PacketReader{};
-var writer: utils.PacketWriter = utils.PacketWriter{};
+var reader = utils.PacketReader{};
+var writer = utils.PacketWriter{};
 
 pub fn init(ip: []const u8, port: u16) void {
     stream = std.net.tcpConnectToAddress(std.net.Address.parseIp(ip, port) catch |address_error| {
