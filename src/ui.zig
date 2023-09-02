@@ -1142,6 +1142,7 @@ pub fn setContainerItem(item: i32, idx: u8) void {
                     tier_text.text_data.color = 0x8A2BE2;
                 } else {
                     tier_base = std.fmt.allocPrint(_allocator, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
+                    tier_text.text_data.color = 0xFFFFFF;
                 }
 
                 if (tier_text.text_data.text.len > 0)
@@ -1198,6 +1199,7 @@ pub fn setInvItem(item: i32, idx: u8) void {
                     tier_text.text_data.color = 0x8A2BE2;
                 } else {
                     tier_base = std.fmt.allocPrint(_allocator, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
+                    tier_text.text_data.color = 0xFFFFFF;
                 }
 
                 if (tier_text.text_data.text.len > 0)
