@@ -1111,9 +1111,12 @@ fn itemDragEndCallback(item: *Item) void {
 }
 
 fn itemShiftClickCallback(item: *Item) void {
+    if (item._item < 0)
+        return;
+
     const slot = Slot.findSlotId(item.x + 4, item.y + 4);
 
-    if (item._item > 0 and game_data.item_type_to_props.get(@intCast(item._item))) |props| {
+    if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
         if (props.consumable) {
             while (!map.object_lock.tryLockShared()) {}
             defer map.object_lock.unlockShared();
@@ -1149,8 +1152,11 @@ pub fn useItem(idx: u8) void {
 }
 
 fn itemDoubleClickCallback(item: *Item) void {
+    if (item._item < 0)
+        return;
+
     const start_slot = Slot.findSlotId(item.x + 4, item.y + 4);
-    if (item._item > 0 and game_data.item_type_to_props.get(@intCast(item._item))) |props| {
+    if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
         if (props.consumable and !start_slot.is_container) {
             while (!map.object_lock.tryLockShared()) {}
             defer map.object_lock.unlockShared();
@@ -1190,7 +1196,7 @@ fn itemDoubleClickCallback(item: *Item) void {
 
         swapSlots(start_slot, end_slot);
     } else {
-        if (item._item > 0 and game_data.item_type_to_props.get(@intCast(item._item))) |props| {
+        if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             while (!map.object_lock.tryLockShared()) {}
             defer map.object_lock.unlockShared();
 
