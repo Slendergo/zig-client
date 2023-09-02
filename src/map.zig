@@ -230,7 +230,7 @@ pub const GameObject = struct {
     top_atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     move_angle: f32 = std.math.nan(f32),
     facing: f32 = std.math.nan(f32),
-    attack_start: i32 = 0,
+    attack_start: i64 = 0,
     attack_angle: f32 = 0.0,
     dir: u8 = assets.left_dir,
     draw_on_ground: bool = false,
@@ -352,7 +352,7 @@ pub const GameObject = struct {
         };
     }
 
-    pub fn update(self: *GameObject, time: i32, dt: i32) void {
+    pub fn update(self: *GameObject, time: i64, dt: i64) void {
         _ = dt;
 
         moveBlock: {
@@ -462,7 +462,7 @@ pub const Player = struct {
     guild: []u8 = &[0]u8{},
     guild_rank: i32 = 0,
     oxygen_bar: i32 = 0,
-    attack_start: i32 = 0,
+    attack_start: i64 = 0,
     attack_period: i32 = 0,
     attack_angle: f32 = 0,
     attack_angle_raw: f32 = 0,
@@ -474,7 +474,7 @@ pub const Player = struct {
     light_color: i32 = -1,
     light_intensity: f32 = 0.1,
     light_radius: f32 = 1.0,
-    last_ground_damage: i32 = -1,
+    last_ground_damage: i64 = -1,
     anim_data: assets.AnimPlayerData = undefined,
     move_multiplier: f32 = 1.0,
     sink_level: u16 = 0,
@@ -560,7 +560,7 @@ pub const Player = struct {
         return frequency;
     }
 
-    pub fn shoot(self: *Player, angle: f32, time: i32) void {
+    pub fn shoot(self: *Player, angle: f32, time: i64) void {
         const weapon = self.inventory[0];
         if (weapon == -1)
             return;
@@ -613,7 +613,7 @@ pub const Player = struct {
         self.attack_start = time;
     }
 
-    pub inline fn update(self: *Player, time: i32, dt: i32) void {
+    pub inline fn update(self: *Player, time: i64, dt: i64) void {
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
@@ -859,7 +859,7 @@ pub const Projectile = struct {
     size: f32 = 1.0,
     obj_id: i32 = 0,
     atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
-    start_time: i32 = 0.0,
+    start_time: i64 = 0,
     angle: f32 = 0.0,
     visual_angle: f32 = 0.0,
     heat_seek_fired: bool = false,
@@ -944,7 +944,7 @@ pub const Projectile = struct {
         return target;
     }
 
-    inline fn updatePosition(self: *Projectile, elapsed: i32, dt: f32) void {
+    inline fn updatePosition(self: *Projectile, elapsed: i64, dt: f64) void {
         if (self.props.heat_seek_radius > 0 and elapsed >= self.props.heat_seek_delay and !self.heat_seek_fired) {
             var target_x: f32 = -1.0;
             var target_y: f32 = -1.0;
@@ -977,12 +977,12 @@ pub const Projectile = struct {
 
         var angle_change: f32 = 0.0;
         if (self.props.angle_change != 0 and elapsed < self.props.angle_change_end and elapsed >= self.props.angle_change_delay) {
-            angle_change += dt / 1000.0 * self.props.angle_change;
+            angle_change += @floatCast(dt / 1000.0 * self.props.angle_change);
         }
 
         if (self.props.angle_change_accel != 0 and elapsed >= self.props.angle_change_accel_delay) {
             const time_in_accel: f32 = @floatFromInt(elapsed - self.props.angle_change_accel_delay);
-            angle_change += dt / 1000.0 * self.props.angle_change_accel * time_in_accel / 1000.0;
+            angle_change += @floatCast(dt / 1000.0 * self.props.angle_change_accel * time_in_accel / 1000.0);
         }
 
         if (angle_change != 0.0) {
@@ -996,14 +996,14 @@ pub const Projectile = struct {
             }
         }
 
-        var dist: f32 = 0.0;
+        var dist: f64 = 0.0;
         const uses_zero_vel = self.props.zero_velocity_delay != -1;
         if (!uses_zero_vel or self.props.zero_velocity_delay > elapsed) {
             const base_speed = if (self.heat_seek_fired) self.props.heat_seek_speed else self.props.speed;
             if (self.props.accel == 0.0 or elapsed < self.props.accel_delay) {
-                dist = dt * base_speed;
+                dist = @floatCast(dt * base_speed);
             } else {
-                const time_in_accel: f32 = @floatFromInt(elapsed - self.props.accel_delay);
+                const time_in_accel: f64 = @floatFromInt(elapsed - self.props.accel_delay);
                 const accel_dist = dt * ((self.props.speed * 10000.0 + self.props.accel * time_in_accel / 1000.0) / 10000.0);
                 if (self.props.speed_clamp != -1) {
                     dist = accel_dist;
@@ -1023,8 +1023,8 @@ pub const Projectile = struct {
         }
 
         if (self.heat_seek_fired) {
-            self.x += dist * @cos(self.angle);
-            self.y += dist * @sin(self.angle);
+            self.x += @floatCast(dist * @cos(self.angle));
+            self.y += @floatCast(dist * @sin(self.angle));
         } else {
             if (self.props.parametric) {
                 const t = @as(f32, @floatFromInt(@divTrunc(elapsed, self.props.lifetime_ms))) * 2.0 * std.math.pi;
@@ -1036,8 +1036,8 @@ pub const Projectile = struct {
                 if (self.props.boomerang and elapsed > self.props.lifetime_ms / 2)
                     dist = -dist;
 
-                self.x += dist * @cos(self.angle);
-                self.y += dist * @sin(self.angle);
+                self.x += @floatCast(dist * @cos(self.angle));
+                self.y += @floatCast(dist * @sin(self.angle));
                 if (self.props.amplitude != 0) {
                     const phase: f32 = if (self.bullet_id % 2 == 0) 0.0 else std.math.pi;
                     const time_ratio: f32 = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(self.props.lifetime_ms));
@@ -1050,15 +1050,15 @@ pub const Projectile = struct {
         }
     }
 
-    pub inline fn update(self: *Projectile, time: i32, dt: i32, allocator: std.mem.Allocator) bool {
-        const elapsed = time - self.start_time;
+    pub inline fn update(self: *Projectile, time: i64, dt: i64, allocator: std.mem.Allocator) bool {
+        const elapsed = (time - self.start_time) * std.time.us_per_ms;
         if (elapsed >= self.props.lifetime_ms)
             return false;
 
         const last_x = self.x;
         const last_y = self.y;
 
-        self.updatePosition(elapsed, @floatFromInt(dt));
+        self.updatePosition(elapsed, @floatFromInt(dt * std.time.us_per_ms));
         const floor_y: u32 = @intFromFloat(@floor(self.y));
         const floor_x: u32 = @intFromFloat(@floor(self.x));
         if (validPos(floor_x, floor_y)) {
@@ -1203,7 +1203,7 @@ const day_cycle_ms_half: f32 = @floatFromInt(day_cycle_ms / 2);
 pub var object_lock: std.Thread.RwLock = .{};
 pub var entities: utils.DynSlice(Entity) = undefined;
 pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
-pub var last_tick_time: i32 = 0;
+pub var last_tick_time: i64 = 0;
 pub var local_player_id: i32 = -1;
 pub var interactive_id = std.atomic.Atomic(i32).init(-1);
 pub var interactive_type = std.atomic.Atomic(game_data.ClassType).init(.game_object);
@@ -1216,11 +1216,11 @@ pub var bg_light_color: i32 = -1;
 pub var bg_light_intensity: f32 = 0.0;
 pub var day_light_intensity: f32 = 0.0;
 pub var night_light_intensity: f32 = 0.0;
-pub var server_time_offset: i32 = 0;
+pub var server_time_offset: i64 = 0;
 pub var move_records: utils.DynSlice(network.TimedPosition) = undefined;
-pub var last_records_clear_time: i32 = 0;
+pub var last_records_clear_time: i64 = 0;
 pub var random: utils.Random = utils.Random{};
-var last_sort: i32 = -1;
+var last_sort: i64 = -1;
 
 pub fn init(allocator: std.mem.Allocator) !void {
     entities = try utils.DynSlice(Entity).init(5000, allocator);
@@ -1255,7 +1255,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     move_records.deinit();
 }
 
-pub fn getLightIntensity(time: i32) f32 {
+pub fn getLightIntensity(time: i64) f32 {
     if (server_time_offset == 0)
         return bg_light_intensity;
 
@@ -1330,7 +1330,7 @@ pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, pierci
     return -1;
 }
 
-pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
+pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     while (!object_lock.tryLock()) {}
     defer object_lock.unlock();
 
@@ -1477,7 +1477,7 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
     squares[idx] = square;
 }
 
-pub fn addMoveRecord(time: i32, position: network.Position) void {
+pub fn addMoveRecord(time: i64, position: network.Position) void {
     if (last_records_clear_time < 0) {
         return;
     }
@@ -1507,15 +1507,15 @@ pub fn addMoveRecord(time: i32, position: network.Position) void {
     }
 }
 
-pub fn clearMoveRecords(time: i32) void {
+pub fn clearMoveRecords(time: i64) void {
     move_records.clear();
     last_records_clear_time = time;
 }
 
-inline fn getId(time: i32) i32 {
+inline fn getId(time: i64) i32 {
     return (time - last_records_clear_time + 50) / 100;
 }
 
-inline fn getScore(id: i32, time: i32) i32 {
+inline fn getScore(id: i32, time: i64) i64 {
     return std.math.absInt(time - last_records_clear_time - id * 100);
 }

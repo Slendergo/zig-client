@@ -20,7 +20,7 @@ pub const Position = extern struct {
 };
 
 pub const TimedPosition = extern struct {
-    time: i32,
+    time: i64,
     position: Position,
 };
 
@@ -491,7 +491,7 @@ inline fn handleMapInfo(allocator: std.mem.Allocator) void {
     if (uses_day_night) {
         map.day_light_intensity = reader.read(f32);
         map.night_light_intensity = reader.read(f32);
-        map.server_time_offset = reader.read(i32) - main.current_time;
+        map.server_time_offset = reader.read(i64) - main.current_time;
     }
     map.random = utils.Random{ .seed = map.seed };
 
@@ -1203,7 +1203,7 @@ pub fn sendEditAccountList(account_list_id: i32, add: bool, object_id: i32) void
     writeBuffer();
 }
 
-pub fn sendEnemyHit(time: i32, bullet_id: u8, target_id: i32, killed: bool) void {
+pub fn sendEnemyHit(time: i64, bullet_id: u8, target_id: i32, killed: bool) void {
     if (!connected) {
         std.log.err("Could not send EnemyHit, client is not connected", .{});
     }
@@ -1244,7 +1244,7 @@ pub fn sendEscape() void {
     writeBuffer();
 }
 
-pub fn sendGotoAck(time: i32) void {
+pub fn sendGotoAck(time: i64) void {
     if (!connected) {
         std.log.err("Could not send GotoAck, client is not connected", .{});
     }
@@ -1260,7 +1260,7 @@ pub fn sendGotoAck(time: i32) void {
     writeBuffer();
 }
 
-pub fn sendGroundDamage(time: i32, position: Position) void {
+pub fn sendGroundDamage(time: i64, position: Position) void {
     if (!connected) {
         std.log.err("Could not send GroundDamage, client is not connected", .{});
     }
@@ -1349,7 +1349,7 @@ pub fn sendInvDrop(slot_object: ObjectSlot) void {
     writeBuffer();
 }
 
-pub fn sendInvSwap(time: i32, position: Position, from_slot: ObjectSlot, to_slot: ObjectSlot) void {
+pub fn sendInvSwap(time: i64, position: Position, from_slot: ObjectSlot, to_slot: ObjectSlot) void {
     if (!connected) {
         std.log.err("Could not send InvSwap, client is not connected", .{});
     }
@@ -1400,7 +1400,7 @@ pub fn sendLoad(char_id: i32) void {
     writeBuffer();
 }
 
-pub fn sendMove(tick_id: i32, time: i32, pos_x: f32, pos_y: f32, records: []const TimedPosition) void {
+pub fn sendMove(tick_id: i32, time: i64, pos_x: f32, pos_y: f32, records: []const TimedPosition) void {
     if (!connected) {
         std.log.err("Could not send Move, client is not connected", .{});
     }
@@ -1427,7 +1427,7 @@ pub fn sendMove(tick_id: i32, time: i32, pos_x: f32, pos_y: f32, records: []cons
     }
 }
 
-pub fn sendOtherHit(time: i32, bullet_id: u8, object_id: i32, target_id: i32) void {
+pub fn sendOtherHit(time: i64, bullet_id: u8, object_id: i32, target_id: i32) void {
     if (!connected) {
         std.log.err("Could not send OtherHit, client is not connected", .{});
     }
@@ -1463,7 +1463,7 @@ pub fn sendPlayerHit(bullet_id: u8, object_id: i32) void {
     writeBuffer();
 }
 
-pub fn sendPlayerShoot(time: i32, bullet_id: u8, container_type: u16, starting_pos: Position, angle: f32) void {
+pub fn sendPlayerShoot(time: i64, bullet_id: u8, container_type: u16, starting_pos: Position, angle: f32) void {
     if (!connected) {
         std.log.err("Could not send PlayerShoot, client is not connected", .{});
     }
@@ -1499,7 +1499,7 @@ pub fn sendPlayerText(text: []const u8) void {
     writeBuffer();
 }
 
-pub fn sendPong(serial: i32, time: i32) void {
+pub fn sendPong(serial: i32, time: i64) void {
     if (!connected) {
         std.log.err("Could not send Pong, client is not connected", .{});
     }
@@ -1565,7 +1565,7 @@ pub fn sendSetCondition(condition_effect: i32, condition_duration: i32) void {
     writeBuffer();
 }
 
-pub fn sendShootAck(time: i32) void {
+pub fn sendShootAck(time: i64) void {
     if (!connected) {
         std.log.err("Could not send ShootAck, client is not connected", .{});
     }
@@ -1581,7 +1581,7 @@ pub fn sendShootAck(time: i32) void {
     writeBuffer();
 }
 
-pub fn sendSquareHit(time: i32, bullet_id: u8, object_id: i32) void {
+pub fn sendSquareHit(time: i64, bullet_id: u8, object_id: i32) void {
     if (!connected) {
         std.log.err("Could not send SquareHit, client is not connected", .{});
     }
@@ -1631,7 +1631,7 @@ pub fn sendUpdateAck() void {
 }
 
 pub fn sendUseItem(
-    time: i32,
+    time: i64,
     slot_object: ObjectSlot,
     use_position: Position,
     use_type: u8,

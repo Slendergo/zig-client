@@ -95,8 +95,8 @@ pub var char_create_skin_type: u16 = 0;
 pub var selected_server: ?ServerData = null;
 pub var next_char_id: u32 = 0;
 pub var max_chars: u32 = 0;
-pub var current_time: i32 = 0;
-pub var last_update: i32 = 0;
+pub var current_time: i64 = 0;
+pub var last_update: i64 = 0;
 pub var network_thread: std.Thread = undefined;
 pub var tick_network = true;
 pub var render_thread: std.Thread = undefined;
@@ -409,7 +409,7 @@ pub fn main() !void {
         defer main_zone.End();
     }
 
-    const start_time = std.time.milliTimestamp();
+    const start_time = std.time.microTimestamp();
     utils.rng.seed(@as(u64, @intCast(start_time)));
 
     const is_debug = builtin.mode == .Debug;
@@ -504,7 +504,7 @@ pub fn main() !void {
         zglfw.pollEvents();
 
         if (tick_frame) {
-            current_time = @intCast(std.time.milliTimestamp() - start_time);
+            current_time = @intCast(std.time.microTimestamp() - start_time);
             const dt = current_time - last_update;
             map.update(current_time, dt, allocator);
             try ui.update(current_time, dt, allocator);

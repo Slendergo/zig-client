@@ -251,7 +251,7 @@ pub const Item = struct {
     _drag_start_y: f32 = 0,
     _drag_offset_x: f32 = 0,
     _drag_offset_y: f32 = 0,
-    _last_click_time: i32 = 0,
+    _last_click_time: i64 = 0,
     _item: i32 = -1,
 
     pub inline fn width(self: Item) f32 {
@@ -296,7 +296,7 @@ pub const SpeechBalloon = struct {
     image_data: ImageData,
     text_data: TextData,
     target_id: i32,
-    start_time: i32,
+    start_time: i64,
     visible: bool = true,
     // the texts' internal x/y, don't touch outside of ui.update()
     _screen_x: f32 = 0.0,
@@ -327,8 +327,8 @@ pub const UiText = struct {
 pub const StatusText = struct {
     text_data: TextData,
     initial_size: f32,
-    lifetime: i32 = 500,
-    start_time: i32 = 0,
+    lifetime: i64 = 500,
+    start_time: i64 = 0,
     obj_id: i32 = -1,
     visible: bool = true,
     // the texts' internal x/y, don't touch outside of ui.update()
@@ -1475,7 +1475,7 @@ pub fn mouseRelease(x: f32, y: f32) void {
     }
 }
 
-pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) !void {
+pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
     _ = dt;
 
     while (!map.object_lock.tryLockShared()) {}

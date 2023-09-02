@@ -1475,7 +1475,7 @@ inline fn endUiDraw(
     );
 }
 
-pub fn draw(time: i32, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.TextureView, encoder: zgpu.wgpu.CommandEncoder) void {
+pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.TextureView, encoder: zgpu.wgpu.CommandEncoder) void {
     while (!map.object_lock.tryLock()) {}
     defer map.object_lock.unlock();
 

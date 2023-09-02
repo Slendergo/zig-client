@@ -39,7 +39,7 @@ pub var clip_scale_y: f32 = 2.0 / 720.0;
 
 pub var scale: f32 = 1.0;
 
-pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
+pub fn update(target_x: f32, target_y: f32, dt: i64, rotate: i8) void {
     x = target_x;
     y = target_y;
 
