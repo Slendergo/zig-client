@@ -2658,6 +2658,126 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
         }
 
+        for (ui.character_boxes.items()) |char_box| {
+            if (!char_box.visible)
+                continue;
+
+            var w: f32 = 0;
+            var h: f32 = 0;
+
+            switch (char_box.imageData()) {
+                .nine_slice => |nine_slice| {
+                    w = nine_slice.w;
+                    h = nine_slice.h;
+                    if (ui_idx >= 4000 - 9 * 4) {
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
+                        ui_idx = 0;
+                    }
+
+                    drawNineSlice(ui_idx, char_box.x, char_box.y, nine_slice.w, nine_slice.h, nine_slice);
+                    ui_idx += 9 * 4;
+                },
+                .normal => |image_data| {
+                    w = image_data.width();
+                    h = image_data.height();
+                    drawQuadUi(
+                        ui_idx,
+                        char_box.x,
+                        char_box.y,
+                        image_data.width(),
+                        image_data.height(),
+                        image_data.alpha,
+                        image_data.atlas_data,
+                    );
+                    ui_idx += 4;
+
+                    if (ui_idx == 4000) {
+                        encoder.writeBuffer(
+                            gctx.lookupResource(ui_vb).?,
+                            0,
+                            UiVertexData,
+                            ui_vert_data[0..4000],
+                        );
+                        endBaseDraw(
+                            gctx,
+                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                            encoder,
+                            vb_info,
+                            ib_info,
+                            pipeline,
+                            bind_group,
+                        );
+                        needs_clear = false;
+                        ui_idx = 0;
+                    }
+                },
+            }
+
+            if (char_box.text_data) |text_data| {
+                if (ui_idx >= 4000 - text_data.text.len * 4) {
+                    encoder.writeBuffer(
+                        gctx.lookupResource(ui_vb).?,
+                        0,
+                        UiVertexData,
+                        ui_vert_data[0..4000],
+                    );
+                    endBaseDraw(
+                        gctx,
+                        if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                        encoder,
+                        vb_info,
+                        ib_info,
+                        pipeline,
+                        bind_group,
+                    );
+                    needs_clear = false;
+                    ui_idx = 0;
+                }
+
+                ui_idx += drawTextUi(
+                    ui_idx,
+                    char_box.x + (w - text_data.width()) / 2,
+                    char_box.y + (h - text_data.height()) / 2,
+                    text_data,
+                );
+
+                if (ui_idx == 4000) {
+                    encoder.writeBuffer(
+                        gctx.lookupResource(ui_vb).?,
+                        0,
+                        UiVertexData,
+                        ui_vert_data[0..4000],
+                    );
+                    endBaseDraw(
+                        gctx,
+                        if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                        encoder,
+                        vb_info,
+                        ib_info,
+                        pipeline,
+                        bind_group,
+                    );
+                    needs_clear = false;
+                    ui_idx = 0;
+                }
+            }
+        }
+
         for (ui.ui_texts.items()) |text| {
             if (!text.visible)
                 continue;

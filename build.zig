@@ -3,7 +3,6 @@ const libxml2 = @import("libs/libxml/libxml2.zig");
 const zglfw = @import("libs/zglfw/build.zig");
 const zgpu = @import("libs/zgpu/build.zig");
 const zpool = @import("libs/zpool/build.zig");
-const zgui = @import("libs/zgui/build.zig");
 const zstbi = @import("libs/zstbi/build.zig");
 const zstbrp = @import("libs/zstbrp/build.zig");
 const ztracy = @import("libs/ztracy/build.zig");
@@ -33,11 +32,6 @@ pub fn build(b: *std.Build) !void {
 
     const zstbrp_pkg = zstbrp.package(b, target, optimize, .{});
     zstbrp_pkg.link(exe);
-
-    const zgui_pkg = zgui.package(b, target, optimize, .{
-        .options = .{ .backend = .glfw_wgpu },
-    });
-    zgui_pkg.link(exe);
 
     const ztracy_pkg = ztracy.package(b, target, optimize, .{
         .options = .{ .enable_ztracy = true },

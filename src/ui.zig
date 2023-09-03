@@ -118,6 +118,55 @@ pub const Button = struct {
     }
 };
 
+pub const CharacterBox = struct {
+    x: f32,
+    y: f32,
+    id: u32,
+    base_image_data: ImageData,
+    press_callback: *const fn (*CharacterBox) void,
+    state: InteractableState = .none,
+    hover_image_data: ?ImageData = null,
+    press_image_data: ?ImageData = null,
+    text_data: ?TextData = null,
+    visible: bool = true,
+
+    pub inline fn imageData(self: CharacterBox) ImageData {
+        switch (self.state) {
+            .none => return self.base_image_data,
+            .pressed => return self.press_image_data orelse self.base_image_data,
+            .hovered => return self.hover_image_data orelse self.base_image_data,
+        }
+    }
+
+    pub inline fn width(self: CharacterBox) f32 {
+        if (self.text_data) |text| {
+            return @max(text.width(), switch (self.imageData()) {
+                .nine_slice => |nine_slice| return nine_slice.w,
+                .normal => |image_data| return image_data.width(),
+            });
+        } else {
+            return switch (self.imageData()) {
+                .nine_slice => |nine_slice| return nine_slice.w,
+                .normal => |image_data| return image_data.width(),
+            };
+        }
+    }
+
+    pub inline fn height(self: CharacterBox) f32 {
+        if (self.text_data) |text| {
+            return @max(text.height(), switch (self.imageData()) {
+                .nine_slice => |nine_slice| return nine_slice.h,
+                .normal => |image_data| return image_data.height(),
+            });
+        } else {
+            return switch (self.imageData()) {
+                .nine_slice => |nine_slice| return nine_slice.h,
+                .normal => |image_data| return image_data.height(),
+            };
+        }
+    }
+};
+
 pub const NineSliceImageData = struct {
     const top_left_idx = 0;
     const top_center_idx = 1;
@@ -509,6 +558,7 @@ pub var speech_balloons_to_remove: utils.DynSlice(usize) = undefined;
 pub var status_texts: utils.DynSlice(StatusText) = undefined;
 pub var status_texts_to_remove: utils.DynSlice(usize) = undefined;
 pub var obj_ids_to_remove: utils.DynSlice(i32) = undefined;
+pub var character_boxes: utils.DynSlice(*CharacterBox) = undefined;
 pub var current_screen = ScreenType.main_menu;
 
 // shared
@@ -579,6 +629,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     status_texts = try utils.DynSlice(StatusText).init(32, allocator);
     status_texts_to_remove = try utils.DynSlice(usize).init(32, allocator);
     obj_ids_to_remove = try utils.DynSlice(i32).init(64, allocator);
+    character_boxes = try utils.DynSlice(*CharacterBox).init(16, allocator);
 
     menu_background = try allocator.create(Image);
     var menu_bg_data = (assets.ui_atlas_data.get("menuBackground") orelse @panic("Could not find menuBackground in ui atlas"))[0];
@@ -1083,6 +1134,8 @@ pub fn switchScreen(screen_type: ScreenType) void {
     login_button.visible = false;
     // register_button.visible = false;
 
+    character_boxes.clear();
+
     fps_text.visible = false;
     chat_input.visible = false;
     chat_decor.visible = false;
@@ -1122,6 +1175,56 @@ pub fn switchScreen(screen_type: ScreenType) void {
         },
         .char_select => {
             menu_background.visible = true;
+
+            const button_data_base = (assets.ui_atlas_data.get("buttonBase") orelse @panic("Could not find buttonBase in ui atlas"))[0];
+            const button_data_hover = (assets.ui_atlas_data.get("buttonHover") orelse @panic("Could not find buttonHover in ui atlas"))[0];
+            const button_data_press = (assets.ui_atlas_data.get("buttonPress") orelse @panic("Could not find buttonPress in ui atlas"))[0];
+
+            for (main.character_list, 0..) |char, i| {
+                const box = _allocator.create(CharacterBox) catch return;
+                box.* = CharacterBox{
+                    .x = (camera.screen_width - button_data_base.texWRaw()) / 2,
+                    .y = @floatFromInt(50 * i),
+                    .id = char.id,
+                    .base_image_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+                        button_data_base,
+                        100,
+                        40,
+                        6,
+                        6,
+                        7,
+                        7,
+                        1.0,
+                    ) },
+                    .hover_image_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+                        button_data_hover,
+                        100,
+                        40,
+                        6,
+                        6,
+                        7,
+                        7,
+                        1.0,
+                    ) },
+                    .press_image_data = .{ .nine_slice = NineSliceImageData.fromAtlasData(
+                        button_data_press,
+                        100,
+                        40,
+                        6,
+                        6,
+                        7,
+                        7,
+                        1.0,
+                    ) },
+                    .text_data = TextData{
+                        .text = @constCast(char.name[0..]),
+                        .size = 16,
+                        .text_type = .bold,
+                    },
+                    .press_callback = boxClickCallback,
+                };
+                character_boxes.add(box) catch return;
+            }
         },
         .char_creation => {
             menu_background.visible = true;
@@ -1269,6 +1372,16 @@ fn loginCallback() void {
     _ = main.login(_allocator, email_input.text_data.text, password_input.text_data.text) catch |e| {
         std.log.err("Login failed: {any}", .{e});
     };
+}
+
+fn boxClickCallback(box: *CharacterBox) void {
+    main.selected_char_id = box.id;
+    if (main.server_list) |server_list| {
+        main.selected_server = server_list[0];
+    } else {
+        std.log.err("No servers found", .{});
+    }
+    switchScreen(.in_game);
 }
 
 fn itemDragEndCallback(item: *Item) void {
@@ -1560,6 +1673,17 @@ pub fn mouseMove(x: f32, y: f32) void {
         }
     }
 
+    for (character_boxes.items()) |box| {
+        if (!box.visible)
+            continue;
+
+        if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
+            box.state = .hovered;
+        } else {
+            box.state = .none;
+        }
+    }
+
     for (input_fields.items()) |input_field| {
         if (!input_field.visible)
             continue;
@@ -1609,6 +1733,17 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
         }
     }
 
+    for (character_boxes.items()) |box| {
+        if (!box.visible)
+            continue;
+
+        if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
+            box.press_callback(box);
+            box.state = .pressed;
+            return true;
+        }
+    }
+
     input.selected_input_field = null;
     for (input_fields.items()) |input_field| {
         if (!input_field.visible)
@@ -1639,6 +1774,15 @@ pub fn mouseRelease(x: f32, y: f32) void {
 
         if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
             button.state = .none;
+        }
+    }
+
+    for (character_boxes.items()) |box| {
+        if (!box.visible)
+            continue;
+
+        if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
+            box.state = .none;
         }
     }
 

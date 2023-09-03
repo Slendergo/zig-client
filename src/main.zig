@@ -11,7 +11,6 @@ const asset_dir = @import("build_options").asset_dir;
 const zglfw = @import("zglfw");
 const zgpu = @import("zgpu");
 const wgpu = zgpu.wgpu;
-const zgui = @import("zgui");
 const zstbi = @import("zstbi");
 const input = @import("input.zig");
 const utils = @import("utils.zig");
@@ -54,7 +53,7 @@ pub const CharacterData = struct {
     id: u32 = 0,
     tier: u8 = 1,
     obj_type: u16 = 0x00,
-    name: [:0]const u8 = "",
+    name: []const u8 = "",
     health: u16 = 100,
     mana: u16 = 0,
     tex1: u32 = 0,
@@ -76,7 +75,7 @@ pub const CharacterData = struct {
             .health_pots = try node.getValueInt("HealthStackCount", i8, 0),
             .magic_pots = try node.getValueInt("MagicStackCount", i8, 0),
             .has_backpack = try node.getValueInt("HasBackpack", i8, 0) > 0,
-            .name = try allocator.dupeZ(u8, game_data.obj_type_to_name.get(obj_type) orelse "Unknown Class"),
+            .name = try allocator.dupe(u8, game_data.obj_type_to_name.get(obj_type) orelse "Unknown Class"),
         };
     }
 };
@@ -111,157 +110,6 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
     _ = window.setCharCallback(input.charEvent);
     _ = window.setCursorPosCallback(input.mouseMoveEvent);
     _ = window.setMouseButtonCallback(input.mouseEvent);
-
-    zgui.init(allocator);
-    const scale = window.getContentScale();
-    const scale_factor = @max(scale[0], scale[1]);
-    const font_size = 16.0 * scale_factor;
-    const font_normal = zgui.io.addFontFromFile(asset_dir ++ "fonts/Ubuntu-Bold.ttf", @floor(font_size));
-
-    zgui.backend.initWithConfig(
-        window,
-        gctx.device,
-        @intFromEnum(zgpu.GraphicsContext.swapchain_format),
-        .{ .texture_filter_mode = .linear, .pipeline_multisample_count = 1 },
-    );
-    zgui.io.setConfigFlags(.{ .no_mouse_cursor_change = true });
-    zgui.io.setConfigWindowsMoveFromTitleBarOnly(true);
-    zgui.io.setDefaultFont(font_normal);
-
-    const style = zgui.getStyle();
-    style.anti_aliased_fill = true;
-    style.anti_aliased_lines = true;
-    style.window_min_size = .{ 500.0, 200.0 };
-    style.window_border_size = 2.0;
-    style.scrollbar_size = 8.0;
-    var color = style.getColor(.scrollbar_grab);
-    color[1] = 0.8;
-    style.setColor(.scrollbar_grab, color);
-    style.scaleAllSizes(scale_factor);
-}
-
-fn updateUi(allocator: std.mem.Allocator) !void {
-    _ = allocator;
-
-    switch (ui.current_screen) {
-        .main_menu => {},
-        .char_select => {
-            zgui.backend.newFrame(
-                gctx.swapchain_descriptor.width,
-                gctx.swapchain_descriptor.height,
-            );
-
-            zgui.setNextWindowPos(.{ .x = 20.0, .y = 20.0, .cond = .first_use_ever });
-            zgui.setNextWindowSize(.{ .w = -1.0, .h = -1.0, .cond = .first_use_ever });
-
-            zgui.pushStyleVar1f(.{ .idx = .window_rounding, .v = 12.0 });
-            zgui.pushStyleVar2f(.{ .idx = .window_padding, .v = .{ 20.0, 20.0 } });
-            defer zgui.popStyleVar(.{ .count = 2 });
-
-            if (zgui.begin("Character", .{})) {
-                if (character_list.len < 1) {
-                    ui.switchScreen(.char_creation);
-                }
-
-                const static = struct {
-                    var char_index: u32 = 0;
-                    var server_index: u32 = 0;
-                };
-
-                zgui.text("Logged in as [{s}]", .{current_account.name});
-                if (zgui.beginListBox("Character", .{})) {
-                    for (character_list, 0..) |char, index| {
-                        const i: u32 = @intCast(index);
-                        if (zgui.selectable(char.name[0..], .{ .selected = static.char_index == i }))
-                            static.char_index = i;
-                    }
-                    zgui.endListBox();
-                }
-
-                if (server_list == null or server_list.?.len == 0) {
-                    zgui.text("No servers available", .{});
-                    if (zgui.button("Return", .{})) {
-                        ui.switchScreen(.main_menu);
-                    }
-                } else {
-                    if (zgui.beginListBox("Server", .{})) {
-                        if (server_list) |srv_list| {
-                            for (srv_list, 0..) |server_data, index| {
-                                const i: u32 = @intCast(index);
-                                if (zgui.selectable(server_data.name[0..], .{ .selected = static.server_index == i }))
-                                    static.server_index = i;
-                            }
-                            zgui.endListBox();
-                        }
-                    }
-
-                    if (zgui.button("Play", .{ .w = 150.0 })) {
-                        ui.switchScreen(.in_game);
-                        selected_char_id = character_list[static.char_index].id;
-                        if (server_list) |srv_list| {
-                            selected_server = srv_list[static.server_index];
-                        }
-                    }
-                }
-            }
-            zgui.end();
-        },
-        .char_creation => {
-            zgui.backend.newFrame(
-                gctx.swapchain_descriptor.width,
-                gctx.swapchain_descriptor.height,
-            );
-
-            zgui.setNextWindowPos(.{ .x = 20.0, .y = 20.0, .cond = .first_use_ever });
-            zgui.setNextWindowSize(.{ .w = -1.0, .h = -1.0, .cond = .first_use_ever });
-
-            zgui.pushStyleVar1f(.{ .idx = .window_rounding, .v = 12.0 });
-            zgui.pushStyleVar2f(.{ .idx = .window_padding, .v = .{ 20.0, 20.0 } });
-            defer zgui.popStyleVar(.{ .count = 2 });
-
-            if (zgui.begin("Character Creation", .{})) {
-                const static = struct {
-                    var server_index: u32 = 0;
-                    var char_type: i32 = 0;
-                    var skin_type: i32 = 0;
-                };
-
-                zgui.text("Logged in as [{s}]", .{current_account.name});
-
-                _ = zgui.inputInt("Character Type", .{ .v = &static.char_type, .step = 1, .step_fast = 1 });
-                _ = zgui.inputInt("Skin Type", .{ .v = &static.skin_type, .step = 1, .step_fast = 1 });
-
-                if (server_list == null or server_list.?.len == 0) {
-                    zgui.text("No servers available", .{});
-                    if (zgui.button("Return", .{})) {
-                        ui.switchScreen(.main_menu);
-                    }
-                } else {
-                    if (zgui.beginListBox("Server", .{})) {
-                        for (server_list.?, 0..) |server_data, index| {
-                            const i: u32 = @intCast(index);
-                            if (zgui.selectable(server_data.name[0.. :0], .{ .selected = static.server_index == i }))
-                                static.server_index = i;
-                        }
-                        zgui.endListBox();
-                    }
-
-                    if (zgui.button("Create Character", .{ .w = 150.0 })) {
-                        ui.switchScreen(.in_game);
-                        char_create_type = @as(u16, @intCast(static.char_type));
-                        char_create_skin_type = @as(u16, @intCast(static.skin_type));
-                        selected_char_id = next_char_id;
-                        next_char_id += 1;
-
-                        selected_server = server_list.?[static.server_index];
-                    }
-                }
-            }
-            zgui.end();
-        },
-        .map_editor => {},
-        .in_game => {},
-    }
 }
 
 inline fn draw() void {
@@ -269,23 +117,6 @@ inline fn draw() void {
     const encoder = gctx.device.createCommandEncoder(null);
 
     render.draw(current_time, gctx, back_buffer, encoder);
-
-    if (ui.current_screen == .char_select or ui.current_screen == .char_creation) {
-        const color_attachments = [_]wgpu.RenderPassColorAttachment{.{
-            .view = back_buffer,
-            .load_op = .load,
-            .store_op = .store,
-        }};
-        const render_pass_info = wgpu.RenderPassDescriptor{
-            .color_attachment_count = color_attachments.len,
-            .color_attachments = &color_attachments,
-        };
-
-        const pass = encoder.beginRenderPass(render_pass_info);
-        zgui.backend.draw(pass);
-        pass.end();
-        pass.release();
-    }
 
     const commands = encoder.finish(null);
     gctx.submit(&.{commands});
@@ -338,12 +169,10 @@ fn networkTick(allocator: std.mem.Allocator) void {
 
 fn renderTick(allocator: std.mem.Allocator) !void {
     while (tick_render) {
-        try updateUi(allocator);
-
         // this has to be updated on render thread to avoid headaches
         if (ui.fps_text.text_data.text.len > 0)
-            _allocator.free(ui.fps_text.text_data.text);
-        ui.fps_text.text_data.text = try std.fmt.allocPrint(_allocator, "FPS: {d:.1}\nMemory: {d:.1} MB", .{ gctx.stats.fps, try utils.currentMemoryUse() });
+            allocator.free(ui.fps_text.text_data.text);
+        ui.fps_text.text_data.text = try std.fmt.allocPrint(allocator, "FPS: {d:.1}\nMemory: {d:.1} MB", .{ gctx.stats.fps, try utils.currentMemoryUse() });
         ui.fps_text.x = camera.screen_width - ui.fps_text.text_data.width() - 10;
 
         draw();
@@ -449,11 +278,7 @@ pub fn main() !void {
         return;
     };
 
-    defer {
-        zgui.backend.deinit();
-        zgui.deinit();
-        gctx.destroy(allocator);
-    }
+    defer gctx.destroy(allocator);
 
     render.init(gctx, allocator);
 
