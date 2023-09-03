@@ -201,21 +201,21 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         var blue_tex = vec4(0.0, 0.0, 0.0, 0.0);
         var tex_offset = vec4(0.0, 0.0, 0.0, 0.0);
         if in.text_type == medium_text_type {
-            red_tex = textureSampleGrad(medium_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
-            green_tex = textureSampleGrad(medium_tex, default_sampler, in.uv, dx, dy);
-            blue_tex = textureSampleGrad(medium_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
+            red_tex = textureSampleGrad(medium_tex, linear_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+            green_tex = textureSampleGrad(medium_tex, linear_sampler, in.uv, dx, dy);
+            blue_tex = textureSampleGrad(medium_tex, linear_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
         } else if in.text_type == medium_italic_text_type {
-            red_tex = textureSampleGrad(medium_italic_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
-            green_tex = textureSampleGrad(medium_italic_tex, default_sampler, in.uv, dx, dy);
-            blue_tex = textureSampleGrad(medium_italic_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
+            red_tex = textureSampleGrad(medium_italic_tex, linear_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+            green_tex = textureSampleGrad(medium_italic_tex, linear_sampler, in.uv, dx, dy);
+            blue_tex = textureSampleGrad(medium_italic_tex, linear_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
         } else if in.text_type == bold_text_type {
-            red_tex = textureSampleGrad(bold_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
-            green_tex = textureSampleGrad(bold_tex, default_sampler, in.uv, dx, dy);
-            blue_tex = textureSampleGrad(bold_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
+            red_tex = textureSampleGrad(bold_tex, linear_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+            green_tex = textureSampleGrad(bold_tex, linear_sampler, in.uv, dx, dy);
+            blue_tex = textureSampleGrad(bold_tex, linear_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
         } else if in.text_type == bold_italic_text_type {
-            red_tex = textureSampleGrad(bold_italic_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
-            green_tex = textureSampleGrad(bold_italic_tex, default_sampler, in.uv, dx, dy);
-            blue_tex = textureSampleGrad(bold_italic_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
+            red_tex = textureSampleGrad(bold_italic_tex, linear_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+            green_tex = textureSampleGrad(bold_italic_tex, linear_sampler, in.uv, dx, dy);
+            blue_tex = textureSampleGrad(bold_italic_tex, linear_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
         }
 
         let red = sample_msdf(red_tex, in.distance_factor, in.alpha_mult);
@@ -235,25 +235,25 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         var blue_tex = vec4(0.0, 0.0, 0.0, 0.0);
         var tex_offset = vec4(0.0, 0.0, 0.0, 0.0);
         if in.text_type == medium_text_type {
-            red_tex = textureSampleGrad(medium_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
-            green_tex = textureSampleGrad(medium_tex, default_sampler, in.uv, dx, dy);
-            blue_tex = textureSampleGrad(medium_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
-            tex_offset = textureSampleGrad(medium_tex, default_sampler, in.uv - in.shadow_texel, dx, dy);
+            red_tex = textureSampleGrad(medium_tex, linear_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+            green_tex = textureSampleGrad(medium_tex, linear_sampler, in.uv, dx, dy);
+            blue_tex = textureSampleGrad(medium_tex, linear_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
+            tex_offset = textureSampleGrad(medium_tex, linear_sampler, in.uv - in.shadow_texel, dx, dy);
         } else if in.text_type == medium_italic_text_type {
-            red_tex = textureSampleGrad(medium_italic_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
-            green_tex = textureSampleGrad(medium_italic_tex, default_sampler, in.uv, dx, dy);
-            blue_tex = textureSampleGrad(medium_italic_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
-            tex_offset = textureSampleGrad(medium_italic_tex, default_sampler, in.uv - in.shadow_texel, dx, dy);
+            red_tex = textureSampleGrad(medium_italic_tex, linear_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+            green_tex = textureSampleGrad(medium_italic_tex, linear_sampler, in.uv, dx, dy);
+            blue_tex = textureSampleGrad(medium_italic_tex, linear_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
+            tex_offset = textureSampleGrad(medium_italic_tex, linear_sampler, in.uv - in.shadow_texel, dx, dy);
         } else if in.text_type == bold_text_type {
-            red_tex = textureSampleGrad(bold_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
-            green_tex = textureSampleGrad(bold_tex, default_sampler, in.uv, dx, dy);
-            blue_tex = textureSampleGrad(bold_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
-            tex_offset = textureSampleGrad(bold_tex, default_sampler, in.uv - in.shadow_texel, dx, dy);
+            red_tex = textureSampleGrad(bold_tex, linear_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+            green_tex = textureSampleGrad(bold_tex, linear_sampler, in.uv, dx, dy);
+            blue_tex = textureSampleGrad(bold_tex, linear_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
+            tex_offset = textureSampleGrad(bold_tex, linear_sampler, in.uv - in.shadow_texel, dx, dy);
         } else if in.text_type == bold_italic_text_type {
-            red_tex = textureSampleGrad(bold_italic_tex, default_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
-            green_tex = textureSampleGrad(bold_italic_tex, default_sampler, in.uv, dx, dy);
-            blue_tex = textureSampleGrad(bold_italic_tex, default_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
-            tex_offset = textureSampleGrad(bold_italic_tex, default_sampler, in.uv - in.shadow_texel, dx, dy);
+            red_tex = textureSampleGrad(bold_italic_tex, linear_sampler, vec2(in.uv.x - subpixel_width, in.uv.y), dx, dy);
+            green_tex = textureSampleGrad(bold_italic_tex, linear_sampler, in.uv, dx, dy);
+            blue_tex = textureSampleGrad(bold_italic_tex, linear_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
+            tex_offset = textureSampleGrad(bold_italic_tex, linear_sampler, in.uv - in.shadow_texel, dx, dy);
         }
 
         let red = sample_msdf(red_tex, in.distance_factor, in.alpha_mult);
