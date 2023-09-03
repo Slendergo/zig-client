@@ -907,7 +907,7 @@ pub const Projectile = struct {
         var min_dist = std.math.floatMax(f32);
         var target: ?GameObject = null;
         for (entities.items()) |en| {
-            if (std.meta.activeTag(en) == .object) {
+            if (en == .object) {
                 const obj = en.object;
                 if (obj.is_enemy) {
                     const dist_sqr = utils.distSqr(obj.x, obj.y, x, y);
@@ -926,7 +926,7 @@ pub const Projectile = struct {
         var min_dist = std.math.floatMax(f32);
         var target: ?Player = null;
         for (entities.items()) |en| {
-            if (std.meta.activeTag(en) == .player) {
+            if (en == .player) {
                 const player = en.player;
                 const dist_sqr = utils.distSqr(player.x, player.y, x, y);
                 if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
@@ -1348,7 +1348,7 @@ pub fn removeEntity(obj_id: i32) ?Entity {
 pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, piercing: bool) i32 {
     _ = player_id;
     if (findEntityConst(object_id)) |en| {
-        if (std.meta.activeTag(en) == .object) {
+        if (en == .object) {
             const object = en.object;
             var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
 
@@ -1377,8 +1377,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     var interactive_set = false;
     for (0..entities.capacity) |i| {
         var en = entities._items[i];
-        const tag = std.meta.activeTag(en);
-        if (tag == .player) {
+        if (en == .player) {
             en.player.update(ms_time, ms_dt);
             if (en.player.obj_id == local_player_id) {
                 camera.update(en.player.x, en.player.y, ms_dt, input.rotate);
@@ -1389,7 +1388,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                     en.player.shoot(shoot_angle, time);
                 }
             }
-        } else if (tag == .object) {
+        } else if (en == .object) {
             const is_container = en.object.class == .container;
             if (!interactive_set and (en.object.class == .portal or is_container)) {
                 const dt_x = camera.x - en.object.x;
@@ -1414,7 +1413,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
             }
 
             en.object.update(ms_time, ms_dt);
-        } else if (tag == .projectile) {
+        } else if (en == .projectile) {
             if (!en.projectile.update(ms_time, ms_dt, allocator))
                 entity_indices_to_remove.add(i) catch |e| {
                     std.log.err("Out of memory: {any}", .{e});

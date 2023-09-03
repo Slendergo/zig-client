@@ -260,7 +260,7 @@ inline fn handleAllyShoot() void {
     const angle = reader.read(f32);
 
     if (map.findEntityRef(owner_id)) |en| {
-        if (std.meta.activeTag(en.*) == .player) {
+        if (en.* == .player) {
             const player = &en.player;
             const weapon = player.inventory[0];
             const item_props = game_data.item_type_to_props.get(@intCast(weapon));
@@ -359,7 +359,7 @@ inline fn handleEnemyShoot() void {
 
     var owner: ?map.GameObject = null;
     if (map.findEntityConst(owner_id)) |en| {
-        if (std.meta.activeTag(en) == .object) {
+        if (en == .object) {
             owner = en.object;
         }
     }
@@ -423,7 +423,7 @@ inline fn handleGoto() void {
     const position = reader.read(Position);
 
     if (map.findEntityRef(object_id)) |en| {
-        if (std.meta.activeTag(en.*) == .player) {
+        if (en.* == .player) {
             const player = &en.player;
             if (object_id == map.local_player_id) {
                 player.x = position.x;
@@ -597,8 +597,7 @@ inline fn handleNotification(allocator: std.mem.Allocator) void {
             .backing_buffer = allocator.alloc(u8, 1) catch return,
         };
 
-        const tag = std.meta.activeTag(en);
-        if (tag == .player) {
+        if (en == .player) {
             ui.status_texts.add(ui.StatusText{
                 .obj_id = en.player.obj_id,
                 .start_time = @divFloor(main.current_time, std.time.us_per_ms),
@@ -606,7 +605,7 @@ inline fn handleNotification(allocator: std.mem.Allocator) void {
                 .text_data = text_data,
                 .initial_size = 22,
             }) catch unreachable;
-        } else if (tag == .object) {
+        } else if (en == .object) {
             ui.status_texts.add(ui.StatusText{
                 .obj_id = en.object.obj_id,
                 .start_time = @divFloor(main.current_time, std.time.us_per_ms),
@@ -660,7 +659,7 @@ inline fn handleServerPlayerShoot() void {
 
     const needs_ack = owner_id == map.local_player_id;
     if (map.findEntityConst(owner_id)) |en| {
-        if (std.meta.activeTag(en) == .player) {
+        if (en == .player) {
             const item_props = game_data.item_type_to_props.get(@intCast(container_type));
             if (item_props == null or item_props.?.projectile == null)
                 return;
@@ -725,7 +724,7 @@ inline fn handleText(allocator: std.mem.Allocator) void {
             if (!std.mem.eql(u8, recipient, "")) {
                 atlas_data = balloon_data[1]; // tell balloon
             } else {
-                if (std.meta.activeTag(en) == .object) {
+                if (en == .object) {
                     atlas_data = balloon_data[3]; // enemy balloon
                 } else {
                     atlas_data = balloon_data[0]; // normal balloon
