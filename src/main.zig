@@ -279,7 +279,7 @@ pub fn main() !void {
 
     defer gctx.destroy(allocator);
 
-    render.init(gctx, allocator);
+    render.init(gctx);
 
     network_thread = try std.Thread.spawn(.{}, networkTick, .{allocator});
     defer {
