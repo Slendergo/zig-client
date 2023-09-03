@@ -40,23 +40,17 @@ inline fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void
         if (key == .enter) {
             if (input_field.enter_callback) |enter_cb| {
                 enter_cb(input_field.text_data.text);
-                if (input_field.text_data.text.len > 0)
-                    input_field.allocator.free(input_field.text_data.text);
                 input_field.text_data.text = &[0]u8{};
+                input_field._index = 0;
                 selected_input_field = null;
             }
 
             return;
         }
 
-        const len = input_field.text_data.text.len;
-        if (key == .backspace and len > 0) {
-            const len_sub_1 = len - 1;
-            const new_text = input_field.allocator.alloc(u8, len_sub_1) catch @panic("Out of memory, input field alloc failed");
-            @memcpy(new_text, input_field.text_data.text[0..len_sub_1]);
-            if (len > 0)
-                input_field.allocator.free(input_field.text_data.text);
-            input_field.text_data.text = new_text;
+        if (key == .backspace and input_field._index > 0) {
+            input_field._index -= 1;
+            input_field.text_data.text = input_field.text_data.backing_buffer[0..input_field._index];
             return;
         }
 
@@ -239,15 +233,12 @@ pub fn charEvent(window: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
         }
 
         const byte_code: u8 = @intCast(char_code);
-        if (!std.ascii.isASCII(byte_code))
+        if (!std.ascii.isASCII(byte_code) or input_field._index >= 256)
             return;
 
-        const new_text = input_field.allocator.alloc(u8, input_field.text_data.text.len + 1) catch @panic("Out of memory, input field alloc failed");
-        std.mem.copy(u8, new_text, input_field.text_data.text);
-        new_text[new_text.len - 1] = byte_code;
-        if (input_field.text_data.text.len > 0)
-            input_field.allocator.free(input_field.text_data.text);
-        input_field.text_data.text = new_text;
+        input_field.text_data.backing_buffer[input_field._index] = byte_code;
+        input_field._index += 1;
+        input_field.text_data.text = input_field.text_data.backing_buffer[0..input_field._index];
         return;
     }
 }

@@ -1099,6 +1099,7 @@ pub const Projectile = struct {
                         .text_type = .bold,
                         .size = 22,
                         .color = damage_color,
+                        .backing_buffer = allocator.alloc(u8, 1) catch unreachable,
                     };
 
                     ui.status_texts.add(ui.StatusText{
@@ -1141,6 +1142,7 @@ pub const Projectile = struct {
                         .text_type = .bold,
                         .size = 22,
                         .color = damage_color,
+                        .backing_buffer = allocator.alloc(u8, 1) catch unreachable,
                     };
 
                     ui.status_texts.add(ui.StatusText{

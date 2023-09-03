@@ -604,10 +604,11 @@ inline fn handleNotification(allocator: std.mem.Allocator) void {
 
     if (map.findEntity(object_id)) |en| {
         const text_data = ui.TextData{
-            .text = allocator.dupe(u8, message) catch unreachable, // not really unreachable is it now?
+            .text = allocator.dupe(u8, message) catch return,
             .text_type = .bold,
             .size = 22,
             .color = color,
+            .backing_buffer = allocator.alloc(u8, 1) catch return,
         };
 
         switch (en.*) {
@@ -761,6 +762,7 @@ inline fn handleText(allocator: std.mem.Allocator) void {
                 .text = text,
                 .size = 16,
                 .max_width = 160,
+                .backing_buffer = allocator.alloc(u8, 1) catch unreachable,
             },
             .target_id = object_id,
             .start_time = @divFloor(main.current_time, std.time.us_per_ms),

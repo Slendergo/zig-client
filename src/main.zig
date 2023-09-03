@@ -168,14 +168,13 @@ fn networkTick(allocator: std.mem.Allocator) void {
 }
 
 fn renderTick(allocator: std.mem.Allocator) !void {
+    _ = allocator;
     while (tick_render) {
-        // this has to be updated on render thread to avoid headaches
-        if (ui.fps_text.text_data.text.len > 0)
-            allocator.free(ui.fps_text.text_data.text);
-        ui.fps_text.text_data.text = try std.fmt.allocPrint(allocator, "FPS: {d:.1}\nMemory: {d:.1} MB", .{ gctx.stats.fps, try utils.currentMemoryUse() });
-        ui.fps_text.x = camera.screen_width - ui.fps_text.text_data.width() - 10;
-
         draw();
+
+        // this has to be updated on render thread to avoid headaches
+        ui.fps_text.text_data.text = try std.fmt.bufPrint(ui.fps_text.text_data.backing_buffer, "FPS: {d:.1}\nMemory: {d:.1} MB", .{ gctx.stats.fps, try utils.currentMemoryUse() });
+        ui.fps_text.x = camera.screen_width - ui.fps_text.text_data.width() - 10;
     }
 }
 

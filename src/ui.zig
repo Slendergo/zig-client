@@ -46,6 +46,7 @@ pub const InputField = struct {
     hover_decor_data: ?ImageData = null,
     press_decor_data: ?ImageData = null,
     visible: bool = true,
+    _index: u32 = 0,
 
     pub inline fn imageData(self: InputField) ImageData {
         switch (self.state) {
@@ -403,6 +404,7 @@ pub const TextType = enum(u32) {
 pub const TextData = struct {
     text: []u8,
     size: f32,
+    backing_buffer: []u8,
     text_type: TextType = .medium,
     color: i32 = 0xFFFFFF,
     alpha: f32 = 1.0,
@@ -688,6 +690,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             .text = "",
             .size = 12,
             .text_type = .bold,
+            .backing_buffer = try allocator.alloc(u8, 256),
         },
         .allocator = allocator,
     };
@@ -698,6 +701,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .text = @constCast("E-mail"),
         .size = 16,
         .text_type = .bold,
+        .backing_buffer = try allocator.alloc(u8, 8),
     };
     email_text.* = UiText{
         .x = (camera.screen_width - email_text_data.width()) / 2,
@@ -746,6 +750,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             .text = "",
             .size = 12,
             .text_type = .bold,
+            .backing_buffer = try allocator.alloc(u8, 256),
         },
         .allocator = allocator,
     };
@@ -756,6 +761,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .text = @constCast("Password"),
         .size = 16,
         .text_type = .bold,
+        .backing_buffer = try allocator.alloc(u8, 8),
     };
     password_text.* = UiText{
         .x = (camera.screen_width - password_text_data.width()) / 2,
@@ -805,6 +811,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             .text = @constCast("Login"),
             .size = 16,
             .text_type = .bold,
+            .backing_buffer = try allocator.alloc(u8, 8),
         },
         .press_callback = loginCallback,
     };
@@ -842,6 +849,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
                     .text = "",
                     .size = 10,
                     .text_type = .bold,
+                    .backing_buffer = try allocator.alloc(u8, 8),
                 },
                 .visible = false,
                 .x = 0,
@@ -880,6 +888,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
                     .text = "",
                     .size = 10,
                     .text_type = .bold,
+                    .backing_buffer = try allocator.alloc(u8, 8),
                 },
                 .visible = false,
                 .x = 0,
@@ -918,6 +927,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .text = "",
         .size = 12,
         .text_type = .bold,
+        .backing_buffer = try allocator.alloc(u8, 8),
     };
     level_text.* = UiText{
         .x = bars_decor.x + 181,
@@ -936,6 +946,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             .text = "",
             .size = 12,
             .text_type = .bold_italic,
+            .backing_buffer = try allocator.alloc(u8, 64),
         },
     };
     try bars.add(xp_bar);
@@ -950,6 +961,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             .text = "",
             .size = 12,
             .text_type = .bold_italic,
+            .backing_buffer = try allocator.alloc(u8, 64),
         },
     };
     try bars.add(fame_bar);
@@ -964,6 +976,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             .text = "",
             .size = 12,
             .text_type = .bold_italic,
+            .backing_buffer = try allocator.alloc(u8, 32),
         },
     };
     try bars.add(health_bar);
@@ -978,6 +991,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             .text = "",
             .size = 12,
             .text_type = .bold_italic,
+            .backing_buffer = try allocator.alloc(u8, 32),
         },
     };
     try bars.add(mana_bar);
@@ -1003,6 +1017,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
             .text = "",
             .size = 12,
             .text_type = .bold,
+            .backing_buffer = try allocator.alloc(u8, 256),
         },
         .allocator = allocator,
         .enter_callback = chatCallback,
@@ -1014,6 +1029,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .text = "",
         .size = 12,
         .text_type = .bold,
+        .backing_buffer = try allocator.alloc(u8, 32),
     };
     fps_text.* = UiText{
         .x = camera.screen_width - fps_text_data.width() - 10,
@@ -1024,61 +1040,50 @@ pub fn init(allocator: std.mem.Allocator) !void {
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
+    for (bars.items()) |bar| {
+        allocator.free(bar.text_data.backing_buffer);
+    }
+    bars.deinit();
+    for (input_fields.items()) |input_field| {
+        allocator.free(input_field.text_data.backing_buffer);
+    }
+    input_fields.deinit();
+    for (buttons.items()) |button| {
+        if (button.text_data) |text_data| {
+            allocator.free(text_data.backing_buffer);
+        }
+    }
+    buttons.deinit();
+    ui_images.deinit();
+    for (ui_texts.items()) |ui_text| {
+        allocator.free(ui_text.text_data.backing_buffer);
+    }
+    ui_texts.deinit();
+    for (speech_balloons.items()) |speech_balloon| {
+        allocator.free(speech_balloon.text_data.backing_buffer);
+    }
+    speech_balloons.deinit();
+    speech_balloons_to_remove.deinit();
+    for (status_texts.items()) |status_text| {
+        allocator.free(status_text.text_data.backing_buffer);
+    }
+    status_texts.deinit();
+    status_texts_to_remove.deinit();
+    obj_ids_to_remove.deinit();
+
     allocator.destroy(minimap_decor);
     allocator.destroy(inventory_decor);
     allocator.destroy(container_decor);
     allocator.destroy(bars_decor);
     allocator.destroy(stats_button);
-    if (level_text.text_data.text.len > 0)
-        allocator.free(level_text.text_data.text);
     allocator.destroy(level_text);
-    if (xp_bar.text_data.text.len > 0)
-        allocator.free(xp_bar.text_data.text);
     allocator.destroy(xp_bar);
-    if (fame_bar.text_data.text.len > 0)
-        allocator.free(fame_bar.text_data.text);
     allocator.destroy(fame_bar);
-    if (health_bar.text_data.text.len > 0)
-        allocator.free(health_bar.text_data.text);
     allocator.destroy(health_bar);
-    if (mana_bar.text_data.text.len > 0)
-        allocator.free(mana_bar.text_data.text);
     allocator.destroy(mana_bar);
     allocator.destroy(chat_decor);
     allocator.destroy(chat_input);
-    if (fps_text.text_data.text.len > 0)
-        allocator.free(fps_text.text_data.text);
     allocator.destroy(fps_text);
-
-    for (inventory_items) |item| {
-        if (item.tier_text) |tier_text| {
-            if (tier_text.text_data.text.len > 0) {
-                allocator.free(tier_text.text_data.text);
-            }
-        }
-    }
-
-    for (container_items) |item| {
-        if (item.tier_text) |tier_text| {
-            if (tier_text.text_data.text.len > 0) {
-                allocator.free(tier_text.text_data.text);
-            }
-        }
-    }
-
-    bars.deinit();
-    input_fields.deinit();
-    buttons.deinit();
-    ui_images.deinit();
-    ui_texts.deinit();
-    speech_balloons.deinit();
-    speech_balloons_to_remove.deinit();
-    for (status_texts.items()) |status_text| {
-        allocator.free(status_text.text_data.text);
-    }
-    status_texts.deinit();
-    status_texts_to_remove.deinit();
-    obj_ids_to_remove.deinit();
 }
 
 pub fn resize(w: f32, h: f32) void {
@@ -1135,6 +1140,18 @@ pub fn switchScreen(screen_type: ScreenType) void {
     // register_button.visible = false;
 
     character_boxes.clear();
+
+    last_level = -1;
+    last_xp = -1;
+    last_xp_goal = -1;
+    last_fame = -1;
+    last_fame_goal = -1;
+    last_hp = -1;
+    last_max_hp = -1;
+    last_mp = -1;
+    last_max_mp = -1;
+    container_visible = false;
+    container_id = -1;
 
     fps_text.visible = false;
     chat_input.visible = false;
@@ -1218,6 +1235,7 @@ pub fn switchScreen(screen_type: ScreenType) void {
                     ) },
                     .text_data = TextData{
                         .text = @constCast(char.name[0..]),
+                        .backing_buffer = _allocator.alloc(u8, 1) catch return,
                         .size = 16,
                         .text_type = .bold,
                     },
@@ -1545,15 +1563,13 @@ pub fn setContainerItem(item: i32, idx: u8) void {
             if (container_items[idx].tier_text) |*tier_text| {
                 var tier_base: []u8 = &[0]u8{};
                 if (std.mem.eql(u8, props.tier, "UT")) {
-                    tier_base = _allocator.dupe(u8, props.tier) catch @panic("Out of memory, tier alloc failed");
+                    tier_base = @constCast(props.tier);
                     tier_text.text_data.color = 0x8A2BE2;
                 } else {
-                    tier_base = std.fmt.allocPrint(_allocator, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
+                    tier_base = std.fmt.bufPrint(tier_text.text_data.backing_buffer, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
                     tier_text.text_data.color = 0xFFFFFF;
                 }
 
-                if (tier_text.text_data.text.len > 0)
-                    _allocator.free(tier_text.text_data.text);
                 tier_text.text_data.text = tier_base;
 
                 // the positioning is relative to parent
@@ -1602,15 +1618,13 @@ pub fn setInvItem(item: i32, idx: u8) void {
             if (inventory_items[idx].tier_text) |*tier_text| {
                 var tier_base: []u8 = &[0]u8{};
                 if (std.mem.eql(u8, props.tier, "UT")) {
-                    tier_base = _allocator.dupe(u8, props.tier) catch @panic("Out of memory, tier alloc failed");
+                    tier_base = @constCast(props.tier);
                     tier_text.text_data.color = 0x8A2BE2;
                 } else {
-                    tier_base = std.fmt.allocPrint(_allocator, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
+                    tier_base = std.fmt.bufPrint(tier_text.text_data.backing_buffer, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
                     tier_text.text_data.color = 0xFFFFFF;
                 }
 
-                if (tier_text.text_data.text.len > 0)
-                    _allocator.free(tier_text.text_data.text);
                 tier_text.text_data.text = tier_base;
 
                 // the positioning is relative to parent
@@ -1808,9 +1822,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
         switch (en.*) {
             .player => |local_player| {
                 if (last_level != local_player.level) {
-                    if (level_text.text_data.text.len > 0)
-                        _allocator.free(level_text.text_data.text);
-                    level_text.text_data.text = try std.fmt.allocPrint(_allocator, "{d}", .{local_player.level});
+                    level_text.text_data.text = try std.fmt.bufPrint(level_text.text_data.backing_buffer, "{d}", .{local_player.level});
 
                     last_level = local_player.level;
                 }
@@ -1822,9 +1834,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
                         xp_bar.visible = false;
                         const fame_perc = @as(f32, @floatFromInt(local_player.fame)) / @as(f32, @floatFromInt(local_player.fame_goal));
                         fame_bar.max_width = fame_bar.width() * fame_perc;
-                        if (fame_bar.text_data.text.len > 0)
-                            _allocator.free(fame_bar.text_data.text);
-                        fame_bar.text_data.text = try std.fmt.allocPrint(_allocator, "{d}/{d} Fame", .{ local_player.fame, local_player.fame_goal });
+                        fame_bar.text_data.text = try std.fmt.bufPrint(fame_bar.text_data.backing_buffer, "{d}/{d} Fame", .{ local_player.fame, local_player.fame_goal });
 
                         last_fame = local_player.fame;
                         last_fame_goal = local_player.fame_goal;
@@ -1835,9 +1845,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
                         fame_bar.visible = false;
                         const exp_perc = @as(f32, @floatFromInt(local_player.exp)) / @as(f32, @floatFromInt(local_player.exp_goal));
                         xp_bar.max_width = xp_bar.width() * exp_perc;
-                        if (xp_bar.text_data.text.len > 0)
-                            _allocator.free(xp_bar.text_data.text);
-                        xp_bar.text_data.text = try std.fmt.allocPrint(_allocator, "{d}/{d} XP", .{ local_player.exp, local_player.exp_goal });
+                        xp_bar.text_data.text = try std.fmt.bufPrint(xp_bar.text_data.backing_buffer, "{d}/{d} XP", .{ local_player.exp, local_player.exp_goal });
 
                         last_xp = local_player.exp;
                         last_xp_goal = local_player.exp_goal;
@@ -1847,9 +1855,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
                 if (last_hp != local_player.hp or last_max_hp != local_player.max_hp) {
                     const hp_perc = @as(f32, @floatFromInt(local_player.hp)) / @as(f32, @floatFromInt(local_player.max_hp));
                     health_bar.max_width = health_bar.width() * hp_perc;
-                    if (health_bar.text_data.text.len > 0)
-                        _allocator.free(health_bar.text_data.text);
-                    health_bar.text_data.text = try std.fmt.allocPrint(_allocator, "{d}/{d} HP", .{ local_player.hp, local_player.max_hp });
+                    health_bar.text_data.text = try std.fmt.bufPrint(health_bar.text_data.backing_buffer, "{d}/{d} HP", .{ local_player.hp, local_player.max_hp });
 
                     last_hp = local_player.hp;
                     last_max_hp = local_player.max_hp;
@@ -1858,9 +1864,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
                 if (last_mp != local_player.mp or last_max_mp != local_player.max_mp) {
                     const mp_perc = @as(f32, @floatFromInt(local_player.mp)) / @as(f32, @floatFromInt(local_player.max_mp));
                     mana_bar.max_width = mana_bar.width() * mp_perc;
-                    if (mana_bar.text_data.text.len > 0)
-                        _allocator.free(mana_bar.text_data.text);
-                    mana_bar.text_data.text = try std.fmt.allocPrint(_allocator, "{d}/{d} MP", .{ local_player.mp, local_player.max_mp });
+                    mana_bar.text_data.text = try std.fmt.bufPrint(mana_bar.text_data.backing_buffer, "{d}/{d} MP", .{ local_player.mp, local_player.max_mp });
 
                     last_mp = local_player.mp;
                     last_max_mp = local_player.max_mp;

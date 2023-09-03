@@ -1752,6 +1752,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                                 .size = 16,
                                 .color = 0xFCDF00,
                                 .max_width = 200,
+                                .backing_buffer = &[0]u8{},
                             };
 
                             text_idx += drawText(
@@ -2009,6 +2010,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                                 .text = name,
                                 .text_type = .bold,
                                 .size = 16,
+                                .backing_buffer = &[0]u8{},
                             };
 
                             text_idx += drawText(
@@ -2023,6 +2025,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                                     .text = @constCast("Enter"), // meh
                                     .text_type = .bold,
                                     .size = 16,
+                                    .backing_buffer = &[0]u8{},
                                 };
 
                                 text_idx += drawText(
