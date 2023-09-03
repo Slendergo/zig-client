@@ -296,22 +296,17 @@ pub fn updateState() void {
     while (!map.object_lock.tryLock()) {}
     defer map.object_lock.unlock();
 
-    if (map.findEntity(map.local_player_id)) |en| {
-        switch (en.*) {
-            .player => |*local_player| {
-                const y_dt = move_down - move_up;
-                const x_dt = move_right - move_left;
-                local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
-                local_player.walk_speed_multiplier = walking_speed_multiplier;
+    if (map.localPlayerRef()) |local_player| {
+        const y_dt = move_down - move_up;
+        const x_dt = move_right - move_left;
+        local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
+        local_player.walk_speed_multiplier = walking_speed_multiplier;
 
-                if (attacking) {
-                    const y: f32 = @floatCast(mouse_y);
-                    const x: f32 = @floatCast(mouse_x);
-                    const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-                    local_player.shoot(shoot_angle, main.current_time);
-                }
-            },
-            else => {},
+        if (attacking) {
+            const y: f32 = @floatCast(mouse_y);
+            const x: f32 = @floatCast(mouse_x);
+            const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
+            local_player.shoot(shoot_angle, main.current_time);
         }
     }
 }
@@ -328,18 +323,13 @@ inline fn useAbility() void {
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();
 
-    if (map.findEntity(map.local_player_id)) |en| {
-        switch (en.*) {
-            .player => |local_player| {
-                const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
+    if (map.localPlayerConst()) |local_player| {
+        const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
 
-                network.sendUseItem(main.current_time, .{
-                    .object_id = local_player.obj_id,
-                    .slot_id = 1,
-                    .object_type = local_player.inventory[1],
-                }, .{ .x = world_pos.x, .y = world_pos.y }, 0);
-            },
-            else => {},
-        }
+        network.sendUseItem(main.current_time, .{
+            .object_id = local_player.obj_id,
+            .slot_id = 1,
+            .object_type = local_player.inventory[1],
+        }, .{ .x = world_pos.x, .y = world_pos.y }, 0);
     }
 }

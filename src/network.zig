@@ -259,34 +259,32 @@ inline fn handleAllyShoot() void {
     const container_type = reader.read(u16);
     const angle = reader.read(f32);
 
-    if (map.findEntity(owner_id)) |en| {
-        switch (en.*) {
-            .player => |*player| {
-                const weapon = player.inventory[0];
-                const item_props = game_data.item_type_to_props.get(@intCast(weapon));
-                const proj_props = item_props.?.projectile.?;
-                const projs_len = item_props.?.num_projectiles;
-                for (0..projs_len) |_| {
-                    var proj = map.Projectile{
-                        .x = player.x,
-                        .y = player.y,
-                        .props = proj_props,
-                        .angle = angle,
-                        .start_time = @divFloor(main.current_time, std.time.us_per_ms),
-                        .bullet_id = @intCast(bullet_id),
-                        .owner_id = player.obj_id,
-                    };
-                    proj.addToMap(true);
-                }
+    if (map.findEntityRef(owner_id)) |en| {
+        if (std.meta.activeTag(en.*) == .player) {
+            const player = &en.player;
+            const weapon = player.inventory[0];
+            const item_props = game_data.item_type_to_props.get(@intCast(weapon));
+            const proj_props = item_props.?.projectile.?;
+            const projs_len = item_props.?.num_projectiles;
+            for (0..projs_len) |_| {
+                var proj = map.Projectile{
+                    .x = player.x,
+                    .y = player.y,
+                    .props = proj_props,
+                    .angle = angle,
+                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                    .bullet_id = @intCast(bullet_id),
+                    .owner_id = player.obj_id,
+                };
+                proj.addToMap(true);
+            }
 
-                // if this is too slow for ya in large crowds hardcode it to 100
-                const attack_period: i32 = @intFromFloat((1.0 / player.attackFrequency()) * (1.0 / item_props.?.rate_of_fire));
-                player.attack_period = attack_period;
-                player.attack_angle = angle - camera.angle;
-                player.attack_angle_raw = angle;
-                player.attack_start = main.current_time;
-            },
-            else => {},
+            // if this is too slow for ya in large crowds hardcode it to 100
+            const attack_period: i32 = @intFromFloat((1.0 / player.attackFrequency()) * (1.0 / item_props.?.rate_of_fire));
+            player.attack_period = attack_period;
+            player.attack_angle = angle - camera.angle;
+            player.attack_angle_raw = angle;
+            player.attack_start = main.current_time;
         }
     }
 
@@ -360,10 +358,9 @@ inline fn handleEnemyShoot() void {
         return;
 
     var owner: ?map.GameObject = null;
-    if (map.findEntity(owner_id)) |en| {
-        switch (en.*) {
-            .object => |object| owner = object,
-            else => {},
+    if (map.findEntityConst(owner_id)) |en| {
+        if (std.meta.activeTag(en) == .object) {
+            owner = en.object;
         }
     }
 
@@ -425,20 +422,18 @@ inline fn handleGoto() void {
     const object_id = reader.read(i32);
     const position = reader.read(Position);
 
-    if (map.findEntity(object_id)) |en| {
-        switch (en.*) {
-            .player => |*player| {
-                if (object_id == map.local_player_id) {
-                    player.x = position.x;
-                    player.y = position.y;
-                } else {
-                    player.target_x = position.x;
-                    player.target_y = position.y;
-                    player.tick_x = player.x;
-                    player.tick_y = player.y;
-                }
-            },
-            else => {},
+    if (map.findEntityRef(object_id)) |en| {
+        if (std.meta.activeTag(en.*) == .player) {
+            const player = &en.player;
+            if (object_id == map.local_player_id) {
+                player.x = position.x;
+                player.y = position.y;
+            } else {
+                player.target_x = position.x;
+                player.target_y = position.y;
+                player.tick_x = player.x;
+                player.tick_y = player.y;
+            }
         }
     } else {
         std.log.err("Object id {d} not found while attempting to goto to pos {any}", .{ object_id, position });
@@ -516,17 +511,8 @@ inline fn handleNewTick(allocator: std.mem.Allocator) void {
 
     defer {
         if (main.tick_frame) {
-            if (map.findEntity(map.local_player_id)) |en| {
-                switch (en.*) {
-                    .player => |player| sendMove(
-                        tick_id,
-                        main.last_update,
-                        player.x,
-                        player.y,
-                        map.move_records.items(),
-                    ),
-                    else => {},
-                }
+            if (map.localPlayerConst()) |local_player| {
+                sendMove(tick_id, main.last_update, local_player.x, local_player.y, map.move_records.items());
             }
         }
     }
@@ -537,7 +523,7 @@ inline fn handleNewTick(allocator: std.mem.Allocator) void {
         const position = reader.read(Position);
 
         const stats_len = reader.read(u16);
-        if (map.findEntity(obj_id)) |en| {
+        if (map.findEntityRef(obj_id)) |en| {
             switch (en.*) {
                 .player => |*player| {
                     if (player.obj_id != map.local_player_id) {
@@ -602,7 +588,7 @@ inline fn handleNotification(allocator: std.mem.Allocator) void {
     const message = reader.read([]u8);
     const color = @byteSwap(@as(i32, @bitCast(reader.read(ARGB))));
 
-    if (map.findEntity(object_id)) |en| {
+    if (map.findEntityConst(object_id)) |en| {
         const text_data = ui.TextData{
             .text = allocator.dupe(u8, message) catch return,
             .text_type = .bold,
@@ -611,26 +597,23 @@ inline fn handleNotification(allocator: std.mem.Allocator) void {
             .backing_buffer = allocator.alloc(u8, 1) catch return,
         };
 
-        switch (en.*) {
-            .player => |*player| {
-                ui.status_texts.add(ui.StatusText{
-                    .obj_id = player.obj_id,
-                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
-                    .lifetime = 2000,
-                    .text_data = text_data,
-                    .initial_size = 22,
-                }) catch unreachable;
-            },
-            .object => |*obj| {
-                ui.status_texts.add(ui.StatusText{
-                    .obj_id = obj.obj_id,
-                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
-                    .lifetime = 2000,
-                    .text_data = text_data,
-                    .initial_size = 22,
-                }) catch unreachable;
-            },
-            else => {},
+        const tag = std.meta.activeTag(en);
+        if (tag == .player) {
+            ui.status_texts.add(ui.StatusText{
+                .obj_id = en.player.obj_id,
+                .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                .lifetime = 2000,
+                .text_data = text_data,
+                .initial_size = 22,
+            }) catch unreachable;
+        } else if (tag == .object) {
+            ui.status_texts.add(ui.StatusText{
+                .obj_id = en.object.obj_id,
+                .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                .lifetime = 2000,
+                .text_data = text_data,
+                .initial_size = 22,
+            }) catch unreachable;
         }
     }
 
@@ -676,41 +659,38 @@ inline fn handleServerPlayerShoot() void {
         std.log.debug("Recv - ServerPlayerShoot: bullet_id={d}, owner_id={d}, container_type={d}, x={e}, y={e}, angle={e}, damage={d}", .{ bullet_id, owner_id, container_type, starting_pos.x, starting_pos.y, angle, damage });
 
     const needs_ack = owner_id == map.local_player_id;
-    if (map.findEntity(owner_id)) |en| {
-        switch (en.*) {
-            .player => {
-                const item_props = game_data.item_type_to_props.get(@intCast(container_type));
-                if (item_props == null or item_props.?.projectile == null)
-                    return;
+    if (map.findEntityConst(owner_id)) |en| {
+        if (std.meta.activeTag(en) == .player) {
+            const item_props = game_data.item_type_to_props.get(@intCast(container_type));
+            if (item_props == null or item_props.?.projectile == null)
+                return;
 
-                const proj_props = item_props.?.projectile.?;
-                const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
-                var current_angle = angle - total_angle / 2.0;
-                for (0..num_shots) |i| {
-                    var proj = map.Projectile{
-                        .x = starting_pos.x,
-                        .y = starting_pos.y,
-                        .damage = damage,
-                        .props = proj_props,
-                        .angle = current_angle,
-                        .start_time = @divFloor(main.current_time, std.time.us_per_ms),
-                        .bullet_id = bullet_id +% @as(u8, @intCast(i)), // this is wrong but whatever
-                        .owner_id = owner_id,
-                    };
-                    proj.addToMap(true);
+            const proj_props = item_props.?.projectile.?;
+            const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
+            var current_angle = angle - total_angle / 2.0;
+            for (0..num_shots) |i| {
+                var proj = map.Projectile{
+                    .x = starting_pos.x,
+                    .y = starting_pos.y,
+                    .damage = damage,
+                    .props = proj_props,
+                    .angle = current_angle,
+                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                    .bullet_id = bullet_id +% @as(u8, @intCast(i)), // this is wrong but whatever
+                    .owner_id = owner_id,
+                };
+                proj.addToMap(true);
 
-                    current_angle += angle_inc;
-                }
+                current_angle += angle_inc;
+            }
 
-                if (needs_ack) {
-                    sendShootAck(main.current_time);
-                }
-            },
-            else => {
-                if (needs_ack) {
-                    sendShootAck(-1);
-                }
-            },
+            if (needs_ack) {
+                sendShootAck(main.current_time);
+            }
+        } else {
+            if (needs_ack) {
+                sendShootAck(-1);
+            }
         }
     }
 }
@@ -737,7 +717,7 @@ inline fn handleText(allocator: std.mem.Allocator) void {
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();
 
-    if (map.findEntity(object_id)) |en| {
+    if (map.findEntityConst(object_id)) |en| {
         var atlas_data = assets.error_data;
         if (assets.ui_atlas_data.get("speechBalloons")) |balloon_data| {
             // todo: guild, party and admin balloons
@@ -745,9 +725,10 @@ inline fn handleText(allocator: std.mem.Allocator) void {
             if (!std.mem.eql(u8, recipient, "")) {
                 atlas_data = balloon_data[1]; // tell balloon
             } else {
-                switch (en.*) {
-                    .object => atlas_data = balloon_data[3], // enemy balloon
-                    else => atlas_data = balloon_data[0], // normal balloon
+                if (std.meta.activeTag(en) == .object) {
+                    atlas_data = balloon_data[3]; // enemy balloon
+                } else {
+                    atlas_data = balloon_data[0]; // normal balloon
                 }
             }
         }
@@ -1421,11 +1402,8 @@ pub fn sendMove(tick_id: i32, time: i64, pos_x: f32, pos_y: f32, records: []cons
 
     writeBuffer();
 
-    if (map.findEntity(map.local_player_id)) |en| {
-        switch (en.*) {
-            .player => |*player| player.onMove(),
-            else => {},
-        }
+    if (map.localPlayerRef()) |local_player| {
+        local_player.onMove();
     }
 }
 

@@ -903,40 +903,36 @@ pub const Projectile = struct {
         };
     }
 
-    inline fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?*GameObject {
+    inline fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?GameObject {
         var min_dist = std.math.floatMax(f32);
-        var target: ?*GameObject = null;
-        for (entities.items()) |*en| {
-            switch (en.*) {
-                .object => |*obj| {
-                    if (obj.is_enemy) {
-                        const dist_sqr = utils.distSqr(obj.x, obj.y, x, y);
-                        if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
-                            min_dist = dist_sqr;
-                            target = obj;
-                        }
+        var target: ?GameObject = null;
+        for (entities.items()) |en| {
+            if (std.meta.activeTag(en) == .object) {
+                const obj = en.object;
+                if (obj.is_enemy) {
+                    const dist_sqr = utils.distSqr(obj.x, obj.y, x, y);
+                    if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
+                        min_dist = dist_sqr;
+                        target = obj;
                     }
-                },
-                else => {},
+                }
             }
         }
 
         return target;
     }
 
-    inline fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?*Player {
+    inline fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?Player {
         var min_dist = std.math.floatMax(f32);
-        var target: ?*Player = null;
-        for (entities.items()) |*en| {
-            switch (en.*) {
-                .player => |*player| {
-                    const dist_sqr = utils.distSqr(player.x, player.y, x, y);
-                    if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
-                        min_dist = dist_sqr;
-                        target = player;
-                    }
-                },
-                else => {},
+        var target: ?Player = null;
+        for (entities.items()) |en| {
+            if (std.meta.activeTag(en) == .player) {
+                const player = en.player;
+                const dist_sqr = utils.distSqr(player.x, player.y, x, y);
+                if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
+                    min_dist = dist_sqr;
+                    target = player;
+                }
             }
         }
 
@@ -1288,7 +1284,42 @@ pub fn setWH(w: isize, h: isize, allocator: std.mem.Allocator) void {
         squares[i] = Square{};
 }
 
-pub fn findEntity(obj_id: i32) ?*Entity {
+pub fn localPlayerConst() ?Player {
+    if (map.local_player_id == -1)
+        return null;
+
+    if (findEntityConst(map.local_player_id)) |en| {
+        return en.player;
+    }
+
+    return null;
+}
+
+pub fn localPlayerRef() ?*Player {
+    if (map.local_player_id == -1)
+        return null;
+
+    if (findEntityRef(map.local_player_id)) |en| {
+        return &en.player;
+    }
+
+    return null;
+}
+
+pub fn findEntityConst(obj_id: i32) ?Entity {
+    for (entities.items()) |en| {
+        switch (en) {
+            inline else => |obj| {
+                if (obj.obj_id == obj_id)
+                    return en;
+            },
+        }
+    }
+
+    return null;
+}
+
+pub fn findEntityRef(obj_id: i32) ?*Entity {
     for (entities.items()) |*en| {
         switch (en.*) {
             inline else => |*obj| {
@@ -1302,9 +1333,9 @@ pub fn findEntity(obj_id: i32) ?*Entity {
 }
 
 pub fn removeEntity(obj_id: i32) ?Entity {
-    for (entities.items(), 0..) |*en, i| {
-        switch (en.*) {
-            inline else => |*obj| {
+    for (entities.items(), 0..) |en, i| {
+        switch (en) {
+            inline else => |obj| {
                 if (obj.obj_id == obj_id)
                     return entities.remove(i);
             },
@@ -1315,22 +1346,20 @@ pub fn removeEntity(obj_id: i32) ?Entity {
 }
 
 pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, piercing: bool) i32 {
-    if (findEntity(object_id)) |en| {
-        switch (en.*) {
-            .object => |object| {
-                var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
+    _ = player_id;
+    if (findEntityConst(object_id)) |en| {
+        if (std.meta.activeTag(en) == .object) {
+            const object = en.object;
+            var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
 
-                if (!piercing)
-                    damage -= @intCast(object.defense);
+            if (!piercing)
+                damage -= @intCast(object.defense);
 
-                // todo player buffs and mult
-                // if (findPlayer(player_id)) |player| {
-                // }
-                return @intCast(damage);
-            },
-            else => {},
+            // todo player buffs and mult
+            // if (findPlayer(player_id)) |player| {
+            // }
+            return @intCast(damage);
         }
-        _ = player_id;
     }
     return -1;
 }
@@ -1346,53 +1375,52 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
 
     var interactive_set = false;
-    for (entities.items(), 0..) |*en, i| {
-        switch (en.*) {
-            .object => |*obj| {
-                const is_container = obj.class == .container;
-                if (!interactive_set and (obj.class == .portal or is_container)) {
-                    const dt_x = camera.x - obj.x;
-                    const dt_y = camera.y - obj.y;
-                    if (dt_x * dt_x + dt_y * dt_y < 1) {
-                        interactive_id.store(obj.obj_id, .Release);
-                        interactive_type.store(obj.class, .Release);
+    for (0..entities.capacity) |i| {
+        var en = entities._items[i];
+        const tag = std.meta.activeTag(en);
+        if (tag == .player) {
+            en.player.update(ms_time, ms_dt);
+            if (en.player.obj_id == local_player_id) {
+                camera.update(en.player.x, en.player.y, ms_dt, input.rotate);
+                if (input.attacking) {
+                    const y: f32 = @floatCast(input.mouse_y);
+                    const x: f32 = @floatCast(input.mouse_x);
+                    const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
+                    en.player.shoot(shoot_angle, time);
+                }
+            }
+        } else if (tag == .object) {
+            const is_container = en.object.class == .container;
+            if (!interactive_set and (en.object.class == .portal or is_container)) {
+                const dt_x = camera.x - en.object.x;
+                const dt_y = camera.y - en.object.y;
+                if (dt_x * dt_x + dt_y * dt_y < 1) {
+                    interactive_id.store(en.object.obj_id, .Release);
+                    interactive_type.store(en.object.class, .Release);
 
-                        if (is_container) {
-                            if (ui.container_id != obj.obj_id) {
-                                inline for (0..8) |idx| {
-                                    ui.setContainerItem(obj.inventory[idx], idx);
-                                }
+                    if (is_container) {
+                        if (ui.container_id != en.object.obj_id) {
+                            inline for (0..8) |idx| {
+                                ui.setContainerItem(en.object.inventory[idx], idx);
                             }
-
-                            ui.container_id = obj.obj_id;
-                            ui.setContainerVisible(true);
                         }
 
-                        interactive_set = true;
+                        ui.container_id = en.object.obj_id;
+                        ui.setContainerVisible(true);
                     }
-                }
 
-                obj.update(ms_time, ms_dt);
-            },
-            .player => |*player| {
-                player.update(ms_time, ms_dt);
-                if (player.obj_id == local_player_id) {
-                    camera.update(player.x, player.y, ms_dt, input.rotate);
-                    if (input.attacking) {
-                        const y: f32 = @floatCast(input.mouse_y);
-                        const x: f32 = @floatCast(input.mouse_x);
-                        const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-                        player.shoot(shoot_angle, time);
-                    }
+                    interactive_set = true;
                 }
-            },
-            .projectile => |*proj| {
-                if (!proj.update(ms_time, ms_dt, allocator))
-                    entity_indices_to_remove.add(i) catch |e| {
-                        std.log.err("Out of memory: {any}", .{e});
-                    };
-            },
+            }
+
+            en.object.update(ms_time, ms_dt);
+        } else if (tag == .projectile) {
+            if (!en.projectile.update(ms_time, ms_dt, allocator))
+                entity_indices_to_remove.add(i) catch |e| {
+                    std.log.err("Out of memory: {any}", .{e});
+                };
         }
+        entities._items[i] = en;
     }
 
     if (!interactive_set) {

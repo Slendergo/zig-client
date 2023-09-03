@@ -1331,57 +1331,52 @@ fn swapSlots(start_slot: Slot, end_slot: Slot) void {
         while (!map.object_lock.tryLockShared()) {}
         defer map.object_lock.unlockShared();
 
-        if (map.findEntity(map.local_player_id)) |en| {
-            switch (en.*) {
-                .player => |local_player| {
-                    const start_item = if (start_slot.is_container)
-                        container_items[start_slot.idx]._item
-                    else
-                        inventory_items[start_slot.idx]._item;
+        if (map.localPlayerConst()) |local_player| {
+            const start_item = if (start_slot.is_container)
+                container_items[start_slot.idx]._item
+            else
+                inventory_items[start_slot.idx]._item;
 
-                    if (end_slot.idx >= 12 and !local_player.has_backpack) {
-                        if (start_slot.is_container) {
-                            setContainerItem(start_item, start_slot.idx);
-                        } else {
-                            setInvItem(start_item, start_slot.idx);
-                        }
-                        return;
-                    }
-
-                    const end_item = if (end_slot.is_container)
-                        container_items[end_slot.idx]._item
-                    else
-                        inventory_items[end_slot.idx]._item;
-
-                    if (start_slot.is_container) {
-                        setContainerItem(end_item, start_slot.idx);
-                    } else {
-                        setInvItem(end_item, start_slot.idx);
-                    }
-
-                    if (end_slot.is_container) {
-                        setContainerItem(start_item, end_slot.idx);
-                    } else {
-                        setInvItem(start_item, end_slot.idx);
-                    }
-
-                    network.sendInvSwap(
-                        main.current_time,
-                        .{ .x = local_player.x, .y = local_player.y },
-                        .{
-                            .object_id = if (start_slot.is_container) int_id else map.local_player_id,
-                            .slot_id = start_slot.idx,
-                            .object_type = start_item,
-                        },
-                        .{
-                            .object_id = if (end_slot.is_container) int_id else map.local_player_id,
-                            .slot_id = end_slot.idx,
-                            .object_type = end_item,
-                        },
-                    );
-                },
-                else => {},
+            if (end_slot.idx >= 12 and !local_player.has_backpack) {
+                if (start_slot.is_container) {
+                    setContainerItem(start_item, start_slot.idx);
+                } else {
+                    setInvItem(start_item, start_slot.idx);
+                }
+                return;
             }
+
+            const end_item = if (end_slot.is_container)
+                container_items[end_slot.idx]._item
+            else
+                inventory_items[end_slot.idx]._item;
+
+            if (start_slot.is_container) {
+                setContainerItem(end_item, start_slot.idx);
+            } else {
+                setInvItem(end_item, start_slot.idx);
+            }
+
+            if (end_slot.is_container) {
+                setContainerItem(start_item, end_slot.idx);
+            } else {
+                setInvItem(start_item, end_slot.idx);
+            }
+
+            network.sendInvSwap(
+                main.current_time,
+                .{ .x = local_player.x, .y = local_player.y },
+                .{
+                    .object_id = if (start_slot.is_container) int_id else map.local_player_id,
+                    .slot_id = start_slot.idx,
+                    .object_type = start_item,
+                },
+                .{
+                    .object_id = if (end_slot.is_container) int_id else map.local_player_id,
+                    .slot_id = end_slot.idx,
+                    .object_type = end_item,
+                },
+            );
         }
     }
 }
@@ -1425,25 +1420,20 @@ fn itemShiftClickCallback(item: *Item) void {
             while (!map.object_lock.tryLockShared()) {}
             defer map.object_lock.unlockShared();
 
-            if (map.findEntity(map.local_player_id)) |en| {
-                switch (en.*) {
-                    .player => |local_player| {
-                        network.sendUseItem(
-                            main.current_time,
-                            .{
-                                .object_id = if (slot.is_container) container_id else map.local_player_id,
-                                .slot_id = slot.idx,
-                                .object_type = item._item,
-                            },
-                            .{
-                                .x = local_player.x,
-                                .y = local_player.y,
-                            },
-                            0,
-                        );
+            if (map.localPlayerConst()) |local_player| {
+                network.sendUseItem(
+                    main.current_time,
+                    .{
+                        .object_id = if (slot.is_container) container_id else map.local_player_id,
+                        .slot_id = slot.idx,
+                        .object_type = item._item,
                     },
-                    else => {},
-                }
+                    .{
+                        .x = local_player.x,
+                        .y = local_player.y,
+                    },
+                    0,
+                );
             }
 
             return;
@@ -1465,25 +1455,20 @@ fn itemDoubleClickCallback(item: *Item) void {
             while (!map.object_lock.tryLockShared()) {}
             defer map.object_lock.unlockShared();
 
-            if (map.findEntity(map.local_player_id)) |en| {
-                switch (en.*) {
-                    .player => |local_player| {
-                        network.sendUseItem(
-                            main.current_time,
-                            .{
-                                .object_id = map.local_player_id,
-                                .slot_id = start_slot.idx,
-                                .object_type = item._item,
-                            },
-                            .{
-                                .x = local_player.x,
-                                .y = local_player.y,
-                            },
-                            0,
-                        );
+            if (map.localPlayerConst()) |local_player| {
+                network.sendUseItem(
+                    main.current_time,
+                    .{
+                        .object_id = map.local_player_id,
+                        .slot_id = start_slot.idx,
+                        .object_type = item._item,
                     },
-                    else => {},
-                }
+                    .{
+                        .x = local_player.x,
+                        .y = local_player.y,
+                    },
+                    0,
+                );
             }
 
             return;
@@ -1504,22 +1489,17 @@ fn itemDoubleClickCallback(item: *Item) void {
             while (!map.object_lock.tryLockShared()) {}
             defer map.object_lock.unlockShared();
 
-            if (map.findEntity(map.local_player_id)) |en| {
-                switch (en.*) {
-                    .player => |local_player| {
-                        const end_slot = Slot.nextEquippableSlot(local_player.slot_types, props.slot_type);
-                        if (end_slot.idx == 255 or // we don't want to drop
-                            start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container)
-                        {
-                            item.x = item._drag_start_x;
-                            item.y = item._drag_start_y;
-                            return;
-                        }
-
-                        swapSlots(start_slot, end_slot);
-                    },
-                    else => {},
+            if (map.localPlayerConst()) |local_player| {
+                const end_slot = Slot.nextEquippableSlot(local_player.slot_types, props.slot_type);
+                if (end_slot.idx == 255 or // we don't want to drop
+                    start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container)
+                {
+                    item.x = item._drag_start_x;
+                    item.y = item._drag_start_y;
+                    return;
                 }
+
+                swapSlots(start_slot, end_slot);
             }
         }
     }
@@ -1818,59 +1798,54 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
     const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
     _ = ms_dt;
 
-    if (map.findEntity(map.local_player_id)) |en| {
-        switch (en.*) {
-            .player => |local_player| {
-                if (last_level != local_player.level) {
-                    level_text.text_data.text = try std.fmt.bufPrint(level_text.text_data.backing_buffer, "{d}", .{local_player.level});
+    if (map.localPlayerConst()) |local_player| {
+        if (last_level != local_player.level) {
+            level_text.text_data.text = try std.fmt.bufPrint(level_text.text_data.backing_buffer, "{d}", .{local_player.level});
 
-                    last_level = local_player.level;
-                }
+            last_level = local_player.level;
+        }
 
-                const max_level = local_player.level >= 20;
-                if (max_level) {
-                    if (last_fame != local_player.fame or last_fame_goal != local_player.fame_goal) {
-                        fame_bar.visible = true;
-                        xp_bar.visible = false;
-                        const fame_perc = @as(f32, @floatFromInt(local_player.fame)) / @as(f32, @floatFromInt(local_player.fame_goal));
-                        fame_bar.max_width = fame_bar.width() * fame_perc;
-                        fame_bar.text_data.text = try std.fmt.bufPrint(fame_bar.text_data.backing_buffer, "{d}/{d} Fame", .{ local_player.fame, local_player.fame_goal });
+        const max_level = local_player.level >= 20;
+        if (max_level) {
+            if (last_fame != local_player.fame or last_fame_goal != local_player.fame_goal) {
+                fame_bar.visible = true;
+                xp_bar.visible = false;
+                const fame_perc = @as(f32, @floatFromInt(local_player.fame)) / @as(f32, @floatFromInt(local_player.fame_goal));
+                fame_bar.max_width = fame_bar.width() * fame_perc;
+                fame_bar.text_data.text = try std.fmt.bufPrint(fame_bar.text_data.backing_buffer, "{d}/{d} Fame", .{ local_player.fame, local_player.fame_goal });
 
-                        last_fame = local_player.fame;
-                        last_fame_goal = local_player.fame_goal;
-                    }
-                } else {
-                    if (last_xp != local_player.exp or last_xp_goal != local_player.exp_goal) {
-                        xp_bar.visible = true;
-                        fame_bar.visible = false;
-                        const exp_perc = @as(f32, @floatFromInt(local_player.exp)) / @as(f32, @floatFromInt(local_player.exp_goal));
-                        xp_bar.max_width = xp_bar.width() * exp_perc;
-                        xp_bar.text_data.text = try std.fmt.bufPrint(xp_bar.text_data.backing_buffer, "{d}/{d} XP", .{ local_player.exp, local_player.exp_goal });
+                last_fame = local_player.fame;
+                last_fame_goal = local_player.fame_goal;
+            }
+        } else {
+            if (last_xp != local_player.exp or last_xp_goal != local_player.exp_goal) {
+                xp_bar.visible = true;
+                fame_bar.visible = false;
+                const exp_perc = @as(f32, @floatFromInt(local_player.exp)) / @as(f32, @floatFromInt(local_player.exp_goal));
+                xp_bar.max_width = xp_bar.width() * exp_perc;
+                xp_bar.text_data.text = try std.fmt.bufPrint(xp_bar.text_data.backing_buffer, "{d}/{d} XP", .{ local_player.exp, local_player.exp_goal });
 
-                        last_xp = local_player.exp;
-                        last_xp_goal = local_player.exp_goal;
-                    }
-                }
+                last_xp = local_player.exp;
+                last_xp_goal = local_player.exp_goal;
+            }
+        }
 
-                if (last_hp != local_player.hp or last_max_hp != local_player.max_hp) {
-                    const hp_perc = @as(f32, @floatFromInt(local_player.hp)) / @as(f32, @floatFromInt(local_player.max_hp));
-                    health_bar.max_width = health_bar.width() * hp_perc;
-                    health_bar.text_data.text = try std.fmt.bufPrint(health_bar.text_data.backing_buffer, "{d}/{d} HP", .{ local_player.hp, local_player.max_hp });
+        if (last_hp != local_player.hp or last_max_hp != local_player.max_hp) {
+            const hp_perc = @as(f32, @floatFromInt(local_player.hp)) / @as(f32, @floatFromInt(local_player.max_hp));
+            health_bar.max_width = health_bar.width() * hp_perc;
+            health_bar.text_data.text = try std.fmt.bufPrint(health_bar.text_data.backing_buffer, "{d}/{d} HP", .{ local_player.hp, local_player.max_hp });
 
-                    last_hp = local_player.hp;
-                    last_max_hp = local_player.max_hp;
-                }
+            last_hp = local_player.hp;
+            last_max_hp = local_player.max_hp;
+        }
 
-                if (last_mp != local_player.mp or last_max_mp != local_player.max_mp) {
-                    const mp_perc = @as(f32, @floatFromInt(local_player.mp)) / @as(f32, @floatFromInt(local_player.max_mp));
-                    mana_bar.max_width = mana_bar.width() * mp_perc;
-                    mana_bar.text_data.text = try std.fmt.bufPrint(mana_bar.text_data.backing_buffer, "{d}/{d} MP", .{ local_player.mp, local_player.max_mp });
+        if (last_mp != local_player.mp or last_max_mp != local_player.max_mp) {
+            const mp_perc = @as(f32, @floatFromInt(local_player.mp)) / @as(f32, @floatFromInt(local_player.max_mp));
+            mana_bar.max_width = mana_bar.width() * mp_perc;
+            mana_bar.text_data.text = try std.fmt.bufPrint(mana_bar.text_data.backing_buffer, "{d}/{d} MP", .{ local_player.mp, local_player.max_mp });
 
-                    last_mp = local_player.mp;
-                    last_max_mp = local_player.max_mp;
-                }
-            },
-            else => {},
+            last_mp = local_player.mp;
+            last_max_mp = local_player.max_mp;
         }
     }
 
@@ -1895,8 +1870,8 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
         const frac = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(status_text.lifetime));
         status_text.text_data.size = status_text.initial_size * @min(1.0, @max(0.7, 1.0 - frac * 0.3 + 0.075));
         status_text.text_data.alpha = 1.0 - frac + 0.33;
-        if (map.findEntity(status_text.obj_id)) |en| {
-            switch (en.*) {
+        if (map.findEntityConst(status_text.obj_id)) |en| {
+            switch (en) {
                 inline else => |obj| {
                     status_text._screen_x = obj.screen_x - status_text.text_data.width() / 2;
                     status_text._screen_y = obj.screen_y - status_text.text_data.height() - frac * 40;
@@ -1936,8 +1911,8 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
         const alpha = 1.0 - frac * 2.0 + 0.9;
         speech_balloon.image_data.normal.alpha = alpha; // assume no 9 slice
         speech_balloon.text_data.alpha = alpha;
-        if (map.findEntity(speech_balloon.target_id)) |en| {
-            switch (en.*) {
+        if (map.findEntityConst(speech_balloon.target_id)) |en| {
+            switch (en) {
                 inline else => |obj| {
                     speech_balloon._screen_x = obj.screen_x - speech_balloon.width() / 2;
                     speech_balloon._screen_y = obj.screen_y - speech_balloon.height();
