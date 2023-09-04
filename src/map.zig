@@ -1071,9 +1071,7 @@ pub const Projectile = struct {
         } else {
             const y_dt: f32 = self.y - last_y;
             const x_dt: f32 = self.x - last_x;
-            if (y_dt > 0.0 or x_dt != 0) {
-                self.visual_angle = std.math.atan2(f32, y_dt, x_dt);
-            }
+            self.visual_angle = std.math.atan2(f32, y_dt, x_dt);
         }
 
         if (self.damage_players) {
@@ -1265,7 +1263,18 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         allocator.free(squares);
     }
 
-    dispose(allocator);
+    for (entities.items()) |en| {
+        switch (en) {
+            .object => |obj| {
+                allocator.free(obj.name_override);
+            },
+            .player => |player| {
+                allocator.free(player.name_override);
+                allocator.free(player.guild);
+            },
+            else => {},
+        }
+    }
 
     entities.deinit();
     entity_indices_to_remove.deinit();
