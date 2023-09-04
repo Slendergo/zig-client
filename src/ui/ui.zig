@@ -554,6 +554,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         if (box.text_data) |text_data| {
             allocator.free(text_data.backing_buffer);
         }
+        allocator.destroy(box);
     }
     character_boxes.deinit();
     ui_images.deinit();
@@ -568,16 +569,18 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     }
     items.deinit();
     for (speech_balloons.items()) |speech_balloon| {
-        allocator.free(speech_balloon.text_data.backing_buffer);
+        allocator.free(speech_balloon.text_data.text);
     }
     speech_balloons.deinit();
     speech_balloons_to_remove.deinit();
     for (status_texts.items()) |status_text| {
-        allocator.free(status_text.text_data.backing_buffer);
+        allocator.free(status_text.text_data.text);
     }
     status_texts.deinit();
     status_texts_to_remove.deinit();
     obj_ids_to_remove.deinit();
+
+    allocator.destroy(menu_background);
 
     account_screen.deinit(allocator);
     in_game_screen.deinit(allocator);
@@ -696,8 +699,8 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
             continue;
 
         if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
-            button.press_callback();
             button.state = .pressed;
+            button.press_callback();
             return true;
         }
     }
@@ -707,8 +710,8 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
             continue;
 
         if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
-            box.press_callback(box);
             box.state = .pressed;
+            box.press_callback(box);
             return true;
         }
     }

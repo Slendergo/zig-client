@@ -594,7 +594,7 @@ inline fn handleNotification(allocator: std.mem.Allocator) void {
             .text_type = .bold,
             .size = 22,
             .color = color,
-            .backing_buffer = allocator.alloc(u8, 1) catch return,
+            .backing_buffer = &[0]u8{},
         };
 
         if (en == .player) {
@@ -711,7 +711,7 @@ inline fn handleText(allocator: std.mem.Allocator) void {
     const num_stars = reader.read(i32);
     const bubble_time = reader.read(u8);
     const recipient = reader.read([]u8);
-    const text = allocator.dupe(u8, reader.read([]u8)) catch unreachable;
+    const text = reader.read([]u8);
 
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();
@@ -739,10 +739,10 @@ inline fn handleText(allocator: std.mem.Allocator) void {
                 .atlas_data = atlas_data,
             } },
             .text_data = .{
-                .text = text,
+                .text = allocator.dupe(u8, text) catch unreachable,
                 .size = 16,
                 .max_width = 160,
-                .backing_buffer = allocator.alloc(u8, 1) catch unreachable,
+                .backing_buffer = &[0]u8{},
             },
             .target_id = object_id,
             .start_time = @divFloor(main.current_time, std.time.us_per_ms),
@@ -810,32 +810,7 @@ inline fn handleUpdate(allocator: std.mem.Allocator) void {
 
         for (drops) |drop| {
             if (map.removeEntity(drop)) |en| {
-                switch (en) {
-                    .object => |obj| {
-                        if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
-                            if (class_props == .wall) {
-                                var square = map.getSquareUnsafe(obj.x, obj.y);
-                                square.occupy_square = false;
-                                square.full_occupy = false;
-                                square.has_wall = false;
-                                square.blocking = false;
-                            }
-                        }
-
-                        ui.removeAttachedUi(obj.obj_id);
-
-                        allocator.free(obj.name_override);
-                        continue;
-                    },
-                    .player => |player| {
-                        ui.removeAttachedUi(player.obj_id);
-
-                        allocator.free(player.name_override);
-                        allocator.free(player.guild);
-                        continue;
-                    },
-                    else => {},
-                }
+                map.disposeEntity(allocator, en);
             }
 
             std.log.err("Could not remove object with id {d}", .{drop});

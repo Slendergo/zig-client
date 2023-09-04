@@ -1095,7 +1095,7 @@ pub const Projectile = struct {
                         .text_type = .bold,
                         .size = 22,
                         .color = damage_color,
-                        .backing_buffer = allocator.alloc(u8, 1) catch unreachable,
+                        .backing_buffer = &[0]u8{},
                     };
 
                     ui.status_texts.add(ui.StatusText{
@@ -1138,7 +1138,7 @@ pub const Projectile = struct {
                         .text_type = .bold,
                         .size = 22,
                         .color = damage_color,
-                        .backing_buffer = allocator.alloc(u8, 1) catch unreachable,
+                        .backing_buffer = &[0]u8{},
                     };
 
                     ui.status_texts.add(ui.StatusText{
@@ -1229,18 +1229,34 @@ pub fn init(allocator: std.mem.Allocator) !void {
     move_records = try utils.DynSlice(network.TimedPosition).init(10, allocator);
 }
 
+pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
+    switch (en) {
+        .object => |obj| {
+            if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
+                if (class_props == .wall) {
+                    var square = map.getSquareUnsafe(obj.x, obj.y);
+                    square.occupy_square = false;
+                    square.full_occupy = false;
+                    square.has_wall = false;
+                    square.blocking = false;
+                }
+            }
+
+            ui.removeAttachedUi(obj.obj_id);
+            allocator.free(obj.name_override);
+        },
+        .player => |player| {
+            ui.removeAttachedUi(player.obj_id);
+            allocator.free(player.name_override);
+            allocator.free(player.guild);
+        },
+        else => {},
+    }
+}
+
 pub fn dispose(allocator: std.mem.Allocator) void {
     for (entities.items()) |en| {
-        switch (en) {
-            .object => |obj| {
-                allocator.free(obj.name_override);
-            },
-            .player => |player| {
-                allocator.free(player.name_override);
-                allocator.free(player.guild);
-            },
-            else => {},
-        }
+        disposeEntity(allocator, en);
     }
 }
 

@@ -28,6 +28,7 @@ pub const CharSelectScreen = struct {
             if (box.text_data) |text_data| {
                 self._allocator.free(text_data.backing_buffer);
             }
+            self._allocator.destroy(box);
         }
 
         ui.character_boxes.clear();

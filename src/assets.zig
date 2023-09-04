@@ -236,7 +236,7 @@ fn isImageEmpty(img: zstbi.Image, x: usize, y: usize, w: u32, h: u32) bool {
     return true;
 }
 
-inline fn addCursors(comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32) !void {
+fn addCursors(comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32) !void {
     var img = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/" ++ image_name, 4);
     defer img.deinit();
 
@@ -283,7 +283,7 @@ inline fn addCursors(comptime image_name: []const u8, comptime cut_width: u32, c
     }
 }
 
-inline fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
+fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
     var img = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/" ++ image_name, 4);
     defer img.deinit();
 
@@ -336,7 +336,7 @@ inline fn addImage(comptime sheet_name: []const u8, comptime image_name: []const
     }
 }
 
-inline fn addUiImage(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width_base: u32, comptime cut_height_base: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
+fn addUiImage(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width_base: u32, comptime cut_height_base: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
     var img = try zstbi.Image.loadFromFile(asset_dir ++ "" ++ image_name, 4);
     defer img.deinit();
 
@@ -393,7 +393,7 @@ inline fn addUiImage(comptime sheet_name: []const u8, comptime image_name: []con
     }
 }
 
-inline fn addAnimEnemy(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, comptime full_cut_width: u32, comptime full_cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
+fn addAnimEnemy(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, comptime full_cut_width: u32, comptime full_cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
     var img = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/" ++ image_name, 4);
     defer img.deinit();
 
@@ -464,7 +464,7 @@ inline fn addAnimEnemy(comptime sheet_name: []const u8, comptime image_name: []c
     }
 }
 
-inline fn addAnimPlayer(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, comptime full_cut_width: u32, comptime full_cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
+fn addAnimPlayer(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, comptime full_cut_width: u32, comptime full_cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
     var img = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/" ++ image_name, 4);
     defer img.deinit();
 
@@ -616,6 +616,13 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 
     var rects_iter = atlas_data.valueIterator();
     while (rects_iter.next()) |sheet_rects| {
+        if (sheet_rects.len > 0) {
+            allocator.free(sheet_rects.*);
+        }
+    }
+
+    var ui_rects_iter = ui_atlas_data.valueIterator();
+    while (ui_rects_iter.next()) |sheet_rects| {
         if (sheet_rects.len > 0) {
             allocator.free(sheet_rects.*);
         }
