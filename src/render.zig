@@ -8,7 +8,7 @@ const zgpu = @import("zgpu");
 const utils = @import("utils.zig");
 const zstbrp = @import("zstbrp");
 const zstbi = @import("zstbi");
-const ui = @import("ui.zig");
+const ui = @import("ui/ui.zig");
 const main = @import("main.zig");
 const zgui = @import("zgui");
 
@@ -1834,6 +1834,88 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
         var needs_clear = no_in_game_render;
         var ui_idx: u16 = 0;
+        for (ui.status_texts.items()) |status_text| {
+            if (!status_text.visible)
+                continue;
+
+            if (ui_idx >= 40000 - status_text.text_data.text.len * 4) {
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
+                ui_idx = 0;
+            }
+
+            ui_idx += drawText(
+                ui_idx,
+                status_text._screen_x,
+                status_text._screen_y,
+                status_text.text_data,
+            );
+        }
+
+        for (ui.speech_balloons.items()) |balloon| {
+            if (!balloon.visible)
+                continue;
+
+            const image_data = balloon.image_data.normal; // assume no 9 slice
+            const w = image_data.width();
+            const h = image_data.height();
+
+            drawQuad(
+                ui_idx,
+                balloon._screen_x,
+                balloon._screen_y,
+                w,
+                h,
+                image_data.atlas_data,
+                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
+            );
+            ui_idx += 4;
+
+            if (ui_idx == 40000) {
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
+                ui_idx = 0;
+            }
+
+            if (ui_idx >= 40000 - balloon.text_data.text.len * 4) {
+                endBaseDraw(
+                    gctx,
+                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                    encoder,
+                    vb_info,
+                    ib_info,
+                    pipeline,
+                    bind_group,
+                );
+                needs_clear = false;
+                ui_idx = 0;
+            }
+
+            const decor_offset = h / 10;
+            ui_idx += drawText(
+                ui_idx,
+                balloon._screen_x + ((w - assets.padding * image_data.scale_x) - balloon.text_data.width()) / 2,
+                balloon._screen_y + (h - balloon.text_data.height()) / 2 - decor_offset,
+                balloon.text_data,
+            );
+        }
+
         for (ui.ui_images.items()) |image| {
             if (!image.visible)
                 continue;
@@ -2411,88 +2493,6 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 needs_clear = false;
                 ui_idx = 0;
             }
-        }
-
-        for (ui.speech_balloons.items()) |balloon| {
-            if (!balloon.visible)
-                continue;
-
-            const image_data = balloon.image_data.normal; // assume no 9 slice
-            const w = image_data.width();
-            const h = image_data.height();
-
-            drawQuad(
-                ui_idx,
-                balloon._screen_x,
-                balloon._screen_y,
-                w,
-                h,
-                image_data.atlas_data,
-                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
-            );
-            ui_idx += 4;
-
-            if (ui_idx == 40000) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
-
-            if (ui_idx >= 40000 - balloon.text_data.text.len * 4) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
-
-            const decor_offset = h / 10;
-            ui_idx += drawText(
-                ui_idx,
-                balloon._screen_x + ((w - assets.padding * image_data.scale_x) - balloon.text_data.width()) / 2,
-                balloon._screen_y + (h - balloon.text_data.height()) / 2 - decor_offset,
-                balloon.text_data,
-            );
-        }
-
-        for (ui.status_texts.items()) |status_text| {
-            if (!status_text.visible)
-                continue;
-
-            if (ui_idx >= 40000 - status_text.text_data.text.len * 4) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
-
-            ui_idx += drawText(
-                ui_idx,
-                status_text._screen_x,
-                status_text._screen_y,
-                status_text.text_data,
-            );
         }
 
         if (ui_idx != 0) {

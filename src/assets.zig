@@ -889,3 +889,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         ui_error_data = error_tex[0x0];
     }
 }
+
+pub inline fn getUiSingle(comptime name: []const u8) AtlasData {
+    return (ui_atlas_data.get(name) orelse @panic("Could not find " ++ name ++ " in ui atlas"))[0];
+}

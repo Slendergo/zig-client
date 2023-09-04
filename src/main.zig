@@ -16,7 +16,7 @@ const input = @import("input.zig");
 const utils = @import("utils.zig");
 const camera = @import("camera.zig");
 const map = @import("map.zig");
-const ui = @import("ui.zig");
+const ui = @import("ui/ui.zig");
 const render = @import("render.zig");
 const ztracy = @import("ztracy");
 const zaudio = @import("zaudio");
@@ -172,9 +172,8 @@ fn renderTick(allocator: std.mem.Allocator) !void {
     while (tick_render) {
         draw();
 
-        // this has to be updated on render thread to avoid headaches
-        ui.fps_text.text_data.text = try std.fmt.bufPrint(ui.fps_text.text_data.backing_buffer, "FPS: {d:.1}\nMemory: {d:.1} MB", .{ gctx.stats.fps, try utils.currentMemoryUse() });
-        ui.fps_text.x = camera.screen_width - ui.fps_text.text_data.width() - 10;
+        // this has to be updated on render thread to avoid headaches (gctx sharing)
+        try ui.in_game_screen.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
     }
 }
 
@@ -329,70 +328,4 @@ pub fn main() !void {
         }
         defer allocator.free(srv_list);
     }
-}
-
-pub fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) !bool {
-    const response = try requests.sendAccountVerify(email, password);
-    if (std.mem.eql(u8, response, "<Error />")) {
-        std.log.err("Login failed: {s}", .{response});
-        return false;
-    }
-
-    const verify_doc = try xml.Doc.fromMemory(response);
-    defer verify_doc.deinit();
-    const verify_root = try verify_doc.getRootElement();
-
-    if (std.mem.eql(u8, verify_root.currentName().?, "Error")) {
-        std.log.err("Login failed: {s}", .{verify_root.currentValue().?});
-        return false;
-    }
-
-    current_account.name = allocator.dupeZ(u8, verify_root.getValue("Name") orelse "Guest") catch |e| {
-        std.log.err("Could not dupe current account name: {any}", .{e});
-        return false;
-    };
-
-    current_account.email = email;
-    current_account.password = password;
-    current_account.admin = verify_root.elementExists("Admin");
-
-    const guild_node = verify_root.findChild("Guild");
-    current_account.guild_name = try guild_node.?.getValueAlloc("Name", allocator, "");
-    current_account.guild_rank = try guild_node.?.getValueInt("Rank", u8, 0);
-
-    const list_response = try requests.sendCharList(email, password);
-    const list_doc = try xml.Doc.fromMemory(list_response);
-    defer list_doc.deinit();
-    const list_root = try list_doc.getRootElement();
-    next_char_id = try list_root.getAttributeInt("nextCharId", u8, 0);
-    max_chars = try list_root.getAttributeInt("maxNumChars", u8, 0);
-
-    var char_list = try utils.DynSlice(CharacterData).init(4, allocator);
-    defer char_list.deinit();
-
-    var char_iter = list_root.iterate(&.{}, "Char");
-    while (char_iter.next()) |node|
-        try char_list.add(try CharacterData.parse(allocator, node, try node.getAttributeInt("id", u32, 0)));
-
-    character_list = try allocator.dupe(CharacterData, char_list.items());
-
-    const server_root = list_root.findChild("Servers");
-    if (server_root) |srv_root| {
-        var server_data_list = try utils.DynSlice(ServerData).init(4, allocator);
-        defer server_data_list.deinit();
-
-        var server_iter = srv_root.iterate(&.{}, "Server");
-        while (server_iter.next()) |server_node|
-            try server_data_list.add(try ServerData.parse(server_node, allocator));
-
-        server_list = try allocator.dupe(ServerData, server_data_list.items());
-    }
-
-    if (character_list.len > 0) {
-        ui.switchScreen(.char_select);
-    } else {
-        ui.switchScreen(.char_creation);
-    }
-
-    return true;
 }

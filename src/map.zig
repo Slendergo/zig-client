@@ -8,7 +8,7 @@ const main = @import("main.zig");
 const utils = @import("utils.zig");
 const map = @import("map.zig");
 const assets = @import("assets.zig");
-const ui = @import("ui.zig");
+const ui = @import("ui/ui.zig");
 
 pub const move_threshold: f32 = 0.4;
 pub const min_move_speed: f32 = 0.004;
@@ -1398,14 +1398,14 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                     interactive_type.store(en.object.class, .Release);
 
                     if (is_container) {
-                        if (ui.container_id != en.object.obj_id) {
+                        if (ui.in_game_screen.container_id != en.object.obj_id) {
                             inline for (0..8) |idx| {
-                                ui.setContainerItem(en.object.inventory[idx], idx);
+                                ui.in_game_screen.setContainerItem(en.object.inventory[idx], idx);
                             }
                         }
 
-                        ui.container_id = en.object.obj_id;
-                        ui.setContainerVisible(true);
+                        ui.in_game_screen.container_id = en.object.obj_id;
+                        ui.in_game_screen.setContainerVisible(true);
                     }
 
                     interactive_set = true;
@@ -1423,14 +1423,14 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     }
 
     if (!interactive_set) {
-        if (ui.container_id != -1) {
+        if (ui.in_game_screen.container_id != -1) {
             inline for (0..8) |idx| {
-                ui.setContainerItem(-1, idx);
+                ui.in_game_screen.setContainerItem(-1, idx);
             }
         }
 
-        ui.container_id = -1;
-        ui.setContainerVisible(false);
+        ui.in_game_screen.container_id = -1;
+        ui.in_game_screen.setContainerVisible(false);
     }
 
     std.mem.reverse(usize, entity_indices_to_remove.items());

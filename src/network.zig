@@ -4,7 +4,7 @@ const settings = @import("settings.zig");
 const main = @import("main.zig");
 const map = @import("map.zig");
 const game_data = @import("game_data.zig");
-const ui = @import("ui.zig");
+const ui = @import("ui/ui.zig");
 const camera = @import("camera.zig");
 const assets = @import("assets.zig");
 
@@ -911,7 +911,7 @@ inline fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allo
             const item = reader.read(i32);
             plr.inventory[inv_idx] = item;
             if (plr.obj_id == map.local_player_id)
-                ui.setInvItem(item, inv_idx);
+                ui.in_game_screen.setInvItem(item, inv_idx);
         },
         .stars => plr.stars = reader.read(i32),
         .name => plr.name_override = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
@@ -943,7 +943,7 @@ inline fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allo
             const item = reader.read(i32);
             plr.inventory[backpack_idx] = item;
             if (plr.obj_id == map.local_player_id)
-                ui.setInvItem(item, backpack_idx);
+                ui.in_game_screen.setInvItem(item, backpack_idx);
         },
         .has_backpack => plr.has_backpack = reader.read(bool),
         .skin => plr.skin = reader.read(i32),
@@ -970,7 +970,7 @@ inline fn parseObjStatData(obj: *map.GameObject, stat_type: game_data.StatType, 
             const item = reader.read(i32);
             obj.inventory[inv_idx] = item;
             if (obj.obj_id == map.interactive_id.load(.Acquire)) {
-                ui.setContainerItem(item, inv_idx);
+                ui.in_game_screen.setContainerItem(item, inv_idx);
             }
         },
         .name => obj.name_override = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
