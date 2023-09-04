@@ -25,6 +25,8 @@ pub const BaseVertexData = extern struct {
     text_type: f32 = 0.0,
     distance_factor: f32 = 0.0,
     render_type: f32,
+    outline_color: ui.RGBF32 = ui.RGBF32.fromInt(0),
+    outline_width: f32,
 };
 
 pub const GroundVertexData = extern struct {
@@ -238,6 +240,8 @@ pub fn init(gctx: *zgpu.GraphicsContext) void {
             .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "text_type"), .shader_location = 7 },
             .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "distance_factor"), .shader_location = 8 },
             .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "render_type"), .shader_location = 9 },
+            .{ .format = .float32x3, .offset = @offsetOf(BaseVertexData, "outline_color"), .shader_location = 10 },
+            .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "outline_width"), .shader_location = 11 },
         };
         const vertex_buffers = [_]zgpu.wgpu.VertexBufferLayout{.{
             .array_stride = @sizeOf(BaseVertexData),
@@ -620,6 +624,8 @@ fn drawQuad(
         .shadow_color = shadow_rgb,
         .shadow_texel = shadow_texel,
         .render_type = render_type,
+        .outline_color = shadow_rgb,
+        .outline_width = 0.5,
     };
 
     base_vert_data[idx + 1] = BaseVertexData{
@@ -631,6 +637,8 @@ fn drawQuad(
         .shadow_color = shadow_rgb,
         .shadow_texel = shadow_texel,
         .render_type = render_type,
+        .outline_color = shadow_rgb,
+        .outline_width = 0.5,
     };
 
     base_vert_data[idx + 2] = BaseVertexData{
@@ -642,6 +650,8 @@ fn drawQuad(
         .shadow_color = shadow_rgb,
         .shadow_texel = shadow_texel,
         .render_type = render_type,
+        .outline_color = shadow_rgb,
+        .outline_width = 0.5,
     };
 
     base_vert_data[idx + 3] = BaseVertexData{
@@ -653,6 +663,8 @@ fn drawQuad(
         .shadow_color = shadow_rgb,
         .shadow_texel = shadow_texel,
         .render_type = render_type,
+        .outline_color = shadow_rgb,
+        .outline_width = 0.5,
     };
 }
 
@@ -695,6 +707,8 @@ fn drawQuadVerts(
         .shadow_color = shadow_rgb,
         .shadow_texel = shadow_texel,
         .render_type = render_type,
+        .outline_color = shadow_rgb,
+        .outline_width = 0.5,
     };
 
     base_vert_data[idx + 1] = BaseVertexData{
@@ -706,6 +720,8 @@ fn drawQuadVerts(
         .shadow_color = shadow_rgb,
         .shadow_texel = shadow_texel,
         .render_type = render_type,
+        .outline_color = shadow_rgb,
+        .outline_width = 0.5,
     };
 
     base_vert_data[idx + 2] = BaseVertexData{
@@ -717,6 +733,8 @@ fn drawQuadVerts(
         .shadow_color = shadow_rgb,
         .shadow_texel = shadow_texel,
         .render_type = render_type,
+        .outline_color = shadow_rgb,
+        .outline_width = 0.5,
     };
 
     base_vert_data[idx + 3] = BaseVertexData{
@@ -728,6 +746,8 @@ fn drawQuadVerts(
         .shadow_color = shadow_rgb,
         .shadow_texel = shadow_texel,
         .render_type = render_type,
+        .outline_color = shadow_rgb,
+        .outline_width = 0.5,
     };
 }
 
@@ -801,6 +821,7 @@ fn drawSquare(
 fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
     const rgb = ui.RGBF32.fromInt(text_data.color);
     const shadow_rgb = ui.RGBF32.fromInt(text_data.shadow_color);
+    const outline_rgb = ui.RGBF32.fromInt(text_data.outline_color);
 
     const size_scale = text_data.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
     const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
@@ -860,6 +881,8 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
             .text_type = text_type,
             .distance_factor = size_scale * px_range,
             .render_type = render_type,
+            .outline_color = outline_rgb,
+            .outline_width = text_data.outline_width,
         };
 
         base_vert_data[idx_new + 1] = BaseVertexData{
@@ -873,6 +896,8 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
             .text_type = text_type,
             .distance_factor = size_scale * px_range,
             .render_type = render_type,
+            .outline_color = outline_rgb,
+            .outline_width = text_data.outline_width,
         };
 
         base_vert_data[idx_new + 2] = BaseVertexData{
@@ -886,6 +911,8 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
             .text_type = text_type,
             .distance_factor = size_scale * px_range,
             .render_type = render_type,
+            .outline_color = outline_rgb,
+            .outline_width = text_data.outline_width,
         };
 
         base_vert_data[idx_new + 3] = BaseVertexData{
@@ -899,6 +926,8 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
             .text_type = text_type,
             .distance_factor = size_scale * px_range,
             .render_type = render_type,
+            .outline_color = outline_rgb,
+            .outline_width = text_data.outline_width,
         };
         idx_new += 4;
     }

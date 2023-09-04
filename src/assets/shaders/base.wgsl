@@ -32,6 +32,8 @@ struct VertexInput {
     @location(7) text_type: f32,
     @location(8) distance_factor: f32,
     @location(9) render_type: f32,
+    @location(10) outline_color: vec3<f32>,
+    @location(11) outline_width: f32,
 }
 
 struct VertexOutput {
@@ -45,6 +47,8 @@ struct VertexOutput {
     @location(7) text_type: f32,
     @location(8) distance_factor: f32,
     @location(9) render_type: f32,
+    @location(10) outline_color: vec3<f32>,
+    @location(11) outline_width: f32,
 }
 
 @vertex
@@ -60,6 +64,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     out.text_type = in.text_type;
     out.distance_factor = in.distance_factor;
     out.render_type = in.render_type;
+    out.outline_width = in.outline_width;
     return out;
 }
 
@@ -67,8 +72,8 @@ fn median(r: f32, g: f32, b: f32) -> f32 {
     return max(min(r, g), min(max(r, g), b));
 }
 
-fn sample_msdf(tex: vec4<f32>, dist_factor: f32, alpha_mult: f32) -> f32 {
-    return clamp((median(tex.r, tex.g, tex.b) - 0.5) * dist_factor + 0.5, 0.0, 1.0) * alpha_mult;
+fn sample_msdf(tex: vec4<f32>, dist_factor: f32, alpha_mult: f32, width: f32) -> f32 {
+    return clamp((median(tex.r, tex.g, tex.b) - 0.5) * dist_factor + width, 0.0, 1.0) * alpha_mult;
 }
 
 @fragment
@@ -218,14 +223,17 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             blue_tex = textureSampleGrad(bold_italic_tex, linear_sampler, vec2(in.uv.x + subpixel_width, in.uv.y), dx, dy);
         }
 
-        let red = sample_msdf(red_tex, in.distance_factor, in.alpha_mult);
-        let green = sample_msdf(green_tex, in.distance_factor, in.alpha_mult);
-        let blue = sample_msdf(blue_tex, in.distance_factor, in.alpha_mult);
+        let red = sample_msdf(red_tex, in.distance_factor, in.alpha_mult, 0.5);
+        let green = sample_msdf(green_tex, in.distance_factor, in.alpha_mult, 0.5);
+        let blue = sample_msdf(blue_tex, in.distance_factor, in.alpha_mult, 0.5);
 
         let alpha = clamp((red + green + blue) / 3.0, 0.0, 1.0);
         let base_pixel = vec4(red * in.base_color.r, green * in.base_color.g, blue * in.base_color.b, alpha);
 
-        return base_pixel;
+        let outline_alpha = sample_msdf(green_tex, in.distance_factor, in.alpha_mult, in.outline_width);
+        let outlined_pixel = mix(vec4(in.outline_color, outline_alpha), base_pixel, alpha);
+
+        return outlined_pixel;
     } else if in.render_type == text_drop_shadow_render_type {
         const subpixel = 1.0 / 3.0;
         let subpixel_width = (abs(dx.x) + abs(dy.x)) * subpixel; // this is just fwidth(in.uv).x * subpixel
@@ -256,18 +264,21 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             tex_offset = textureSampleGrad(bold_italic_tex, linear_sampler, in.uv - in.shadow_texel, dx, dy);
         }
 
-        let red = sample_msdf(red_tex, in.distance_factor, in.alpha_mult);
-        let green = sample_msdf(green_tex, in.distance_factor, in.alpha_mult);
-        let blue = sample_msdf(blue_tex, in.distance_factor, in.alpha_mult);
+        let red = sample_msdf(red_tex, in.distance_factor, in.alpha_mult, 0.5);
+        let green = sample_msdf(green_tex, in.distance_factor, in.alpha_mult, 0.5);
+        let blue = sample_msdf(blue_tex, in.distance_factor, in.alpha_mult, 0.5);
 
         let alpha = clamp((red + green + blue) / 3.0, 0.0, 1.0);
         let base_pixel = vec4(red * in.base_color.r, green * in.base_color.g, blue * in.base_color.b, alpha);
 
+        let outline_alpha = sample_msdf(green_tex, in.distance_factor, in.alpha_mult, in.outline_width);
+        let outlined_pixel = mix(vec4(in.outline_color, outline_alpha), base_pixel, alpha);
+
         // don't subpixel aa the offset, it's supposed to be a shadow
-        let offset_opacity = sample_msdf(tex_offset, in.distance_factor, in.alpha_mult * 0.5);
+        let offset_opacity = sample_msdf(tex_offset, in.distance_factor, in.alpha_mult, in.outline_width);
         let offset_pixel = vec4(in.shadow_color, offset_opacity);
 
-        return mix(offset_pixel, base_pixel, alpha);
+        return mix(offset_pixel, base_pixel, outline_alpha);
     }
 
     return vec4(0.0, 0.0, 0.0, 0.0);

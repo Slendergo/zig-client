@@ -413,7 +413,9 @@ pub const TextData = struct {
     alpha: f32 = 1.0,
     shadow_color: i32 = 0x000000,
     shadow_alpha_mult: f32 = 0.5,
-    shadow_texel_offset_mult: f32 = 6.0,
+    shadow_texel_offset_mult: f32 = 0.0,
+    outline_color: i32 = 0x000000,
+    outline_width: f32 = 1.2, // 0.5 for off
     max_width: f32 = @as(f32, std.math.maxInt(u32)),
 
     pub fn width(self: TextData) f32 {
