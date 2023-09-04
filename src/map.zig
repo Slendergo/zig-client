@@ -613,7 +613,7 @@ pub const Player = struct {
         self.attack_start = time;
     }
 
-    pub inline fn update(self: *Player, time: i64, dt: f32) void {
+    pub fn update(self: *Player, time: i64, dt: f32) void {
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
@@ -903,7 +903,7 @@ pub const Projectile = struct {
         };
     }
 
-    inline fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?GameObject {
+    fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?GameObject {
         var min_dist = std.math.floatMax(f32);
         var target: ?GameObject = null;
         for (entities.items()) |en| {
@@ -922,7 +922,7 @@ pub const Projectile = struct {
         return target;
     }
 
-    inline fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?Player {
+    fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?Player {
         var min_dist = std.math.floatMax(f32);
         var target: ?Player = null;
         for (entities.items()) |en| {
@@ -939,7 +939,7 @@ pub const Projectile = struct {
         return target;
     }
 
-    inline fn updatePosition(self: *Projectile, elapsed: i64, dt: f32) void {
+    fn updatePosition(self: *Projectile, elapsed: i64, dt: f32) void {
         if (self.props.heat_seek_radius > 0 and elapsed >= self.props.heat_seek_delay and !self.heat_seek_fired) {
             var target_x: f32 = -1.0;
             var target_y: f32 = -1.0;

@@ -112,23 +112,6 @@ fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
     _ = window.setMouseButtonCallback(input.mouseEvent);
 }
 
-inline fn draw() void {
-    const back_buffer = gctx.swapchain.getCurrentTextureView();
-    const encoder = gctx.device.createCommandEncoder(null);
-
-    render.draw(current_time, gctx, back_buffer, encoder);
-
-    const commands = encoder.finish(null);
-    gctx.submit(&.{commands});
-    if (gctx.present() == .swap_chain_resized) {
-        onResize(@floatFromInt(gctx.swapchain_descriptor.width), @floatFromInt(gctx.swapchain_descriptor.height));
-    }
-
-    back_buffer.release();
-    encoder.release();
-    commands.release();
-}
-
 fn onResize(w: f32, h: f32) void {
     camera.screen_width = w;
     camera.screen_height = h;
@@ -170,7 +153,20 @@ fn networkTick(allocator: std.mem.Allocator) void {
 fn renderTick(allocator: std.mem.Allocator) !void {
     _ = allocator;
     while (tick_render) {
-        draw();
+        const back_buffer = gctx.swapchain.getCurrentTextureView();
+        const encoder = gctx.device.createCommandEncoder(null);
+
+        render.draw(current_time, gctx, back_buffer, encoder);
+
+        const commands = encoder.finish(null);
+        gctx.submit(&.{commands});
+        if (gctx.present() == .swap_chain_resized) {
+            onResize(@floatFromInt(gctx.swapchain_descriptor.width), @floatFromInt(gctx.swapchain_descriptor.height));
+        }
+
+        back_buffer.release();
+        encoder.release();
+        commands.release();
 
         // this has to be updated on render thread to avoid headaches (gctx sharing)
         try ui.in_game_screen.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());

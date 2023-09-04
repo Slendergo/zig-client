@@ -245,7 +245,7 @@ pub fn accept(allocator: std.mem.Allocator) void {
     buffer_idx = 0;
 }
 
-inline fn handleAccountList() void {
+fn handleAccountList() void {
     const account_list_id = reader.read(i32);
     const account_ids = reader.read([]i32);
 
@@ -253,7 +253,7 @@ inline fn handleAccountList() void {
         std.log.debug("Recv - AccountList: account_list_id={d}, account_ids={d}", .{ account_list_id, account_ids });
 }
 
-inline fn handleAllyShoot() void {
+fn handleAllyShoot() void {
     const bullet_id = reader.read(i8);
     const owner_id = reader.read(i32);
     const container_type = reader.read(u16);
@@ -292,7 +292,7 @@ inline fn handleAllyShoot() void {
         std.log.debug("Recv - AllyShoot: bullet_id={d}, owner_id={d}, container_type={d}, angle={e}", .{ bullet_id, owner_id, container_type, angle });
 }
 
-inline fn handleAoe() void {
+fn handleAoe() void {
     const position = reader.read(Position);
     const radius = reader.read(f32);
     const damage = reader.read(i16);
@@ -304,7 +304,7 @@ inline fn handleAoe() void {
         std.log.debug("Recv - Aoe: x={e}, y={e}, radius={e}, damage={d}, condition_effect={d}, duration={e}, orig_type={d}", .{ position.x, position.y, radius, damage, condition_effect, duration, orig_type });
 }
 
-inline fn handleBuyResult() void {
+fn handleBuyResult() void {
     const result = reader.read(i32);
     const message = reader.read([]u8);
 
@@ -312,7 +312,7 @@ inline fn handleBuyResult() void {
         std.log.debug("Recv - BuyResult: result={d}, message={s}", .{ result, message });
 }
 
-inline fn handleCreateSuccess() void {
+fn handleCreateSuccess() void {
     map.local_player_id = reader.read(i32);
     const char_id = reader.read(i32);
 
@@ -320,7 +320,7 @@ inline fn handleCreateSuccess() void {
         std.log.debug("Recv - CreateSuccess: player_id={d}, char_id={d}", .{ map.local_player_id, char_id });
 }
 
-inline fn handleDamage() void {
+fn handleDamage() void {
     const target_id = reader.read(i32);
     const effects = reader.read(u64);
     const damage_amount = reader.read(u16);
@@ -332,7 +332,7 @@ inline fn handleDamage() void {
         std.log.debug("Recv - Damage: target_id={d}, effects={d}, damage_amount={d}, kill={any}, bullet_id={d}, object_id={d}", .{ target_id, effects, damage_amount, kill, bullet_id, object_id });
 }
 
-inline fn handleDeath() void {
+fn handleDeath() void {
     const account_id = reader.read(i32);
     const char_id = reader.read(i32);
     const killed_by = reader.read([]u8);
@@ -343,7 +343,7 @@ inline fn handleDeath() void {
         std.log.debug("Recv - Death: account_id={d}, char_id={d}, killed_by={s}", .{ account_id, char_id, killed_by });
 }
 
-inline fn handleEnemyShoot() void {
+fn handleEnemyShoot() void {
     const bullet_id = reader.read(u8);
     const owner_id = reader.read(i32);
     const bullet_type = reader.read(u8);
@@ -400,7 +400,7 @@ inline fn handleEnemyShoot() void {
     sendShootAck(main.current_time);
 }
 
-inline fn handleFailure() void {
+fn handleFailure() void {
     const error_id = reader.read(i32);
     const error_description = reader.read([]u8);
 
@@ -410,7 +410,7 @@ inline fn handleFailure() void {
         std.log.debug("Recv - Failure: error_id={d}, error_description={s}", .{ error_id, error_description });
 }
 
-inline fn handleGlobalNotification() void {
+fn handleGlobalNotification() void {
     const notif_type = reader.read(i32);
     const text = reader.read([]u8);
 
@@ -418,7 +418,7 @@ inline fn handleGlobalNotification() void {
         std.log.debug("Recv - GlobalNotification: type={d}, text={s}", .{ notif_type, text });
 }
 
-inline fn handleGoto() void {
+fn handleGoto() void {
     const object_id = reader.read(i32);
     const position = reader.read(Position);
 
@@ -445,7 +445,7 @@ inline fn handleGoto() void {
         std.log.debug("Recv - Goto: object_id={d}, x={e}, y={e}", .{ object_id, position.x, position.y });
 }
 
-inline fn handleGuildResult() void {
+fn handleGuildResult() void {
     const success = reader.read(bool);
     const error_text = reader.read([]u8);
 
@@ -453,7 +453,7 @@ inline fn handleGuildResult() void {
         std.log.debug("Recv - GuildResult: success={any}, error_text={s}", .{ success, error_text });
 }
 
-inline fn handleInvitedToGuild() void {
+fn handleInvitedToGuild() void {
     const guild_name = reader.read([]u8);
     const name = reader.read([]u8);
 
@@ -461,14 +461,14 @@ inline fn handleInvitedToGuild() void {
         std.log.debug("Recv - InvitedToGuild: guild_name={s}, name={s}", .{ guild_name, name });
 }
 
-inline fn handleInvResult() void {
+fn handleInvResult() void {
     const result = reader.read(i32);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - InvResult: result={d}", .{result});
 }
 
-inline fn handleMapInfo(allocator: std.mem.Allocator) void {
+fn handleMapInfo(allocator: std.mem.Allocator) void {
     const width: isize = @intCast(reader.read(i32));
     const height: isize = @intCast(reader.read(i32));
     map.setWH(width, height, allocator);
@@ -497,7 +497,7 @@ inline fn handleMapInfo(allocator: std.mem.Allocator) void {
         std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, seed={d}, difficulty={d}, background={d}, allow_player_teleport={any}, show_displays={any}, bg_light_color={d}, bg_light_intensity={e}, day_and_night={any}", .{ width, height, map.name, display_name, map.seed, difficulty, background, allow_player_teleport, show_displays, map.bg_light_color, map.bg_light_intensity, uses_day_night });
 }
 
-inline fn handleNameResult() void {
+fn handleNameResult() void {
     const success = reader.read(bool);
     const error_text = reader.read([]u8);
 
@@ -505,7 +505,7 @@ inline fn handleNameResult() void {
         std.log.debug("Recv - NameResult: success={any}, error_text={s}", .{ success, error_text });
 }
 
-inline fn handleNewTick(allocator: std.mem.Allocator) void {
+fn handleNewTick(allocator: std.mem.Allocator) void {
     const tick_id = reader.read(i32);
     const tick_time = reader.read(i32);
 
@@ -583,7 +583,7 @@ inline fn handleNewTick(allocator: std.mem.Allocator) void {
         std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });
 }
 
-inline fn handleNotification(allocator: std.mem.Allocator) void {
+fn handleNotification(allocator: std.mem.Allocator) void {
     const object_id = reader.read(i32);
     const message = reader.read([]u8);
     const color = @byteSwap(@as(i32, @bitCast(reader.read(ARGB))));
@@ -620,7 +620,7 @@ inline fn handleNotification(allocator: std.mem.Allocator) void {
         std.log.debug("Recv - Notification: object_id={d}, message={s}, color={any}", .{ object_id, message, color });
 }
 
-inline fn handlePing() void {
+fn handlePing() void {
     const serial = reader.read(i32);
 
     sendPong(serial, main.current_time);
@@ -629,7 +629,7 @@ inline fn handlePing() void {
         std.log.debug("Recv - Ping: serial={d}", .{serial});
 }
 
-inline fn handlePlaySound() void {
+fn handlePlaySound() void {
     const owner_id = reader.read(i32);
     const sound_id = reader.read(i32);
 
@@ -637,14 +637,14 @@ inline fn handlePlaySound() void {
         std.log.debug("Recv - PlaySound: owner_id={d}, sound_id={d}", .{ owner_id, sound_id });
 }
 
-inline fn handleQuestObjId() void {
+fn handleQuestObjId() void {
     const object_id = reader.read(i32);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - QuestObjId: object_id={d}", .{object_id});
 }
 
-inline fn handleServerPlayerShoot() void {
+fn handleServerPlayerShoot() void {
     const bullet_id = reader.read(u8);
     const owner_id = reader.read(i32);
     const container_type = reader.read(u16);
@@ -694,7 +694,7 @@ inline fn handleServerPlayerShoot() void {
     }
 }
 
-inline fn handleShowEffect() void {
+fn handleShowEffect() void {
     const effect_type = @as(EffectType, @enumFromInt(reader.read(u8)));
     const target_object_id = reader.read(i32);
     const pos1 = reader.read(Position);
@@ -705,7 +705,7 @@ inline fn handleShowEffect() void {
         std.log.debug("Recv - ShowEffect: effect_type={any}, target_object_id={d}, x1={e}, y1={e}, x2={e}, y2={e}, color={any}", .{ effect_type, target_object_id, pos1.x, pos1.y, pos2.x, pos2.y, color });
 }
 
-inline fn handleText(allocator: std.mem.Allocator) void {
+fn handleText(allocator: std.mem.Allocator) void {
     const name = reader.read([]u8);
     const object_id = reader.read(i32);
     const num_stars = reader.read(i32);
@@ -753,7 +753,7 @@ inline fn handleText(allocator: std.mem.Allocator) void {
         std.log.debug("Recv - Text: name={s}, object_id={d}, num_stars={d}, bubble_time={d}, recipient={s}, text={s}", .{ name, object_id, num_stars, bubble_time, recipient, text });
 }
 
-inline fn handleTradeAccepted() void {
+fn handleTradeAccepted() void {
     const my_offer = reader.read([]bool);
     const your_offer = reader.read([]bool);
 
@@ -761,14 +761,14 @@ inline fn handleTradeAccepted() void {
         std.log.debug("Recv - TradeAccepted: my_offer={any}, your_offer={any}", .{ my_offer, your_offer });
 }
 
-inline fn handleTradeChanged() void {
+fn handleTradeChanged() void {
     const offer = reader.read([]bool);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - TradeChanged: offer={any}", .{offer});
 }
 
-inline fn handleTradeDone() void {
+fn handleTradeDone() void {
     const code = reader.read(i32);
     const description = reader.read([]u8);
 
@@ -776,14 +776,14 @@ inline fn handleTradeDone() void {
         std.log.debug("Recv - TradeDone: code={d}, description={s}", .{ code, description });
 }
 
-inline fn handleTradeRequested() void {
+fn handleTradeRequested() void {
     const name = reader.read([]u8);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - TradeRequested: name={s}", .{name});
 }
 
-inline fn handleTradeStart() void {
+fn handleTradeStart() void {
     const my_items = reader.read([]TradeItem);
     const your_name = reader.read([]u8);
     const your_items = reader.read([]TradeItem);
@@ -792,7 +792,7 @@ inline fn handleTradeStart() void {
         std.log.debug("Recv - TradeStart: my_items={any}, your_name={s}, your_items={any}", .{ my_items, your_name, your_items });
 }
 
-inline fn handleUpdate(allocator: std.mem.Allocator) void {
+fn handleUpdate(allocator: std.mem.Allocator) void {
     defer {
         if (main.tick_frame)
             sendUpdateAck();
@@ -863,7 +863,7 @@ inline fn handleUpdate(allocator: std.mem.Allocator) void {
         std.log.debug("Recv - Update: tiles_len={d}, new_objs_len={d}, drops_len={d}", .{ tiles.len, new_objs_len, drops.len });
 }
 
-inline fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: std.mem.Allocator) bool {
+fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: std.mem.Allocator) bool {
     @setEvalBranchQuota(5000);
     switch (stat_type) {
         .max_hp => plr.max_hp = reader.read(i32),
@@ -931,7 +931,7 @@ inline fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allo
     return true;
 }
 
-inline fn parseObjStatData(obj: *map.GameObject, stat_type: game_data.StatType, allocator: std.mem.Allocator) bool {
+fn parseObjStatData(obj: *map.GameObject, stat_type: game_data.StatType, allocator: std.mem.Allocator) bool {
     @setEvalBranchQuota(5000);
     switch (stat_type) {
         .max_hp => obj.max_hp = reader.read(i32),

@@ -35,7 +35,7 @@ pub fn reset() void {
     attacking = false;
 }
 
-inline fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
+fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     if (selected_input_field) |input_field| {
         if (key == .enter) {
             if (input_field.enter_callback) |enter_cb| {
@@ -117,7 +117,7 @@ inline fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void
     }
 }
 
-inline fn keyRelease(key: zglfw.Key) void {
+fn keyRelease(key: zglfw.Key) void {
     if (ui.current_screen != .in_game)
         return;
 
@@ -140,7 +140,7 @@ inline fn keyRelease(key: zglfw.Key) void {
     }
 }
 
-inline fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods) void {
+fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods) void {
     if (ui.current_screen != .in_game)
         return;
 
@@ -201,7 +201,7 @@ inline fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zgl
     }
 }
 
-inline fn mouseRelease(button: zglfw.MouseButton) void {
+fn mouseRelease(button: zglfw.MouseButton) void {
     if (ui.current_screen != .in_game)
         return;
 
@@ -319,7 +319,7 @@ pub fn mouseMoveEvent(window: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) 
     ui.mouseMove(@floatCast(mouse_x), @floatCast(mouse_y));
 }
 
-inline fn useAbility() void {
+fn useAbility() void {
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();
 

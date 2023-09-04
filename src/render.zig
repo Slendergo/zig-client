@@ -98,7 +98,7 @@ pub var light_texture_view: zgpu.TextureViewHandle = undefined;
 pub var sampler: zgpu.SamplerHandle = undefined;
 pub var linear_sampler: zgpu.SamplerHandle = undefined;
 
-inline fn createVertexBuffer(gctx: *zgpu.GraphicsContext, comptime T: type, vb_handle: *zgpu.BufferHandle, vb: []const T) void {
+fn createVertexBuffer(gctx: *zgpu.GraphicsContext, comptime T: type, vb_handle: *zgpu.BufferHandle, vb: []const T) void {
     vb_handle.* = gctx.createBuffer(.{
         .usage = .{ .copy_dst = true, .vertex = true },
         .size = vb.len * @sizeOf(T),
@@ -106,7 +106,7 @@ inline fn createVertexBuffer(gctx: *zgpu.GraphicsContext, comptime T: type, vb_h
     gctx.queue.writeBuffer(gctx.lookupResource(vb_handle.*).?, 0, T, vb);
 }
 
-inline fn createTexture(gctx: *zgpu.GraphicsContext, tex: *zgpu.TextureHandle, view: *zgpu.TextureViewHandle, img: zstbi.Image) void {
+fn createTexture(gctx: *zgpu.GraphicsContext, tex: *zgpu.TextureHandle, view: *zgpu.TextureViewHandle, img: zstbi.Image) void {
     tex.* = gctx.createTexture(.{
         .usage = .{ .texture_binding = true, .copy_dst = true },
         .size = .{

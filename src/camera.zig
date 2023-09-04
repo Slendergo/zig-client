@@ -98,7 +98,7 @@ pub inline fn visibleInCamera(x_in: f32, y_in: f32) bool {
     return !(floor_x < min_x or floor_x > max_x or floor_y < min_y or floor_y > max_y);
 }
 
-pub inline fn screenToWorld(x_in: f32, y_in: f32) utils.Point {
+pub fn screenToWorld(x_in: f32, y_in: f32) utils.Point {
     const cos_angle = @cos(angle);
     const sin_angle = @sin(angle);
     const x_div = (x_in - screen_width / 2.0) / px_per_tile * scale;
