@@ -826,10 +826,24 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
     const size_scale = text_data.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
     const line_height = assets.CharacterData.line_height * assets.CharacterData.size * size_scale;
 
+    const max_width_off = text_data.max_width == @as(f32, std.math.maxInt(u32));
+    const max_height_off = text_data.max_width == @as(f32, std.math.maxInt(u32));
+
     var idx_new = idx;
-    const x_base = x - camera.screen_width / 2.0;
+    const start_x = x - camera.screen_width / 2.0;
+    const start_y = y - camera.screen_height / 2.0 + line_height;
+    const x_base = switch (text_data.hori_align) {
+        .left => start_x,
+        .middle => if (max_width_off) start_x else start_x + (text_data.max_width - text_data.width()) / 2,
+        .right => if (max_width_off) start_x else start_x + text_data.max_width - text_data.width(),
+    };
+    const y_base = switch (text_data.vert_align) {
+        .top => start_y,
+        .middle => if (max_height_off) start_y else start_y + (text_data.max_height - text_data.height()) / 2,
+        .bottom => if (max_height_off) start_y else start_y + text_data.max_height - text_data.height(),
+    };
     var x_pointer = x_base;
-    var y_pointer = y - camera.screen_height / 2.0 + line_height;
+    var y_pointer = y_base;
     for (text_data.text) |char| {
         const char_data = switch (text_data.text_type) {
             .medium => assets.medium_chars[char],
@@ -847,6 +861,9 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
         if (char == '\n' or next_x_pointer - x_base > text_data.max_width) {
             x_pointer = x_base;
             y_pointer += line_height;
+            if (y_pointer - y_base > text_data.max_height)
+                return idx_new - idx;
+
             continue;
         }
 

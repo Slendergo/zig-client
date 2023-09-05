@@ -404,6 +404,18 @@ pub const TextType = enum(u32) {
     bold_italic = 3,
 };
 
+pub const TextAlignmentHori = enum(u8) {
+    left = 0,
+    middle = 1,
+    right = 2,
+};
+
+pub const TextAlignmentVert = enum(u8) {
+    top = 0,
+    middle = 1,
+    bottom = 2,
+};
+
 pub const TextData = struct {
     text: []u8,
     size: f32,
@@ -416,7 +428,12 @@ pub const TextData = struct {
     shadow_texel_offset_mult: f32 = 0.0,
     outline_color: i32 = 0x000000,
     outline_width: f32 = 1.2, // 0.5 for off
+    // alignments other than default need max width/height defined respectively
+    // no support for multi-line alignment currently
+    hori_align: TextAlignmentHori = .left,
+    vert_align: TextAlignmentVert = .top,
     max_width: f32 = @as(f32, std.math.maxInt(u32)),
+    max_height: f32 = @as(f32, std.math.maxInt(u32)),
 
     pub fn width(self: TextData) f32 {
         const size_scale = self.size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;

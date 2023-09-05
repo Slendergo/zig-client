@@ -81,9 +81,13 @@ pub const AccountScreen = struct {
             .size = 16,
             .text_type = .bold,
             .backing_buffer = try allocator.alloc(u8, 8),
+            .hori_align = .middle,
+            .vert_align = .middle,
+            .max_width = 200,
+            .max_height = 50,
         };
         screen.email_text.* = ui.UiText{
-            .x = (camera.screen_width - email_text_data.width()) / 2,
+            .x = screen.email_input.x,
             .y = 150,
             .text_data = email_text_data,
         };
@@ -141,9 +145,13 @@ pub const AccountScreen = struct {
             .size = 16,
             .text_type = .bold,
             .backing_buffer = try allocator.alloc(u8, 8),
+            .hori_align = .middle,
+            .vert_align = .middle,
+            .max_width = 200,
+            .max_height = 50,
         };
         screen.password_text.* = ui.UiText{
-            .x = (camera.screen_width - password_text_data.width()) / 2,
+            .x = screen.password_input.x,
             .y = 300,
             .text_data = password_text_data,
         };
@@ -154,12 +162,12 @@ pub const AccountScreen = struct {
         const button_data_hover = assets.getUiSingle("buttonHover");
         const button_data_press = assets.getUiSingle("buttonPress");
         screen.login_button.* = ui.Button{
-            .x = (camera.screen_width - button_data_base.texWRaw()) / 2,
-            .y = 400,
+            .x = screen.password_input.x + (200 - 100) / 2,
+            .y = 450,
             .base_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
                 button_data_base,
-                150,
-                75,
+                100,
+                35,
                 6,
                 6,
                 7,
@@ -168,8 +176,8 @@ pub const AccountScreen = struct {
             ) },
             .hover_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
                 button_data_hover,
-                150,
-                75,
+                100,
+                35,
                 6,
                 6,
                 7,
@@ -178,8 +186,8 @@ pub const AccountScreen = struct {
             ) },
             .press_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
                 button_data_press,
-                150,
-                75,
+                100,
+                35,
                 6,
                 6,
                 7,
