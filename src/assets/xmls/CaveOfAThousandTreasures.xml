@@ -588,6 +588,10 @@
     <XpMult>0.0</XpMult>
     <MaxHitPoints>1000</MaxHitPoints>
     <Size>200</Size>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0xede280</LightColor>
+    <LightIntensity>0.10</LightIntensity>
+    <LightRadius>0.5</LightRadius>
     <StasisImmune />
     <Projectile id="1">
       <Texture>

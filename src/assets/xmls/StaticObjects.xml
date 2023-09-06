@@ -1702,7 +1702,10 @@
 	<Object type="0x1801" id="Big Candle">
 		<Class>GameObject</Class>
 		<Size>80</Size>
-		<ShadowSize>60</ShadowSize>
+		<ShadowSize>0</ShadowSize>
+      	<LightColor>0xedbc80</LightColor>
+      	<LightIntensity>0.10</LightIntensity>
+      	<LightRadius>0.7</LightRadius>
 		<Static/>
 		
 		<Texture><File>lofiEnvironment3</File><Index>0x54</Index></Texture>
@@ -1721,7 +1724,10 @@
 	<Object type="0x1802" id="Small Candle">
 		<Class>GameObject</Class>
 		<Size>80</Size>
-		<ShadowSize>60</ShadowSize>
+		<ShadowSize>0</ShadowSize>
+      	<LightColor>0xedbc80</LightColor>
+      	<LightIntensity>0.10</LightIntensity>
+      	<LightRadius>0.6</LightRadius>
 		<Static/>
 		
 		<Texture><File>lofiEnvironment3</File><Index>0x57</Index></Texture>
@@ -1909,6 +1915,10 @@
 	<Object type="0x180d" id="Gothic Candelabra">
 		<Class>GameObject</Class>
 		<Texture><File>lofiEnvironment3</File><Index>0xa0</Index></Texture>
+		<ShadowSize>0</ShadowSize>
+      	<LightColor>0xedbc80</LightColor>
+      	<LightIntensity>0.10</LightIntensity>
+      	<LightRadius>0.5</LightRadius>
 		
 		<Animation prob="1.0" period="0.0">
 			<Frame time="0.2">
@@ -2495,6 +2505,10 @@
 	<Object type="0x1863" id="Magic Blue Flame">
 		<Class>GameObject</Class>
 		<Texture><File>lofiObj3</File><Index>0x9d</Index></Texture>
+		<ShadowSize>0</ShadowSize>
+      	<LightColor>0x8084ed</LightColor>
+      	<LightIntensity>0.10</LightIntensity>
+      	<LightRadius>0.6</LightRadius>
 		<Animation prob="1.0" period="0.0">
 			<Frame time="0.2">
 				<RandomTexture>

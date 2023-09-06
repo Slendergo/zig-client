@@ -41,6 +41,10 @@
       <Speed>66</Speed>
       <Damage>40</Damage>
       <Size>100</Size>
+      <ShadowSize>0</ShadowSize>
+      <LightColor>0xed8080</LightColor>
+      <LightIntensity>0.10</LightIntensity>
+      <LightRadius>0.6</LightRadius>
       <LifetimeMS>760</LifetimeMS>
       <MultiHit />
     </Projectile>

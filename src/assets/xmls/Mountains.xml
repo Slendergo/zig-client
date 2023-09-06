@@ -442,6 +442,9 @@
     <HitSound>monster/stone_walls_hit</HitSound>
     <DeathSound>monster/stone_walls_death</DeathSound>
     <Size>120</Size>
+    <LightColor>0x99d3e0</LightColor>
+    <LightIntensity>0.10</LightIntensity>
+    <LightRadius>1.2</LightRadius>
     <MaxHitPoints>1000000</MaxHitPoints>
     <Defense>0</Defense>
     <Terrain>Mountains</Terrain>
