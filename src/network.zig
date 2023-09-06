@@ -598,21 +598,21 @@ fn handleNotification(allocator: std.mem.Allocator) void {
         };
 
         if (en == .player) {
-            ui.status_texts.add(ui.StatusText{
+            ui.elements.add(.{ .status = ui.StatusText{
                 .obj_id = en.player.obj_id,
                 .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                 .lifetime = 2000,
                 .text_data = text_data,
                 .initial_size = 22,
-            }) catch unreachable;
+            }}) catch unreachable;
         } else if (en == .object) {
-            ui.status_texts.add(ui.StatusText{
+            ui.elements.add(.{ .status = ui.StatusText{
                 .obj_id = en.object.obj_id,
                 .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                 .lifetime = 2000,
                 .text_data = text_data,
                 .initial_size = 22,
-            }) catch unreachable;
+            }}) catch unreachable;
         }
     }
 
@@ -732,7 +732,7 @@ fn handleText(allocator: std.mem.Allocator) void {
             }
         }
 
-        ui.speech_balloons.add(ui.SpeechBalloon{
+        ui.elements.add(.{ .balloon = ui.SpeechBalloon{
             .image_data = .{ .normal = .{
                 .scale_x = 3.0,
                 .scale_y = 3.0,
@@ -746,7 +746,7 @@ fn handleText(allocator: std.mem.Allocator) void {
             },
             .target_id = object_id,
             .start_time = @divFloor(main.current_time, std.time.us_per_ms),
-        }) catch unreachable;
+        }}) catch unreachable;
     }
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)

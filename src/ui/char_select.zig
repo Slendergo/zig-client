@@ -8,12 +8,16 @@ const main = @import("../main.zig");
 const utils = @import("../utils.zig");
 
 pub const CharSelectScreen = struct {
+    boxes: utils.DynSlice(*ui.CharacterBox) = undefined,
+
     _allocator: std.mem.Allocator = undefined,
 
     pub fn init(allocator: std.mem.Allocator) !CharSelectScreen {
-        const screen = CharSelectScreen{
+        var screen = CharSelectScreen{
             ._allocator = allocator,
         };
+
+        screen.boxes = try utils.DynSlice(*ui.CharacterBox).init(8, allocator);
 
         return screen;
     }
@@ -24,21 +28,19 @@ pub const CharSelectScreen = struct {
     }
 
     pub fn toggle(self: *CharSelectScreen, state: bool) void {
-        for (ui.character_boxes.items()) |box| {
-            if (box.text_data) |text_data| {
-                self._allocator.free(text_data.backing_buffer);
+        for (self.boxes.items()) |box| {
+            for (ui.elements.items(), 0..) |element, i| {
+                if (element == .char_box and element.char_box == box)
+                    ui.disposeElement(ui.elements.remove(i), self._allocator);
             }
-            self._allocator.destroy(box);
         }
-
-        ui.character_boxes.clear();
 
         if (!state)
             return;
 
-        const button_data_base = (assets.ui_atlas_data.get("buttonBase") orelse @panic("Could not find buttonBase in ui atlas"))[0];
-        const button_data_hover = (assets.ui_atlas_data.get("buttonHover") orelse @panic("Could not find buttonHover in ui atlas"))[0];
-        const button_data_press = (assets.ui_atlas_data.get("buttonPress") orelse @panic("Could not find buttonPress in ui atlas"))[0];
+        const button_data_base = assets.getUiSingle("buttonBase");
+        const button_data_hover = assets.getUiSingle("buttonHover");
+        const button_data_press = assets.getUiSingle("buttonPress");
 
         for (main.character_list, 0..) |char, i| {
             const box = self._allocator.create(ui.CharacterBox) catch return;
@@ -84,7 +86,8 @@ pub const CharSelectScreen = struct {
                 },
                 .press_callback = boxClickCallback,
             };
-            ui.character_boxes.add(box) catch return;
+            self.boxes.add(box) catch return;
+            ui.elements.add(.{ .char_box = box }) catch return;
         }
     }
 

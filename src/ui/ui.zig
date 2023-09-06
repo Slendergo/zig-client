@@ -497,18 +497,22 @@ pub const ScreenType = enum(u8) {
     in_game,
 };
 
-pub var items: utils.DynSlice(*Item) = undefined;
-pub var bars: utils.DynSlice(*Bar) = undefined;
-pub var input_fields: utils.DynSlice(*InputField) = undefined;
-pub var buttons: utils.DynSlice(*Button) = undefined;
-pub var ui_images: utils.DynSlice(*Image) = undefined;
-pub var ui_texts: utils.DynSlice(*UiText) = undefined;
-pub var speech_balloons: utils.DynSlice(SpeechBalloon) = undefined;
-pub var speech_balloons_to_remove: utils.DynSlice(usize) = undefined;
-pub var status_texts: utils.DynSlice(StatusText) = undefined;
-pub var status_texts_to_remove: utils.DynSlice(usize) = undefined;
+pub const UiElement = union(enum) {
+    image: *Image,
+    item: *Item,
+    bar: *Bar,
+    input_field: *InputField,
+    button: *Button,
+    text: *UiText,
+    char_box: *CharacterBox,
+    // pointers on these would imply allocation, which is pointless and wasteful
+    balloon: SpeechBalloon,
+    status: StatusText,
+};
+
+pub var elements: utils.DynSlice(UiElement) = undefined;
+pub var elements_to_remove: utils.DynSlice(usize) = undefined;
 pub var obj_ids_to_remove: utils.DynSlice(i32) = undefined;
-pub var character_boxes: utils.DynSlice(*CharacterBox) = undefined;
 pub var current_screen = ScreenType.main_menu;
 
 var menu_background: *Image = undefined;
@@ -517,23 +521,10 @@ pub var account_screen: AccountScreen = undefined;
 pub var char_select_screen: CharSelectScreen = undefined;
 pub var in_game_screen: InGameScreen = undefined;
 
-var _allocator: std.mem.Allocator = undefined;
-
 pub fn init(allocator: std.mem.Allocator) !void {
-    _allocator = allocator;
-
-    items = try utils.DynSlice(*Item).init(16, allocator);
-    bars = try utils.DynSlice(*Bar).init(8, allocator);
-    input_fields = try utils.DynSlice(*InputField).init(8, allocator);
-    buttons = try utils.DynSlice(*Button).init(8, allocator);
-    ui_images = try utils.DynSlice(*Image).init(8, allocator);
-    ui_texts = try utils.DynSlice(*UiText).init(8, allocator);
-    speech_balloons = try utils.DynSlice(SpeechBalloon).init(16, allocator);
-    speech_balloons_to_remove = try utils.DynSlice(usize).init(16, allocator);
-    status_texts = try utils.DynSlice(StatusText).init(32, allocator);
-    status_texts_to_remove = try utils.DynSlice(usize).init(32, allocator);
+    elements = try utils.DynSlice(UiElement).init(64, allocator);
+    elements_to_remove = try utils.DynSlice(usize).init(64, allocator);
     obj_ids_to_remove = try utils.DynSlice(i32).init(64, allocator);
-    character_boxes = try utils.DynSlice(*CharacterBox).init(16, allocator);
 
     menu_background = try allocator.create(Image);
     var menu_bg_data = (assets.ui_atlas_data.get("menuBackground") orelse @panic("Could not find menuBackground in ui atlas"))[0];
@@ -547,56 +538,40 @@ pub fn init(allocator: std.mem.Allocator) !void {
             .atlas_data = menu_bg_data,
         } },
     };
-    try ui_images.add(menu_background);
+    try elements.add(.{ .image = menu_background });
 
     account_screen = try AccountScreen.init(allocator);
     char_select_screen = try CharSelectScreen.init(allocator);
     in_game_screen = try InGameScreen.init(allocator);
 }
 
-pub fn deinit(allocator: std.mem.Allocator) void {
-    for (bars.items()) |bar| {
-        allocator.free(bar.text_data.backing_buffer);
-    }
-    bars.deinit();
-    for (input_fields.items()) |input_field| {
-        allocator.free(input_field.text_data.backing_buffer);
-    }
-    input_fields.deinit();
-    for (buttons.items()) |button| {
-        if (button.text_data) |text_data| {
+pub fn disposeElement(elem: UiElement, allocator: std.mem.Allocator) void {
+    switch (elem) {
+        .bar => |bar| allocator.free(bar.text_data.backing_buffer),
+        .input_field => |input_field| allocator.free(input_field.text_data.backing_buffer),
+        .button => |button| if (button.text_data) |text_data| {
             allocator.free(text_data.backing_buffer);
-        }
-    }
-    buttons.deinit();
-    for (character_boxes.items()) |box| {
-        if (box.text_data) |text_data| {
+        },
+        .char_box => |box| if (box.text_data) |text_data| {
             allocator.free(text_data.backing_buffer);
-        }
-        allocator.destroy(box);
-    }
-    character_boxes.deinit();
-    ui_images.deinit();
-    for (ui_texts.items()) |ui_text| {
-        allocator.free(ui_text.text_data.backing_buffer);
-    }
-    ui_texts.deinit();
-    for (items.items()) |item| {
-        if (item.tier_text) |ui_text| {
+        },
+        .text => |text| allocator.free(text.text_data.backing_buffer),
+        .item => |item| if (item.tier_text) |ui_text| {
             allocator.free(ui_text.text_data.backing_buffer);
-        }
+        },
+        .balloon => |balloon| allocator.free(balloon.text_data.text),
+        .status => |status| allocator.free(status.text_data.text),
+        else => {},
     }
-    items.deinit();
-    for (speech_balloons.items()) |speech_balloon| {
-        allocator.free(speech_balloon.text_data.text);
+}
+
+pub fn deinit(allocator: std.mem.Allocator) void {
+    for (elements.items()) |elem| {
+        disposeElement(elem, allocator);
     }
-    speech_balloons.deinit();
-    speech_balloons_to_remove.deinit();
-    for (status_texts.items()) |status_text| {
-        allocator.free(status_text.text_data.text);
-    }
-    status_texts.deinit();
-    status_texts_to_remove.deinit();
+    elements.deinit();
+
+    elements_to_remove.deinit();
     obj_ids_to_remove.deinit();
 
     allocator.destroy(menu_background);
@@ -625,125 +600,130 @@ pub fn switchScreen(screen_type: ScreenType) void {
 }
 
 pub fn removeAttachedUi(obj_id: i32) void {
-    for (status_texts.items()) |text| {
-        if (text.obj_id == obj_id) {
-            obj_ids_to_remove.add(obj_id) catch |e| {
-                std.log.err("Status text disposing failed: {any}", .{e});
-            };
-            continue;
-        }
-    }
-
-    for (speech_balloons.items()) |balloon| {
-        if (balloon.target_id == obj_id) {
-            obj_ids_to_remove.add(obj_id) catch |e| {
-                std.log.err("Speech balloon disposing failed: {any}", .{e});
-            };
-            continue;
+    for (elements.items()) |elem| {
+        switch (elem) {
+            .status => |text| if (text.obj_id == obj_id) {
+                obj_ids_to_remove.add(obj_id) catch |e| {
+                    std.log.err("Status text disposing failed: {any}", .{e});
+                };
+                continue;
+            },
+            .balloon => |balloon| if (balloon.target_id == obj_id) {
+                obj_ids_to_remove.add(obj_id) catch |e| {
+                    std.log.err("Speech balloon disposing failed: {any}", .{e});
+                };
+                continue;
+            },
+            else => {},
         }
     }
 }
 
 pub fn mouseMove(x: f32, y: f32) void {
-    for (items.items()) |item| {
-        if (!item.visible or !item._is_dragging)
-            continue;
+    for (elements.items()) |elem| {
+        switch (elem) {
+            .item => |item| {
+                if (!item.visible or !item._is_dragging)
+                    continue;
 
-        item.x = x + item._drag_offset_x;
-        item.y = y + item._drag_offset_y;
-    }
+                item.x = x + item._drag_offset_x;
+                item.y = y + item._drag_offset_y;
+            },
+            .button => |button| {
+                if (!button.visible)
+                    continue;
 
-    for (buttons.items()) |button| {
-        if (!button.visible)
-            continue;
+                if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
+                    button.state = .hovered;
+                } else {
+                    button.state = .none;
+                }
+            },
+            .char_box => |box| {
+                if (!box.visible)
+                    continue;
 
-        if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
-            button.state = .hovered;
-        } else {
-            button.state = .none;
-        }
-    }
+                if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
+                    box.state = .hovered;
+                } else {
+                    box.state = .none;
+                }
+            },
+            .input_field => |input_field| {
+                if (!input_field.visible)
+                    continue;
 
-    for (character_boxes.items()) |box| {
-        if (!box.visible)
-            continue;
-
-        if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
-            box.state = .hovered;
-        } else {
-            box.state = .none;
-        }
-    }
-
-    for (input_fields.items()) |input_field| {
-        if (!input_field.visible)
-            continue;
-
-        if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
-            input_field.state = .hovered;
-        } else {
-            input_field.state = .none;
+                if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
+                    input_field.state = .hovered;
+                } else {
+                    input_field.state = .none;
+                }
+            },
+            else => {},
         }
     }
 }
 
 pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
-    for (items.items()) |item| {
-        if (!item.visible or !item.draggable)
-            continue;
-
-        if (utils.isInBounds(x, y, item.x, item.y, item.width(), item.height())) {
-            if (mods.shift) {
-                item.shift_click_callback(item);
-                return true;
-            }
-
-            if (item._last_click_time + 333 * std.time.us_per_ms > main.current_time) {
-                item.double_click_callback(item);
-                return true;
-            }
-
-            item._is_dragging = true;
-            item._drag_start_x = item.x;
-            item._drag_start_y = item.y;
-            item._drag_offset_x = item.x - x;
-            item._drag_offset_y = item.y - y;
-            item._last_click_time = main.current_time;
-            return true;
-        }
-    }
-
-    for (buttons.items()) |button| {
-        if (!button.visible)
-            continue;
-
-        if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
-            button.state = .pressed;
-            button.press_callback();
-            return true;
-        }
-    }
-
-    for (character_boxes.items()) |box| {
-        if (!box.visible)
-            continue;
-
-        if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
-            box.state = .pressed;
-            box.press_callback(box);
-            return true;
-        }
-    }
-
     input.selected_input_field = null;
-    for (input_fields.items()) |input_field| {
-        if (!input_field.visible)
-            continue;
 
-        if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
-            input.selected_input_field = input_field;
-            input_field.state = .pressed;
-            return true;
+    for (elements.items()) |elem| {
+        switch (elem) {
+            .item => |item| {
+                if (!item.visible or !item.draggable)
+                    continue;
+
+                if (utils.isInBounds(x, y, item.x, item.y, item.width(), item.height())) {
+                    if (mods.shift) {
+                        item.shift_click_callback(item);
+                        return true;
+                    }
+
+                    if (item._last_click_time + 333 * std.time.us_per_ms > main.current_time) {
+                        item.double_click_callback(item);
+                        return true;
+                    }
+
+                    item._is_dragging = true;
+                    item._drag_start_x = item.x;
+                    item._drag_start_y = item.y;
+                    item._drag_offset_x = item.x - x;
+                    item._drag_offset_y = item.y - y;
+                    item._last_click_time = main.current_time;
+                    return true;
+                }
+            },
+            .button => |button| {
+                if (!button.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
+                    button.state = .pressed;
+                    button.press_callback();
+                    return true;
+                }
+            },
+            .char_box => |box| {
+                if (!box.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
+                    box.state = .pressed;
+                    box.press_callback(box);
+                    return true;
+                }
+            },
+            .input_field => |input_field| {
+                if (!input_field.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
+                    input.selected_input_field = input_field;
+                    input_field.state = .pressed;
+                    return true;
+                }
+            },
+            else => {},
         }
     }
 
@@ -751,38 +731,40 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
 }
 
 pub fn mouseRelease(x: f32, y: f32) void {
-    for (items.items()) |item| {
-        if (!item._is_dragging)
-            continue;
+    for (elements.items()) |elem| {
+        switch (elem) {
+            .item => |item| {
+                if (!item._is_dragging)
+                    continue;
 
-        item._is_dragging = false;
-        item.drag_end_callback(item);
-    }
+                item._is_dragging = false;
+                item.drag_end_callback(item);
+            },
+            .button => |button| {
+                if (!button.visible)
+                    continue;
 
-    for (buttons.items()) |button| {
-        if (!button.visible)
-            continue;
+                if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
+                    button.state = .none;
+                }
+            },
+            .char_box => |box| {
+                if (!box.visible)
+                    continue;
 
-        if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
-            button.state = .none;
-        }
-    }
+                if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
+                    box.state = .none;
+                }
+            },
+            .input_field => |input_field| {
+                if (!input_field.visible)
+                    continue;
 
-    for (character_boxes.items()) |box| {
-        if (!box.visible)
-            continue;
-
-        if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
-            box.state = .none;
-        }
-    }
-
-    for (input_fields.items()) |input_field| {
-        if (!input_field.visible)
-            continue;
-
-        if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
-            input_field.state = .none;
+                if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
+                    input_field.state = .none;
+                }
+            },
+            else => {},
         }
     }
 }
@@ -801,85 +783,84 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
         else => {},
     }
 
-    textUpdate: for (status_texts.items(), 0..) |*status_text, i| {
-        for (obj_ids_to_remove.items()) |obj_id| {
-            if (obj_id == status_text.obj_id) {
-                status_texts_to_remove.add(i) catch |e| {
-                    std.log.err("Status text disposing failed: {any}", .{e});
-                };
-                continue :textUpdate;
-            }
-        }
+    for (elements.items(), 0..) |*elem, i| {
+        switch (elem.*) {
+            .status => |*status_text| {
+                for (obj_ids_to_remove.items()) |obj_id| {
+                    if (obj_id == status_text.obj_id) {
+                        elements_to_remove.add(i) catch |e| {
+                            std.log.err("Status text disposing failed: {any}", .{e});
+                        };
+                        continue;
+                    }
+                }
 
-        const elapsed = ms_time - status_text.start_time;
-        if (elapsed > status_text.lifetime) {
-            status_texts_to_remove.add(i) catch |e| {
-                std.log.err("Status text disposing failed: {any}", .{e});
-            };
-            continue :textUpdate;
-        }
+                const elapsed = ms_time - status_text.start_time;
+                if (elapsed > status_text.lifetime) {
+                    elements_to_remove.add(i) catch |e| {
+                        std.log.err("Status text disposing failed: {any}", .{e});
+                    };
+                    continue;
+                }
 
-        const frac = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(status_text.lifetime));
-        status_text.text_data.size = status_text.initial_size * @min(1.0, @max(0.7, 1.0 - frac * 0.3 + 0.075));
-        status_text.text_data.alpha = 1.0 - frac + 0.33;
-        if (map.findEntityConst(status_text.obj_id)) |en| {
-            switch (en) {
-                inline else => |obj| {
-                    status_text._screen_x = obj.screen_x - status_text.text_data.width() / 2;
-                    status_text._screen_y = obj.screen_y - status_text.text_data.height() - frac * 40;
-                },
-            }
-        }
-    }
+                const frac = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(status_text.lifetime));
+                status_text.text_data.size = status_text.initial_size * @min(1.0, @max(0.7, 1.0 - frac * 0.3 + 0.075));
+                status_text.text_data.alpha = 1.0 - frac + 0.33;
+                if (map.findEntityConst(status_text.obj_id)) |en| {
+                    switch (en) {
+                        inline else => |obj| {
+                            status_text._screen_x = obj.screen_x - status_text.text_data.width() / 2;
+                            status_text._screen_y = obj.screen_y - status_text.text_data.height() - frac * 40;
+                        },
+                    }
+                }
+            },
+            .balloon => |*speech_balloon| {
+                for (obj_ids_to_remove.items()) |obj_id| {
+                    if (obj_id == speech_balloon.target_id) {
+                        elements_to_remove.add(i) catch |e| {
+                            std.log.err("Speech balloon disposing failed: {any}", .{e});
+                        };
+                        continue;
+                    }
+                }
 
-    std.mem.reverse(usize, status_texts_to_remove.items());
+                const elapsed = ms_time - speech_balloon.start_time;
+                const lifetime = 5000;
+                if (elapsed > lifetime) {
+                    elements_to_remove.add(i) catch |e| {
+                        std.log.err("Speech balloon disposing failed: {any}", .{e});
+                    };
+                    continue;
+                }
 
-    for (status_texts_to_remove.items()) |idx| {
-        allocator.free(status_texts.remove(idx).text_data.text);
-    }
-
-    status_texts_to_remove.clear();
-
-    balloonUpdate: for (speech_balloons.items(), 0..) |*speech_balloon, i| {
-        for (obj_ids_to_remove.items()) |obj_id| {
-            if (obj_id == speech_balloon.target_id) {
-                speech_balloons_to_remove.add(i) catch |e| {
-                    std.log.err("Speech balloon disposing failed: {any}", .{e});
-                };
-                continue :balloonUpdate;
-            }
-        }
-
-        const elapsed = ms_time - speech_balloon.start_time;
-        const lifetime = 5000;
-        if (elapsed > lifetime) {
-            speech_balloons_to_remove.add(i) catch |e| {
-                std.log.err("Speech balloon disposing failed: {any}", .{e});
-            };
-            continue :balloonUpdate;
-        }
-
-        const frac = @as(f32, @floatFromInt(elapsed)) / @as(f32, lifetime);
-        const alpha = 1.0 - frac * 2.0 + 0.9;
-        speech_balloon.image_data.normal.alpha = alpha; // assume no 9 slice
-        speech_balloon.text_data.alpha = alpha;
-        if (map.findEntityConst(speech_balloon.target_id)) |en| {
-            switch (en) {
-                inline else => |obj| {
-                    speech_balloon._screen_x = obj.screen_x - speech_balloon.width() / 2;
-                    speech_balloon._screen_y = obj.screen_y - speech_balloon.height();
-                },
-            }
+                const frac = @as(f32, @floatFromInt(elapsed)) / @as(f32, lifetime);
+                const alpha = 1.0 - frac * 2.0 + 0.9;
+                speech_balloon.image_data.normal.alpha = alpha; // assume no 9 slice
+                speech_balloon.text_data.alpha = alpha;
+                if (map.findEntityConst(speech_balloon.target_id)) |en| {
+                    switch (en) {
+                        inline else => |obj| {
+                            speech_balloon._screen_x = obj.screen_x - speech_balloon.width() / 2;
+                            speech_balloon._screen_y = obj.screen_y - speech_balloon.height();
+                        },
+                    }
+                }
+            },
+            else => {},
         }
     }
 
-    std.mem.reverse(usize, speech_balloons_to_remove.items());
+    std.mem.reverse(usize, elements_to_remove.items());
 
-    for (speech_balloons_to_remove.items()) |idx| {
-        allocator.free(speech_balloons.remove(idx).text_data.text);
+    for (elements_to_remove.items()) |idx| {
+        switch (elements.remove(idx)) {
+            .status => |status| allocator.free(status.text_data.text),
+            .balloon => |balloon| allocator.free(balloon.text_data.text),
+            else => {},
+        }
     }
 
-    speech_balloons_to_remove.clear();
-
+    elements_to_remove.clear();
     obj_ids_to_remove.clear();
 }

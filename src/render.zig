@@ -1880,95 +1880,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
         var needs_clear = no_in_game_render;
         var ui_idx: u16 = 0;
-        for (ui.status_texts.items()) |status_text| {
-            if (!status_text.visible)
-                continue;
+        for (ui.elements.items()) |elem| {
+            switch (elem) {
+                .status => |text| {
+                    if (!text.visible)
+                        return;
 
-            if (ui_idx >= 40000 - status_text.text_data.text.len * 4) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
-
-            ui_idx += drawText(
-                ui_idx,
-                status_text._screen_x,
-                status_text._screen_y,
-                status_text.text_data,
-            );
-        }
-
-        for (ui.speech_balloons.items()) |balloon| {
-            if (!balloon.visible)
-                continue;
-
-            const image_data = balloon.image_data.normal; // assume no 9 slice
-            const w = image_data.width();
-            const h = image_data.height();
-
-            drawQuad(
-                ui_idx,
-                balloon._screen_x,
-                balloon._screen_y,
-                w,
-                h,
-                image_data.atlas_data,
-                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
-            );
-            ui_idx += 4;
-
-            if (ui_idx == 40000) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
-
-            if (ui_idx >= 40000 - balloon.text_data.text.len * 4) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
-
-            const decor_offset = h / 10;
-            ui_idx += drawText(
-                ui_idx,
-                balloon._screen_x + ((w - assets.padding * image_data.scale_x) - balloon.text_data.width()) / 2,
-                balloon._screen_y + (h - balloon.text_data.height()) / 2 - decor_offset,
-                balloon.text_data,
-            );
-        }
-
-        for (ui.ui_images.items()) |image| {
-            if (!image.visible)
-                continue;
-
-            switch (image.image_data) {
-                .nine_slice => |nine_slice| {
-                    if (ui_idx >= 40000 - 9 * 4) {
+                    if (ui_idx >= 40000 - text.text_data.text.len * 4) {
                         endBaseDraw(
                             gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
@@ -1982,24 +1900,23 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         ui_idx = 0;
                     }
 
-                    drawNineSlice(ui_idx, image.x, image.y, nine_slice.w, nine_slice.h, nine_slice);
-                    ui_idx += 9 * 4;
+                    ui_idx += drawText(ui_idx, text._screen_x, text._screen_y, text.text_data);
                 },
-                .normal => |image_data| {
-                    var atlas_data = image_data.atlas_data;
-                    var w = image_data.width();
-                    if (w > image.max_width) {
-                        const scale = image.max_width / w;
-                        atlas_data.tex_w *= scale;
-                        w *= scale;
-                    }
+                .balloon => |balloon| {
+                    if (!balloon.visible)
+                        continue;
+
+                    const image_data = balloon.image_data.normal; // assume no 9 slice
+                    const w = image_data.width();
+                    const h = image_data.height();
+
                     drawQuad(
                         ui_idx,
-                        image.x,
-                        image.y,
+                        balloon._screen_x,
+                        balloon._screen_y,
                         w,
-                        image_data.height(),
-                        atlas_data,
+                        h,
+                        image_data.atlas_data,
                         .{ .alpha_mult = image_data.alpha, .ui_quad = true },
                     );
                     ui_idx += 4;
@@ -2017,17 +1934,8 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         needs_clear = false;
                         ui_idx = 0;
                     }
-                },
-            }
-        }
 
-        for (ui.items.items()) |item| {
-            if (!item.visible)
-                continue;
-
-            switch (item.image_data) {
-                .nine_slice => |nine_slice| {
-                    if (ui_idx >= 40000 - 9 * 4) {
+                    if (ui_idx >= 40000 - balloon.text_data.text.len * 4) {
                         endBaseDraw(
                             gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
@@ -2041,44 +1949,230 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         ui_idx = 0;
                     }
 
-                    drawNineSlice(ui_idx, item.x, item.y, nine_slice.w, nine_slice.h, nine_slice);
-                    ui_idx += 9 * 4;
-                },
-                .normal => |image_data| {
-                    drawQuad(
+                    const decor_offset = h / 10;
+                    ui_idx += drawText(
                         ui_idx,
-                        item.x,
-                        item.y,
-                        image_data.width(),
-                        image_data.height(),
-                        image_data.atlas_data,
-                        .{ .shadow_texel_mult = 2.0 / image_data.scale_x, .alpha_mult = image_data.alpha, .ui_quad = true },
+                        balloon._screen_x + ((w - assets.padding * image_data.scale_x) - balloon.text_data.width()) / 2,
+                        balloon._screen_y + (h - balloon.text_data.height()) / 2 - decor_offset,
+                        balloon.text_data,
                     );
-                    ui_idx += 4;
+                },
+                .image => |image| {
+                    if (!image.visible)
+                        continue;
 
-                    if (ui_idx == 40000) {
-                        endBaseDraw(
-                            gctx,
-                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                            encoder,
-                            vb_info,
-                            ib_info,
-                            pipeline,
-                            bind_group,
-                        );
-                        needs_clear = false;
-                        ui_idx = 0;
+                    switch (image.image_data) {
+                        .nine_slice => |nine_slice| {
+                            if (ui_idx >= 40000 - 9 * 4) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+
+                            drawNineSlice(ui_idx, image.x, image.y, nine_slice.w, nine_slice.h, nine_slice);
+                            ui_idx += 9 * 4;
+                        },
+                        .normal => |image_data| {
+                            var atlas_data = image_data.atlas_data;
+                            var w = image_data.width();
+                            if (w > image.max_width) {
+                                const scale = image.max_width / w;
+                                atlas_data.tex_w *= scale;
+                                w *= scale;
+                            }
+                            drawQuad(
+                                ui_idx,
+                                image.x,
+                                image.y,
+                                w,
+                                image_data.height(),
+                                atlas_data,
+                                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
+                            );
+                            ui_idx += 4;
+
+                            if (ui_idx == 40000) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+                        },
                     }
                 },
-            }
+                .item => |item| {
+                    if (!item.visible)
+                        continue;
 
-            textDraw: {
-                if (item.tier_text) |tier_text| {
-                    const text_len = tier_text.text_data.text.len;
-                    if (text_len <= 0)
-                        break :textDraw;
+                    switch (item.image_data) {
+                        .nine_slice => |nine_slice| {
+                            if (ui_idx >= 40000 - 9 * 4) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
 
-                    if (ui_idx >= 40000 - text_len * 4) {
+                            drawNineSlice(ui_idx, item.x, item.y, nine_slice.w, nine_slice.h, nine_slice);
+                            ui_idx += 9 * 4;
+                        },
+                        .normal => |image_data| {
+                            drawQuad(
+                                ui_idx,
+                                item.x,
+                                item.y,
+                                image_data.width(),
+                                image_data.height(),
+                                image_data.atlas_data,
+                                .{ .shadow_texel_mult = 2.0 / image_data.scale_x, .alpha_mult = image_data.alpha, .ui_quad = true },
+                            );
+                            ui_idx += 4;
+
+                            if (ui_idx == 40000) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+                        },
+                    }
+
+                    textDraw: {
+                        if (item.tier_text) |tier_text| {
+                            const text_len = tier_text.text_data.text.len;
+                            if (text_len <= 0)
+                                break :textDraw;
+
+                            if (ui_idx >= 40000 - text_len * 4) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+
+                            ui_idx += drawText(
+                                ui_idx,
+                                item.x + tier_text.x,
+                                item.y + tier_text.y,
+                                tier_text.text_data,
+                            );
+
+                            if (ui_idx == 40000) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+                        }
+                    }
+                },
+                .bar => |bar| {
+                    if (!bar.visible)
+                        continue;
+
+                    var w: f32 = 0;
+                    var h: f32 = 0;
+                    switch (bar.image_data) {
+                        .nine_slice => |nine_slice| {
+                            w = nine_slice.w;
+                            h = nine_slice.h;
+                            if (ui_idx >= 40000 - 9 * 4) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+
+                            drawNineSlice(ui_idx, bar.x, bar.y, nine_slice.w, nine_slice.h, nine_slice);
+                            ui_idx += 9 * 4;
+                        },
+                        .normal => |image_data| {
+                            w = image_data.width();
+                            h = image_data.height();
+                            var atlas_data = image_data.atlas_data;
+                            var scale: f32 = 1.0;
+                            if (w > bar.max_width) {
+                                scale = bar.max_width / w;
+                                atlas_data.tex_w *= scale;
+                            }
+                            drawQuad(
+                                ui_idx,
+                                bar.x,
+                                bar.y,
+                                w * scale,
+                                image_data.height(),
+                                atlas_data,
+                                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
+                            );
+                            ui_idx += 4;
+
+                            if (ui_idx == 40000) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+                        },
+                    }
+
+                    if (ui_idx >= 40000 - bar.text_data.text.len * 4) {
                         endBaseDraw(
                             gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
@@ -2094,9 +2188,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     ui_idx += drawText(
                         ui_idx,
-                        item.x + tier_text.x,
-                        item.y + tier_text.y,
-                        tier_text.text_data,
+                        bar.x + (w - bar.text_data.width()) / 2,
+                        bar.y + (h - bar.text_data.height()) / 2,
+                        bar.text_data,
                     );
 
                     if (ui_idx == 40000) {
@@ -2112,21 +2206,202 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         needs_clear = false;
                         ui_idx = 0;
                     }
-                }
-            }
-        }
+                },
+                .button => |button| {
+                    if (!button.visible)
+                        continue;
 
-        for (ui.bars.items()) |bar| {
-            if (!bar.visible)
-                continue;
+                    var w: f32 = 0;
+                    var h: f32 = 0;
 
-            var w: f32 = 0;
-            var h: f32 = 0;
-            switch (bar.image_data) {
-                .nine_slice => |nine_slice| {
-                    w = nine_slice.w;
-                    h = nine_slice.h;
-                    if (ui_idx >= 40000 - 9 * 4) {
+                    switch (button.imageData()) {
+                        .nine_slice => |nine_slice| {
+                            w = nine_slice.w;
+                            h = nine_slice.h;
+                            if (ui_idx >= 40000 - 9 * 4) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+
+                            drawNineSlice(ui_idx, button.x, button.y, nine_slice.w, nine_slice.h, nine_slice);
+                            ui_idx += 9 * 4;
+                        },
+                        .normal => |image_data| {
+                            w = image_data.width();
+                            h = image_data.height();
+                            drawQuad(
+                                ui_idx,
+                                button.x,
+                                button.y,
+                                image_data.width(),
+                                image_data.height(),
+                                image_data.atlas_data,
+                                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
+                            );
+                            ui_idx += 4;
+
+                            if (ui_idx == 40000) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+                        },
+                    }
+
+                    if (button.text_data) |text_data| {
+                        if (ui_idx >= 40000 - text_data.text.len * 4) {
+                            endBaseDraw(
+                                gctx,
+                                if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                encoder,
+                                vb_info,
+                                ib_info,
+                                pipeline,
+                                bind_group,
+                            );
+                            needs_clear = false;
+                            ui_idx = 0;
+                        }
+
+                        ui_idx += drawText(
+                            ui_idx,
+                            button.x + (w - text_data.width()) / 2,
+                            button.y + (h - text_data.height()) / 2,
+                            text_data,
+                        );
+
+                        if (ui_idx == 40000) {
+                            endBaseDraw(
+                                gctx,
+                                if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                encoder,
+                                vb_info,
+                                ib_info,
+                                pipeline,
+                                bind_group,
+                            );
+                            needs_clear = false;
+                            ui_idx = 0;
+                        }
+                    }
+                },
+                .char_box => |char_box| {
+                    if (!char_box.visible)
+                        continue;
+
+                    var w: f32 = 0;
+                    var h: f32 = 0;
+
+                    switch (char_box.imageData()) {
+                        .nine_slice => |nine_slice| {
+                            w = nine_slice.w;
+                            h = nine_slice.h;
+                            if (ui_idx >= 40000 - 9 * 4) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+
+                            drawNineSlice(ui_idx, char_box.x, char_box.y, nine_slice.w, nine_slice.h, nine_slice);
+                            ui_idx += 9 * 4;
+                        },
+                        .normal => |image_data| {
+                            w = image_data.width();
+                            h = image_data.height();
+                            drawQuad(
+                                ui_idx,
+                                char_box.x,
+                                char_box.y,
+                                image_data.width(),
+                                image_data.height(),
+                                image_data.atlas_data,
+                                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
+                            );
+                            ui_idx += 4;
+
+                            if (ui_idx == 40000) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+                        },
+                    }
+
+                    if (char_box.text_data) |text_data| {
+                        if (ui_idx >= 40000 - text_data.text.len * 4) {
+                            endBaseDraw(
+                                gctx,
+                                if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                encoder,
+                                vb_info,
+                                ib_info,
+                                pipeline,
+                                bind_group,
+                            );
+                            needs_clear = false;
+                            ui_idx = 0;
+                        }
+
+                        ui_idx += drawText(
+                            ui_idx,
+                            char_box.x + (w - text_data.width()) / 2,
+                            char_box.y + (h - text_data.height()) / 2,
+                            text_data,
+                        );
+
+                        if (ui_idx == 40000) {
+                            endBaseDraw(
+                                gctx,
+                                if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                encoder,
+                                vb_info,
+                                ib_info,
+                                pipeline,
+                                bind_group,
+                            );
+                            needs_clear = false;
+                            ui_idx = 0;
+                        }
+                    }
+                },
+                .text => |text| {
+                    if (!text.visible)
+                        continue;
+
+                    if (ui_idx >= 40000 - text.text_data.text.len * 4) {
                         endBaseDraw(
                             gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
@@ -2140,28 +2415,12 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         ui_idx = 0;
                     }
 
-                    drawNineSlice(ui_idx, bar.x, bar.y, nine_slice.w, nine_slice.h, nine_slice);
-                    ui_idx += 9 * 4;
-                },
-                .normal => |image_data| {
-                    w = image_data.width();
-                    h = image_data.height();
-                    var atlas_data = image_data.atlas_data;
-                    var scale: f32 = 1.0;
-                    if (w > bar.max_width) {
-                        scale = bar.max_width / w;
-                        atlas_data.tex_w *= scale;
-                    }
-                    drawQuad(
+                    ui_idx += drawText(
                         ui_idx,
-                        bar.x,
-                        bar.y,
-                        w * scale,
-                        image_data.height(),
-                        atlas_data,
-                        .{ .alpha_mult = image_data.alpha, .ui_quad = true },
+                        text.x,
+                        text.y,
+                        text.text_data,
                     );
-                    ui_idx += 4;
 
                     if (ui_idx == 40000) {
                         endBaseDraw(
@@ -2177,56 +2436,65 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         ui_idx = 0;
                     }
                 },
-            }
+                .input_field => |input_field| {
+                    if (!input_field.visible)
+                        continue;
 
-            if (ui_idx >= 40000 - bar.text_data.text.len * 4) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
+                    var w: f32 = 0;
+                    var h: f32 = 0;
 
-            ui_idx += drawText(
-                ui_idx,
-                bar.x + (w - bar.text_data.width()) / 2,
-                bar.y + (h - bar.text_data.height()) / 2,
-                bar.text_data,
-            );
+                    switch (input_field.imageData()) {
+                        .nine_slice => |nine_slice| {
+                            w = nine_slice.w;
+                            h = nine_slice.h;
+                            if (ui_idx >= 40000 - 9 * 4) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
 
-            if (ui_idx == 40000) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
-        }
+                            drawNineSlice(ui_idx, input_field.x, input_field.y, nine_slice.w, nine_slice.h, nine_slice);
+                            ui_idx += 9 * 4;
+                        },
+                        .normal => |image_data| {
+                            w = image_data.width();
+                            h = image_data.height();
+                            drawQuad(
+                                ui_idx,
+                                input_field.x,
+                                input_field.y,
+                                image_data.width(),
+                                image_data.height(),
+                                image_data.atlas_data,
+                                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
+                            );
+                            ui_idx += 4;
 
-        for (ui.buttons.items()) |button| {
-            if (!button.visible)
-                continue;
+                            if (ui_idx == 40000) {
+                                endBaseDraw(
+                                    gctx,
+                                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
+                                    encoder,
+                                    vb_info,
+                                    ib_info,
+                                    pipeline,
+                                    bind_group,
+                                );
+                                needs_clear = false;
+                                ui_idx = 0;
+                            }
+                        },
+                    }
 
-            var w: f32 = 0;
-            var h: f32 = 0;
-
-            switch (button.imageData()) {
-                .nine_slice => |nine_slice| {
-                    w = nine_slice.w;
-                    h = nine_slice.h;
-                    if (ui_idx >= 40000 - 9 * 4) {
+                    if (ui_idx >= 40000 - input_field.text_data.text.len * 4) {
                         endBaseDraw(
                             gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
@@ -2240,22 +2508,12 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         ui_idx = 0;
                     }
 
-                    drawNineSlice(ui_idx, button.x, button.y, nine_slice.w, nine_slice.h, nine_slice);
-                    ui_idx += 9 * 4;
-                },
-                .normal => |image_data| {
-                    w = image_data.width();
-                    h = image_data.height();
-                    drawQuad(
+                    ui_idx += drawText(
                         ui_idx,
-                        button.x,
-                        button.y,
-                        image_data.width(),
-                        image_data.height(),
-                        image_data.atlas_data,
-                        .{ .alpha_mult = image_data.alpha, .ui_quad = true },
+                        input_field.x + input_field.text_inlay_x,
+                        input_field.y + input_field.text_inlay_y,
+                        input_field.text_data,
                     );
-                    ui_idx += 4;
 
                     if (ui_idx == 40000) {
                         endBaseDraw(
@@ -2271,273 +2529,6 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         ui_idx = 0;
                     }
                 },
-            }
-
-            if (button.text_data) |text_data| {
-                if (ui_idx >= 40000 - text_data.text.len * 4) {
-                    endBaseDraw(
-                        gctx,
-                        if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                        encoder,
-                        vb_info,
-                        ib_info,
-                        pipeline,
-                        bind_group,
-                    );
-                    needs_clear = false;
-                    ui_idx = 0;
-                }
-
-                ui_idx += drawText(
-                    ui_idx,
-                    button.x + (w - text_data.width()) / 2,
-                    button.y + (h - text_data.height()) / 2,
-                    text_data,
-                );
-
-                if (ui_idx == 40000) {
-                    endBaseDraw(
-                        gctx,
-                        if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                        encoder,
-                        vb_info,
-                        ib_info,
-                        pipeline,
-                        bind_group,
-                    );
-                    needs_clear = false;
-                    ui_idx = 0;
-                }
-            }
-        }
-
-        for (ui.character_boxes.items()) |char_box| {
-            if (!char_box.visible)
-                continue;
-
-            var w: f32 = 0;
-            var h: f32 = 0;
-
-            switch (char_box.imageData()) {
-                .nine_slice => |nine_slice| {
-                    w = nine_slice.w;
-                    h = nine_slice.h;
-                    if (ui_idx >= 40000 - 9 * 4) {
-                        endBaseDraw(
-                            gctx,
-                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                            encoder,
-                            vb_info,
-                            ib_info,
-                            pipeline,
-                            bind_group,
-                        );
-                        needs_clear = false;
-                        ui_idx = 0;
-                    }
-
-                    drawNineSlice(ui_idx, char_box.x, char_box.y, nine_slice.w, nine_slice.h, nine_slice);
-                    ui_idx += 9 * 4;
-                },
-                .normal => |image_data| {
-                    w = image_data.width();
-                    h = image_data.height();
-                    drawQuad(
-                        ui_idx,
-                        char_box.x,
-                        char_box.y,
-                        image_data.width(),
-                        image_data.height(),
-                        image_data.atlas_data,
-                        .{ .alpha_mult = image_data.alpha, .ui_quad = true },
-                    );
-                    ui_idx += 4;
-
-                    if (ui_idx == 40000) {
-                        endBaseDraw(
-                            gctx,
-                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                            encoder,
-                            vb_info,
-                            ib_info,
-                            pipeline,
-                            bind_group,
-                        );
-                        needs_clear = false;
-                        ui_idx = 0;
-                    }
-                },
-            }
-
-            if (char_box.text_data) |text_data| {
-                if (ui_idx >= 40000 - text_data.text.len * 4) {
-                    endBaseDraw(
-                        gctx,
-                        if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                        encoder,
-                        vb_info,
-                        ib_info,
-                        pipeline,
-                        bind_group,
-                    );
-                    needs_clear = false;
-                    ui_idx = 0;
-                }
-
-                ui_idx += drawText(
-                    ui_idx,
-                    char_box.x + (w - text_data.width()) / 2,
-                    char_box.y + (h - text_data.height()) / 2,
-                    text_data,
-                );
-
-                if (ui_idx == 40000) {
-                    endBaseDraw(
-                        gctx,
-                        if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                        encoder,
-                        vb_info,
-                        ib_info,
-                        pipeline,
-                        bind_group,
-                    );
-                    needs_clear = false;
-                    ui_idx = 0;
-                }
-            }
-        }
-
-        for (ui.ui_texts.items()) |text| {
-            if (!text.visible)
-                continue;
-
-            if (ui_idx >= 40000 - text.text_data.text.len * 4) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
-
-            ui_idx += drawText(
-                ui_idx,
-                text.x,
-                text.y,
-                text.text_data,
-            );
-
-            if (ui_idx == 40000) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
-        }
-
-        for (ui.input_fields.items()) |input_field| {
-            if (!input_field.visible)
-                continue;
-
-            var w: f32 = 0;
-            var h: f32 = 0;
-
-            switch (input_field.imageData()) {
-                .nine_slice => |nine_slice| {
-                    w = nine_slice.w;
-                    h = nine_slice.h;
-                    if (ui_idx >= 40000 - 9 * 4) {
-                        endBaseDraw(
-                            gctx,
-                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                            encoder,
-                            vb_info,
-                            ib_info,
-                            pipeline,
-                            bind_group,
-                        );
-                        needs_clear = false;
-                        ui_idx = 0;
-                    }
-
-                    drawNineSlice(ui_idx, input_field.x, input_field.y, nine_slice.w, nine_slice.h, nine_slice);
-                    ui_idx += 9 * 4;
-                },
-                .normal => |image_data| {
-                    w = image_data.width();
-                    h = image_data.height();
-                    drawQuad(
-                        ui_idx,
-                        input_field.x,
-                        input_field.y,
-                        image_data.width(),
-                        image_data.height(),
-                        image_data.atlas_data,
-                        .{ .alpha_mult = image_data.alpha, .ui_quad = true },
-                    );
-                    ui_idx += 4;
-
-                    if (ui_idx == 40000) {
-                        endBaseDraw(
-                            gctx,
-                            if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                            encoder,
-                            vb_info,
-                            ib_info,
-                            pipeline,
-                            bind_group,
-                        );
-                        needs_clear = false;
-                        ui_idx = 0;
-                    }
-                },
-            }
-
-            if (ui_idx >= 40000 - input_field.text_data.text.len * 4) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
-            }
-
-            ui_idx += drawText(
-                ui_idx,
-                input_field.x + input_field.text_inlay_x,
-                input_field.y + input_field.text_inlay_y,
-                input_field.text_data,
-            );
-
-            if (ui_idx == 40000) {
-                endBaseDraw(
-                    gctx,
-                    if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                    encoder,
-                    vb_info,
-                    ib_info,
-                    pipeline,
-                    bind_group,
-                );
-                needs_clear = false;
-                ui_idx = 0;
             }
         }
 

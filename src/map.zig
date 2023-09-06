@@ -1096,12 +1096,12 @@ pub const Projectile = struct {
                         .backing_buffer = &[0]u8{},
                     };
 
-                    ui.status_texts.add(ui.StatusText{
+                    ui.elements.add(.{ .status = ui.StatusText{
                         .obj_id = player.obj_id,
                         .start_time = time,
                         .text_data = text_data,
                         .initial_size = 22,
-                    }) catch |e| {
+                    }}) catch |e| {
                         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
                     };
                 }
@@ -1139,12 +1139,12 @@ pub const Projectile = struct {
                         .backing_buffer = &[0]u8{},
                     };
 
-                    ui.status_texts.add(ui.StatusText{
+                    ui.elements.add(.{ .status = ui.StatusText{
                         .obj_id = object.obj_id,
                         .start_time = time,
                         .text_data = text_data,
                         .initial_size = 22,
-                    }) catch |e| {
+                    }}) catch |e| {
                         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage, e });
                     };
                 }

@@ -73,7 +73,7 @@ pub const AccountScreen = struct {
             },
             .allocator = allocator,
         };
-        try ui.input_fields.add(screen.email_input);
+        try ui.elements.add(.{ .input_field = screen.email_input });
 
         screen.email_text = try allocator.create(ui.UiText);
         const email_text_data = ui.TextData{
@@ -91,7 +91,7 @@ pub const AccountScreen = struct {
             .y = 150,
             .text_data = email_text_data,
         };
-        try ui.ui_texts.add(screen.email_text);
+        try ui.elements.add(.{ .text = screen.email_text });
 
         screen.password_input = try allocator.create(ui.InputField);
         screen.password_input.* = ui.InputField{
@@ -137,7 +137,7 @@ pub const AccountScreen = struct {
             },
             .allocator = allocator,
         };
-        try ui.input_fields.add(screen.password_input);
+        try ui.elements.add(.{ .input_field =  screen.password_input });
 
         screen.password_text = try allocator.create(ui.UiText);
         const password_text_data = ui.TextData{
@@ -155,7 +155,7 @@ pub const AccountScreen = struct {
             .y = 300,
             .text_data = password_text_data,
         };
-        try ui.ui_texts.add(screen.password_text);
+        try ui.elements.add(.{ .text = screen.password_text });
 
         screen.login_button = try allocator.create(ui.Button);
         const button_data_base = assets.getUiSingle("buttonBase");
@@ -202,7 +202,7 @@ pub const AccountScreen = struct {
             },
             .press_callback = loginCallback,
         };
-        try ui.buttons.add(screen.login_button);
+        try ui.elements.add(.{ .button = screen.login_button });
 
         return screen;
     }
