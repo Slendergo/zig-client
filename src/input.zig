@@ -5,7 +5,7 @@ const map = @import("map.zig");
 const main = @import("main.zig");
 const zgui = @import("zgui");
 const camera = @import("camera.zig");
-const ui = @import("ui.zig");
+const ui = @import("ui/ui.zig");
 const assets = @import("assets.zig");
 const network = @import("network.zig");
 
@@ -35,30 +35,30 @@ pub fn reset() void {
     attacking = false;
 }
 
-inline fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
+fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     if (selected_input_field) |input_field| {
         if (key == .enter) {
-            input_field.enter_callback(input_field.text_data.text);
-            if (input_field.text_data.text.len > 0)
-                input_field.allocator.free(input_field.text_data.text);
-            input_field.text_data.text = &[0]u8{};
-            selected_input_field = null;
+            if (input_field.enter_callback) |enter_cb| {
+                enter_cb(input_field.text_data.text);
+                input_field.text_data.text = &[0]u8{};
+                input_field._index = 0;
+                selected_input_field = null;
+            }
+
             return;
         }
 
-        const len = input_field.text_data.text.len;
-        if (key == .backspace and len > 0) {
-            const len_sub_1 = len - 1;
-            const new_text = input_field.allocator.alloc(u8, len_sub_1) catch @panic("Out of memory, input field alloc failed");
-            @memcpy(new_text, input_field.text_data.text[0..len_sub_1]);
-            if (len > 0)
-                input_field.allocator.free(input_field.text_data.text);
-            input_field.text_data.text = new_text;
+        if (key == .backspace and input_field._index > 0) {
+            input_field._index -= 1;
+            input_field.text_data.text = input_field.text_data.backing_buffer[0..input_field._index];
             return;
         }
 
         return;
     }
+
+    if (ui.current_screen != .in_game)
+        return;
 
     if (key == settings.move_up.getKey()) {
         move_up = 1.0;
@@ -94,30 +94,33 @@ inline fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void
     } else if (key == settings.ability.getKey()) {
         useAbility();
     } else if (key == settings.chat.getKey()) {
-        selected_input_field = ui.chat_input;
+        selected_input_field = ui.in_game_screen.chat_input;
     } else if (key == settings.chat_cmd.getKey()) {
         charEvent(window, .slash);
-        selected_input_field = ui.chat_input;
+        selected_input_field = ui.in_game_screen.chat_input;
     } else if (key == settings.inv_0.getKey()) {
-        ui.useItem(if (mods.control) 4 + 8 else 4);
+        ui.in_game_screen.useItem(if (mods.control) 4 + 8 else 4);
     } else if (key == settings.inv_1.getKey()) {
-        ui.useItem(if (mods.control) 5 + 8 else 5);
+        ui.in_game_screen.useItem(if (mods.control) 5 + 8 else 5);
     } else if (key == settings.inv_2.getKey()) {
-        ui.useItem(if (mods.control) 6 + 8 else 6);
+        ui.in_game_screen.useItem(if (mods.control) 6 + 8 else 6);
     } else if (key == settings.inv_3.getKey()) {
-        ui.useItem(if (mods.control) 7 + 8 else 7);
+        ui.in_game_screen.useItem(if (mods.control) 7 + 8 else 7);
     } else if (key == settings.inv_4.getKey()) {
-        ui.useItem(if (mods.control) 8 + 8 else 8);
+        ui.in_game_screen.useItem(if (mods.control) 8 + 8 else 8);
     } else if (key == settings.inv_5.getKey()) {
-        ui.useItem(if (mods.control) 9 + 8 else 9);
+        ui.in_game_screen.useItem(if (mods.control) 9 + 8 else 9);
     } else if (key == settings.inv_6.getKey()) {
-        ui.useItem(if (mods.control) 10 + 8 else 10);
+        ui.in_game_screen.useItem(if (mods.control) 10 + 8 else 10);
     } else if (key == settings.inv_7.getKey()) {
-        ui.useItem(if (mods.control) 11 + 8 else 11);
+        ui.in_game_screen.useItem(if (mods.control) 11 + 8 else 11);
     }
 }
 
-inline fn keyRelease(key: zglfw.Key) void {
+fn keyRelease(key: zglfw.Key) void {
+    if (ui.current_screen != .in_game)
+        return;
+
     if (key == settings.move_up.getKey()) {
         move_up = 0.0;
     } else if (key == settings.move_down.getKey()) {
@@ -137,7 +140,10 @@ inline fn keyRelease(key: zglfw.Key) void {
     }
 }
 
-inline fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods) void {
+fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods) void {
+    if (ui.current_screen != .in_game)
+        return;
+
     if (button == settings.move_up.getMouse()) {
         move_up = 1.0;
     } else if (button == settings.move_down.getMouse()) {
@@ -172,30 +178,33 @@ inline fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zgl
     } else if (button == settings.ability.getMouse()) {
         useAbility();
     } else if (button == settings.chat.getMouse()) {
-        selected_input_field = ui.chat_input;
+        selected_input_field = ui.in_game_screen.chat_input;
     } else if (button == settings.chat_cmd.getMouse()) {
         charEvent(window, .slash);
-        selected_input_field = ui.chat_input;
+        selected_input_field = ui.in_game_screen.chat_input;
     } else if (button == settings.inv_0.getMouse()) {
-        ui.useItem(if (mods.control) 4 + 8 else 4);
+        ui.in_game_screen.useItem(if (mods.control) 4 + 8 else 4);
     } else if (button == settings.inv_1.getMouse()) {
-        ui.useItem(if (mods.control) 5 + 8 else 5);
+        ui.in_game_screen.useItem(if (mods.control) 5 + 8 else 5);
     } else if (button == settings.inv_2.getMouse()) {
-        ui.useItem(if (mods.control) 6 + 8 else 6);
+        ui.in_game_screen.useItem(if (mods.control) 6 + 8 else 6);
     } else if (button == settings.inv_3.getMouse()) {
-        ui.useItem(if (mods.control) 7 + 8 else 7);
+        ui.in_game_screen.useItem(if (mods.control) 7 + 8 else 7);
     } else if (button == settings.inv_4.getMouse()) {
-        ui.useItem(if (mods.control) 8 + 8 else 8);
+        ui.in_game_screen.useItem(if (mods.control) 8 + 8 else 8);
     } else if (button == settings.inv_5.getMouse()) {
-        ui.useItem(if (mods.control) 9 + 8 else 9);
+        ui.in_game_screen.useItem(if (mods.control) 9 + 8 else 9);
     } else if (button == settings.inv_6.getMouse()) {
-        ui.useItem(if (mods.control) 10 + 8 else 10);
+        ui.in_game_screen.useItem(if (mods.control) 10 + 8 else 10);
     } else if (button == settings.inv_7.getMouse()) {
-        ui.useItem(if (mods.control) 11 + 8 else 11);
+        ui.in_game_screen.useItem(if (mods.control) 11 + 8 else 11);
     }
 }
 
-inline fn mouseRelease(button: zglfw.MouseButton) void {
+fn mouseRelease(button: zglfw.MouseButton) void {
+    if (ui.current_screen != .in_game)
+        return;
+
     if (button == settings.move_up.getMouse()) {
         move_up = 0.0;
     } else if (button == settings.move_down.getMouse()) {
@@ -224,24 +233,18 @@ pub fn charEvent(window: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
         }
 
         const byte_code: u8 = @intCast(char_code);
-        if (!std.ascii.isASCII(byte_code))
+        if (!std.ascii.isASCII(byte_code) or input_field._index >= 256)
             return;
 
-        const new_text = input_field.allocator.alloc(u8, input_field.text_data.text.len + 1) catch @panic("Out of memory, input field alloc failed");
-        std.mem.copy(u8, new_text, input_field.text_data.text);
-        new_text[new_text.len - 1] = byte_code;
-        if (input_field.text_data.text.len > 0)
-            input_field.allocator.free(input_field.text_data.text);
-        input_field.text_data.text = new_text;
+        input_field.text_data.backing_buffer[input_field._index] = byte_code;
+        input_field._index += 1;
+        input_field.text_data.text = input_field.text_data.backing_buffer[0..input_field._index];
         return;
     }
 }
 
 pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
     _ = scancode;
-
-    if (main.current_screen != .in_game)
-        return;
 
     if (action == .press) {
         keyPress(window, key, mods);
@@ -275,9 +278,6 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
         });
     }
 
-    if (main.current_screen != .in_game)
-        return;
-
     if (action == .press) {
         if (!ui.mousePress(@floatCast(mouse_x), @floatCast(mouse_y), mods))
             mousePress(window, button, mods);
@@ -296,22 +296,17 @@ pub fn updateState() void {
     while (!map.object_lock.tryLock()) {}
     defer map.object_lock.unlock();
 
-    if (map.findEntity(map.local_player_id)) |en| {
-        switch (en.*) {
-            .player => |*local_player| {
-                const y_dt = move_down - move_up;
-                const x_dt = move_right - move_left;
-                local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
-                local_player.walk_speed_multiplier = walking_speed_multiplier;
+    if (map.localPlayerRef()) |local_player| {
+        const y_dt = move_down - move_up;
+        const x_dt = move_right - move_left;
+        local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
+        local_player.walk_speed_multiplier = walking_speed_multiplier;
 
-                if (attacking) {
-                    const y: f32 = @floatCast(mouse_y);
-                    const x: f32 = @floatCast(mouse_x);
-                    const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-                    local_player.shoot(shoot_angle, main.current_time);
-                }
-            },
-            else => {},
+        if (attacking) {
+            const y: f32 = @floatCast(mouse_y);
+            const x: f32 = @floatCast(mouse_x);
+            const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
+            local_player.shoot(shoot_angle, main.current_time);
         }
     }
 }
@@ -324,22 +319,17 @@ pub fn mouseMoveEvent(window: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) 
     ui.mouseMove(@floatCast(mouse_x), @floatCast(mouse_y));
 }
 
-inline fn useAbility() void {
+fn useAbility() void {
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();
 
-    if (map.findEntity(map.local_player_id)) |en| {
-        switch (en.*) {
-            .player => |local_player| {
-                const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
+    if (map.localPlayerConst()) |local_player| {
+        const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
 
-                network.sendUseItem(main.current_time, .{
-                    .object_id = local_player.obj_id,
-                    .slot_id = 1,
-                    .object_type = local_player.inventory[1],
-                }, .{ .x = world_pos.x, .y = world_pos.y }, 0);
-            },
-            else => {},
-        }
+        network.sendUseItem(main.current_time, .{
+            .object_id = local_player.obj_id,
+            .slot_id = 1,
+            .object_type = local_player.inventory[1],
+        }, .{ .x = world_pos.x, .y = world_pos.y }, 0);
     }
 }

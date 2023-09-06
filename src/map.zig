@@ -8,7 +8,7 @@ const main = @import("main.zig");
 const utils = @import("utils.zig");
 const map = @import("map.zig");
 const assets = @import("assets.zig");
-const ui = @import("ui.zig");
+const ui = @import("ui/ui.zig");
 
 pub const move_threshold: f32 = 0.4;
 pub const min_move_speed: f32 = 0.004;
@@ -230,7 +230,7 @@ pub const GameObject = struct {
     top_atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     move_angle: f32 = std.math.nan(f32),
     facing: f32 = std.math.nan(f32),
-    attack_start: i32 = 0,
+    attack_start: i64 = 0,
     attack_angle: f32 = 0.0,
     dir: u8 = assets.left_dir,
     draw_on_ground: bool = false,
@@ -352,7 +352,7 @@ pub const GameObject = struct {
         };
     }
 
-    pub fn update(self: *GameObject, time: i32, dt: i32) void {
+    pub fn update(self: *GameObject, time: i64, dt: f32) void {
         _ = dt;
 
         moveBlock: {
@@ -462,8 +462,8 @@ pub const Player = struct {
     guild: []u8 = &[0]u8{},
     guild_rank: i32 = 0,
     oxygen_bar: i32 = 0,
-    attack_start: i32 = 0,
-    attack_period: i32 = 0,
+    attack_start: i64 = 0,
+    attack_period: i64 = 0,
     attack_angle: f32 = 0,
     attack_angle_raw: f32 = 0,
     next_bullet_id: u8 = 0,
@@ -474,7 +474,7 @@ pub const Player = struct {
     light_color: i32 = -1,
     light_intensity: f32 = 0.1,
     light_radius: f32 = 1.0,
-    last_ground_damage: i32 = -1,
+    last_ground_damage: i64 = -1,
     anim_data: assets.AnimPlayerData = undefined,
     move_multiplier: f32 = 1.0,
     sink_level: u16 = 0,
@@ -560,7 +560,7 @@ pub const Player = struct {
         return frequency;
     }
 
-    pub fn shoot(self: *Player, angle: f32, time: i32) void {
+    pub fn shoot(self: *Player, angle: f32, time: i64) void {
         const weapon = self.inventory[0];
         if (weapon == -1)
             return;
@@ -569,7 +569,7 @@ pub const Player = struct {
         if (item_props == null or item_props.?.projectile == null)
             return;
 
-        const attack_delay: i32 = @intFromFloat((1.0 / attackFrequency(self)) * (1.0 / item_props.?.rate_of_fire));
+        const attack_delay: i64 = @intFromFloat((1.0 / attackFrequency(self)) * (1.0 / item_props.?.rate_of_fire) * std.time.us_per_ms);
         if (time < self.attack_start + attack_delay)
             return;
 
@@ -590,7 +590,7 @@ pub const Player = struct {
                 .y = y,
                 .props = proj_props,
                 .angle = current_angle,
-                .start_time = time,
+                .start_time = @divFloor(time, std.time.us_per_ms),
                 .bullet_id = bullet_id,
                 .owner_id = self.obj_id,
             };
@@ -613,15 +613,14 @@ pub const Player = struct {
         self.attack_start = time;
     }
 
-    pub inline fn update(self: *Player, time: i32, dt: i32) void {
+    pub fn update(self: *Player, time: i64, dt: f32) void {
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
                 const move_speed = self.moveSpeedMultiplier();
                 const total_angle = camera.angle_unbound + self.move_angle;
-                const float_dt: f32 = @floatFromInt(dt);
-                const next_x = self.x + move_speed * float_dt * @cos(total_angle);
-                const next_y = self.y + move_speed * float_dt * @sin(total_angle);
+                const next_x = self.x + move_speed * dt * @cos(total_angle);
+                const next_y = self.y + move_speed * dt * @sin(total_angle);
                 self.move_angle_camera_included = total_angle;
                 modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
@@ -859,7 +858,7 @@ pub const Projectile = struct {
     size: f32 = 1.0,
     obj_id: i32 = 0,
     atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
-    start_time: i32 = 0.0,
+    start_time: i64 = 0,
     angle: f32 = 0.0,
     visual_angle: f32 = 0.0,
     heat_seek_fired: bool = false,
@@ -904,47 +903,43 @@ pub const Projectile = struct {
         };
     }
 
-    inline fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?*GameObject {
+    fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?GameObject {
         var min_dist = std.math.floatMax(f32);
-        var target: ?*GameObject = null;
-        for (entities.items()) |*en| {
-            switch (en.*) {
-                .object => |*obj| {
-                    if (obj.is_enemy) {
-                        const dist_sqr = utils.distSqr(obj.x, obj.y, x, y);
-                        if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
-                            min_dist = dist_sqr;
-                            target = obj;
-                        }
-                    }
-                },
-                else => {},
-            }
-        }
-
-        return target;
-    }
-
-    inline fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?*Player {
-        var min_dist = std.math.floatMax(f32);
-        var target: ?*Player = null;
-        for (entities.items()) |*en| {
-            switch (en.*) {
-                .player => |*player| {
-                    const dist_sqr = utils.distSqr(player.x, player.y, x, y);
+        var target: ?GameObject = null;
+        for (entities.items()) |en| {
+            if (en == .object) {
+                const obj = en.object;
+                if (obj.is_enemy) {
+                    const dist_sqr = utils.distSqr(obj.x, obj.y, x, y);
                     if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
                         min_dist = dist_sqr;
-                        target = player;
+                        target = obj;
                     }
-                },
-                else => {},
+                }
             }
         }
 
         return target;
     }
 
-    inline fn updatePosition(self: *Projectile, elapsed: i32, dt: f32) void {
+    fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?Player {
+        var min_dist = std.math.floatMax(f32);
+        var target: ?Player = null;
+        for (entities.items()) |en| {
+            if (en == .player) {
+                const player = en.player;
+                const dist_sqr = utils.distSqr(player.x, player.y, x, y);
+                if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
+                    min_dist = dist_sqr;
+                    target = player;
+                }
+            }
+        }
+
+        return target;
+    }
+
+    fn updatePosition(self: *Projectile, elapsed: i64, dt: f32) void {
         if (self.props.heat_seek_radius > 0 and elapsed >= self.props.heat_seek_delay and !self.heat_seek_fired) {
             var target_x: f32 = -1.0;
             var target_y: f32 = -1.0;
@@ -1050,7 +1045,7 @@ pub const Projectile = struct {
         }
     }
 
-    pub inline fn update(self: *Projectile, time: i32, dt: i32, allocator: std.mem.Allocator) bool {
+    pub fn update(self: *Projectile, time: i64, dt: f32, allocator: std.mem.Allocator) bool {
         const elapsed = time - self.start_time;
         if (elapsed >= self.props.lifetime_ms)
             return false;
@@ -1058,7 +1053,7 @@ pub const Projectile = struct {
         const last_x = self.x;
         const last_y = self.y;
 
-        self.updatePosition(elapsed, @floatFromInt(dt));
+        self.updatePosition(elapsed, dt);
         const floor_y: u32 = @intFromFloat(@floor(self.y));
         const floor_x: u32 = @intFromFloat(@floor(self.x));
         if (validPos(floor_x, floor_y)) {
@@ -1073,8 +1068,10 @@ pub const Projectile = struct {
 
         if (last_x == 0 and last_y == 0) {
             self.visual_angle = self.angle;
-        } else if (self.y - last_y != 0 or self.x - last_x != 0) {
-            self.visual_angle = std.math.atan2(f32, self.y - last_y, self.x - last_x);
+        } else {
+            const y_dt: f32 = self.y - last_y;
+            const x_dt: f32 = self.x - last_x;
+            self.visual_angle = std.math.atan2(f32, y_dt, x_dt);
         }
 
         if (self.damage_players) {
@@ -1096,14 +1093,15 @@ pub const Projectile = struct {
                         .text_type = .bold,
                         .size = 22,
                         .color = damage_color,
+                        .backing_buffer = &[0]u8{},
                     };
 
-                    ui.status_texts.add(ui.StatusText{
+                    ui.elements.add(.{ .status = ui.StatusText{
                         .obj_id = player.obj_id,
                         .start_time = time,
                         .text_data = text_data,
                         .initial_size = 22,
-                    }) catch |e| {
+                    }}) catch |e| {
                         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
                     };
                 }
@@ -1138,14 +1136,15 @@ pub const Projectile = struct {
                         .text_type = .bold,
                         .size = 22,
                         .color = damage_color,
+                        .backing_buffer = &[0]u8{},
                     };
 
-                    ui.status_texts.add(ui.StatusText{
+                    ui.elements.add(.{ .status = ui.StatusText{
                         .obj_id = object.obj_id,
                         .start_time = time,
                         .text_data = text_data,
                         .initial_size = 22,
-                    }) catch |e| {
+                    }}) catch |e| {
                         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage, e });
                     };
                 }
@@ -1198,12 +1197,12 @@ pub const Entity = union(enum) {
 };
 
 const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
-const day_cycle_ms_half: f32 = @floatFromInt(day_cycle_ms / 2);
+const day_cycle_ms_half: f32 = @as(f32, day_cycle_ms) / 2;
 
 pub var object_lock: std.Thread.RwLock = .{};
 pub var entities: utils.DynSlice(Entity) = undefined;
 pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
-pub var last_tick_time: i32 = 0;
+pub var last_tick_time: i64 = 0;
 pub var local_player_id: i32 = -1;
 pub var interactive_id = std.atomic.Atomic(i32).init(-1);
 pub var interactive_type = std.atomic.Atomic(game_data.ClassType).init(.game_object);
@@ -1216,19 +1215,54 @@ pub var bg_light_color: i32 = -1;
 pub var bg_light_intensity: f32 = 0.0;
 pub var day_light_intensity: f32 = 0.0;
 pub var night_light_intensity: f32 = 0.0;
-pub var server_time_offset: i32 = 0;
+pub var server_time_offset: i64 = 0;
 pub var move_records: utils.DynSlice(network.TimedPosition) = undefined;
-pub var last_records_clear_time: i32 = 0;
+pub var last_records_clear_time: i64 = 0;
 pub var random: utils.Random = utils.Random{};
-var last_sort: i32 = -1;
+var last_sort: i64 = -1;
 
 pub fn init(allocator: std.mem.Allocator) !void {
-    entities = try utils.DynSlice(Entity).init(5000, allocator);
-    entity_indices_to_remove = try utils.DynSlice(usize).init(100, allocator);
+    entities = try utils.DynSlice(Entity).init(16384, allocator);
+    entity_indices_to_remove = try utils.DynSlice(usize).init(256, allocator);
     move_records = try utils.DynSlice(network.TimedPosition).init(10, allocator);
 }
 
+pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
+    switch (en) {
+        .object => |obj| {
+            if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
+                if (class_props == .wall) {
+                    var square = map.getSquareUnsafe(obj.x, obj.y);
+                    square.occupy_square = false;
+                    square.full_occupy = false;
+                    square.has_wall = false;
+                    square.blocking = false;
+                }
+            }
+
+            ui.removeAttachedUi(obj.obj_id);
+            allocator.free(obj.name_override);
+        },
+        .player => |player| {
+            ui.removeAttachedUi(player.obj_id);
+            allocator.free(player.name_override);
+            allocator.free(player.guild);
+        },
+        else => {},
+    }
+}
+
 pub fn dispose(allocator: std.mem.Allocator) void {
+    for (entities.items()) |en| {
+        disposeEntity(allocator, en);
+    }
+}
+
+pub fn deinit(allocator: std.mem.Allocator) void {
+    if (squares.len > 0) {
+        allocator.free(squares);
+    }
+
     for (entities.items()) |en| {
         switch (en) {
             .object => |obj| {
@@ -1241,21 +1275,13 @@ pub fn dispose(allocator: std.mem.Allocator) void {
             else => {},
         }
     }
-}
-
-pub fn deinit(allocator: std.mem.Allocator) void {
-    if (squares.len > 0) {
-        allocator.free(squares);
-    }
-
-    dispose(allocator);
 
     entities.deinit();
     entity_indices_to_remove.deinit();
     move_records.deinit();
 }
 
-pub fn getLightIntensity(time: i32) f32 {
+pub fn getLightIntensity(time: i64) f32 {
     if (server_time_offset == 0)
         return bg_light_intensity;
 
@@ -1283,7 +1309,42 @@ pub fn setWH(w: isize, h: isize, allocator: std.mem.Allocator) void {
         squares[i] = Square{};
 }
 
-pub fn findEntity(obj_id: i32) ?*Entity {
+pub fn localPlayerConst() ?Player {
+    if (map.local_player_id == -1)
+        return null;
+
+    if (findEntityConst(map.local_player_id)) |en| {
+        return en.player;
+    }
+
+    return null;
+}
+
+pub fn localPlayerRef() ?*Player {
+    if (map.local_player_id == -1)
+        return null;
+
+    if (findEntityRef(map.local_player_id)) |en| {
+        return &en.player;
+    }
+
+    return null;
+}
+
+pub fn findEntityConst(obj_id: i32) ?Entity {
+    for (entities.items()) |en| {
+        switch (en) {
+            inline else => |obj| {
+                if (obj.obj_id == obj_id)
+                    return en;
+            },
+        }
+    }
+
+    return null;
+}
+
+pub fn findEntityRef(obj_id: i32) ?*Entity {
     for (entities.items()) |*en| {
         switch (en.*) {
             inline else => |*obj| {
@@ -1297,9 +1358,9 @@ pub fn findEntity(obj_id: i32) ?*Entity {
 }
 
 pub fn removeEntity(obj_id: i32) ?Entity {
-    for (entities.items(), 0..) |*en, i| {
-        switch (en.*) {
-            inline else => |*obj| {
+    for (entities.items(), 0..) |en, i| {
+        switch (en) {
+            inline else => |obj| {
                 if (obj.obj_id == obj_id)
                     return entities.remove(i);
             },
@@ -1310,93 +1371,91 @@ pub fn removeEntity(obj_id: i32) ?Entity {
 }
 
 pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, piercing: bool) i32 {
-    if (findEntity(object_id)) |en| {
-        switch (en.*) {
-            .object => |object| {
-                var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
+    _ = player_id;
+    if (findEntityConst(object_id)) |en| {
+        if (en == .object) {
+            const object = en.object;
+            var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
 
-                if (!piercing)
-                    damage -= @intCast(object.defense);
+            if (!piercing)
+                damage -= @intCast(object.defense);
 
-                // todo player buffs and mult
-                // if (findPlayer(player_id)) |player| {
-                // }
-                return @intCast(damage);
-            },
-            else => {},
+            // todo player buffs and mult
+            // if (findPlayer(player_id)) |player| {
+            // }
+            return @intCast(damage);
         }
-        _ = player_id;
     }
     return -1;
 }
 
-pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
+pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     while (!object_lock.tryLock()) {}
     defer object_lock.unlock();
 
     interactive_id.store(-1, .Release);
     interactive_type.store(.game_object, .Release);
 
+    const ms_time = @divFloor(time, std.time.us_per_ms);
+    const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
+
     var interactive_set = false;
-    for (entities.items(), 0..) |*en, i| {
-        switch (en.*) {
-            .object => |*obj| {
-                const is_container = obj.class == .container;
-                if (!interactive_set and (obj.class == .portal or is_container)) {
-                    const dt_x = camera.x - obj.x;
-                    const dt_y = camera.y - obj.y;
-                    if (dt_x * dt_x + dt_y * dt_y < 1) {
-                        interactive_id.store(obj.obj_id, .Release);
-                        interactive_type.store(obj.class, .Release);
+    for (0..entities.capacity) |i| {
+        var en = entities._items[i];
+        if (en == .player) {
+            en.player.update(ms_time, ms_dt);
+            if (en.player.obj_id == local_player_id) {
+                camera.update(en.player.x, en.player.y, ms_dt, input.rotate);
+                if (input.attacking) {
+                    const y: f32 = @floatCast(input.mouse_y);
+                    const x: f32 = @floatCast(input.mouse_x);
+                    const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
+                    en.player.shoot(shoot_angle, time);
+                }
+            }
+        } else if (en == .object) {
+            const is_container = en.object.class == .container;
+            if (!interactive_set and (en.object.class == .portal or is_container)) {
+                const dt_x = camera.x - en.object.x;
+                const dt_y = camera.y - en.object.y;
+                if (dt_x * dt_x + dt_y * dt_y < 1) {
+                    interactive_id.store(en.object.obj_id, .Release);
+                    interactive_type.store(en.object.class, .Release);
 
-                        if (is_container) {
-                            if (ui.container_id != obj.obj_id) {
-                                inline for (0..8) |idx| {
-                                    ui.setContainerItem(obj.inventory[idx], idx);
-                                }
+                    if (is_container) {
+                        if (ui.in_game_screen.container_id != en.object.obj_id) {
+                            inline for (0..8) |idx| {
+                                ui.in_game_screen.setContainerItem(en.object.inventory[idx], idx);
                             }
-
-                            ui.container_id = obj.obj_id;
-                            ui.setContainerVisible(true);
                         }
 
-                        interactive_set = true;
+                        ui.in_game_screen.container_id = en.object.obj_id;
+                        ui.in_game_screen.setContainerVisible(true);
                     }
-                }
 
-                obj.update(time, dt);
-            },
-            .player => |*player| {
-                if (player.obj_id == local_player_id) {
-                    camera.update(player.x, player.y, dt, input.rotate);
-                    if (input.attacking) {
-                        const y: f32 = @floatCast(input.mouse_y);
-                        const x: f32 = @floatCast(input.mouse_x);
-                        const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-                        player.shoot(shoot_angle, time);
-                    }
+                    interactive_set = true;
                 }
+            }
 
-                player.update(time, dt);
-            },
-            .projectile => |*proj| {
-                if (!proj.update(time, dt, allocator))
-                    entity_indices_to_remove.add(i) catch |e| {
-                        std.log.err("Out of memory: {any}", .{e});
-                    };
-            },
+            en.object.update(ms_time, ms_dt);
+        } else if (en == .projectile) {
+            if (!en.projectile.update(ms_time, ms_dt, allocator))
+                entity_indices_to_remove.add(i) catch |e| {
+                    std.log.err("Out of memory: {any}", .{e});
+                };
         }
+        entities._items[i] = en;
     }
 
     if (!interactive_set) {
-        if (ui.container_id != -1) {
+        if (ui.in_game_screen.container_id != -1) {
             inline for (0..8) |idx| {
-                ui.setContainerItem(-1, idx);
+                ui.in_game_screen.setContainerItem(-1, idx);
             }
         }
 
-        ui.container_id = -1;
-        ui.setContainerVisible(false);
+        ui.in_game_screen.container_id = -1;
+        ui.in_game_screen.setContainerVisible(false);
     }
 
     std.mem.reverse(usize, entity_indices_to_remove.items());
@@ -1407,11 +1466,7 @@ pub fn update(time: i32, dt: i32, allocator: std.mem.Allocator) void {
 
     entity_indices_to_remove.clear();
 
-    // hack
-    if (time - last_sort > 7) {
-        std.sort.pdq(Entity, entities.items(), {}, lessThan);
-        last_sort = time;
-    }
+    std.sort.pdq(Entity, entities.items(), {}, lessThan);
 }
 
 pub inline fn validPos(x: isize, y: isize) bool {
@@ -1477,7 +1532,7 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
     squares[idx] = square;
 }
 
-pub fn addMoveRecord(time: i32, position: network.Position) void {
+pub fn addMoveRecord(time: i64, position: network.Position) void {
     if (last_records_clear_time < 0) {
         return;
     }
@@ -1507,15 +1562,15 @@ pub fn addMoveRecord(time: i32, position: network.Position) void {
     }
 }
 
-pub fn clearMoveRecords(time: i32) void {
+pub fn clearMoveRecords(time: i64) void {
     move_records.clear();
     last_records_clear_time = time;
 }
 
-inline fn getId(time: i32) i32 {
+inline fn getId(time: i64) i32 {
     return (time - last_records_clear_time + 50) / 100;
 }
 
-inline fn getScore(id: i32, time: i32) i32 {
+inline fn getScore(id: i32, time: i64) i64 {
     return std.math.absInt(time - last_records_clear_time - id * 100);
 }

@@ -4,7 +4,7 @@ const settings = @import("settings.zig");
 const main = @import("main.zig");
 const map = @import("map.zig");
 const game_data = @import("game_data.zig");
-const ui = @import("ui.zig");
+const ui = @import("ui/ui.zig");
 const camera = @import("camera.zig");
 const assets = @import("assets.zig");
 
@@ -20,7 +20,7 @@ pub const Position = extern struct {
 };
 
 pub const TimedPosition = extern struct {
-    time: i32,
+    time: i64,
     position: Position,
 };
 
@@ -143,12 +143,12 @@ const S2CPacketId = enum(u8) {
     update = 34,
 };
 
-pub var connected: bool = false;
+pub var connected = false;
 var message_len: u16 = 65535;
 var buffer_idx: usize = 0;
 var stream: std.net.Stream = undefined;
-var reader: utils.PacketReader = utils.PacketReader{};
-var writer: utils.PacketWriter = utils.PacketWriter{};
+var reader = utils.PacketReader{};
+var writer = utils.PacketWriter{};
 
 pub fn init(ip: []const u8, port: u16) void {
     stream = std.net.tcpConnectToAddress(std.net.Address.parseIp(ip, port) catch |address_error| {
@@ -245,7 +245,7 @@ pub fn accept(allocator: std.mem.Allocator) void {
     buffer_idx = 0;
 }
 
-inline fn handleAccountList() void {
+fn handleAccountList() void {
     const account_list_id = reader.read(i32);
     const account_ids = reader.read([]i32);
 
@@ -253,40 +253,38 @@ inline fn handleAccountList() void {
         std.log.debug("Recv - AccountList: account_list_id={d}, account_ids={d}", .{ account_list_id, account_ids });
 }
 
-inline fn handleAllyShoot() void {
+fn handleAllyShoot() void {
     const bullet_id = reader.read(i8);
     const owner_id = reader.read(i32);
     const container_type = reader.read(u16);
     const angle = reader.read(f32);
 
-    if (map.findEntity(owner_id)) |en| {
-        switch (en.*) {
-            .player => |*player| {
-                const weapon = player.inventory[0];
-                const item_props = game_data.item_type_to_props.get(@intCast(weapon));
-                const proj_props = item_props.?.projectile.?;
-                const projs_len = item_props.?.num_projectiles;
-                for (0..projs_len) |_| {
-                    var proj = map.Projectile{
-                        .x = player.x,
-                        .y = player.y,
-                        .props = proj_props,
-                        .angle = angle,
-                        .start_time = main.current_time,
-                        .bullet_id = @intCast(bullet_id),
-                        .owner_id = player.obj_id,
-                    };
-                    proj.addToMap(true);
-                }
+    if (map.findEntityRef(owner_id)) |en| {
+        if (en.* == .player) {
+            const player = &en.player;
+            const weapon = player.inventory[0];
+            const item_props = game_data.item_type_to_props.get(@intCast(weapon));
+            const proj_props = item_props.?.projectile.?;
+            const projs_len = item_props.?.num_projectiles;
+            for (0..projs_len) |_| {
+                var proj = map.Projectile{
+                    .x = player.x,
+                    .y = player.y,
+                    .props = proj_props,
+                    .angle = angle,
+                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                    .bullet_id = @intCast(bullet_id),
+                    .owner_id = player.obj_id,
+                };
+                proj.addToMap(true);
+            }
 
-                // if this is too slow for ya in large crowds hardcode it to 100
-                const attack_period: i32 = @intFromFloat((1.0 / player.attackFrequency()) * (1.0 / item_props.?.rate_of_fire));
-                player.attack_period = attack_period;
-                player.attack_angle = angle - camera.angle;
-                player.attack_angle_raw = angle;
-                player.attack_start = main.current_time;
-            },
-            else => {},
+            // if this is too slow for ya in large crowds hardcode it to 100
+            const attack_period: i32 = @intFromFloat((1.0 / player.attackFrequency()) * (1.0 / item_props.?.rate_of_fire));
+            player.attack_period = attack_period;
+            player.attack_angle = angle - camera.angle;
+            player.attack_angle_raw = angle;
+            player.attack_start = main.current_time;
         }
     }
 
@@ -294,7 +292,7 @@ inline fn handleAllyShoot() void {
         std.log.debug("Recv - AllyShoot: bullet_id={d}, owner_id={d}, container_type={d}, angle={e}", .{ bullet_id, owner_id, container_type, angle });
 }
 
-inline fn handleAoe() void {
+fn handleAoe() void {
     const position = reader.read(Position);
     const radius = reader.read(f32);
     const damage = reader.read(i16);
@@ -306,7 +304,7 @@ inline fn handleAoe() void {
         std.log.debug("Recv - Aoe: x={e}, y={e}, radius={e}, damage={d}, condition_effect={d}, duration={e}, orig_type={d}", .{ position.x, position.y, radius, damage, condition_effect, duration, orig_type });
 }
 
-inline fn handleBuyResult() void {
+fn handleBuyResult() void {
     const result = reader.read(i32);
     const message = reader.read([]u8);
 
@@ -314,7 +312,7 @@ inline fn handleBuyResult() void {
         std.log.debug("Recv - BuyResult: result={d}, message={s}", .{ result, message });
 }
 
-inline fn handleCreateSuccess() void {
+fn handleCreateSuccess() void {
     map.local_player_id = reader.read(i32);
     const char_id = reader.read(i32);
 
@@ -322,7 +320,7 @@ inline fn handleCreateSuccess() void {
         std.log.debug("Recv - CreateSuccess: player_id={d}, char_id={d}", .{ map.local_player_id, char_id });
 }
 
-inline fn handleDamage() void {
+fn handleDamage() void {
     const target_id = reader.read(i32);
     const effects = reader.read(u64);
     const damage_amount = reader.read(u16);
@@ -334,7 +332,7 @@ inline fn handleDamage() void {
         std.log.debug("Recv - Damage: target_id={d}, effects={d}, damage_amount={d}, kill={any}, bullet_id={d}, object_id={d}", .{ target_id, effects, damage_amount, kill, bullet_id, object_id });
 }
 
-inline fn handleDeath() void {
+fn handleDeath() void {
     const account_id = reader.read(i32);
     const char_id = reader.read(i32);
     const killed_by = reader.read([]u8);
@@ -345,7 +343,7 @@ inline fn handleDeath() void {
         std.log.debug("Recv - Death: account_id={d}, char_id={d}, killed_by={s}", .{ account_id, char_id, killed_by });
 }
 
-inline fn handleEnemyShoot() void {
+fn handleEnemyShoot() void {
     const bullet_id = reader.read(u8);
     const owner_id = reader.read(i32);
     const bullet_type = reader.read(u8);
@@ -360,10 +358,9 @@ inline fn handleEnemyShoot() void {
         return;
 
     var owner: ?map.GameObject = null;
-    if (map.findEntity(owner_id)) |en| {
-        switch (en.*) {
-            .object => |object| owner = object,
-            else => {},
+    if (map.findEntityConst(owner_id)) |en| {
+        if (en == .object) {
+            owner = en.object;
         }
     }
 
@@ -384,7 +381,7 @@ inline fn handleEnemyShoot() void {
             .damage = damage,
             .props = proj_props,
             .angle = current_angle,
-            .start_time = main.current_time,
+            .start_time = @divFloor(main.current_time, std.time.us_per_ms),
             .bullet_id = bullet_id +% @as(u8, @intCast(i)),
             .owner_id = owner_id,
             .damage_players = true,
@@ -403,7 +400,7 @@ inline fn handleEnemyShoot() void {
     sendShootAck(main.current_time);
 }
 
-inline fn handleFailure() void {
+fn handleFailure() void {
     const error_id = reader.read(i32);
     const error_description = reader.read([]u8);
 
@@ -413,7 +410,7 @@ inline fn handleFailure() void {
         std.log.debug("Recv - Failure: error_id={d}, error_description={s}", .{ error_id, error_description });
 }
 
-inline fn handleGlobalNotification() void {
+fn handleGlobalNotification() void {
     const notif_type = reader.read(i32);
     const text = reader.read([]u8);
 
@@ -421,24 +418,22 @@ inline fn handleGlobalNotification() void {
         std.log.debug("Recv - GlobalNotification: type={d}, text={s}", .{ notif_type, text });
 }
 
-inline fn handleGoto() void {
+fn handleGoto() void {
     const object_id = reader.read(i32);
     const position = reader.read(Position);
 
-    if (map.findEntity(object_id)) |en| {
-        switch (en.*) {
-            .player => |*player| {
-                if (object_id == map.local_player_id) {
-                    player.x = position.x;
-                    player.y = position.y;
-                } else {
-                    player.target_x = position.x;
-                    player.target_y = position.y;
-                    player.tick_x = player.x;
-                    player.tick_y = player.y;
-                }
-            },
-            else => {},
+    if (map.findEntityRef(object_id)) |en| {
+        if (en.* == .player) {
+            const player = &en.player;
+            if (object_id == map.local_player_id) {
+                player.x = position.x;
+                player.y = position.y;
+            } else {
+                player.target_x = position.x;
+                player.target_y = position.y;
+                player.tick_x = player.x;
+                player.tick_y = player.y;
+            }
         }
     } else {
         std.log.err("Object id {d} not found while attempting to goto to pos {any}", .{ object_id, position });
@@ -450,7 +445,7 @@ inline fn handleGoto() void {
         std.log.debug("Recv - Goto: object_id={d}, x={e}, y={e}", .{ object_id, position.x, position.y });
 }
 
-inline fn handleGuildResult() void {
+fn handleGuildResult() void {
     const success = reader.read(bool);
     const error_text = reader.read([]u8);
 
@@ -458,7 +453,7 @@ inline fn handleGuildResult() void {
         std.log.debug("Recv - GuildResult: success={any}, error_text={s}", .{ success, error_text });
 }
 
-inline fn handleInvitedToGuild() void {
+fn handleInvitedToGuild() void {
     const guild_name = reader.read([]u8);
     const name = reader.read([]u8);
 
@@ -466,14 +461,14 @@ inline fn handleInvitedToGuild() void {
         std.log.debug("Recv - InvitedToGuild: guild_name={s}, name={s}", .{ guild_name, name });
 }
 
-inline fn handleInvResult() void {
+fn handleInvResult() void {
     const result = reader.read(i32);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - InvResult: result={d}", .{result});
 }
 
-inline fn handleMapInfo(allocator: std.mem.Allocator) void {
+fn handleMapInfo(allocator: std.mem.Allocator) void {
     const width: isize = @intCast(reader.read(i32));
     const height: isize = @intCast(reader.read(i32));
     map.setWH(width, height, allocator);
@@ -491,7 +486,7 @@ inline fn handleMapInfo(allocator: std.mem.Allocator) void {
     if (uses_day_night) {
         map.day_light_intensity = reader.read(f32);
         map.night_light_intensity = reader.read(f32);
-        map.server_time_offset = reader.read(i32) - main.current_time;
+        map.server_time_offset = reader.read(i64) - main.current_time;
     }
     map.random = utils.Random{ .seed = map.seed };
 
@@ -502,7 +497,7 @@ inline fn handleMapInfo(allocator: std.mem.Allocator) void {
         std.log.debug("Recv - MapInfo: width={d}, height={d}, name={s}, display_name={s}, seed={d}, difficulty={d}, background={d}, allow_player_teleport={any}, show_displays={any}, bg_light_color={d}, bg_light_intensity={e}, day_and_night={any}", .{ width, height, map.name, display_name, map.seed, difficulty, background, allow_player_teleport, show_displays, map.bg_light_color, map.bg_light_intensity, uses_day_night });
 }
 
-inline fn handleNameResult() void {
+fn handleNameResult() void {
     const success = reader.read(bool);
     const error_text = reader.read([]u8);
 
@@ -510,23 +505,14 @@ inline fn handleNameResult() void {
         std.log.debug("Recv - NameResult: success={any}, error_text={s}", .{ success, error_text });
 }
 
-inline fn handleNewTick(allocator: std.mem.Allocator) void {
+fn handleNewTick(allocator: std.mem.Allocator) void {
     const tick_id = reader.read(i32);
     const tick_time = reader.read(i32);
 
     defer {
         if (main.tick_frame) {
-            if (map.findEntity(map.local_player_id)) |en| {
-                switch (en.*) {
-                    .player => |player| sendMove(
-                        tick_id,
-                        main.last_update,
-                        player.x,
-                        player.y,
-                        map.move_records.items(),
-                    ),
-                    else => {},
-                }
+            if (map.localPlayerConst()) |local_player| {
+                sendMove(tick_id, main.last_update, local_player.x, local_player.y, map.move_records.items());
             }
         }
     }
@@ -537,7 +523,7 @@ inline fn handleNewTick(allocator: std.mem.Allocator) void {
         const position = reader.read(Position);
 
         const stats_len = reader.read(u16);
-        if (map.findEntity(obj_id)) |en| {
+        if (map.findEntityRef(obj_id)) |en| {
             switch (en.*) {
                 .player => |*player| {
                     if (player.obj_id != map.local_player_id) {
@@ -591,45 +577,42 @@ inline fn handleNewTick(allocator: std.mem.Allocator) void {
         return;
     }
 
-    map.last_tick_time = main.current_time;
+    map.last_tick_time = @divFloor(main.current_time, std.time.us_per_ms);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
         std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });
 }
 
-inline fn handleNotification(allocator: std.mem.Allocator) void {
+fn handleNotification(allocator: std.mem.Allocator) void {
     const object_id = reader.read(i32);
     const message = reader.read([]u8);
     const color = @byteSwap(@as(i32, @bitCast(reader.read(ARGB))));
 
-    if (map.findEntity(object_id)) |en| {
+    if (map.findEntityConst(object_id)) |en| {
         const text_data = ui.TextData{
-            .text = allocator.dupe(u8, message) catch unreachable, // not really unreachable is it now?
+            .text = allocator.dupe(u8, message) catch return,
             .text_type = .bold,
             .size = 22,
             .color = color,
+            .backing_buffer = &[0]u8{},
         };
 
-        switch (en.*) {
-            .player => |*player| {
-                ui.status_texts.add(ui.StatusText{
-                    .obj_id = player.obj_id,
-                    .start_time = main.current_time,
-                    .lifetime = 2000,
-                    .text_data = text_data,
-                    .initial_size = 22,
-                }) catch unreachable;
-            },
-            .object => |*obj| {
-                ui.status_texts.add(ui.StatusText{
-                    .obj_id = obj.obj_id,
-                    .start_time = main.current_time,
-                    .lifetime = 2000,
-                    .text_data = text_data,
-                    .initial_size = 22,
-                }) catch unreachable;
-            },
-            else => {},
+        if (en == .player) {
+            ui.elements.add(.{ .status = ui.StatusText{
+                .obj_id = en.player.obj_id,
+                .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                .lifetime = 2000,
+                .text_data = text_data,
+                .initial_size = 22,
+            }}) catch unreachable;
+        } else if (en == .object) {
+            ui.elements.add(.{ .status = ui.StatusText{
+                .obj_id = en.object.obj_id,
+                .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                .lifetime = 2000,
+                .text_data = text_data,
+                .initial_size = 22,
+            }}) catch unreachable;
         }
     }
 
@@ -637,7 +620,7 @@ inline fn handleNotification(allocator: std.mem.Allocator) void {
         std.log.debug("Recv - Notification: object_id={d}, message={s}, color={any}", .{ object_id, message, color });
 }
 
-inline fn handlePing() void {
+fn handlePing() void {
     const serial = reader.read(i32);
 
     sendPong(serial, main.current_time);
@@ -646,7 +629,7 @@ inline fn handlePing() void {
         std.log.debug("Recv - Ping: serial={d}", .{serial});
 }
 
-inline fn handlePlaySound() void {
+fn handlePlaySound() void {
     const owner_id = reader.read(i32);
     const sound_id = reader.read(i32);
 
@@ -654,14 +637,14 @@ inline fn handlePlaySound() void {
         std.log.debug("Recv - PlaySound: owner_id={d}, sound_id={d}", .{ owner_id, sound_id });
 }
 
-inline fn handleQuestObjId() void {
+fn handleQuestObjId() void {
     const object_id = reader.read(i32);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - QuestObjId: object_id={d}", .{object_id});
 }
 
-inline fn handleServerPlayerShoot() void {
+fn handleServerPlayerShoot() void {
     const bullet_id = reader.read(u8);
     const owner_id = reader.read(i32);
     const container_type = reader.read(u16);
@@ -675,46 +658,43 @@ inline fn handleServerPlayerShoot() void {
         std.log.debug("Recv - ServerPlayerShoot: bullet_id={d}, owner_id={d}, container_type={d}, x={e}, y={e}, angle={e}, damage={d}", .{ bullet_id, owner_id, container_type, starting_pos.x, starting_pos.y, angle, damage });
 
     const needs_ack = owner_id == map.local_player_id;
-    if (map.findEntity(owner_id)) |en| {
-        switch (en.*) {
-            .player => {
-                const item_props = game_data.item_type_to_props.get(@intCast(container_type));
-                if (item_props == null or item_props.?.projectile == null)
-                    return;
+    if (map.findEntityConst(owner_id)) |en| {
+        if (en == .player) {
+            const item_props = game_data.item_type_to_props.get(@intCast(container_type));
+            if (item_props == null or item_props.?.projectile == null)
+                return;
 
-                const proj_props = item_props.?.projectile.?;
-                const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
-                var current_angle = angle - total_angle / 2.0;
-                for (0..num_shots) |i| {
-                    var proj = map.Projectile{
-                        .x = starting_pos.x,
-                        .y = starting_pos.y,
-                        .damage = damage,
-                        .props = proj_props,
-                        .angle = current_angle,
-                        .start_time = main.current_time,
-                        .bullet_id = bullet_id +% @as(u8, @intCast(i)), // this is wrong but whatever
-                        .owner_id = owner_id,
-                    };
-                    proj.addToMap(true);
+            const proj_props = item_props.?.projectile.?;
+            const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
+            var current_angle = angle - total_angle / 2.0;
+            for (0..num_shots) |i| {
+                var proj = map.Projectile{
+                    .x = starting_pos.x,
+                    .y = starting_pos.y,
+                    .damage = damage,
+                    .props = proj_props,
+                    .angle = current_angle,
+                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                    .bullet_id = bullet_id +% @as(u8, @intCast(i)), // this is wrong but whatever
+                    .owner_id = owner_id,
+                };
+                proj.addToMap(true);
 
-                    current_angle += angle_inc;
-                }
+                current_angle += angle_inc;
+            }
 
-                if (needs_ack) {
-                    sendShootAck(main.current_time);
-                }
-            },
-            else => {
-                if (needs_ack) {
-                    sendShootAck(-1);
-                }
-            },
+            if (needs_ack) {
+                sendShootAck(main.current_time);
+            }
+        } else {
+            if (needs_ack) {
+                sendShootAck(-1);
+            }
         }
     }
 }
 
-inline fn handleShowEffect() void {
+fn handleShowEffect() void {
     const effect_type = @as(EffectType, @enumFromInt(reader.read(u8)));
     const target_object_id = reader.read(i32);
     const pos1 = reader.read(Position);
@@ -725,18 +705,18 @@ inline fn handleShowEffect() void {
         std.log.debug("Recv - ShowEffect: effect_type={any}, target_object_id={d}, x1={e}, y1={e}, x2={e}, y2={e}, color={any}", .{ effect_type, target_object_id, pos1.x, pos1.y, pos2.x, pos2.y, color });
 }
 
-inline fn handleText(allocator: std.mem.Allocator) void {
+fn handleText(allocator: std.mem.Allocator) void {
     const name = reader.read([]u8);
     const object_id = reader.read(i32);
     const num_stars = reader.read(i32);
     const bubble_time = reader.read(u8);
     const recipient = reader.read([]u8);
-    const text = allocator.dupe(u8, reader.read([]u8)) catch unreachable;
+    const text = reader.read([]u8);
 
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();
 
-    if (map.findEntity(object_id)) |en| {
+    if (map.findEntityConst(object_id)) |en| {
         var atlas_data = assets.error_data;
         if (assets.ui_atlas_data.get("speechBalloons")) |balloon_data| {
             // todo: guild, party and admin balloons
@@ -744,34 +724,36 @@ inline fn handleText(allocator: std.mem.Allocator) void {
             if (!std.mem.eql(u8, recipient, "")) {
                 atlas_data = balloon_data[1]; // tell balloon
             } else {
-                switch (en.*) {
-                    .object => atlas_data = balloon_data[3], // enemy balloon
-                    else => atlas_data = balloon_data[0], // normal balloon
+                if (en == .object) {
+                    atlas_data = balloon_data[3]; // enemy balloon
+                } else {
+                    atlas_data = balloon_data[0]; // normal balloon
                 }
             }
         }
 
-        ui.speech_balloons.add(ui.SpeechBalloon{
+        ui.elements.add(.{ .balloon = ui.SpeechBalloon{
             .image_data = .{ .normal = .{
                 .scale_x = 3.0,
                 .scale_y = 3.0,
                 .atlas_data = atlas_data,
             } },
             .text_data = .{
-                .text = text,
+                .text = allocator.dupe(u8, text) catch unreachable,
                 .size = 16,
                 .max_width = 160,
+                .backing_buffer = &[0]u8{},
             },
             .target_id = object_id,
-            .start_time = main.current_time,
-        }) catch unreachable;
+            .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+        }}) catch unreachable;
     }
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - Text: name={s}, object_id={d}, num_stars={d}, bubble_time={d}, recipient={s}, text={s}", .{ name, object_id, num_stars, bubble_time, recipient, text });
 }
 
-inline fn handleTradeAccepted() void {
+fn handleTradeAccepted() void {
     const my_offer = reader.read([]bool);
     const your_offer = reader.read([]bool);
 
@@ -779,14 +761,14 @@ inline fn handleTradeAccepted() void {
         std.log.debug("Recv - TradeAccepted: my_offer={any}, your_offer={any}", .{ my_offer, your_offer });
 }
 
-inline fn handleTradeChanged() void {
+fn handleTradeChanged() void {
     const offer = reader.read([]bool);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - TradeChanged: offer={any}", .{offer});
 }
 
-inline fn handleTradeDone() void {
+fn handleTradeDone() void {
     const code = reader.read(i32);
     const description = reader.read([]u8);
 
@@ -794,14 +776,14 @@ inline fn handleTradeDone() void {
         std.log.debug("Recv - TradeDone: code={d}, description={s}", .{ code, description });
 }
 
-inline fn handleTradeRequested() void {
+fn handleTradeRequested() void {
     const name = reader.read([]u8);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - TradeRequested: name={s}", .{name});
 }
 
-inline fn handleTradeStart() void {
+fn handleTradeStart() void {
     const my_items = reader.read([]TradeItem);
     const your_name = reader.read([]u8);
     const your_items = reader.read([]TradeItem);
@@ -810,7 +792,7 @@ inline fn handleTradeStart() void {
         std.log.debug("Recv - TradeStart: my_items={any}, your_name={s}, your_items={any}", .{ my_items, your_name, your_items });
 }
 
-inline fn handleUpdate(allocator: std.mem.Allocator) void {
+fn handleUpdate(allocator: std.mem.Allocator) void {
     defer {
         if (main.tick_frame)
             sendUpdateAck();
@@ -828,32 +810,7 @@ inline fn handleUpdate(allocator: std.mem.Allocator) void {
 
         for (drops) |drop| {
             if (map.removeEntity(drop)) |en| {
-                switch (en) {
-                    .object => |obj| {
-                        if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
-                            if (class_props == .wall) {
-                                var square = map.getSquareUnsafe(obj.x, obj.y);
-                                square.occupy_square = false;
-                                square.full_occupy = false;
-                                square.has_wall = false;
-                                square.blocking = false;
-                            }
-                        }
-
-                        ui.removeAttachedUi(obj.obj_id);
-
-                        allocator.free(obj.name_override);
-                        continue;
-                    },
-                    .player => |player| {
-                        ui.removeAttachedUi(player.obj_id);
-
-                        allocator.free(player.name_override);
-                        allocator.free(player.guild);
-                        continue;
-                    },
-                    else => {},
-                }
+                map.disposeEntity(allocator, en);
             }
 
             std.log.err("Could not remove object with id {d}", .{drop});
@@ -906,7 +863,7 @@ inline fn handleUpdate(allocator: std.mem.Allocator) void {
         std.log.debug("Recv - Update: tiles_len={d}, new_objs_len={d}, drops_len={d}", .{ tiles.len, new_objs_len, drops.len });
 }
 
-inline fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: std.mem.Allocator) bool {
+fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: std.mem.Allocator) bool {
     @setEvalBranchQuota(5000);
     switch (stat_type) {
         .max_hp => plr.max_hp = reader.read(i32),
@@ -929,7 +886,7 @@ inline fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allo
             const item = reader.read(i32);
             plr.inventory[inv_idx] = item;
             if (plr.obj_id == map.local_player_id)
-                ui.setInvItem(item, inv_idx);
+                ui.in_game_screen.setInvItem(item, inv_idx);
         },
         .stars => plr.stars = reader.read(i32),
         .name => plr.name_override = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
@@ -961,7 +918,7 @@ inline fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allo
             const item = reader.read(i32);
             plr.inventory[backpack_idx] = item;
             if (plr.obj_id == map.local_player_id)
-                ui.setInvItem(item, backpack_idx);
+                ui.in_game_screen.setInvItem(item, backpack_idx);
         },
         .has_backpack => plr.has_backpack = reader.read(bool),
         .skin => plr.skin = reader.read(i32),
@@ -974,7 +931,7 @@ inline fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allo
     return true;
 }
 
-inline fn parseObjStatData(obj: *map.GameObject, stat_type: game_data.StatType, allocator: std.mem.Allocator) bool {
+fn parseObjStatData(obj: *map.GameObject, stat_type: game_data.StatType, allocator: std.mem.Allocator) bool {
     @setEvalBranchQuota(5000);
     switch (stat_type) {
         .max_hp => obj.max_hp = reader.read(i32),
@@ -988,7 +945,7 @@ inline fn parseObjStatData(obj: *map.GameObject, stat_type: game_data.StatType, 
             const item = reader.read(i32);
             obj.inventory[inv_idx] = item;
             if (obj.obj_id == map.interactive_id.load(.Acquire)) {
-                ui.setContainerItem(item, inv_idx);
+                ui.in_game_screen.setContainerItem(item, inv_idx);
             }
         },
         .name => obj.name_override = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
@@ -1203,7 +1160,7 @@ pub fn sendEditAccountList(account_list_id: i32, add: bool, object_id: i32) void
     writeBuffer();
 }
 
-pub fn sendEnemyHit(time: i32, bullet_id: u8, target_id: i32, killed: bool) void {
+pub fn sendEnemyHit(time: i64, bullet_id: u8, target_id: i32, killed: bool) void {
     if (!connected) {
         std.log.err("Could not send EnemyHit, client is not connected", .{});
     }
@@ -1244,7 +1201,7 @@ pub fn sendEscape() void {
     writeBuffer();
 }
 
-pub fn sendGotoAck(time: i32) void {
+pub fn sendGotoAck(time: i64) void {
     if (!connected) {
         std.log.err("Could not send GotoAck, client is not connected", .{});
     }
@@ -1260,7 +1217,7 @@ pub fn sendGotoAck(time: i32) void {
     writeBuffer();
 }
 
-pub fn sendGroundDamage(time: i32, position: Position) void {
+pub fn sendGroundDamage(time: i64, position: Position) void {
     if (!connected) {
         std.log.err("Could not send GroundDamage, client is not connected", .{});
     }
@@ -1349,7 +1306,7 @@ pub fn sendInvDrop(slot_object: ObjectSlot) void {
     writeBuffer();
 }
 
-pub fn sendInvSwap(time: i32, position: Position, from_slot: ObjectSlot, to_slot: ObjectSlot) void {
+pub fn sendInvSwap(time: i64, position: Position, from_slot: ObjectSlot, to_slot: ObjectSlot) void {
     if (!connected) {
         std.log.err("Could not send InvSwap, client is not connected", .{});
     }
@@ -1400,7 +1357,7 @@ pub fn sendLoad(char_id: i32) void {
     writeBuffer();
 }
 
-pub fn sendMove(tick_id: i32, time: i32, pos_x: f32, pos_y: f32, records: []const TimedPosition) void {
+pub fn sendMove(tick_id: i32, time: i64, pos_x: f32, pos_y: f32, records: []const TimedPosition) void {
     if (!connected) {
         std.log.err("Could not send Move, client is not connected", .{});
     }
@@ -1419,15 +1376,12 @@ pub fn sendMove(tick_id: i32, time: i32, pos_x: f32, pos_y: f32, records: []cons
 
     writeBuffer();
 
-    if (map.findEntity(map.local_player_id)) |en| {
-        switch (en.*) {
-            .player => |*player| player.onMove(),
-            else => {},
-        }
+    if (map.localPlayerRef()) |local_player| {
+        local_player.onMove();
     }
 }
 
-pub fn sendOtherHit(time: i32, bullet_id: u8, object_id: i32, target_id: i32) void {
+pub fn sendOtherHit(time: i64, bullet_id: u8, object_id: i32, target_id: i32) void {
     if (!connected) {
         std.log.err("Could not send OtherHit, client is not connected", .{});
     }
@@ -1463,7 +1417,7 @@ pub fn sendPlayerHit(bullet_id: u8, object_id: i32) void {
     writeBuffer();
 }
 
-pub fn sendPlayerShoot(time: i32, bullet_id: u8, container_type: u16, starting_pos: Position, angle: f32) void {
+pub fn sendPlayerShoot(time: i64, bullet_id: u8, container_type: u16, starting_pos: Position, angle: f32) void {
     if (!connected) {
         std.log.err("Could not send PlayerShoot, client is not connected", .{});
     }
@@ -1499,7 +1453,7 @@ pub fn sendPlayerText(text: []const u8) void {
     writeBuffer();
 }
 
-pub fn sendPong(serial: i32, time: i32) void {
+pub fn sendPong(serial: i32, time: i64) void {
     if (!connected) {
         std.log.err("Could not send Pong, client is not connected", .{});
     }
@@ -1565,7 +1519,7 @@ pub fn sendSetCondition(condition_effect: i32, condition_duration: i32) void {
     writeBuffer();
 }
 
-pub fn sendShootAck(time: i32) void {
+pub fn sendShootAck(time: i64) void {
     if (!connected) {
         std.log.err("Could not send ShootAck, client is not connected", .{});
     }
@@ -1581,7 +1535,7 @@ pub fn sendShootAck(time: i32) void {
     writeBuffer();
 }
 
-pub fn sendSquareHit(time: i32, bullet_id: u8, object_id: i32) void {
+pub fn sendSquareHit(time: i64, bullet_id: u8, object_id: i32) void {
     if (!connected) {
         std.log.err("Could not send SquareHit, client is not connected", .{});
     }
@@ -1631,7 +1585,7 @@ pub fn sendUpdateAck() void {
 }
 
 pub fn sendUseItem(
-    time: i32,
+    time: i64,
     slot_object: ObjectSlot,
     use_position: Position,
     use_type: u8,

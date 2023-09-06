@@ -39,15 +39,14 @@ pub var clip_scale_y: f32 = 2.0 / 720.0;
 
 pub var scale: f32 = 1.0;
 
-pub fn update(target_x: f32, target_y: f32, dt: i32, rotate: i8) void {
+pub fn update(target_x: f32, target_y: f32, dt: f32, rotate: i8) void {
     x = target_x;
     y = target_y;
 
     if (rotate != 0) {
-        const float_dt: f32 = @floatFromInt(dt);
         const float_rotate: f32 = @floatFromInt(rotate);
-        angle = @mod(angle + float_dt * rotate_speed * float_rotate, math.tau);
-        angle_unbound += float_dt * rotate_speed * float_rotate;
+        angle = @mod(angle + dt * rotate_speed * float_rotate, math.tau);
+        angle_unbound += dt * rotate_speed * float_rotate;
     }
 
     const cos_angle = @cos(angle);
@@ -99,7 +98,7 @@ pub inline fn visibleInCamera(x_in: f32, y_in: f32) bool {
     return !(floor_x < min_x or floor_x > max_x or floor_y < min_y or floor_y > max_y);
 }
 
-pub inline fn screenToWorld(x_in: f32, y_in: f32) utils.Point {
+pub fn screenToWorld(x_in: f32, y_in: f32) utils.Point {
     const cos_angle = @cos(angle);
     const sin_angle = @sin(angle);
     const x_div = (x_in - screen_width / 2.0) / px_per_tile * scale;
