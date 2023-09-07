@@ -845,11 +845,13 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
     var x_pointer = x_base;
     var y_pointer = y_base;
     for (text_data.text) |char| {
+        const mod_char = if (text_data.password) '*' else char;
+
         const char_data = switch (text_data.text_type) {
-            .medium => assets.medium_chars[char],
-            .medium_italic => assets.medium_italic_chars[char],
-            .bold => assets.bold_chars[char],
-            .bold_italic => assets.bold_italic_chars[char],
+            .medium => assets.medium_chars[mod_char],
+            .medium_italic => assets.medium_italic_chars[mod_char],
+            .bold => assets.bold_chars[mod_char],
+            .bold_italic => assets.bold_italic_chars[mod_char],
         };
 
         const shadow_texel_size = [2]f32{
