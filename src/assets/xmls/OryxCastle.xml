@@ -366,6 +366,10 @@
     </AnimatedTexture>
     <HitSound>monster/ents_hit</HitSound>
     <DeathSound>monster/traps_hit</DeathSound>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0xcccccc</LightColor>
+    <LightIntensity>0.10</LightIntensity>
+    <LightRadius>0.75</LightRadius>
     <MaxHitPoints>20000</MaxHitPoints>
     <Projectile id="0">
       <Texture>

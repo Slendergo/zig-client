@@ -83,6 +83,9 @@
     </AnimatedTexture>
     <HitSound>monster/dragons_hit</HitSound>
     <DeathSound>monster/flying_brain_death</DeathSound>
+    <LightColor>0x3ed5f0</LightColor>
+    <LightIntensity>0.10</LightIntensity>
+    <LightRadius>0.7</LightRadius>
     <MaxHitPoints>5000</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -271,6 +274,10 @@
     <HitSound>monster/skull_shrine_hit</HitSound>
     <DeathSound>monster/skull_shrine_death</DeathSound>
     <Size>120</Size>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0xf5361d</LightColor>
+    <LightIntensity>0.15</LightIntensity>
+    <LightRadius>0.8</LightRadius>
     <MaxHitPoints>10000</MaxHitPoints>
     <Defense>40</Defense>
     <Enemy />
@@ -302,6 +309,10 @@
     <DeathSound>monster/flaming_skulls_death</DeathSound>
     <MaxHitPoints>1000</MaxHitPoints>
     <Size>120</Size>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0xf5501d</LightColor>
+    <LightIntensity>0.10</LightIntensity>
+    <LightRadius>0.7</LightRadius>
     <Flying />
     <Z>0.2</Z>
     <XpMult>0.1</XpMult>
@@ -327,6 +338,10 @@
     <DeathSound>monster/flaming_skulls_death</DeathSound>
     <MaxHitPoints>750</MaxHitPoints>
     <Size>120</Size>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0x361df5</LightColor>
+    <LightIntensity>0.10</LightIntensity>
+    <LightRadius>0.7</LightRadius>
     <Flying />
     <Z>0.2</Z>
     <XpMult>0.1</XpMult>

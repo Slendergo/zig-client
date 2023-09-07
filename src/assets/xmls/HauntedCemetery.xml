@@ -195,7 +195,10 @@
       <Effect particle="SwirlingMist" cooldown="0.3">XMLEffect</Effect>
     </AltTexture>
     <Size>110</Size>
-    <ShadowSize>60</ShadowSize>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0xbce2bc</LightColor>
+    <LightIntensity>0.15</LightIntensity>
+    <LightRadius>0.9</LightRadius>
     <Z>0.4</Z>
     <Flying />
     <DontFaceAttacks />
@@ -1570,7 +1573,10 @@
     <HitSound>monster/archdemon_hit</HitSound>
     <DeathSound>monster/archdemon_death</DeathSound>
     <Size>150</Size>
-    <ShadowSize>100</ShadowSize>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0xdbac4d</LightColor>
+    <LightIntensity>0.15</LightIntensity>
+    <LightRadius>0.7</LightRadius>
     <MaxHitPoints>18000</MaxHitPoints>
     <Defense>15</Defense>
     <StasisImmune />

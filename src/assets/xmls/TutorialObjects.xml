@@ -81,6 +81,10 @@
       <Index>0x08</Index>
     </Texture>
     <Size>75</Size>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0x9e6142</LightColor>
+    <LightIntensity>0.10</LightIntensity>
+    <LightRadius>0.8</LightRadius>
     <SlotTypes>0, 0, 0, 0, 0, 0, 0, 0</SlotTypes>
     <Equipment>0x0a4f, -1, -1, -1, -1, -1, -1, -1</Equipment>
   </Object>

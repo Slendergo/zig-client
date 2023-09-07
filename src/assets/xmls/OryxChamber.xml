@@ -587,6 +587,10 @@
       <MultiHit />
     </Projectile>
     <Size>50</Size>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0xb33636</LightColor>
+    <LightIntensity>0.05</LightIntensity>
+    <LightRadius>1.5</LightRadius>
     <XpMult>0.0</XpMult>
   </Object>
   <Object type="0x1749" id="Minion of Oryx">

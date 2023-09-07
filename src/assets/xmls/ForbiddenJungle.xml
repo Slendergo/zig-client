@@ -666,8 +666,10 @@
     <HitSound>monster/slimes_death</HitSound>
     <DeathSound>monster/flying_brain_death</DeathSound>
     <Size>100</Size>
-    <ShadowSize>85</ShadowSize>
-    <ShadowColor>0xFA9632</ShadowColor>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0xFA9632</LightColor>
+    <LightIntensity>0.15</LightIntensity>
+    <LightRadius>0.9</LightRadius>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>80</Defense>
     <Projectile id="0">
