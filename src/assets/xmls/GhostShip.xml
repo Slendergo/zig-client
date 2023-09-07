@@ -856,7 +856,7 @@
       <Damage>50</Damage>
       <LifetimeMS>1700</LifetimeMS>
       <Size>80</Size>
-    </ojectile>
+    </Projectile>
     </Object>
   <Object type="0x0e31" id="Lil' Ghost Pirate">
     <Class>Character</Class>
