@@ -7,6 +7,7 @@ const zstbi = @import("libs/zstbi/build.zig");
 const zstbrp = @import("libs/zstbrp/build.zig");
 const ztracy = @import("libs/ztracy/build.zig");
 const zaudio = @import("libs/zaudio/build.zig");
+const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) !void {
     const target = b.standardTargetOptions(.{});
@@ -45,6 +46,7 @@ pub fn build(b: *std.Build) !void {
     const zpool_pkg = zpool.package(b, target, optimize, .{});
     const zgpu_pkg = zgpu.package(b, target, optimize, .{
         .deps = .{ .zpool = zpool_pkg.zpool, .zglfw = zglfw_pkg.zglfw },
+        .options = .{ .dawn_skip_validation = builtin.mode != .Debug },
     });
 
     zglfw_pkg.link(exe);
