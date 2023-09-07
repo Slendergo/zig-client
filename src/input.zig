@@ -36,27 +36,6 @@ pub fn reset() void {
 }
 
 fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
-    if (selected_input_field) |input_field| {
-        if (key == .enter) {
-            if (input_field.enter_callback) |enter_cb| {
-                enter_cb(input_field.text_data.text);
-                input_field.text_data.text = &[0]u8{};
-                input_field._index = 0;
-                selected_input_field = null;
-            }
-
-            return;
-        }
-
-        if (key == .backspace and input_field._index > 0) {
-            input_field._index -= 1;
-            input_field.text_data.text = input_field.text_data.backing_buffer[0..input_field._index];
-            return;
-        }
-
-        return;
-    }
-
     if (ui.current_screen != .in_game)
         return;
 
@@ -245,6 +224,56 @@ pub fn charEvent(window: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
 
 pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
     _ = scancode;
+
+    if (action == .press or action == .repeat) {
+        if (selected_input_field) |input_field| {
+            if (mods.control) {
+                switch (key) {
+                    .c => {
+                        const old = input_field.text_data.text;
+                        input_field.text_data.backing_buffer[input_field._index] = 0;
+                        window.setClipboardString(input_field.text_data.backing_buffer[0..input_field._index :0]);
+                        input_field.text_data.text = old;
+                    },
+                    .v => {
+                        if (window.getClipboardString()) |clip_str| {
+                            const clip_len = clip_str.len;
+                            @memcpy(input_field.text_data.backing_buffer[input_field._index .. input_field._index + clip_len], clip_str);
+                            input_field._index += @intCast(clip_len);
+                            input_field.text_data.text = input_field.text_data.backing_buffer[0..input_field._index];
+                            return;
+                        }
+                    },
+                    .x => {
+                        input_field.text_data.backing_buffer[input_field._index] = 0;
+                        window.setClipboardString(input_field.text_data.backing_buffer[0..input_field._index :0]);
+                        input_field.text_data.text = &[0]u8{};
+                        input_field._index = 0;
+                    },
+                    else => {},
+                }
+            }
+
+            if (key == .enter) {
+                if (input_field.enter_callback) |enter_cb| {
+                    enter_cb(input_field.text_data.text);
+                    input_field.text_data.text = &[0]u8{};
+                    input_field._index = 0;
+                    selected_input_field = null;
+                }
+
+                return;
+            }
+
+            if (key == .backspace and input_field._index > 0) {
+                input_field._index -= 1;
+                input_field.text_data.text = input_field.text_data.backing_buffer[0..input_field._index];
+                return;
+            }
+
+            return;
+        }
+    }
 
     if (action == .press) {
         keyPress(window, key, mods);

@@ -428,6 +428,7 @@ pub const TextData = struct {
     shadow_texel_offset_mult: f32 = 0.0,
     outline_color: i32 = 0x000000,
     outline_width: f32 = 1.2, // 0.5 for off
+    password: bool = false,
     // alignments other than default need max width/height defined respectively
     // no support for multi-line alignment currently
     hori_align: TextAlignmentHori = .left,
@@ -489,6 +490,12 @@ pub const TextData = struct {
     }
 };
 
+pub const DisplayContainer = struct {
+    x: f32,
+    y: f32,
+    elements: utils.DynSlice(*UiElement) = undefined,
+};
+
 pub const ScreenType = enum(u8) {
     main_menu,
     char_select,
@@ -505,6 +512,7 @@ pub const UiElement = union(enum) {
     button: *Button,
     text: *UiText,
     char_box: *CharacterBox,
+    container: *DisplayContainer,
     // pointers on these would imply allocation, which is pointless and wasteful
     balloon: SpeechBalloon,
     status: StatusText,
@@ -515,6 +523,7 @@ pub var elements_to_remove: utils.DynSlice(usize) = undefined;
 pub var obj_ids_to_remove: utils.DynSlice(i32) = undefined;
 pub var current_screen = ScreenType.main_menu;
 
+var element_dispose_lock: std.Thread.Mutex = .{};
 var menu_background: *Image = undefined;
 
 pub var account_screen: AccountScreen = undefined;
@@ -527,7 +536,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     obj_ids_to_remove = try utils.DynSlice(i32).init(64, allocator);
 
     menu_background = try allocator.create(Image);
-    var menu_bg_data = (assets.ui_atlas_data.get("menuBackground") orelse @panic("Could not find menuBackground in ui atlas"))[0];
+    var menu_bg_data = assets.getUiSingle("menuBackground");
     menu_bg_data.removePadding();
     menu_background.* = Image{
         .x = 0,
@@ -559,13 +568,27 @@ pub fn disposeElement(elem: UiElement, allocator: std.mem.Allocator) void {
         .item => |item| if (item.tier_text) |ui_text| {
             allocator.free(ui_text.text_data.backing_buffer);
         },
-        .balloon => |balloon| allocator.free(balloon.text_data.text),
-        .status => |status| allocator.free(status.text_data.text),
+        .balloon => |balloon| {
+            while (!element_dispose_lock.tryLock()) {}
+            defer element_dispose_lock.unlock();
+
+            allocator.free(balloon.text_data.text);
+        },
+        .status => |status| {
+            while (!element_dispose_lock.tryLock()) {}
+            defer element_dispose_lock.unlock();
+
+            allocator.free(status.text_data.text);
+        },
         else => {},
     }
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
+    account_screen.deinit(allocator);
+    in_game_screen.deinit(allocator);
+    char_select_screen.deinit(allocator);
+
     for (elements.items()) |elem| {
         disposeElement(elem, allocator);
     }
@@ -575,10 +598,6 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     obj_ids_to_remove.deinit();
 
     allocator.destroy(menu_background);
-
-    account_screen.deinit(allocator);
-    in_game_screen.deinit(allocator);
-    char_select_screen.deinit(allocator);
 }
 
 pub fn resize(w: f32, h: f32) void {
@@ -852,6 +871,9 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
     }
 
     std.mem.reverse(usize, elements_to_remove.items());
+
+    while (!element_dispose_lock.tryLock()) {}
+    defer element_dispose_lock.unlock();
 
     for (elements_to_remove.items()) |idx| {
         switch (elements.remove(idx)) {

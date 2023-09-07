@@ -104,21 +104,18 @@ pub var tick_frame = false;
 pub var sent_hello = false;
 var _allocator: std.mem.Allocator = undefined;
 
-fn create(allocator: std.mem.Allocator, window: *zglfw.Window) !void {
-    gctx = try zgpu.GraphicsContext.create(allocator, window, .{ .present_mode = if (settings.enable_vsync) .fifo else .immediate });
-    _ = window.setKeyCallback(input.keyEvent);
-    _ = window.setCharCallback(input.charEvent);
-    _ = window.setCursorPosCallback(input.mouseMoveEvent);
-    _ = window.setMouseButtonCallback(input.mouseEvent);
-}
+fn onResize(window: *zglfw.Window, w: i32, h: i32) callconv(.C) void {
+    _ = window;
 
-fn onResize(w: f32, h: f32) void {
-    camera.screen_width = w;
-    camera.screen_height = h;
-    camera.clip_scale_x = 2.0 / w;
-    camera.clip_scale_y = 2.0 / h;
+    const float_w: f32 = @floatFromInt(w);
+    const float_h: f32 = @floatFromInt(h);
 
-    ui.resize(w, h);
+    camera.screen_width = float_w;
+    camera.screen_height = float_h;
+    camera.clip_scale_x = 2.0 / float_w;
+    camera.clip_scale_y = 2.0 / float_h;
+
+    ui.resize(float_w, float_h);
 }
 
 fn networkTick(allocator: std.mem.Allocator) void {
@@ -160,9 +157,7 @@ fn renderTick(allocator: std.mem.Allocator) !void {
 
         const commands = encoder.finish(null);
         gctx.submit(&.{commands});
-        if (gctx.present() == .swap_chain_resized) {
-            onResize(@floatFromInt(gctx.swapchain_descriptor.width), @floatFromInt(gctx.swapchain_descriptor.height));
-        }
+        _ = gctx.present();
 
         back_buffer.release();
         encoder.release();
@@ -267,12 +262,22 @@ pub fn main() !void {
         .target_ally => assets.target_ally_cursor,
     });
     window.setInputMode(zglfw.InputMode.lock_key_mods, true);
-    create(allocator, window) catch |e| {
-        std.log.err("Failed to create state: {any}", .{e});
+
+    gctx = zgpu.GraphicsContext.create(
+        allocator,
+        window,
+        .{ .present_mode = if (settings.enable_vsync) .fifo else .immediate },
+    ) catch |e| {
+        std.log.err("Failed to create graphics context: {any}", .{e});
         return;
     };
-
     defer gctx.destroy(allocator);
+
+    _ = window.setKeyCallback(input.keyEvent);
+    _ = window.setCharCallback(input.charEvent);
+    _ = window.setCursorPosCallback(input.mouseMoveEvent);
+    _ = window.setMouseButtonCallback(input.mouseEvent);
+    _ = window.setFramebufferSizeCallback(onResize);
 
     render.init(gctx);
 

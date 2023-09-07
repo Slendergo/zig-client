@@ -26,19 +26,22 @@ pub const AccountScreen = struct {
             ._allocator = allocator,
         };
 
+        const input_w = 200;
+        const input_h = 50;
+
         screen.email_input = try allocator.create(ui.InputField);
         const input_data_base = assets.getUiSingle("textInputBase");
         const input_data_hover = assets.getUiSingle("textInputHover");
         const input_data_press = assets.getUiSingle("textInputPress");
         screen.email_input.* = ui.InputField{
-            .x = (camera.screen_width - input_data_base.texWRaw()) / 2,
+            .x = (camera.screen_width - input_w) / 2,
             .y = 200,
             .text_inlay_x = 9,
             .text_inlay_y = 8,
             .base_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
                 input_data_base,
-                200,
-                50,
+                input_w,
+                input_h,
                 8,
                 8,
                 32,
@@ -47,8 +50,8 @@ pub const AccountScreen = struct {
             ) },
             .hover_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
                 input_data_hover,
-                200,
-                50,
+                input_w,
+                input_h,
                 8,
                 8,
                 32,
@@ -57,8 +60,8 @@ pub const AccountScreen = struct {
             ) },
             .press_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
                 input_data_press,
-                200,
-                50,
+                input_w,
+                input_h,
                 8,
                 8,
                 32,
@@ -67,7 +70,7 @@ pub const AccountScreen = struct {
             ) },
             .text_data = .{
                 .text = "",
-                .size = 12,
+                .size = 20,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 256),
             },
@@ -78,13 +81,13 @@ pub const AccountScreen = struct {
         screen.email_text = try allocator.create(ui.UiText);
         const email_text_data = ui.TextData{
             .text = @constCast("E-mail"),
-            .size = 16,
+            .size = 20,
             .text_type = .bold,
             .backing_buffer = try allocator.alloc(u8, 8),
             .hori_align = .middle,
             .vert_align = .middle,
-            .max_width = 200,
-            .max_height = 50,
+            .max_width = input_w,
+            .max_height = input_h,
         };
         screen.email_text.* = ui.UiText{
             .x = screen.email_input.x,
@@ -95,14 +98,14 @@ pub const AccountScreen = struct {
 
         screen.password_input = try allocator.create(ui.InputField);
         screen.password_input.* = ui.InputField{
-            .x = (camera.screen_width - input_data_base.texWRaw()) / 2,
+            .x = (camera.screen_width - input_w) / 2,
             .y = 350,
             .text_inlay_x = 9,
             .text_inlay_y = 8,
             .base_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
                 input_data_base,
-                200,
-                50,
+                input_w,
+                input_h,
                 8,
                 8,
                 32,
@@ -111,8 +114,8 @@ pub const AccountScreen = struct {
             ) },
             .hover_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
                 input_data_hover,
-                200,
-                50,
+                input_w,
+                input_h,
                 8,
                 8,
                 32,
@@ -121,8 +124,8 @@ pub const AccountScreen = struct {
             ) },
             .press_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
                 input_data_press,
-                200,
-                50,
+                input_w,
+                input_h,
                 8,
                 8,
                 32,
@@ -131,24 +134,25 @@ pub const AccountScreen = struct {
             ) },
             .text_data = .{
                 .text = "",
-                .size = 12,
+                .size = 20,
                 .text_type = .bold,
+                .password = true,
                 .backing_buffer = try allocator.alloc(u8, 256),
             },
             .allocator = allocator,
         };
-        try ui.elements.add(.{ .input_field =  screen.password_input });
+        try ui.elements.add(.{ .input_field = screen.password_input });
 
         screen.password_text = try allocator.create(ui.UiText);
         const password_text_data = ui.TextData{
             .text = @constCast("Password"),
-            .size = 16,
+            .size = 20,
             .text_type = .bold,
             .backing_buffer = try allocator.alloc(u8, 8),
             .hori_align = .middle,
             .vert_align = .middle,
-            .max_width = 200,
-            .max_height = 50,
+            .max_width = input_w,
+            .max_height = input_h,
         };
         screen.password_text.* = ui.UiText{
             .x = screen.password_input.x,
@@ -162,7 +166,7 @@ pub const AccountScreen = struct {
         const button_data_hover = assets.getUiSingle("buttonHover");
         const button_data_press = assets.getUiSingle("buttonPress");
         screen.login_button.* = ui.Button{
-            .x = screen.password_input.x + (200 - 100) / 2,
+            .x = screen.password_input.x + (input_w - 100) / 2,
             .y = 450,
             .base_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
                 button_data_base,

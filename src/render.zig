@@ -140,8 +140,8 @@ pub fn init(gctx: *zgpu.GraphicsContext) void {
     createVertexBuffer(gctx, GroundVertexData, &ground_vb, ground_vert_data[0..]);
     createVertexBuffer(gctx, LightVertexData, &light_vb, light_vert_data[0..]);
 
-    var index_data: [6000]u16 = undefined;
-    for (0..1000) |i| {
+    var index_data: [60000]u16 = undefined;
+    for (0..10000) |i| {
         const actual_i: u16 = @intCast(i * 6);
         const i_4: u16 = @intCast(i * 4);
         index_data[actual_i] = 0 + i_4;
@@ -1149,7 +1149,7 @@ inline fn endBaseDraw(
         ib_info,
         pipeline,
         bind_group,
-        6000,
+        60000,
         null,
     );
 }
@@ -1216,7 +1216,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             ib_info,
                             pipeline,
                             bind_group,
-                            6000,
+                            60000,
                             &.{mem.offset},
                         );
                         square_idx = 0;
@@ -2529,6 +2529,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         ui_idx = 0;
                     }
                 },
+                else => {},
             }
         }
 
