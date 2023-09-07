@@ -11,6 +11,7 @@ const zglfw = @import("zglfw");
 const AccountScreen = @import("account.zig").AccountScreen;
 const InGameScreen = @import("in_game.zig").InGameScreen;
 const CharSelectScreen = @import("char_select.zig").CharSelectScreen;
+const CharCreateScreen = @import("char_create.zig").CharCreateScreen;
 
 pub const RGBF32 = extern struct {
     r: f32,
@@ -528,6 +529,7 @@ var menu_background: *Image = undefined;
 
 pub var account_screen: AccountScreen = undefined;
 pub var char_select_screen: CharSelectScreen = undefined;
+pub var char_create_screen: CharCreateScreen = undefined;
 pub var in_game_screen: InGameScreen = undefined;
 
 pub fn init(allocator: std.mem.Allocator) !void {
@@ -551,6 +553,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
 
     account_screen = try AccountScreen.init(allocator);
     char_select_screen = try CharSelectScreen.init(allocator);
+    char_create_screen = try CharCreateScreen.init(allocator);
     in_game_screen = try InGameScreen.init(allocator);
 }
 
@@ -588,6 +591,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     account_screen.deinit(allocator);
     in_game_screen.deinit(allocator);
     char_select_screen.deinit(allocator);
+    char_create_screen.deinit(allocator);
 
     for (elements.items()) |elem| {
         disposeElement(elem, allocator);
@@ -607,6 +611,7 @@ pub fn resize(w: f32, h: f32) void {
     account_screen.resize(w, h);
     in_game_screen.resize(w, h);
     char_select_screen.resize(w, h);
+    char_create_screen.resize(w, h);
 }
 
 pub fn switchScreen(screen_type: ScreenType) void {
@@ -616,6 +621,7 @@ pub fn switchScreen(screen_type: ScreenType) void {
     account_screen.toggle(screen_type == .main_menu);
     in_game_screen.toggle(screen_type == .in_game);
     char_select_screen.toggle(screen_type == .char_select);
+    char_create_screen.toggle(screen_type == .char_creation);
 }
 
 pub fn removeAttachedUi(obj_id: i32) void {
@@ -799,6 +805,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
         .main_menu => try account_screen.update(ms_time, ms_dt),
         .char_select => try char_select_screen.update(ms_time, ms_dt),
         .in_game => try in_game_screen.update(ms_time, ms_dt),
+        .char_creation => try char_create_screen.update(ms_time, ms_dt),
         else => {},
     }
 

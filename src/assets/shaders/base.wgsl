@@ -82,121 +82,105 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let dy = dpdy(in.uv);
 
     if in.render_type == quad_render_type {
-        var pixel = textureSampleGrad(base_tex, default_sampler, in.uv, dx, dy);
+        let pixel = textureSampleGrad(base_tex, default_sampler, in.uv, dx, dy);
         if pixel.a == 0.0 {
-            if in.shadow_texel.x != 0.0 {
-                var alpha = textureSampleGrad(base_tex, default_sampler, in.uv - in.shadow_texel, dx, dy).a;
-                alpha += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, in.uv.y + in.shadow_texel.y), dx, dy).a;
-                alpha += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, in.uv.y - in.shadow_texel.y), dx, dy).a;
-                alpha += textureSampleGrad(base_tex, default_sampler, in.uv + in.shadow_texel, dx, dy).a;
+            let alpha = textureSampleGrad(base_tex, default_sampler, in.uv - in.shadow_texel, dx, dy).a +
+                textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, in.uv.y + in.shadow_texel.y), dx, dy).a +
+                textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, in.uv.y - in.shadow_texel.y), dx, dy).a +
+                textureSampleGrad(base_tex, default_sampler, in.uv + in.shadow_texel, dx, dy).a;
 
-                if alpha > 0.0 {
-                    pixel = vec4(in.shadow_color, 1.0);
-                } else {
-                    var sum = 0.0;
-                    for (var i = 0.0; i < 7.0; i += 1.0) {
-                        let uv_y = in.uv.y + in.shadow_texel.y * (i - 3.5);
-                        let tex_x_2 = in.shadow_texel.x * 2.0;
-                        let tex_x_3 = in.shadow_texel.x * 3.0;
-                        sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x - tex_x_3, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x - tex_x_2, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x + tex_x_2, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x + tex_x_3, uv_y), dx, dy).a;
-                    }
-
-                    if sum == 0.0 {
-                        discard;
-                    } else {
-                        pixel = vec4(in.shadow_color, sum / 49.0);
-                    }
-                }
+            if alpha > 0.0 {
+                return vec4(in.shadow_color, in.alpha_mult);
             }
-        } else {
-            return vec4(mix(pixel.rgb, in.base_color, in.base_color_intensity), pixel.a * in.alpha_mult);
+
+            var sum = 0.0;
+            for (var i = 0.0; i < 7.0; i += 1.0) {
+                let uv_y = in.uv.y + in.shadow_texel.y * (i - 3.5);
+                let tex_x_2 = in.shadow_texel.x * 2.0;
+                let tex_x_3 = in.shadow_texel.x * 3.0;
+                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x - tex_x_3, uv_y), dx, dy).a;
+                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x - tex_x_2, uv_y), dx, dy).a;
+                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, uv_y), dx, dy).a;
+                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x, uv_y), dx, dy).a;
+                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, uv_y), dx, dy).a;
+                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x + tex_x_2, uv_y), dx, dy).a;
+                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x + tex_x_3, uv_y), dx, dy).a;
+            }
+
+            if sum == 0.0 {
+                discard;
+            }
+
+            return vec4(in.shadow_color, sum / 49.0 * in.alpha_mult);
         }
 
-        return vec4(pixel.rgb, pixel.a * in.alpha_mult);
+        return vec4(mix(pixel.rgb, in.base_color, in.base_color_intensity), pixel.a * in.alpha_mult);
     } else if in.render_type == ui_quad_render_type {
-        var pixel = textureSampleGrad(ui_tex, default_sampler, in.uv, dx, dy);
+        let pixel = textureSampleGrad(ui_tex, default_sampler, in.uv, dx, dy);
         if pixel.a == 0.0 {
-            if in.shadow_texel.x != 0.0 {
-                var alpha = textureSampleGrad(ui_tex, default_sampler, in.uv - in.shadow_texel, dx, dy).a;
-                alpha += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, in.uv.y + in.shadow_texel.y), dx, dy).a;
-                alpha += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, in.uv.y - in.shadow_texel.y), dx, dy).a;
-                alpha += textureSampleGrad(ui_tex, default_sampler, in.uv + in.shadow_texel, dx, dy).a;
+            let alpha = textureSampleGrad(ui_tex, default_sampler, in.uv - in.shadow_texel, dx, dy).a +
+                textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, in.uv.y + in.shadow_texel.y), dx, dy).a +
+                textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, in.uv.y - in.shadow_texel.y), dx, dy).a +
+                textureSampleGrad(ui_tex, default_sampler, in.uv + in.shadow_texel, dx, dy).a;
 
-                if alpha > 0.0 {
-                    pixel = vec4(in.shadow_color, 1.0);
-                } else {
-                    var sum = 0.0;
-                    for (var i = 0.0; i < 7.0; i += 1.0) {
-                        let uv_y = in.uv.y + in.shadow_texel.y * (i - 3.5);
-                        let tex_x_2 = in.shadow_texel.x * 2.0;
-                        let tex_x_3 = in.shadow_texel.x * 3.0;
-                        sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x - tex_x_3, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x - tex_x_2, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x + tex_x_2, uv_y), dx, dy).a;
-                        sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x + tex_x_3, uv_y), dx, dy).a;
-                    }
-
-                    if sum == 0.0 {
-                        discard;
-                    } else {
-                        pixel = vec4(in.shadow_color, sum / 49.0);
-                    }
-                }
+            if alpha > 0.0 {
+                return vec4(in.shadow_color, in.alpha_mult);
             }
-        } else {
-            return vec4(mix(pixel.rgb, in.base_color, in.base_color_intensity), pixel.a * in.alpha_mult);
+
+            var sum = 0.0;
+            for (var i = 0.0; i < 7.0; i += 1.0) {
+                let uv_y = in.uv.y + in.shadow_texel.y * (i - 3.5);
+                let tex_x_2 = in.shadow_texel.x * 2.0;
+                let tex_x_3 = in.shadow_texel.x * 3.0;
+                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x - tex_x_3, uv_y), dx, dy).a;
+                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x - tex_x_2, uv_y), dx, dy).a;
+                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, uv_y), dx, dy).a;
+                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x, uv_y), dx, dy).a;
+                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, uv_y), dx, dy).a;
+                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x + tex_x_2, uv_y), dx, dy).a;
+                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x + tex_x_3, uv_y), dx, dy).a;
+            }
+
+            if sum == 0.0 {
+                discard;
+            }
+
+            return vec4(in.shadow_color, sum / 49.0 * in.alpha_mult);
         }
 
-        return vec4(pixel.rgb, pixel.a * in.alpha_mult);
+        return vec4(mix(pixel.rgb, in.base_color, in.base_color_intensity), pixel.a * in.alpha_mult);
     } else if in.render_type == quad_glow_off_render_type {
-        var pixel = textureSampleGrad(base_tex, default_sampler, in.uv, dx, dy);
+        let pixel = textureSampleGrad(base_tex, default_sampler, in.uv, dx, dy);
         if pixel.a == 0.0 {
-            if in.shadow_texel.x != 0.0 {
-                var alpha = textureSampleGrad(base_tex, default_sampler, in.uv - in.shadow_texel, dx, dy).a;
-                alpha += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, in.uv.y + in.shadow_texel.y), dx, dy).a;
-                alpha += textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, in.uv.y - in.shadow_texel.y), dx, dy).a;
-                alpha += textureSampleGrad(base_tex, default_sampler, in.uv + in.shadow_texel, dx, dy).a;
+            let alpha = textureSampleGrad(base_tex, default_sampler, in.uv - in.shadow_texel, dx, dy).a +
+                textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, in.uv.y + in.shadow_texel.y), dx, dy).a +
+                textureSampleGrad(base_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, in.uv.y - in.shadow_texel.y), dx, dy).a +
+                textureSampleGrad(base_tex, default_sampler, in.uv + in.shadow_texel, dx, dy).a;
 
-                if alpha > 0.0 {
-                    pixel = vec4(in.shadow_color, 1.0);
-                } else {
-                    discard;
-                }
+            if alpha > 0.0 {
+                return vec4(in.shadow_color, in.alpha_mult);
             }
-        } else {
-            return vec4(mix(pixel.rgb, in.base_color, in.base_color_intensity), pixel.a * in.alpha_mult);
+
+            discard;
         }
 
-        return vec4(pixel.rgb, pixel.a * in.alpha_mult);
+        return vec4(mix(pixel.rgb, in.base_color, in.base_color_intensity), pixel.a * in.alpha_mult);
     } else if in.render_type == ui_quad_glow_off_render_type {
-        var pixel = textureSampleGrad(ui_tex, default_sampler, in.uv, dx, dy);
+        let pixel = textureSampleGrad(ui_tex, default_sampler, in.uv, dx, dy);
         if pixel.a == 0.0 {
-            if in.shadow_texel.x != 0.0 {
-                var alpha = textureSampleGrad(ui_tex, default_sampler, in.uv - in.shadow_texel, dx, dy).a;
-                alpha += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, in.uv.y + in.shadow_texel.y), dx, dy).a;
-                alpha += textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, in.uv.y - in.shadow_texel.y), dx, dy).a;
-                alpha += textureSampleGrad(ui_tex, default_sampler, in.uv + in.shadow_texel, dx, dy).a;
+            let alpha = textureSampleGrad(ui_tex, default_sampler, in.uv - in.shadow_texel, dx, dy).a +
+                textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x - in.shadow_texel.x, in.uv.y + in.shadow_texel.y), dx, dy).a +
+                textureSampleGrad(ui_tex, default_sampler, vec2(in.uv.x + in.shadow_texel.x, in.uv.y - in.shadow_texel.y), dx, dy).a +
+                textureSampleGrad(ui_tex, default_sampler, in.uv + in.shadow_texel, dx, dy).a;
 
-                if alpha > 0.0 {
-                    pixel = vec4(in.shadow_color, 1.0);
-                } else {
-                    discard;
-                }
+            if alpha > 0.0 {
+                return vec4(in.shadow_color, in.alpha_mult);
             }
-        } else {
-            return vec4(mix(pixel.rgb, in.base_color, in.base_color_intensity), pixel.a * in.alpha_mult);
+
+            discard;
         }
 
-        return vec4(pixel.rgb, pixel.a * in.alpha_mult);
+        return vec4(mix(pixel.rgb, in.base_color, in.base_color_intensity), pixel.a * in.alpha_mult);
     } else if in.render_type == text_normal_render_type {
         const subpixel = 1.0 / 3.0;
         let subpixel_width = (abs(dx.x) + abs(dy.x)) * subpixel; // this is just fwidth(in.uv).x * subpixel
