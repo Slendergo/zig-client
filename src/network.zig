@@ -462,7 +462,7 @@ fn handleInvitedToGuild() void {
 }
 
 fn handleInvResult() void {
-    const result = reader.read(i32);
+    const result = reader.read(u8);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - InvResult: result={d}", .{result});
