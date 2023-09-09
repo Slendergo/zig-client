@@ -51,6 +51,7 @@ pub const InputField = struct {
     press_decor_data: ?ImageData = null,
     visible: bool = true,
     _index: u32 = 0,
+    _disposed: bool = false,
 
     pub inline fn imageData(self: InputField) ImageData {
         switch (self.state) {
@@ -73,6 +74,11 @@ pub const InputField = struct {
             .normal => |image_data| return image_data.height(),
         });
     }
+
+    pub inline fn clear(self: *InputField) void {
+        self.text_data.text = "";
+        self._index = 0;
+    }
 };
 
 pub const Button = struct {
@@ -85,6 +91,7 @@ pub const Button = struct {
     press_image_data: ?ImageData = null,
     text_data: ?TextData = null,
     visible: bool = true,
+    _disposed: bool = false,
 
     pub inline fn imageData(self: Button) ImageData {
         switch (self.state) {
@@ -134,6 +141,7 @@ pub const CharacterBox = struct {
     press_image_data: ?ImageData = null,
     text_data: ?TextData = null,
     visible: bool = true,
+    _disposed: bool = false,
 
     pub inline fn imageData(self: CharacterBox) ImageData {
         switch (self.state) {
@@ -274,6 +282,7 @@ pub const Image = struct {
     image_data: ImageData,
     max_width: f32 = std.math.maxInt(u32),
     visible: bool = true,
+    _disposed: bool = false,
 
     pub inline fn width(self: Image) f32 {
         switch (self.image_data) {
@@ -307,6 +316,7 @@ pub const Item = struct {
     _drag_offset_y: f32 = 0,
     _last_click_time: i64 = 0,
     _item: i32 = -1,
+    _disposed: bool = false,
 
     pub inline fn width(self: Item) f32 {
         switch (self.image_data) {
@@ -330,6 +340,7 @@ pub const Bar = struct {
     max_width: f32 = std.math.maxInt(u32),
     visible: bool = true,
     text_data: TextData,
+    _disposed: bool = false,
 
     pub inline fn width(self: Bar) f32 {
         switch (self.image_data) {
@@ -355,6 +366,7 @@ pub const SpeechBalloon = struct {
     // the texts' internal x/y, don't touch outside of ui.update()
     _screen_x: f32 = 0.0,
     _screen_y: f32 = 0.0,
+    _disposed: bool = false,
 
     pub inline fn width(self: SpeechBalloon) f32 {
         return @max(self.text_data.width(), switch (self.image_data) {
@@ -376,6 +388,7 @@ pub const UiText = struct {
     y: f32,
     text_data: TextData,
     visible: bool = true,
+    _disposed: bool = false,
 };
 
 pub const StatusText = struct {
@@ -388,6 +401,7 @@ pub const StatusText = struct {
     // the texts' internal x/y, don't touch outside of ui.update()
     _screen_x: f32 = 0.0,
     _screen_y: f32 = 0.0,
+    _disposed: bool = false,
 
     pub inline fn width(self: StatusText) f32 {
         return self.text_data.width();
@@ -495,6 +509,7 @@ pub const DisplayContainer = struct {
     x: f32,
     y: f32,
     elements: utils.DynSlice(*UiElement) = undefined,
+    _disposed: bool = false,
 };
 
 pub const ScreenType = enum(u8) {
@@ -519,12 +534,12 @@ pub const UiElement = union(enum) {
     status: StatusText,
 };
 
+pub var status_dispose_lock: std.Thread.Mutex = .{};
+pub var balloon_dispose_lock: std.Thread.Mutex = .{};
 pub var elements: utils.DynSlice(UiElement) = undefined;
 pub var elements_to_remove: utils.DynSlice(usize) = undefined;
-pub var obj_ids_to_remove: utils.DynSlice(i32) = undefined;
 pub var current_screen = ScreenType.main_menu;
 
-var element_dispose_lock: std.Thread.Mutex = .{};
 var menu_background: *Image = undefined;
 
 pub var account_screen: AccountScreen = undefined;
@@ -535,7 +550,6 @@ pub var in_game_screen: InGameScreen = undefined;
 pub fn init(allocator: std.mem.Allocator) !void {
     elements = try utils.DynSlice(UiElement).init(64, allocator);
     elements_to_remove = try utils.DynSlice(usize).init(64, allocator);
-    obj_ids_to_remove = try utils.DynSlice(i32).init(64, allocator);
 
     menu_background = try allocator.create(Image);
     var menu_bg_data = assets.getUiSingle("menuBackground");
@@ -557,30 +571,71 @@ pub fn init(allocator: std.mem.Allocator) !void {
     in_game_screen = try InGameScreen.init(allocator);
 }
 
-pub fn disposeElement(elem: UiElement, allocator: std.mem.Allocator) void {
-    switch (elem) {
-        .bar => |bar| allocator.free(bar.text_data.backing_buffer),
-        .input_field => |input_field| allocator.free(input_field.text_data.backing_buffer),
-        .button => |button| if (button.text_data) |text_data| {
-            allocator.free(text_data.backing_buffer);
-        },
-        .char_box => |box| if (box.text_data) |text_data| {
-            allocator.free(text_data.backing_buffer);
-        },
-        .text => |text| allocator.free(text.text_data.backing_buffer),
-        .item => |item| if (item.tier_text) |ui_text| {
-            allocator.free(ui_text.text_data.backing_buffer);
-        },
-        .balloon => |balloon| {
-            while (!element_dispose_lock.tryLock()) {}
-            defer element_dispose_lock.unlock();
+pub fn disposeElement(elem: *UiElement, allocator: std.mem.Allocator) void {
+    switch (elem.*) {
+        .bar => |bar| {
+            if (bar._disposed)
+                return;
 
+            bar._disposed = true;
+            allocator.free(bar.text_data.backing_buffer);
+        },
+        .input_field => |input_field| {
+            if (input_field._disposed)
+                return;
+
+            input_field._disposed = true;
+            allocator.free(input_field.text_data.backing_buffer);
+        },
+        .button => |button| {
+            if (button._disposed)
+                return;
+
+            button._disposed = true;
+
+            if (button.text_data) |text_data| {
+                allocator.free(text_data.backing_buffer);
+            }
+        },
+        .char_box => |box| {
+            if (box._disposed)
+                return;
+
+            box._disposed = true;
+
+            if (box.text_data) |text_data| {
+                allocator.free(text_data.backing_buffer);
+            }
+        },
+        .text => |text| {
+            if (text._disposed)
+                return;
+
+            text._disposed = true;
+            allocator.free(text.text_data.backing_buffer);
+        },
+        .item => |item| {
+            if (item._disposed)
+                return;
+
+            item._disposed = true;
+
+            if (item.tier_text) |ui_text| {
+                allocator.free(ui_text.text_data.backing_buffer);
+            }
+        },
+        .balloon => |*balloon| {
+            if (balloon._disposed)
+                return;
+
+            balloon._disposed = true;
             allocator.free(balloon.text_data.text);
         },
-        .status => |status| {
-            while (!element_dispose_lock.tryLock()) {}
-            defer element_dispose_lock.unlock();
+        .status => |*status| {
+            if (status._disposed)
+                return;
 
+            status._disposed = true;
             allocator.free(status.text_data.text);
         },
         else => {},
@@ -588,18 +643,18 @@ pub fn disposeElement(elem: UiElement, allocator: std.mem.Allocator) void {
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
-    account_screen.deinit(allocator);
-    in_game_screen.deinit(allocator);
-    char_select_screen.deinit(allocator);
-    char_create_screen.deinit(allocator);
+    char_select_screen.deinit(allocator); // hack todo
 
-    for (elements.items()) |elem| {
+    for (elements.items()) |*elem| {
         disposeElement(elem, allocator);
     }
     elements.deinit();
 
+    account_screen.deinit(allocator);
+    in_game_screen.deinit(allocator);
+    char_create_screen.deinit(allocator);
+
     elements_to_remove.deinit();
-    obj_ids_to_remove.deinit();
 
     allocator.destroy(menu_background);
 }
@@ -624,19 +679,15 @@ pub fn switchScreen(screen_type: ScreenType) void {
     char_create_screen.toggle(screen_type == .char_creation);
 }
 
-pub fn removeAttachedUi(obj_id: i32) void {
-    for (elements.items()) |elem| {
-        switch (elem) {
+pub fn removeAttachedUi(obj_id: i32, allocator: std.mem.Allocator) void {
+    for (elements.items()) |*elem| {
+        switch (elem.*) {
             .status => |text| if (text.obj_id == obj_id) {
-                obj_ids_to_remove.add(obj_id) catch |e| {
-                    std.log.err("Status text disposing failed: {any}", .{e});
-                };
+                disposeElement(elem, allocator);
                 continue;
             },
             .balloon => |balloon| if (balloon.target_id == obj_id) {
-                obj_ids_to_remove.add(obj_id) catch |e| {
-                    std.log.err("Speech balloon disposing failed: {any}", .{e});
-                };
+                disposeElement(elem, allocator);
                 continue;
             },
             else => {},
@@ -812,15 +863,6 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
     for (elements.items(), 0..) |*elem, i| {
         switch (elem.*) {
             .status => |*status_text| {
-                for (obj_ids_to_remove.items()) |obj_id| {
-                    if (obj_id == status_text.obj_id) {
-                        elements_to_remove.add(i) catch |e| {
-                            std.log.err("Status text disposing failed: {any}", .{e});
-                        };
-                        continue;
-                    }
-                }
-
                 const elapsed = ms_time - status_text.start_time;
                 if (elapsed > status_text.lifetime) {
                     elements_to_remove.add(i) catch |e| {
@@ -842,15 +884,6 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
                 }
             },
             .balloon => |*speech_balloon| {
-                for (obj_ids_to_remove.items()) |obj_id| {
-                    if (obj_id == speech_balloon.target_id) {
-                        elements_to_remove.add(i) catch |e| {
-                            std.log.err("Speech balloon disposing failed: {any}", .{e});
-                        };
-                        continue;
-                    }
-                }
-
                 const elapsed = ms_time - speech_balloon.start_time;
                 const lifetime = 5000;
                 if (elapsed > lifetime) {
@@ -877,19 +910,11 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
         }
     }
 
-    std.mem.reverse(usize, elements_to_remove.items());
-
-    while (!element_dispose_lock.tryLock()) {}
-    defer element_dispose_lock.unlock();
-
-    for (elements_to_remove.items()) |idx| {
-        switch (elements.remove(idx)) {
-            .status => |status| allocator.free(status.text_data.text),
-            .balloon => |balloon| allocator.free(balloon.text_data.text),
-            else => {},
-        }
+    const removed_elements = elements_to_remove.items();
+    const elements_len = removed_elements.len;
+    for (0..elements_len) |i| {
+        disposeElement(elements.removePtr(removed_elements[elements_len - 1 - i]), allocator);
     }
 
     elements_to_remove.clear();
-    obj_ids_to_remove.clear();
 }

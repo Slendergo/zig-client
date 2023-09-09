@@ -247,8 +247,7 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
                     .x => {
                         input_field.text_data.backing_buffer[input_field._index] = 0;
                         window.setClipboardString(input_field.text_data.backing_buffer[0..input_field._index :0]);
-                        input_field.text_data.text = &[0]u8{};
-                        input_field._index = 0;
+                        input_field.clear();
                     },
                     else => {},
                 }
@@ -257,8 +256,7 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
             if (key == .enter) {
                 if (input_field.enter_callback) |enter_cb| {
                     enter_cb(input_field.text_data.text);
-                    input_field.text_data.text = &[0]u8{};
-                    input_field._index = 0;
+                    input_field.clear();
                     selected_input_field = null;
                 }
 

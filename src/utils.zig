@@ -53,6 +53,14 @@ pub fn DynSlice(comptime T: type) type {
             self._items[idx] = self._items[self.capacity];
             return old;
         }
+
+        pub inline fn removePtr(self: *Self, idx: usize) *T {
+            self.capacity -= 1;
+
+            var old = self._items[idx];
+            self._items[idx] = self._items[self.capacity];
+            return &old;
+        }
     };
 }
 

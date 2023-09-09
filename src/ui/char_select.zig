@@ -8,7 +8,7 @@ const main = @import("../main.zig");
 const utils = @import("../utils.zig");
 
 pub const CharSelectScreen = struct {
-    boxes: utils.DynSlice(*ui.CharacterBox) = undefined,
+    boxes: std.ArrayList(*ui.CharacterBox) = undefined,
 
     _allocator: std.mem.Allocator = undefined,
 
@@ -17,33 +17,36 @@ pub const CharSelectScreen = struct {
             ._allocator = allocator,
         };
 
-        screen.boxes = try utils.DynSlice(*ui.CharacterBox).init(8, allocator);
+        screen.boxes = std.ArrayList(*ui.CharacterBox).init(allocator);
+        try screen.boxes.ensureTotalCapacity(8);
 
         return screen;
     }
 
     pub fn deinit(self: *CharSelectScreen, allocator: std.mem.Allocator) void {
-        for (self.boxes.items()) |box| {
+        for (self.boxes.items) |box| {
             for (ui.elements.items(), 0..) |element, i| {
                 if (element == .char_box and element.char_box == box) {
-                    ui.disposeElement(ui.elements.remove(i), allocator);
+                    ui.disposeElement(ui.elements.removePtr(i), allocator);
                 }
             }
             allocator.destroy(box);
         }
+
+        self.boxes.clearAndFree();
     }
 
     pub fn toggle(self: *CharSelectScreen, state: bool) void {
-        for (self.boxes.items()) |box| {
+        for (self.boxes.items) |box| {
             for (ui.elements.items(), 0..) |element, i| {
                 if (element == .char_box and element.char_box == box) {
-                    ui.disposeElement(ui.elements.remove(i), self._allocator);
+                    ui.disposeElement(ui.elements.removePtr(i), self._allocator);
                 }
             }
             self._allocator.destroy(box);
         }
 
-        self.boxes.clear();
+        self.boxes.clearAndFree();
 
         if (!state)
             return;
@@ -96,7 +99,7 @@ pub const CharSelectScreen = struct {
                 },
                 .press_callback = boxClickCallback,
             };
-            self.boxes.add(box) catch return;
+            self.boxes.append(box) catch return;
             ui.elements.add(.{ .char_box = box }) catch return;
         }
     }

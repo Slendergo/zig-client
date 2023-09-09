@@ -1352,11 +1352,11 @@ pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
                 }
             }
 
-            ui.removeAttachedUi(obj.obj_id);
+            ui.removeAttachedUi(obj.obj_id, allocator);
             allocator.free(obj.name_override);
         },
         .player => |player| {
-            ui.removeAttachedUi(player.obj_id);
+            ui.removeAttachedUi(player.obj_id, allocator);
             allocator.free(player.name_override);
             allocator.free(player.guild);
         },
