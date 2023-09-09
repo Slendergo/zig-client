@@ -294,16 +294,17 @@ pub fn main() !void {
     }
 
     while (!window.shouldClose()) {
-        zglfw.pollEvents();
+        current_time = std.time.microTimestamp() - start_time;
+        if (current_time - last_update >= 7 * std.time.us_per_ms) {
+            zglfw.pollEvents();
 
-        if (tick_frame) {
-            current_time = std.time.microTimestamp() - start_time;
-            if (current_time - last_update >= 7 * std.time.us_per_ms) {
+            if (tick_frame) {
                 const dt = current_time - last_update;
                 map.update(current_time, dt, allocator);
                 try ui.update(current_time, dt, allocator);
-                last_update = current_time;
             }
+
+            last_update = current_time;
         }
     }
 

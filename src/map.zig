@@ -19,6 +19,7 @@ pub const min_attack_mult: f32 = 0.5;
 pub const max_attack_mult: f32 = 2;
 pub const max_sink_level: u32 = 18;
 const tick_ms = 200.0;
+const object_attack_period: u32 = 300 * std.time.us_per_ms;
 
 pub const Square = struct {
     tile_type: u16 = 0xFFFF,
@@ -243,6 +244,8 @@ pub const GameObject = struct {
     show_name: bool = false,
     hit_sound: []const u8 = &[0]u8{},
     death_sound: []const u8 = &[0]u8{},
+    action: u8 = 0,
+    float_period: f32 = 0.0,
 
     pub fn getSquare(self: GameObject) Square {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -354,6 +357,62 @@ pub const GameObject = struct {
 
     pub fn update(self: *GameObject, time: i64, dt: f32) void {
         _ = dt;
+
+        // todo: clean this up, reuse
+        const normal_time = main.current_time;
+        if (normal_time < self.attack_start + object_attack_period) {
+            // if(!bo.dont_face_attacks){
+            self.facing = self.attack_angle;
+            // }
+            const time_dt: f32 = @floatFromInt(normal_time - self.attack_start);
+            self.float_period = @mod(time_dt, object_attack_period) / object_attack_period;
+            self.action = assets.attack_action;
+        } else if (!std.math.isNan(self.move_angle)) {
+            var move_period = 0.5 / utils.distSqr(self.tick_x, self.tick_y, self.target_x, self.target_y);
+            move_period += 400 - @mod(move_period, 400);
+            const float_time = @as(f32, @floatFromInt(normal_time)) / std.time.us_per_ms;
+            self.float_period = @mod(float_time, move_period) / move_period;
+            // if(!bo.dont_face_attacks){
+            self.facing = self.move_angle;
+            // }
+            self.action = assets.walk_action;
+        } else {
+            self.float_period = 0;
+            self.action = assets.stand_action;
+        }
+
+        var screen_pos = camera.rotateAroundCamera(self.x, self.y);
+        const size = camera.size_mult * camera.scale * self.size;
+
+        const angle = utils.halfBound(self.facing);
+        const pi_over_4 = std.math.pi / 4.0;
+        const angle_div = @divFloor(angle, pi_over_4);
+
+        var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(angle_div + 4)) % 8;
+
+        sec = switch (sec) {
+            0, 1, 6, 7 => assets.left_dir,
+            2, 3, 4, 5 => assets.right_dir,
+            else => unreachable,
+        };
+
+        // 2 frames so multiply by 2
+        const capped_period = @max(0, @min(0.99999, self.float_period)) * 2.0; // 2 walk cycle frames so * 2
+        const anim_idx: usize = @intFromFloat(capped_period);
+
+        var atlas_data = self.atlas_data;
+        if (self.anim_data) |anim_data| {
+            atlas_data = switch (self.action) {
+                assets.walk_action => anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
+                assets.attack_action => anim_data.attack_anims[sec][anim_idx],
+                assets.stand_action => anim_data.walk_anims[sec][0],
+                else => unreachable,
+            };
+        }
+
+        const h = atlas_data.texHRaw() * size;
+        self.screen_y = screen_pos.y + self.z * -camera.px_per_tile - (h - size * assets.padding) - 10;
+        self.screen_x = screen_pos.x;
 
         moveBlock: {
             if (self.target_x > 0 and self.target_y > 0) {
@@ -480,6 +539,8 @@ pub const Player = struct {
     sink_level: u16 = 0,
     hit_sound: []const u8 = &[0]u8{},
     death_sound: []const u8 = &[0]u8{},
+    action: u8 = 0,
+    float_period: f32 = 0.0,
 
     pub fn getSquare(self: Player) Square {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -614,6 +675,57 @@ pub const Player = struct {
     }
 
     pub fn update(self: *Player, time: i64, dt: f32) void {
+        // todo: clean this up, reuse
+        const normal_time = main.current_time;
+        if (normal_time < self.attack_start + self.attack_period) {
+            self.facing = self.attack_angle_raw;
+            const time_dt: f32 = @floatFromInt(normal_time - self.attack_start);
+            self.float_period = @as(f32, @floatFromInt(self.attack_period));
+            self.float_period = @mod(time_dt, self.float_period) / self.float_period;
+            self.action = assets.attack_action;
+        } else if (!std.math.isNan(self.move_angle)) {
+            const walk_period = 3.5 * std.time.us_per_ms / self.moveSpeedMultiplier();
+            const float_time: f32 = @floatFromInt(normal_time);
+            self.float_period = @mod(float_time, walk_period) / walk_period;
+            self.facing = self.move_angle_camera_included;
+            self.action = assets.walk_action;
+        } else {
+            self.float_period = 0;
+            self.action = assets.stand_action;
+        }
+
+        const size = camera.size_mult * camera.scale * self.size;
+
+        const angle = utils.halfBound(self.facing - camera.angle_unbound);
+        const pi_over_4 = std.math.pi / 4.0;
+        const angle_div = (angle / pi_over_4) + 4;
+
+        var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(@round(angle_div))) % 8;
+
+        sec = switch (sec) {
+            0, 7 => assets.left_dir,
+            1, 2 => assets.up_dir,
+            3, 4 => assets.right_dir,
+            5, 6 => assets.down_dir,
+            else => unreachable,
+        };
+
+        const capped_period = @max(0, @min(0.99999, self.float_period)) * 2.0; // 2 walk cycle frames so * 2
+        const anim_idx: usize = @intFromFloat(capped_period);
+
+        var atlas_data = switch (self.action) {
+            assets.walk_action => self.anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
+            assets.attack_action => self.anim_data.attack_anims[sec][anim_idx],
+            assets.stand_action => self.anim_data.walk_anims[sec][0],
+            else => unreachable,
+        };
+
+        var screen_pos = camera.rotateAroundCamera(self.x, self.y);
+        const h = atlas_data.texHRaw() * size;
+
+        self.screen_y = screen_pos.y + self.z * -camera.px_per_tile - (h - size * assets.padding) - 30; // account for name
+        self.screen_x = screen_pos.x;
+
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
@@ -1054,6 +1166,14 @@ pub const Projectile = struct {
         const last_y = self.y;
 
         self.updatePosition(elapsed, dt);
+        if (last_x == 0 and last_y == 0) {
+            self.visual_angle = self.angle;
+        } else {
+            const y_dt: f32 = self.y - last_y;
+            const x_dt: f32 = self.x - last_x;
+            self.visual_angle = std.math.atan2(f32, y_dt, x_dt);
+        }
+
         const floor_y: u32 = @intFromFloat(@floor(self.y));
         const floor_x: u32 = @intFromFloat(@floor(self.x));
         if (validPos(floor_x, floor_y)) {
@@ -1064,14 +1184,6 @@ pub const Projectile = struct {
                 // };
                 return false;
             }
-        }
-
-        if (last_x == 0 and last_y == 0) {
-            self.visual_angle = self.angle;
-        } else {
-            const y_dt: f32 = self.y - last_y;
-            const x_dt: f32 = self.x - last_x;
-            self.visual_angle = std.math.atan2(f32, y_dt, x_dt);
         }
 
         if (self.damage_players) {
@@ -1101,7 +1213,7 @@ pub const Projectile = struct {
                         .start_time = time,
                         .text_data = text_data,
                         .initial_size = 22,
-                    }}) catch |e| {
+                    } }) catch |e| {
                         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
                     };
                 }
@@ -1144,7 +1256,7 @@ pub const Projectile = struct {
                         .start_time = time,
                         .text_data = text_data,
                         .initial_size = 22,
-                    }}) catch |e| {
+                    } }) catch |e| {
                         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage, e });
                     };
                 }
@@ -1399,6 +1511,9 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     const ms_time = @divFloor(time, std.time.us_per_ms);
     const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
 
+    var cam_x: f32 = 0.0;
+    var cam_y: f32 = 0.0;
+
     var interactive_set = false;
     for (0..entities.capacity) |i| {
         var en = entities._items[i];
@@ -1406,6 +1521,8 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
             en.player.update(ms_time, ms_dt);
             if (en.player.obj_id == local_player_id) {
                 camera.update(en.player.x, en.player.y, ms_dt, input.rotate);
+                cam_x = en.player.x;
+                cam_y = en.player.y;
                 if (input.attacking) {
                     const y: f32 = @floatCast(input.mouse_y);
                     const x: f32 = @floatCast(input.mouse_x);
@@ -1416,8 +1533,8 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
         } else if (en == .object) {
             const is_container = en.object.class == .container;
             if (!interactive_set and (en.object.class == .portal or is_container)) {
-                const dt_x = camera.x - en.object.x;
-                const dt_y = camera.y - en.object.y;
+                const dt_x = cam_x - en.object.x;
+                const dt_y = cam_y - en.object.y;
                 if (dt_x * dt_x + dt_y * dt_y < 1) {
                     interactive_id.store(en.object.obj_id, .Release);
                     interactive_type.store(en.object.class, .Release);

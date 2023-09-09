@@ -12,8 +12,6 @@ const ui = @import("ui/ui.zig");
 const main = @import("main.zig");
 const zgui = @import("zgui");
 
-pub const object_attack_period: u32 = 300 * std.time.us_per_ms;
-
 pub const BaseVertexData = extern struct {
     pos: [2]f32,
     uv: [2]f32,
@@ -69,11 +67,10 @@ pub var ground_bind_group: zgpu.BindGroupHandle = undefined;
 pub var light_pipeline: zgpu.RenderPipelineHandle = .{};
 pub var light_bind_group: zgpu.BindGroupHandle = undefined;
 
-pub var base_vb: zgpu.BufferHandle = undefined;
-pub var ground_vb: zgpu.BufferHandle = undefined;
-pub var light_vb: zgpu.BufferHandle = undefined;
-
-pub var index_buffer: zgpu.BufferHandle = undefined;
+pub var base_vb: zgpu.wgpu.Buffer = undefined;
+pub var ground_vb: zgpu.wgpu.Buffer = undefined;
+pub var light_vb: zgpu.wgpu.Buffer = undefined;
+pub var index_buffer: zgpu.wgpu.Buffer = undefined;
 
 pub var base_vert_data: [40000]BaseVertexData = undefined;
 pub var ground_vert_data: [40000]GroundVertexData = undefined;
@@ -98,12 +95,12 @@ pub var light_texture_view: zgpu.TextureViewHandle = undefined;
 pub var sampler: zgpu.SamplerHandle = undefined;
 pub var linear_sampler: zgpu.SamplerHandle = undefined;
 
-fn createVertexBuffer(gctx: *zgpu.GraphicsContext, comptime T: type, vb_handle: *zgpu.BufferHandle, vb: []const T) void {
-    vb_handle.* = gctx.createBuffer(.{
+fn createVertexBuffer(gctx: *zgpu.GraphicsContext, comptime T: type, vb: *zgpu.wgpu.Buffer, buffer: []const T) void {
+    vb.* = gctx.device.createBuffer(.{
         .usage = .{ .copy_dst = true, .vertex = true },
-        .size = vb.len * @sizeOf(T),
+        .size = buffer.len * @sizeOf(T),
     });
-    gctx.queue.writeBuffer(gctx.lookupResource(vb_handle.*).?, 0, T, vb);
+    gctx.queue.writeBuffer(vb.*, 0, T, buffer);
 }
 
 fn createTexture(gctx: *zgpu.GraphicsContext, tex: *zgpu.TextureHandle, view: *zgpu.TextureViewHandle, img: zstbi.Image) void {
@@ -151,11 +148,11 @@ pub fn init(gctx: *zgpu.GraphicsContext) void {
         index_data[actual_i + 4] = 2 + i_4;
         index_data[actual_i + 5] = 3 + i_4;
     }
-    index_buffer = gctx.createBuffer(.{
+    index_buffer = gctx.device.createBuffer(.{
         .usage = .{ .copy_dst = true, .index = true },
         .size = index_data.len * @sizeOf(u16),
     });
-    gctx.queue.writeBuffer(gctx.lookupResource(index_buffer).?, 0, u16, index_data[0..]);
+    gctx.queue.writeBuffer(index_buffer, 0, u16, index_data[0..]);
 
     createTexture(gctx, &medium_text_texture, &medium_text_texture_view, assets.medium_atlas);
     createTexture(gctx, &medium_italic_text_texture, &medium_italic_text_texture_view, assets.medium_italic_atlas);
@@ -1112,16 +1109,16 @@ fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: i32, intensity: f3
 inline fn endDraw(
     encoder: zgpu.wgpu.CommandEncoder,
     render_pass_info: zgpu.wgpu.RenderPassDescriptor,
-    vb_info: zgpu.BufferInfo,
-    ib_info: zgpu.BufferInfo,
+    vert_buffer: zgpu.wgpu.Buffer,
     pipeline: zgpu.wgpu.RenderPipeline,
     bind_group: zgpu.wgpu.BindGroup,
+    verts: u32,
     indices: u32,
     offsets: ?[]const u32,
 ) void {
     const pass = encoder.beginRenderPass(render_pass_info);
-    pass.setVertexBuffer(0, vb_info.gpuobj.?, 0, vb_info.size);
-    pass.setIndexBuffer(ib_info.gpuobj.?, .uint16, 0, ib_info.size);
+    pass.setVertexBuffer(0, vert_buffer, 0, verts * @sizeOf(f32));
+    pass.setIndexBuffer(index_buffer, .uint16, 0, indices * @sizeOf(u16));
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bind_group, offsets);
     pass.drawIndexed(indices, 1, 0, 0, 0);
@@ -1130,16 +1127,14 @@ inline fn endDraw(
 }
 
 inline fn endBaseDraw(
-    gctx: *zgpu.GraphicsContext,
     load_render_pass_info: zgpu.wgpu.RenderPassDescriptor,
     encoder: zgpu.wgpu.CommandEncoder,
-    vb_info: zgpu.BufferInfo,
-    ib_info: zgpu.BufferInfo,
+    vert_buffer: zgpu.wgpu.Buffer,
     pipeline: zgpu.wgpu.RenderPipeline,
     bind_group: zgpu.wgpu.BindGroup,
 ) void {
     encoder.writeBuffer(
-        gctx.lookupResource(base_vb).?,
+        base_vb,
         0,
         BaseVertexData,
         base_vert_data[0..40000],
@@ -1147,21 +1142,16 @@ inline fn endBaseDraw(
     endDraw(
         encoder,
         load_render_pass_info,
-        vb_info,
-        ib_info,
+        vert_buffer,
         pipeline,
         bind_group,
+        40000,
         60000,
         null,
     );
 }
 
 pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.TextureView, encoder: zgpu.wgpu.CommandEncoder) void {
-    while (!map.object_lock.tryLock()) {}
-    defer map.object_lock.unlock();
-
-    const ib_info = gctx.lookupResourceInfo(index_buffer) orelse return;
-
     const clear_color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
         .view = back_buffer,
         .load_op = .clear,
@@ -1184,13 +1174,15 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
     var light_idx: u16 = 0;
 
-    const no_in_game_render = !main.tick_frame or !map.validPos(@intFromFloat(camera.x), @intFromFloat(camera.y));
+    const cam_x = camera.x.load(.Acquire);
+    const cam_y = camera.y.load(.Acquire);
+
+    const no_in_game_render = !main.tick_frame or !map.validPos(@intFromFloat(cam_x), @intFromFloat(cam_y));
     inGamePass: {
         if (no_in_game_render)
             break :inGamePass;
 
         groundPass: {
-            const vb_info = gctx.lookupResourceInfo(ground_vb) orelse break :groundPass;
             const pipeline = gctx.lookupResource(ground_pipeline) orelse break :groundPass;
             const bind_group = gctx.lookupResource(ground_bind_group) orelse break :groundPass;
 
@@ -1206,7 +1198,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 for (camera.min_x..camera.max_x) |x| {
                     if (square_idx == 40000) {
                         encoder.writeBuffer(
-                            gctx.lookupResource(ground_vb).?,
+                            ground_vb,
                             0,
                             GroundVertexData,
                             ground_vert_data[0..40000],
@@ -1214,10 +1206,10 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         endDraw(
                             encoder,
                             if (first) clear_render_pass_info else load_render_pass_info,
-                            vb_info,
-                            ib_info,
+                            ground_vb,
                             pipeline,
                             bind_group,
+                            40000,
                             60000,
                             &.{mem.offset},
                         );
@@ -1225,8 +1217,8 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         first = false;
                     }
 
-                    const dx = camera.x - @as(f32, @floatFromInt(x)) - 0.5;
-                    const dy = camera.y - @as(f32, @floatFromInt(y)) - 0.5;
+                    const dx = cam_x - @as(f32, @floatFromInt(x)) - 0.5;
+                    const dy = cam_y - @as(f32, @floatFromInt(y)) - 0.5;
                     if (dx * dx + dy * dy > camera.max_dist_sq)
                         continue;
 
@@ -1301,7 +1293,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
             if (square_idx > 0) {
                 encoder.writeBuffer(
-                    gctx.lookupResource(ground_vb).?,
+                    ground_vb,
                     0,
                     GroundVertexData,
                     ground_vert_data[0..square_idx],
@@ -1309,10 +1301,10 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 endDraw(
                     encoder,
                     if (first) clear_render_pass_info else load_render_pass_info,
-                    vb_info,
-                    ib_info,
+                    ground_vb,
                     pipeline,
                     bind_group,
+                    square_idx,
                     @divFloor(square_idx, 4) * 6,
                     &.{mem.offset},
                 );
@@ -1323,36 +1315,21 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             if (map.entities.capacity <= 0)
                 break :normalPass;
 
-            const vb_info = gctx.lookupResourceInfo(base_vb) orelse break :normalPass;
             const pipeline = gctx.lookupResource(base_pipeline) orelse break :normalPass;
             const bind_group = gctx.lookupResource(base_bind_group) orelse break :normalPass;
 
+            while (!map.object_lock.tryLockShared()) {}
+            defer map.object_lock.unlockShared();
+
             var idx: u16 = 0;
-            for (map.entities.items()) |*en| {
-                switch (en.*) {
-                    .player => |*player| {
+            for (map.entities.items()) |en| {
+                switch (en) {
+                    .player => |player| {
                         if (!camera.visibleInCamera(player.x, player.y)) {
                             continue;
                         }
 
                         const size = camera.size_mult * camera.scale * player.size;
-
-                        var action: u8 = assets.stand_action;
-                        var float_period: f32 = 0.0;
-
-                        if (time < player.attack_start + player.attack_period) {
-                            player.facing = player.attack_angle_raw;
-                            const time_dt: f32 = @floatFromInt(time - player.attack_start);
-                            float_period = @as(f32, @floatFromInt(player.attack_period));
-                            float_period = @mod(time_dt, float_period) / float_period;
-                            action = assets.attack_action;
-                        } else if (!std.math.isNan(player.move_angle)) {
-                            const walk_period = 3.5 * std.time.us_per_ms / player.moveSpeedMultiplier();
-                            const float_time: f32 = @floatFromInt(time);
-                            float_period = @mod(float_time, walk_period) / walk_period;
-                            player.facing = player.move_angle_camera_included;
-                            action = assets.walk_action;
-                        }
 
                         const angle = utils.halfBound(player.facing - camera.angle_unbound);
                         const pi_over_4 = std.math.pi / 4.0;
@@ -1368,10 +1345,10 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             else => unreachable,
                         };
 
-                        const capped_period = @max(0, @min(0.99999, float_period)) * 2.0; // 2 walk cycle frames so * 2
+                        const capped_period = @max(0, @min(0.99999, player.float_period)) * 2.0; // 2 walk cycle frames so * 2
                         const anim_idx: usize = @intFromFloat(capped_period);
 
-                        var atlas_data = switch (action) {
+                        var atlas_data = switch (player.action) {
                             assets.walk_action => player.anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
                             assets.attack_action => player.anim_data.attack_anims[sec][anim_idx],
                             assets.stand_action => player.anim_data.walk_anims[sec][0],
@@ -1379,7 +1356,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         };
 
                         var x_offset: f32 = 0.0;
-                        if (action == assets.attack_action and anim_idx == 1) {
+                        if (player.action == assets.attack_action and anim_idx == 1) {
                             const w = atlas_data.texWRaw() * size;
                             if (sec == assets.left_dir) {
                                 x_offset = -assets.padding * size;
@@ -1406,9 +1383,6 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         var alpha_mult: f32 = 1.0;
                         if (player.condition.invisible)
                             alpha_mult = 0.6;
-
-                        player.screen_y = screen_pos.y - 30; // account for name
-                        player.screen_x = screen_pos.x - x_offset;
 
                         if (settings.enable_lights and player.light_color > 0) {
                             drawLight(
@@ -1454,7 +1428,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         idx += 4;
 
                         if (idx == 40000) {
-                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            endBaseDraw(
+                                load_render_pass_info,
+                                encoder,
+                                base_vb,
+                                pipeline,
+                                bind_group,
+                            );
                             idx = 0;
                         }
 
@@ -1480,7 +1460,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             idx += 4;
 
                             if (idx == 40000) {
-                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                endBaseDraw(
+                                    load_render_pass_info,
+                                    encoder,
+                                    base_vb,
+                                    pipeline,
+                                    bind_group,
+                                );
                                 idx = 0;
                             }
 
@@ -1503,7 +1489,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             idx += 4;
 
                             if (idx == 40000) {
-                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                endBaseDraw(
+                                    load_render_pass_info,
+                                    encoder,
+                                    base_vb,
+                                    pipeline,
+                                    bind_group,
+                                );
                                 idx = 0;
                             }
 
@@ -1527,7 +1519,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             idx += 4;
 
                             if (idx == 40000) {
-                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                endBaseDraw(
+                                    load_render_pass_info,
+                                    encoder,
+                                    base_vb,
+                                    pipeline,
+                                    bind_group,
+                                );
                                 idx = 0;
                             }
 
@@ -1550,14 +1548,20 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             idx += 4;
 
                             if (idx == 40000) {
-                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                endBaseDraw(
+                                    load_render_pass_info,
+                                    encoder,
+                                    base_vb,
+                                    pipeline,
+                                    bind_group,
+                                );
                                 idx = 0;
                             }
 
                             y_pos += mp_bar_h - pad_scale_bar;
                         }
                     },
-                    .object => |*bo| {
+                    .object => |bo| {
                         if (!camera.visibleInCamera(bo.x, bo.y)) {
                             continue;
                         }
@@ -1580,7 +1584,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             idx += 4;
 
                             if (idx == 40000) {
-                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                endBaseDraw(
+                                    load_render_pass_info,
+                                    encoder,
+                                    base_vb,
+                                    pipeline,
+                                    bind_group,
+                                );
                                 idx = 0;
                             }
 
@@ -1590,27 +1600,6 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         if (bo.is_wall) {
                             idx += drawWall(idx, bo.x, bo.y, bo.atlas_data, bo.top_atlas_data);
                             continue;
-                        }
-
-                        var action: u8 = assets.stand_action;
-                        var float_period: f32 = 0.0;
-
-                        if (time < bo.attack_start + object_attack_period) {
-                            // if(!bo.dont_face_attacks){
-                            bo.facing = bo.attack_angle;
-                            // }
-                            const time_dt: f32 = @floatFromInt(time - bo.attack_start);
-                            float_period = @mod(time_dt, object_attack_period) / object_attack_period;
-                            action = assets.attack_action;
-                        } else if (!std.math.isNan(bo.move_angle)) {
-                            var move_period = 0.5 / utils.distSqr(bo.tick_x, bo.tick_y, bo.target_x, bo.target_y);
-                            move_period += 400 - @mod(move_period, 400);
-                            const float_time = @as(f32, @floatFromInt(time)) / std.time.us_per_ms;
-                            float_period = @mod(float_time, move_period) / move_period;
-                            // if(!bo.dont_face_attacks){
-                            bo.facing = bo.move_angle;
-                            // }
-                            action = assets.walk_action;
                         }
 
                         const angle = utils.halfBound(bo.facing);
@@ -1626,20 +1615,20 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         };
 
                         // 2 frames so multiply by 2
-                        const capped_period = @max(0, @min(0.99999, float_period)) * 2.0; // 2 walk cycle frames so * 2
+                        const capped_period = @max(0, @min(0.99999, bo.float_period)) * 2.0; // 2 walk cycle frames so * 2
                         const anim_idx: usize = @intFromFloat(capped_period);
 
                         var atlas_data = bo.atlas_data;
                         var x_offset: f32 = 0.0;
                         if (bo.anim_data) |anim_data| {
-                            atlas_data = switch (action) {
+                            atlas_data = switch (bo.action) {
                                 assets.walk_action => anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
                                 assets.attack_action => anim_data.attack_anims[sec][anim_idx],
                                 assets.stand_action => anim_data.walk_anims[sec][0],
                                 else => unreachable,
                             };
 
-                            if (action == assets.attack_action and anim_idx == 1) {
+                            if (bo.action == assets.attack_action and anim_idx == 1) {
                                 const w = atlas_data.texWRaw() * size;
                                 if (sec == assets.left_dir) {
                                     x_offset = -assets.padding * size;
@@ -1665,9 +1654,6 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         var alpha_mult: f32 = 1.0;
                         if (bo.condition.invisible)
                             alpha_mult = 0.6;
-
-                        bo.screen_y = screen_pos.y - 10;
-                        bo.screen_x = screen_pos.x - x_offset;
 
                         if (settings.enable_lights and bo.light_color > 0) {
                             drawLight(
@@ -1728,7 +1714,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         idx += 4;
 
                         if (idx == 40000) {
-                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            endBaseDraw(
+                                load_render_pass_info,
+                                encoder,
+                                base_vb,
+                                pipeline,
+                                bind_group,
+                            );
                             idx = 0;
                         }
 
@@ -1756,7 +1748,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             idx += 4;
 
                             if (idx == 40000) {
-                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                endBaseDraw(
+                                    load_render_pass_info,
+                                    encoder,
+                                    base_vb,
+                                    pipeline,
+                                    bind_group,
+                                );
                                 idx = 0;
                             }
 
@@ -1778,7 +1776,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             idx += 4;
 
                             if (idx == 40000) {
-                                endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                                endBaseDraw(
+                                    load_render_pass_info,
+                                    encoder,
+                                    base_vb,
+                                    pipeline,
+                                    bind_group,
+                                );
                                 idx = 0;
                             }
 
@@ -1811,7 +1815,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         idx += 4;
 
                         if (idx == 40000) {
-                            endBaseDraw(gctx, load_render_pass_info, encoder, vb_info, ib_info, pipeline, bind_group);
+                            endBaseDraw(
+                                load_render_pass_info,
+                                encoder,
+                                base_vb,
+                                pipeline,
+                                bind_group,
+                            );
                             idx = 0;
                         }
                     },
@@ -1832,7 +1842,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             }
 
             encoder.writeBuffer(
-                gctx.lookupResource(base_vb).?,
+                base_vb,
                 0,
                 BaseVertexData,
                 base_vert_data[0..idx],
@@ -1840,10 +1850,10 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             endDraw(
                 encoder,
                 load_render_pass_info,
-                vb_info,
-                ib_info,
+                base_vb,
                 pipeline,
                 bind_group,
+                idx,
                 @divFloor(idx, 4) * 6,
                 null,
             );
@@ -1851,12 +1861,11 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
         if (settings.enable_lights and light_idx != 0) {
             lightPass: {
-                const vb_info = gctx.lookupResourceInfo(light_vb) orelse break :lightPass;
                 const pipeline = gctx.lookupResource(light_pipeline) orelse break :lightPass;
                 const bind_group = gctx.lookupResource(light_bind_group) orelse break :lightPass;
 
                 encoder.writeBuffer(
-                    gctx.lookupResource(light_vb).?,
+                    light_vb,
                     0,
                     LightVertexData,
                     light_vert_data[0..light_idx],
@@ -1864,10 +1873,10 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 endDraw(
                     encoder,
                     load_render_pass_info,
-                    vb_info,
-                    ib_info,
+                    light_vb,
                     pipeline,
                     bind_group,
+                    light_idx,
                     @divFloor(light_idx, 4) * 6,
                     null,
                 );
@@ -1876,7 +1885,6 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     }
 
     uiPass: {
-        const vb_info = gctx.lookupResourceInfo(base_vb) orelse break :uiPass;
         const pipeline = gctx.lookupResource(base_pipeline) orelse break :uiPass;
         const bind_group = gctx.lookupResource(base_bind_group) orelse break :uiPass;
 
@@ -1890,11 +1898,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     if (ui_idx >= 40000 - text.text_data.text.len * 4) {
                         endBaseDraw(
-                            gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
                             encoder,
-                            vb_info,
-                            ib_info,
+                            base_vb,
                             pipeline,
                             bind_group,
                         );
@@ -1925,11 +1931,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     if (ui_idx == 40000) {
                         endBaseDraw(
-                            gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
                             encoder,
-                            vb_info,
-                            ib_info,
+                            base_vb,
                             pipeline,
                             bind_group,
                         );
@@ -1939,11 +1943,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     if (ui_idx >= 40000 - balloon.text_data.text.len * 4) {
                         endBaseDraw(
-                            gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
                             encoder,
-                            vb_info,
-                            ib_info,
+                            base_vb,
                             pipeline,
                             bind_group,
                         );
@@ -1967,11 +1969,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         .nine_slice => |nine_slice| {
                             if (ui_idx >= 40000 - 9 * 4) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2003,11 +2003,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             if (ui_idx == 40000) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2025,11 +2023,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         .nine_slice => |nine_slice| {
                             if (ui_idx >= 40000 - 9 * 4) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2054,11 +2050,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             if (ui_idx == 40000) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2076,11 +2070,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             if (ui_idx >= 40000 - text_len * 4) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2097,11 +2089,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             if (ui_idx == 40000) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2123,11 +2113,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             h = nine_slice.h;
                             if (ui_idx >= 40000 - 9 * 4) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2160,11 +2148,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             if (ui_idx == 40000) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2176,11 +2162,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     if (ui_idx >= 40000 - bar.text_data.text.len * 4) {
                         endBaseDraw(
-                            gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
                             encoder,
-                            vb_info,
-                            ib_info,
+                            base_vb,
                             pipeline,
                             bind_group,
                         );
@@ -2197,11 +2181,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     if (ui_idx == 40000) {
                         endBaseDraw(
-                            gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
                             encoder,
-                            vb_info,
-                            ib_info,
+                            base_vb,
                             pipeline,
                             bind_group,
                         );
@@ -2222,11 +2204,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             h = nine_slice.h;
                             if (ui_idx >= 40000 - 9 * 4) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2253,11 +2233,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             if (ui_idx == 40000) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2270,11 +2248,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     if (button.text_data) |text_data| {
                         if (ui_idx >= 40000 - text_data.text.len * 4) {
                             endBaseDraw(
-                                gctx,
                                 if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                 encoder,
-                                vb_info,
-                                ib_info,
+                                base_vb,
                                 pipeline,
                                 bind_group,
                             );
@@ -2291,11 +2267,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                         if (ui_idx == 40000) {
                             endBaseDraw(
-                                gctx,
                                 if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                 encoder,
-                                vb_info,
-                                ib_info,
+                                base_vb,
                                 pipeline,
                                 bind_group,
                             );
@@ -2317,11 +2291,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             h = nine_slice.h;
                             if (ui_idx >= 40000 - 9 * 4) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2348,11 +2320,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             if (ui_idx == 40000) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2365,11 +2335,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     if (char_box.text_data) |text_data| {
                         if (ui_idx >= 40000 - text_data.text.len * 4) {
                             endBaseDraw(
-                                gctx,
                                 if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                 encoder,
-                                vb_info,
-                                ib_info,
+                                base_vb,
                                 pipeline,
                                 bind_group,
                             );
@@ -2386,11 +2354,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                         if (ui_idx == 40000) {
                             endBaseDraw(
-                                gctx,
                                 if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                 encoder,
-                                vb_info,
-                                ib_info,
+                                base_vb,
                                 pipeline,
                                 bind_group,
                             );
@@ -2405,11 +2371,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     if (ui_idx >= 40000 - text.text_data.text.len * 4) {
                         endBaseDraw(
-                            gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
                             encoder,
-                            vb_info,
-                            ib_info,
+                            base_vb,
                             pipeline,
                             bind_group,
                         );
@@ -2426,11 +2390,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     if (ui_idx == 40000) {
                         endBaseDraw(
-                            gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
                             encoder,
-                            vb_info,
-                            ib_info,
+                            base_vb,
                             pipeline,
                             bind_group,
                         );
@@ -2451,11 +2413,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             h = nine_slice.h;
                             if (ui_idx >= 40000 - 9 * 4) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2482,11 +2442,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             if (ui_idx == 40000) {
                                 endBaseDraw(
-                                    gctx,
                                     if (needs_clear) clear_render_pass_info else load_render_pass_info,
                                     encoder,
-                                    vb_info,
-                                    ib_info,
+                                    base_vb,
                                     pipeline,
                                     bind_group,
                                 );
@@ -2498,11 +2456,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     if (ui_idx >= 40000 - input_field.text_data.text.len * 4) {
                         endBaseDraw(
-                            gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
                             encoder,
-                            vb_info,
-                            ib_info,
+                            base_vb,
                             pipeline,
                             bind_group,
                         );
@@ -2519,11 +2475,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                     if (ui_idx == 40000) {
                         endBaseDraw(
-                            gctx,
                             if (needs_clear) clear_render_pass_info else load_render_pass_info,
                             encoder,
-                            vb_info,
-                            ib_info,
+                            base_vb,
                             pipeline,
                             bind_group,
                         );
@@ -2537,7 +2491,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
         if (ui_idx != 0) {
             encoder.writeBuffer(
-                gctx.lookupResource(base_vb).?,
+                base_vb,
                 0,
                 BaseVertexData,
                 base_vert_data[0..ui_idx],
@@ -2545,10 +2499,10 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             endDraw(
                 encoder,
                 if (needs_clear) clear_render_pass_info else load_render_pass_info,
-                vb_info,
-                ib_info,
+                base_vb,
                 pipeline,
                 bind_group,
+                ui_idx,
                 @divFloor(ui_idx, 4) * 6,
                 null,
             );

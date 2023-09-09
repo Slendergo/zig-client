@@ -1,5 +1,6 @@
 const pad = @import("assets.zig").padding;
 const rotate_speed = @import("settings.zig").rotate_speed;
+const std = @import("std");
 const map = @import("map.zig");
 const math = @import("std").math;
 const utils = @import("utils.zig");
@@ -7,9 +8,9 @@ const utils = @import("utils.zig");
 pub const px_per_tile: i16 = 88;
 pub const size_mult: f32 = 8.0;
 
-pub var x: f32 = 0.0;
-pub var y: f32 = 0.0;
-pub var z: f32 = 0.0;
+pub var x = std.atomic.Atomic(f32).init(0.0);
+pub var y = std.atomic.Atomic(f32).init(0.0);
+pub var z = std.atomic.Atomic(f32).init(0.0);
 
 pub var pad_x_cos: f32 = 0.0;
 pub var pad_y_cos: f32 = 0.0;
@@ -40,8 +41,8 @@ pub var clip_scale_y: f32 = 2.0 / 720.0;
 pub var scale: f32 = 1.0;
 
 pub fn update(target_x: f32, target_y: f32, dt: f32, rotate: i8) void {
-    x = target_x;
-    y = target_y;
+    x.store(target_x, .Release);
+    y.store(target_y, .Release);
 
     if (rotate != 0) {
         const float_rotate: f32 = @floatFromInt(rotate);
@@ -104,7 +105,7 @@ pub fn screenToWorld(x_in: f32, y_in: f32) utils.Point {
     const x_div = (x_in - screen_width / 2.0) / px_per_tile * scale;
     const y_div = (y_in - screen_height / 2.0) / px_per_tile * scale;
     return utils.Point{
-        .x = x + x_div * cos_angle - y_div * sin_angle,
-        .y = y + x_div * sin_angle + y_div * cos_angle,
+        .x = x.load(.Acquire) + x_div * cos_angle - y_div * sin_angle,
+        .y = y.load(.Acquire) + x_div * sin_angle + y_div * cos_angle,
     };
 }

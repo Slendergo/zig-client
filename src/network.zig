@@ -604,7 +604,7 @@ fn handleNotification(allocator: std.mem.Allocator) void {
                 .lifetime = 2000,
                 .text_data = text_data,
                 .initial_size = 22,
-            }}) catch unreachable;
+            } }) catch unreachable;
         } else if (en == .object) {
             ui.elements.add(.{ .status = ui.StatusText{
                 .obj_id = en.object.obj_id,
@@ -612,7 +612,7 @@ fn handleNotification(allocator: std.mem.Allocator) void {
                 .lifetime = 2000,
                 .text_data = text_data,
                 .initial_size = 22,
-            }}) catch unreachable;
+            } }) catch unreachable;
         }
     }
 
@@ -746,7 +746,7 @@ fn handleText(allocator: std.mem.Allocator) void {
             },
             .target_id = object_id,
             .start_time = @divFloor(main.current_time, std.time.us_per_ms),
-        }}) catch unreachable;
+        } }) catch unreachable;
     }
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
@@ -978,6 +978,7 @@ fn writeBuffer() void {
         return;
     };
     writer.index = 0;
+    writer.write_lock.unlock();
 }
 
 pub fn sendAcceptTrade(my_offer: []bool, your_offer: []bool) void {

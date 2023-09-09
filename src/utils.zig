@@ -82,8 +82,6 @@ pub const PacketWriter = struct {
                 @memcpy(buf, len_buf[0..2]);
             },
         }
-
-        self.write_lock.unlock();
     }
 
     pub fn write(self: *PacketWriter, value: anytype) void {
