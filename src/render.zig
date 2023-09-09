@@ -1112,11 +1112,12 @@ inline fn endDraw(
     vert_buffer: zgpu.wgpu.Buffer,
     pipeline: zgpu.wgpu.RenderPipeline,
     bind_group: zgpu.wgpu.BindGroup,
+    verts: u64,
     indices: u32,
     offsets: ?[]const u32,
 ) void {
     const pass = encoder.beginRenderPass(render_pass_info);
-    pass.setVertexBuffer(0, vert_buffer, 0, 40000);
+    pass.setVertexBuffer(0, vert_buffer, 0, verts);
     pass.setIndexBuffer(index_buffer, .uint16, 0, indices * @sizeOf(u16));
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bind_group, offsets);
@@ -1144,6 +1145,7 @@ inline fn endBaseDraw(
         vert_buffer,
         pipeline,
         bind_group,
+        40000 * @sizeOf(BaseVertexData),
         60000,
         null,
     );
@@ -1207,6 +1209,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             ground_vb,
                             pipeline,
                             bind_group,
+                            40000 * @sizeOf(GroundVertexData),
                             60000,
                             &.{mem.offset},
                         );
@@ -1301,6 +1304,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     ground_vb,
                     pipeline,
                     bind_group,
+                    @as(u64, square_idx) * @sizeOf(GroundVertexData),
                     @divFloor(square_idx, 4) * 6,
                     &.{mem.offset},
                 );
@@ -1849,6 +1853,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 base_vb,
                 pipeline,
                 bind_group,
+                @as(u64, idx) * @sizeOf(BaseVertexData),
                 @divFloor(idx, 4) * 6,
                 null,
             );
@@ -1871,6 +1876,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     light_vb,
                     pipeline,
                     bind_group,
+                    @as(u64, light_idx) * @sizeOf(LightVertexData),
                     @divFloor(light_idx, 4) * 6,
                     null,
                 );
@@ -2496,6 +2502,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 base_vb,
                 pipeline,
                 bind_group,
+                @as(u64, ui_idx) * @sizeOf(BaseVertexData),
                 @divFloor(ui_idx, 4) * 6,
                 null,
             );
