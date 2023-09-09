@@ -1841,22 +1841,24 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 idx += 4;
             }
 
-            encoder.writeBuffer(
-                base_vb,
-                0,
-                BaseVertexData,
-                base_vert_data[0..idx],
-            );
-            endDraw(
-                encoder,
-                load_render_pass_info,
-                base_vb,
-                pipeline,
-                bind_group,
-                @as(u64, idx) * @sizeOf(BaseVertexData),
-                @divFloor(idx, 4) * 6,
-                null,
-            );
+            if (idx > 0) {
+                encoder.writeBuffer(
+                    base_vb,
+                    0,
+                    BaseVertexData,
+                    base_vert_data[0..idx],
+                );
+                endDraw(
+                    encoder,
+                    load_render_pass_info,
+                    base_vb,
+                    pipeline,
+                    bind_group,
+                    @as(u64, idx) * @sizeOf(BaseVertexData),
+                    @divFloor(idx, 4) * 6,
+                    null,
+                );
+            }
         }
 
         if (settings.enable_lights and light_idx != 0) {
