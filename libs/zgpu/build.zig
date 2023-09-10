@@ -3,6 +3,8 @@ const std = @import("std");
 pub const Options = struct {
     uniforms_buffer_size: u64 = 4 * 1024 * 1024,
     dawn_skip_validation: bool = false,
+    disable_robustness: bool = false,
+    use_d3d12_render_pass: bool = true,
     buffer_pool_size: u32 = 256,
     texture_pool_size: u32 = 256,
     texture_view_pool_size: u32 = 256,
@@ -102,6 +104,8 @@ pub fn package(
     const step = b.addOptions();
     step.addOption(u64, "uniforms_buffer_size", args.options.uniforms_buffer_size);
     step.addOption(bool, "dawn_skip_validation", args.options.dawn_skip_validation);
+    step.addOption(bool, "disable_robustness", args.options.disable_robustness);
+    step.addOption(bool, "use_d3d12_render_pass", args.options.use_d3d12_render_pass);
     step.addOption(u32, "buffer_pool_size", args.options.buffer_pool_size);
     step.addOption(u32, "texture_pool_size", args.options.texture_pool_size);
     step.addOption(u32, "texture_view_pool_size", args.options.texture_view_pool_size);
