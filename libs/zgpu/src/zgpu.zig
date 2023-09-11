@@ -161,7 +161,7 @@ pub const GraphicsContext = struct {
                 }
             }).callback;
 
-            const toggles = [_][*:0]const u8{"skip_validation"};
+            const toggles = [_][*:0]const u8{ "skip_validation", "disable_robustness", "use_d3d12_render_pass" };
             const dawn_toggles = wgpu.DawnTogglesDeviceDescriptor{
                 .chain = .{ .next = null, .struct_type = .dawn_toggles_descriptor },
                 .enabled_toggles_count = toggles.len,
@@ -171,7 +171,7 @@ pub const GraphicsContext = struct {
             var response = Response{};
             adapter.requestDevice(
                 wgpu.DeviceDescriptor{
-                    .next_in_chain = if (zgpu_options.dawn_skip_validation)
+                    .next_in_chain = if (zgpu_options.dawn_skip_validation or zgpu_options.disable_robustness or zgpu_options.use_d3d12_render_pass)
                         @ptrCast(&dawn_toggles)
                     else
                         null,
