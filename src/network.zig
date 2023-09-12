@@ -813,6 +813,7 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
         for (drops) |drop| {
             if (map.removeEntity(drop)) |en| {
                 map.disposeEntity(allocator, en);
+                continue;
             }
 
             std.log.err("Could not remove object with id {d}", .{drop});
