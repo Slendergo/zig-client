@@ -209,6 +209,8 @@ pub const GameObject = struct {
     action: u8 = 0,
     float_period: f32 = 0.0,
     full_occupy: bool = false,
+    occupy_square: bool = false,
+    enemy_occupy_square: bool = false,
 
     pub fn getSquare(self: GameObject) Square {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -240,6 +242,8 @@ pub const GameObject = struct {
             self.hit_sound = props.hit_sound;
             self.death_sound = props.death_sound;
             self.full_occupy = props.full_occupy;
+            self.occupy_square = props.occupy_square;
+            self.enemy_occupy_square = props.enemy_occupy_square;
 
             if (props.draw_on_ground)
                 self.atlas_data.removePadding();
@@ -851,8 +855,10 @@ pub const Player = struct {
     }
 
     fn isValidPosition(x: f32, y: f32) bool {
-        if (isWalkable(x, y))
+        //if(square != map_square and map_square != null and !isWalkable(x, y)) // way flash does it so we dont do a check if were not on a new tile
+        if (!isWalkable(x, y)) {
             return false;
+        }
 
         const x_frac = x - @floor(x);
         const y_frac = y - @floor(y);
@@ -909,7 +915,10 @@ pub const Player = struct {
         const floor_x: u32 = @intFromFloat(@floor(x));
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-        return square.obj != null;
+        if (square.props) |props| {
+            return !props.no_walk and (square.obj == null or !square.obj.?.occupy_square);
+        }
+        return false;
     }
 
     fn isFullOccupy(x: f32, y: f32) bool {
@@ -1579,7 +1588,6 @@ pub fn removeEntity(obj_id: i32) ?Entity {
             },
         }
     }
-
     return null;
 }
 

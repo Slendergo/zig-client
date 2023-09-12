@@ -269,6 +269,7 @@ pub const ObjProps = struct {
     draw_under: bool,
     occupy_square: bool,
     full_occupy: bool,
+    enemy_occupy_square: bool,
     static: bool,
     no_mini_map: bool,
     ground_damage_immune: bool,
@@ -316,6 +317,12 @@ pub const ObjProps = struct {
             try proj_list.add(try ProjProps.parse(proj_node, allocator));
 
         const float_node = node.findChild("Float");
+
+        var o = node.elementExists("OccupySquare");
+        if (o) {
+            std.log.info("Found: {s}", .{obj_id});
+        }
+
         return ObjProps{
             .obj_type = try node.getAttributeInt("type", u16, 0),
             .obj_id = obj_id,
@@ -327,6 +334,7 @@ pub const ObjProps = struct {
             .draw_under = node.elementExists("DrawUnder"),
             .occupy_square = node.elementExists("OccupySquare"),
             .full_occupy = node.elementExists("FullOccupy"),
+            .enemy_occupy_square = node.elementExists("EnemyOccupySquare"),
             .static = node.elementExists("Static"),
             .no_mini_map = node.elementExists("NoMiniMap"),
             .ground_damage_immune = node.elementExists("ProtectFromGroundDamage"),
