@@ -1513,22 +1513,46 @@ pub fn removeEntity(obj_id: i32) ?Entity {
 }
 
 pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, piercing: bool) i32 {
-    _ = player_id;
     if (findEntityConst(object_id)) |en| {
         if (en == .object) {
             const object = en.object;
             var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
 
-            if (!piercing)
-                damage -= @intCast(object.defense);
+            if (findEntityConst(player_id)) |e| {
+                if (e == .player) {
+                    const player = e.player;
+                    damage *= attackMultiplier(player);
+                }
+            }
 
-            // todo player buffs and mult
-            // if (findPlayer(player_id)) |player| {
-            // }
+            if (!piercing) {
+                // 0.25
+                const limit: u32 = (damage / 100) * 25;
+                const def: u32 = @intCast(object.defense);
+
+                if (damage - def < limit) {
+                    damage = limit;
+                } else {
+                    damage -= def;
+                }
+            }
             return @intCast(damage);
         }
     }
     return -1;
+}
+
+pub fn attackMultiplier(player: Player) u32 {
+    if (player.condition.weak) {
+        return 0;
+    }
+
+    var mult = min_attack_mult + @as(f32, @floatFromInt(player.attack)) / 75.0 * (max_attack_mult - min_attack_mult);
+    if (player.condition.damaging) {
+        mult *= 1.5;
+    }
+
+    return @intFromFloat(mult);
 }
 
 pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
