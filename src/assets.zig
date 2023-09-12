@@ -337,15 +337,17 @@ fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, co
                 const src_idx = ((cur_src_y + row_count) * img.width + cur_src_x + row_idx) * 4;
                 @memcpy(atlas.data[atlas_idx .. atlas_idx + 4], img.data[src_idx .. src_idx + 4]);
 
-                const rgba = RGBA{
-                    .r = img.data[src_idx],
-                    .g = img.data[src_idx + 1],
-                    .b = img.data[src_idx + 2],
-                };
-                if (color_counts.get(rgba)) |count| {
-                    try color_counts.put(rgba, count + 1);
-                } else {
-                    try color_counts.put(rgba, 1);
+                if (img.data[src_idx + 3] > 0) {
+                    const rgba = RGBA{
+                        .r = img.data[src_idx],
+                        .g = img.data[src_idx + 1],
+                        .b = img.data[src_idx + 2],
+                    };
+                    if (color_counts.get(rgba)) |count| {
+                        try color_counts.put(rgba, count + 1);
+                    } else {
+                        try color_counts.put(rgba, 1);
+                    }
                 }
             }
 
