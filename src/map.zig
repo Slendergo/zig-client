@@ -153,6 +153,7 @@ pub const Square = struct {
 pub const GameObject = struct {
     obj_id: i32 = -1,
     obj_type: u16 = 0,
+    dead: bool = false,
     x: f32 = 0.0,
     y: f32 = 0.0,
     z: f32 = 0.0,
@@ -332,6 +333,24 @@ pub const GameObject = struct {
         };
     }
 
+    // idk why compiler wants a *const GameObject
+    pub fn takeDamage(self: *const GameObject, damageAmount: i32, kill: bool, armorPierce: bool, time: i64, allocator: std.mem.Allocator) void {
+        assets.playSfx(self.hit_sound);
+
+        var is_ground_damage: bool = false;
+        if (kill) {
+            // self.dead = true; disabled because im stupid and idk how to stop compiler moaning in zig when trying to call object.takeDamage(...);
+        } else {
+            // todo apply conditioneffects and ground damage effect here
+            // apply condition effect here from projectile
+        }
+
+        if (damageAmount > 0) {
+            const pierced = self.condition.armor_broken or is_ground_damage or armorPierce;
+            showDamageText(time, damageAmount, pierced, self.obj_id, allocator);
+        }
+    }
+
     pub fn update(self: *GameObject, time: i64, dt: f32) void {
         _ = dt;
 
@@ -445,6 +464,7 @@ pub const GameObject = struct {
 pub const Player = struct {
     obj_id: i32 = -1,
     obj_type: u16 = 0,
+    dead: bool = false,
     x: f32 = 0.0,
     y: f32 = 0.0,
     z: f32 = 0.0,
@@ -539,6 +559,18 @@ pub const Player = struct {
         }
     }
 
+    pub fn attackMultiplier(self: Player) f32 {
+        if (self.condition.weak) {
+            return min_attack_mult;
+        }
+
+        var mult: f32 = min_attack_mult + @as(f32, @floatFromInt(self.attack)) / 75.0 * (max_attack_mult - min_attack_mult);
+        if (self.condition.damaging) {
+            mult *= 1.5;
+        }
+        return mult;
+    }
+
     pub fn moveSpeedMultiplier(self: Player) f32 {
         if (self.condition.slowed) {
             return min_move_speed * self.move_multiplier * self.walk_speed_multiplier;
@@ -601,7 +633,7 @@ pub const Player = struct {
         return frequency;
     }
 
-    pub fn shoot(self: *Player, angle: f32, time: i64) void {
+    pub fn shoot(self: *Player, angle: f32, time: i64, useMult: bool) void {
         const weapon = self.inventory[0];
         if (weapon == -1)
             return;
@@ -621,11 +653,23 @@ pub const Player = struct {
         const total_angle = arc_gap * @as(f32, @floatFromInt(projs_len - 1));
         var current_angle = angle - total_angle / 2.0;
         const proj_props = &item_props.?.projectile.?;
+
         for (0..projs_len) |_| {
             const bullet_id = @mod(self.next_bullet_id + 1, 128);
             self.next_bullet_id = bullet_id;
             const x = self.x + @cos(current_angle) * 0.25;
             const y = self.y + @sin(current_angle) * 0.25;
+
+            const attMult = if (useMult) self.attackMultiplier() else 1.0;
+            const damageRaw = @as(f32, @floatFromInt(random.nextIntRange(@intCast(proj_props.min_damage), @intCast(proj_props.max_damage)))) * attMult;
+            const damage = @as(i32, @intFromFloat(damageRaw));
+
+            // todo add once move records are added
+            // var damage: i32 = @as(i32, @intFromFloat(damageRaw));
+            // if (time > map.last_records_clear_time + (std.time.us_per_ms * 600)) { // 600ms then drop dmg
+            //     damage = 0;
+            // }
+
             var proj = Projectile{
                 .x = x,
                 .y = y,
@@ -634,6 +678,7 @@ pub const Player = struct {
                 .start_time = @divFloor(time, std.time.us_per_ms),
                 .bullet_id = bullet_id,
                 .owner_id = self.obj_id,
+                .damage = damage,
             };
             proj.addToMap(false);
 
@@ -654,8 +699,25 @@ pub const Player = struct {
         self.attack_start = time;
     }
 
+    // idk why compiler wants a *const Player
+    pub fn takeDamage(self: *const Player, damageAmount: i32, kill: bool, armorPierce: bool, time: i64, allocator: std.mem.Allocator) void {
+        assets.playSfx(self.hit_sound);
+
+        var is_ground_damage: bool = false;
+        if (kill) {
+            // self.dead = true; disabled because im stupid and idk how to stop compiler moaning in zig when trying to call player.takeDamage(...);
+        } else {
+            // todo apply conditioneffects and ground damage effect here
+            // apply condition effect here from projectile
+        }
+
+        if (damageAmount > 0) {
+            const pierced = self.condition.armor_broken or is_ground_damage or armorPierce;
+            showDamageText(time, damageAmount, pierced, self.obj_id, allocator);
+        }
+    }
+
     pub fn update(self: *Player, time: i64, dt: f32) void {
-        // todo: clean this up, reuse
         const normal_time = main.current_time;
         if (normal_time < self.attack_start + self.attack_period) {
             self.facing = self.attack_angle_raw;
@@ -670,7 +732,7 @@ pub const Player = struct {
             self.facing = self.move_angle_camera_included;
             self.action = assets.walk_action;
         } else {
-            self.float_period = 0;
+            self.float_period = 0.0;
             self.action = assets.stand_action;
         }
 
@@ -962,8 +1024,9 @@ pub const Projectile = struct {
     bullet_id: u8 = 0,
     owner_id: i32 = 0,
     damage_players: bool = false,
-    damage: i16 = 0,
+    damage: i32 = 0,
     props: *const game_data.ProjProps,
+    // do we need the container properties from the item or entity? like flash does
     last_hit_check: i64 = 0,
 
     pub fn getSquare(self: Projectile) Square {
@@ -996,9 +1059,29 @@ pub const Projectile = struct {
         };
     }
 
+    fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?Player {
+        var min_dist = std.math.floatMax(f32);
+        var target: ?Player = null;
+
+        for (entities.items()) |en| {
+            if (en == .player) {
+                const player = en.player;
+                const dist_sqr = utils.distSqr(player.x, player.y, x, y);
+                if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
+                    min_dist = dist_sqr;
+                    target = player;
+                }
+            }
+        }
+
+        return target;
+    }
+
     fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?GameObject {
         var min_dist = std.math.floatMax(f32);
         var target: ?GameObject = null;
+
+        // todo check multi_hit container
         for (entities.items()) |en| {
             if (en == .object) {
                 const obj = en.object;
@@ -1015,43 +1098,18 @@ pub const Projectile = struct {
         return target;
     }
 
-    fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?Player {
-        var min_dist = std.math.floatMax(f32);
-        var target: ?Player = null;
-        for (entities.items()) |en| {
-            if (en == .player) {
-                const player = en.player;
-                const dist_sqr = utils.distSqr(player.x, player.y, x, y);
-                if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
-                    min_dist = dist_sqr;
-                    target = player;
-                }
-            }
-        }
-
-        return target;
-    }
-
     fn updatePosition(self: *Projectile, elapsed: i64, dt: f32) void {
         if (self.props.heat_seek_radius > 0 and elapsed >= self.props.heat_seek_delay and !self.heat_seek_fired) {
             var target_x: f32 = -1.0;
             var target_y: f32 = -1.0;
 
             if (self.damage_players) {
-                if (findTargetPlayer(
-                    self.x,
-                    self.y,
-                    self.props.heat_seek_radius * self.props.heat_seek_radius,
-                )) |player| {
+                if (findTargetPlayer(self.x, self.y, self.props.heat_seek_radius * self.props.heat_seek_radius)) |player| {
                     target_x = player.x;
                     target_y = player.y;
                 }
             } else {
-                if (findTargetObject(
-                    self.x,
-                    self.y,
-                    self.props.heat_seek_radius * self.props.heat_seek_radius,
-                )) |object| {
+                if (findTargetObject(self.x, self.y, self.props.heat_seek_radius * self.props.heat_seek_radius)) |object| {
                     target_x = object.x;
                     target_y = object.y;
                 }
@@ -1168,82 +1226,83 @@ pub const Projectile = struct {
         }
 
         if (time - self.last_hit_check > 16) {
+
+            // todo other hit from multi projectiles
+
             if (self.damage_players) {
                 if (findTargetPlayer(self.x, self.y, 0.33)) |player| {
-                    network.sendPlayerHit(self.bullet_id, self.owner_id);
-                    assets.playSfx(player.hit_sound);
-                    if (self.props.damage > 0 or self.props.min_damage > 0) {
-                        const piercing: bool = self.props.piercing;
-                        var damage_color: i32 = 0xB02020;
-                        if (piercing)
-                            damage_color = 0x890AFF;
 
-                        const damage_value = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
-                        if (damage_value > player.hp)
-                            assets.playSfx(player.death_sound);
+                    // player hit only for self
+                    if (map.local_player_id == player.obj_id) {
+                        const pierced = self.props.armor_piercing;
+                        const d = damageWithDefense(self.damage, player.defense, pierced, player.condition);
+                        const dead = player.hp <= d;
 
-                        const text_data = ui.TextData{
-                            .text = std.fmt.allocPrint(allocator, "-{d}", .{damage_value}) catch unreachable,
-                            .text_type = .bold,
-                            .size = 22,
-                            .color = damage_color,
-                            .backing_buffer = &[0]u8{},
-                        };
+                        player.takeDamage(d, dead, pierced, time, allocator);
+                        network.sendPlayerHit(self.bullet_id, self.owner_id);
 
-                        ui.elements.add(.{ .status = ui.StatusText{
-                            .obj_id = player.obj_id,
-                            .start_time = time,
-                            .text_data = text_data,
-                            .initial_size = 22,
-                        } }) catch |e| {
-                            std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
-                        };
+                        // todo redo with self.damage(); call
+                        // if (self.props.damage > 0 or self.props.min_damage > 0) {
+                        //     const piercing: bool = self.props.armor_piercing;
+                        //     var damage_color: i32 = 0xB02020;
+                        //     if (piercing)
+                        //         damage_color = 0x890AFF;
+
+                        //     const damage_value = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
+                        //     if (damage_value > player.hp)
+                        //         assets.playSfx(player.death_sound);
+
+                        //     const text_data = ui.TextData{
+                        //         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage_value}) catch unreachable,
+                        //         .text_type = .bold,
+                        //         .size = 22,
+                        //         .color = damage_color,
+                        //         .backing_buffer = &[0]u8{},
+                        //     };
+
+                        //     ui.elements.add(.{ .status = ui.StatusText{
+                        //         .obj_id = player.obj_id,
+                        //         .start_time = time,
+                        //         .text_data = text_data,
+                        //         .initial_size = 22,
+                        //     } }) catch |e| {
+                        //         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
+                        //     };
+                        // }
+                    } else if (!self.props.multi_hit) {
+                        network.sendOtherHit(time, self.bullet_id, self.obj_id, player.obj_id);
+                    } else {
+                        std.log.err("Unknown logic for player side of hit logic unexpected branch", .{});
                     }
 
-                    return false;
+                    if (self.props.multi_hit) {
+                        // todo container addition
+                    } else {
+                        return false;
+                    }
                 }
             } else {
                 if (findTargetObject(self.x, self.y, 0.33)) |object| {
-                    const dead = object.hp <= self.props.min_damage;
+                    if (object.is_enemy) {
+                        const pierced = self.props.armor_piercing;
+                        const d = damageWithDefense(self.damage, object.defense, pierced, object.condition);
+                        const dead = object.hp <= d;
 
-                    network.sendEnemyHit(time, self.bullet_id, object.obj_id, dead);
+                        object.takeDamage(d, dead, pierced, time, allocator);
+                        network.sendEnemyHit(time, self.bullet_id, object.obj_id, dead);
 
-                    assets.playSfx(object.hit_sound);
-                    if (self.props.min_damage > 0) {
-                        const piercing: bool = self.props.piercing;
-                        var damage_color: i32 = 0xB02020;
-                        if (piercing)
-                            damage_color = 0x890AFF;
-
-                        const damage = @as(i32, calculateDamage(
-                            self,
-                            object.obj_id,
-                            self.owner_id,
-                            piercing,
-                        ));
-
-                        if (damage > object.hp)
-                            assets.playSfx(object.death_sound);
-
-                        const text_data = ui.TextData{
-                            .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable,
-                            .text_type = .bold,
-                            .size = 22,
-                            .color = damage_color,
-                            .backing_buffer = &[0]u8{},
-                        };
-
-                        ui.elements.add(.{ .status = ui.StatusText{
-                            .obj_id = object.obj_id,
-                            .start_time = time,
-                            .text_data = text_data,
-                            .initial_size = 22,
-                        } }) catch |e| {
-                            std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage, e });
-                        };
+                        std.log.info("damage to entity: {any}", .{d});
+                    } else if (!self.props.multi_hit) {
+                        network.sendOtherHit(time, self.bullet_id, self.obj_id, object.obj_id);
+                    } else {
+                        std.log.err("Unknown logic for object side of hit logic unexpected branch", .{});
                     }
 
-                    return false;
+                    if (self.props.multi_hit) {
+                        // todo container addition
+                    } else {
+                        return false;
+                    }
                 }
             }
             self.last_hit_check = time;
@@ -1252,6 +1311,51 @@ pub const Projectile = struct {
         return true;
     }
 };
+
+pub fn damageWithDefense(orig_damage: i32, target_defense: i32, armor_piercing: bool, condition: utils.Condition) i32 {
+    var def: f32 = @as(f32, @floatFromInt(target_defense));
+    if (armor_piercing or condition.armor_broken) {
+        def = 0.0;
+    } else if (condition.armored) {
+        def *= 1.5;
+    }
+
+    const min = @divFloor(@as(f32, @floatFromInt(orig_damage * 2)), 20.0);
+    var d: f32 = @max(min, @as(f32, @floatFromInt(orig_damage)) - def);
+    if (condition.invulnerable or condition.invincible) {
+        d = 0.0;
+    }
+    // exposed if have
+    // petrified
+    // cursed
+    return @as(i32, @intFromFloat(d));
+}
+
+pub fn showDamageText(time: i64, damage: i32, pierced: bool, objectId: i32, allocator: std.mem.Allocator) void {
+    var damage_color: i32 = 0xB02020;
+    if (pierced) {
+        damage_color = 0x890AFF;
+    }
+
+    const text_data = ui.TextData{
+        .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable,
+        .text_type = .bold,
+        .size = 22,
+        .color = damage_color,
+        .backing_buffer = &[0]u8{},
+    };
+
+    std.log.info("{any} | show_damage: {any}", .{ time, damage });
+
+    ui.elements.add(.{ .status = ui.StatusText{
+        .obj_id = objectId,
+        .start_time = time,
+        .text_data = text_data,
+        .initial_size = 22,
+    } }) catch |e| {
+        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage, e });
+    };
+}
 
 fn lessThan(_: void, lhs: Entity, rhs: Entity) bool {
     var lhs_sort_val: f32 = 0;
@@ -1479,49 +1583,6 @@ pub fn removeEntity(obj_id: i32) ?Entity {
     return null;
 }
 
-pub fn calculateDamage(proj: *Projectile, object_id: i32, player_id: i32, piercing: bool) i32 {
-    if (findEntityConst(object_id)) |en| {
-        if (en == .object) {
-            const object = en.object;
-            var damage = random.nextIntRange(@intCast(proj.props.min_damage), @intCast(proj.props.max_damage));
-
-            if (findEntityConst(player_id)) |e| {
-                if (e == .player) {
-                    const player = e.player;
-                    damage *= attackMultiplier(player);
-                }
-            }
-
-            if (!piercing) {
-                // 0.25
-                const limit: u32 = (damage / 100) * 25;
-                const def: u32 = @intCast(object.defense);
-
-                if (damage - def < limit) {
-                    damage = limit;
-                } else {
-                    damage -= def;
-                }
-            }
-            return @intCast(damage);
-        }
-    }
-    return -1;
-}
-
-pub fn attackMultiplier(player: Player) u32 {
-    if (player.condition.weak) {
-        return 0;
-    }
-
-    var mult = min_attack_mult + @as(f32, @floatFromInt(player.attack)) / 75.0 * (max_attack_mult - min_attack_mult);
-    if (player.condition.damaging) {
-        mult *= 1.5;
-    }
-
-    return @intFromFloat(mult);
-}
-
 pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     while (!object_lock.tryLock()) {}
     defer object_lock.unlock();
@@ -1548,7 +1609,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                     const y: f32 = @floatCast(input.mouse_y);
                     const x: f32 = @floatCast(input.mouse_x);
                     const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-                    en.player.shoot(shoot_angle, time);
+                    en.player.shoot(shoot_angle, time, true); // ability???
                 }
             }
         } else if (en == .object) {
