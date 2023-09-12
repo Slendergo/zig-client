@@ -35,20 +35,8 @@ pub const Square = struct {
     right_blend_v: f32 = -1.0,
     bottom_blend_u: f32 = -1.0,
     bottom_blend_v: f32 = -1.0,
-    sink: f32 = 0.0,
-    speed: f32 = 1.0,
-    sinking: bool = false,
-    has_wall: bool = false,
-    light_color: i32 = -1,
-    light_intensity: f32 = 0.1,
-    light_radius: f32 = 1.0,
-    damage: u16 = 0,
-    blocking: bool = false,
-    full_occupy: bool = false,
-    occupy_square: bool = false,
-    anim_type: game_data.GroundAnimType = .none,
-    anim_dx: f32 = 0,
-    anim_dy: f32 = 0,
+    props: ?*const game_data.GroundProps = null,
+    obj: ?*const GameObject = null,
     u_offset: f32 = 0,
     v_offset: f32 = 0,
 
@@ -67,25 +55,18 @@ pub const Square = struct {
         if (validPos(x - 1, y)) {
             const left_idx: usize = @intCast(x - 1 + y * width);
             const left_sq = squares[left_idx];
-            if (left_sq.tile_type != 0xFFFF and left_sq.tile_type != 0xFF) {
-                if (game_data.ground_type_to_props.get(left_sq.tile_type)) |left_props| {
-                    const left_blend_prio = left_props.blend_prio;
-                    if (left_blend_prio > current_prio) {
-                        square.left_blend_u = left_sq.atlas_data.tex_u;
-                        square.left_blend_v = left_sq.atlas_data.tex_v;
-                        squares[left_idx].right_blend_u = -1.0;
-                        squares[left_idx].right_blend_v = -1.0;
-                    } else if (left_blend_prio < current_prio) {
-                        squares[left_idx].right_blend_u = square.atlas_data.tex_u;
-                        squares[left_idx].right_blend_v = square.atlas_data.tex_v;
-                        square.left_blend_u = -1.0;
-                        square.left_blend_v = -1.0;
-                    } else {
-                        square.left_blend_u = -1.0;
-                        square.left_blend_v = -1.0;
-                        squares[left_idx].right_blend_u = -1.0;
-                        squares[left_idx].right_blend_v = -1.0;
-                    }
+            if (left_sq.tile_type != 0xFFFF and left_sq.tile_type != 0xFF and left_sq.props != null) {
+                const left_blend_prio = left_sq.props.?.blend_prio;
+                if (left_blend_prio > current_prio) {
+                    square.left_blend_u = left_sq.atlas_data.tex_u;
+                    square.left_blend_v = left_sq.atlas_data.tex_v;
+                    squares[left_idx].right_blend_u = -1.0;
+                    squares[left_idx].right_blend_v = -1.0;
+                } else if (left_blend_prio < current_prio) {
+                    squares[left_idx].right_blend_u = square.atlas_data.tex_u;
+                    squares[left_idx].right_blend_v = square.atlas_data.tex_v;
+                    square.left_blend_u = -1.0;
+                    square.left_blend_v = -1.0;
                 } else {
                     square.left_blend_u = -1.0;
                     square.left_blend_v = -1.0;
@@ -98,25 +79,18 @@ pub const Square = struct {
         if (validPos(x, y - 1)) {
             const top_idx: usize = @intCast(x + (y - 1) * width);
             const top_sq = squares[top_idx];
-            if (top_sq.tile_type != 0xFFFF and top_sq.tile_type != 0xFF) {
-                if (game_data.ground_type_to_props.get(top_sq.tile_type)) |top_props| {
-                    const top_blend_prio = top_props.blend_prio;
-                    if (top_blend_prio > current_prio) {
-                        square.top_blend_u = top_sq.atlas_data.tex_u;
-                        square.top_blend_v = top_sq.atlas_data.tex_v;
-                        squares[top_idx].bottom_blend_u = -1.0;
-                        squares[top_idx].bottom_blend_v = -1.0;
-                    } else if (top_blend_prio < current_prio) {
-                        squares[top_idx].bottom_blend_u = square.atlas_data.tex_u;
-                        squares[top_idx].bottom_blend_v = square.atlas_data.tex_v;
-                        square.top_blend_u = -1.0;
-                        square.top_blend_v = -1.0;
-                    } else {
-                        square.top_blend_u = -1.0;
-                        square.top_blend_v = -1.0;
-                        squares[top_idx].bottom_blend_u = -1.0;
-                        squares[top_idx].bottom_blend_v = -1.0;
-                    }
+            if (top_sq.tile_type != 0xFFFF and top_sq.tile_type != 0xFF and top_sq.props != null) {
+                const top_blend_prio = top_sq.props.?.blend_prio;
+                if (top_blend_prio > current_prio) {
+                    square.top_blend_u = top_sq.atlas_data.tex_u;
+                    square.top_blend_v = top_sq.atlas_data.tex_v;
+                    squares[top_idx].bottom_blend_u = -1.0;
+                    squares[top_idx].bottom_blend_v = -1.0;
+                } else if (top_blend_prio < current_prio) {
+                    squares[top_idx].bottom_blend_u = square.atlas_data.tex_u;
+                    squares[top_idx].bottom_blend_v = square.atlas_data.tex_v;
+                    square.top_blend_u = -1.0;
+                    square.top_blend_v = -1.0;
                 } else {
                     square.top_blend_u = -1.0;
                     square.top_blend_v = -1.0;
@@ -129,25 +103,18 @@ pub const Square = struct {
         if (validPos(x + 1, y)) {
             const right_idx: usize = @intCast(x + 1 + y * width);
             const right_sq = squares[right_idx];
-            if (right_sq.tile_type != 0xFFFF and right_sq.tile_type != 0xFF) {
-                if (game_data.ground_type_to_props.get(right_sq.tile_type)) |right_props| {
-                    const right_blend_prio = right_props.blend_prio;
-                    if (right_blend_prio > current_prio) {
-                        square.right_blend_u = right_sq.atlas_data.tex_u;
-                        square.right_blend_v = right_sq.atlas_data.tex_v;
-                        squares[right_idx].left_blend_u = -1.0;
-                        squares[right_idx].left_blend_v = -1.0;
-                    } else if (right_blend_prio < current_prio) {
-                        squares[right_idx].left_blend_u = square.atlas_data.tex_u;
-                        squares[right_idx].left_blend_v = square.atlas_data.tex_v;
-                        square.right_blend_u = -1.0;
-                        square.right_blend_v = -1.0;
-                    } else {
-                        square.right_blend_u = -1.0;
-                        square.right_blend_v = -1.0;
-                        squares[right_idx].left_blend_u = -1.0;
-                        squares[right_idx].left_blend_v = -1.0;
-                    }
+            if (right_sq.tile_type != 0xFFFF and right_sq.tile_type != 0xFF and right_sq.props != null) {
+                const right_blend_prio = right_sq.props.?.blend_prio;
+                if (right_blend_prio > current_prio) {
+                    square.right_blend_u = right_sq.atlas_data.tex_u;
+                    square.right_blend_v = right_sq.atlas_data.tex_v;
+                    squares[right_idx].left_blend_u = -1.0;
+                    squares[right_idx].left_blend_v = -1.0;
+                } else if (right_blend_prio < current_prio) {
+                    squares[right_idx].left_blend_u = square.atlas_data.tex_u;
+                    squares[right_idx].left_blend_v = square.atlas_data.tex_v;
+                    square.right_blend_u = -1.0;
+                    square.right_blend_v = -1.0;
                 } else {
                     square.right_blend_u = -1.0;
                     square.right_blend_v = -1.0;
@@ -160,25 +127,18 @@ pub const Square = struct {
         if (validPos(x, y + 1)) {
             const bottom_idx: usize = @intCast(x + (y + 1) * width);
             const bottom_sq = squares[bottom_idx];
-            if (bottom_sq.tile_type != 0xFFFF and bottom_sq.tile_type != 0xFF) {
-                if (game_data.ground_type_to_props.get(bottom_sq.tile_type)) |bottom_props| {
-                    const bottom_blend_prio = bottom_props.blend_prio;
-                    if (bottom_blend_prio > current_prio) {
-                        square.bottom_blend_u = bottom_sq.atlas_data.tex_u;
-                        square.bottom_blend_v = bottom_sq.atlas_data.tex_v;
-                        squares[bottom_idx].top_blend_u = -1.0;
-                        squares[bottom_idx].top_blend_v = -1.0;
-                    } else if (bottom_blend_prio < current_prio) {
-                        squares[bottom_idx].top_blend_u = square.atlas_data.tex_u;
-                        squares[bottom_idx].top_blend_v = square.atlas_data.tex_v;
-                        square.bottom_blend_u = -1.0;
-                        square.bottom_blend_v = -1.0;
-                    } else {
-                        square.bottom_blend_u = -1.0;
-                        square.bottom_blend_v = -1.0;
-                        squares[bottom_idx].top_blend_u = -1.0;
-                        squares[bottom_idx].top_blend_v = -1.0;
-                    }
+            if (bottom_sq.tile_type != 0xFFFF and bottom_sq.tile_type != 0xFF and bottom_sq.props != null) {
+                const bottom_blend_prio = bottom_sq.props.?.blend_prio;
+                if (bottom_blend_prio > current_prio) {
+                    square.bottom_blend_u = bottom_sq.atlas_data.tex_u;
+                    square.bottom_blend_v = bottom_sq.atlas_data.tex_v;
+                    squares[bottom_idx].top_blend_u = -1.0;
+                    squares[bottom_idx].top_blend_v = -1.0;
+                } else if (bottom_blend_prio < current_prio) {
+                    squares[bottom_idx].top_blend_u = square.atlas_data.tex_u;
+                    squares[bottom_idx].top_blend_v = square.atlas_data.tex_v;
+                    square.bottom_blend_u = -1.0;
+                    square.bottom_blend_v = -1.0;
                 } else {
                     square.bottom_blend_u = -1.0;
                     square.bottom_blend_v = -1.0;
@@ -247,6 +207,7 @@ pub const GameObject = struct {
     death_sound: []const u8 = &[0]u8{},
     action: u8 = 0,
     float_period: f32 = 0.0,
+    full_occupy: bool = false,
 
     pub fn getSquare(self: GameObject) Square {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -277,15 +238,14 @@ pub const GameObject = struct {
             self.name = @constCast(props.display_id);
             self.hit_sound = props.hit_sound;
             self.death_sound = props.death_sound;
+            self.full_occupy = props.full_occupy;
 
             if (props.draw_on_ground)
                 self.atlas_data.removePadding();
 
             if (props.full_occupy or props.static and props.occupy_square) {
                 if (validPos(floor_x, floor_y)) {
-                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].occupy_square = props.occupy_square;
-                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].full_occupy = props.full_occupy;
-                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = true;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].obj = self;
                 }
             }
         }
@@ -360,9 +320,8 @@ pub const GameObject = struct {
 
         if (game_data.obj_type_to_class.get(self.obj_type)) |class_props| {
             self.is_wall = class_props == .wall;
-            if (validPos(floor_x, floor_y)) {
-                squares[floor_y * @as(u32, @intCast(width)) + floor_x].has_wall = self.is_wall;
-                squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = self.is_wall;
+            if (self.is_wall and validPos(floor_x, floor_y)) {
+                squares[floor_y * @as(u32, @intCast(width)) + floor_x].obj = self;
             }
         }
 
@@ -568,12 +527,15 @@ pub const Player = struct {
 
     pub fn onMove(self: *Player) void {
         const square = self.getSquare();
-        if (square.sinking) {
+        if (square.props == null)
+            return;
+
+        if (square.props.?.sinking) {
             self.sink_level = @as(u16, @min((self.sink_level + 1), max_sink_level));
-            self.move_multiplier = (0.1 + ((1 - (@as(f32, @floatFromInt(self.sink_level)) / @as(f32, @floatFromInt(max_sink_level)))) * (square.speed - 0.1)));
+            self.move_multiplier = (0.1 + ((1 - (@as(f32, @floatFromInt(self.sink_level)) / @as(f32, @floatFromInt(max_sink_level)))) * (square.props.?.speed - 0.1)));
         } else {
             self.sink_level = 0;
-            self.move_multiplier = square.speed;
+            self.move_multiplier = square.props.?.speed;
         }
     }
 
@@ -644,7 +606,7 @@ pub const Player = struct {
         if (weapon == -1)
             return;
 
-        const item_props = game_data.item_type_to_props.get(@intCast(weapon));
+        const item_props = game_data.item_type_to_props.getPtr(@intCast(weapon));
         if (item_props == null or item_props.?.projectile == null)
             return;
 
@@ -658,7 +620,7 @@ pub const Player = struct {
         const arc_gap = item_props.?.arc_gap;
         const total_angle = arc_gap * @as(f32, @floatFromInt(projs_len - 1));
         var current_angle = angle - total_angle / 2.0;
-        const proj_props = item_props.?.projectile.?;
+        const proj_props = &item_props.?.projectile.?;
         for (0..projs_len) |_| {
             const bullet_id = @mod(self.next_bullet_id + 1, 128);
             self.next_bullet_id = bullet_id;
@@ -760,7 +722,7 @@ pub const Player = struct {
                 const floor_y: u32 = @intFromFloat(@floor(self.y));
                 if (validPos(floor_x, floor_y)) {
                     const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-                    if (square.tile_type != 0xFFFF and square.tile_type != 0xFF and square.damage > 0) {
+                    if (square.tile_type != 0xFFFF and square.tile_type != 0xFF and square.props != null and square.props.?.min_damage > 0) {
                         network.sendGroundDamage(time, .{ .x = self.x, .y = self.y });
                         self.last_ground_damage = time;
                     }
@@ -885,7 +847,7 @@ pub const Player = struct {
         const floor_x: u32 = @intFromFloat(@floor(x));
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-        return square.occupy_square or square.blocking;
+        return square.obj != null;
     }
 
     fn isFullOccupy(x: f32, y: f32) bool {
@@ -895,7 +857,7 @@ pub const Player = struct {
         const floor_x: u32 = @intFromFloat(@floor(x));
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-        return square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.full_occupy;
+        return square.obj != null and square.obj.?.full_occupy;
     }
 
     fn modifyStep(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
@@ -1001,7 +963,8 @@ pub const Projectile = struct {
     owner_id: i32 = 0,
     damage_players: bool = false,
     damage: i16 = 0,
-    props: game_data.ProjProps,
+    props: *const game_data.ProjProps,
+    last_hit_check: i64 = 0,
 
     pub fn getSquare(self: Projectile) Square {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -1196,7 +1159,7 @@ pub const Projectile = struct {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
         if (validPos(floor_x, floor_y)) {
             const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-            if (square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.blocking) {
+            if (square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.obj != null) {
                 // network.otherHit(time, self.bullet_id, self.owner_id) catch |e| {
                 //     std.log.err("Could not send other hit: {any}", .{e});
                 // };
@@ -1204,83 +1167,86 @@ pub const Projectile = struct {
             }
         }
 
-        if (self.damage_players) {
-            if (findTargetPlayer(self.x, self.y, 0.33)) |player| {
-                network.sendPlayerHit(self.bullet_id, self.owner_id);
-                assets.playSfx(player.hit_sound);
-                if (self.props.damage > 0 or self.props.min_damage > 0) {
-                    const piercing: bool = self.props.piercing;
-                    var damage_color: i32 = 0xB02020;
-                    if (piercing)
-                        damage_color = 0x890AFF;
+        if (time - self.last_hit_check > 16) {
+            if (self.damage_players) {
+                if (findTargetPlayer(self.x, self.y, 0.33)) |player| {
+                    network.sendPlayerHit(self.bullet_id, self.owner_id);
+                    assets.playSfx(player.hit_sound);
+                    if (self.props.damage > 0 or self.props.min_damage > 0) {
+                        const piercing: bool = self.props.piercing;
+                        var damage_color: i32 = 0xB02020;
+                        if (piercing)
+                            damage_color = 0x890AFF;
 
-                    const damage_value = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
-                    if (damage_value > player.hp)
-                        assets.playSfx(player.death_sound);
+                        const damage_value = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
+                        if (damage_value > player.hp)
+                            assets.playSfx(player.death_sound);
 
-                    const text_data = ui.TextData{
-                        .text = std.fmt.allocPrint(allocator, "-{d}", .{damage_value}) catch unreachable,
-                        .text_type = .bold,
-                        .size = 22,
-                        .color = damage_color,
-                        .backing_buffer = &[0]u8{},
-                    };
+                        const text_data = ui.TextData{
+                            .text = std.fmt.allocPrint(allocator, "-{d}", .{damage_value}) catch unreachable,
+                            .text_type = .bold,
+                            .size = 22,
+                            .color = damage_color,
+                            .backing_buffer = &[0]u8{},
+                        };
 
-                    ui.elements.add(.{ .status = ui.StatusText{
-                        .obj_id = player.obj_id,
-                        .start_time = time,
-                        .text_data = text_data,
-                        .initial_size = 22,
-                    } }) catch |e| {
-                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
-                    };
+                        ui.elements.add(.{ .status = ui.StatusText{
+                            .obj_id = player.obj_id,
+                            .start_time = time,
+                            .text_data = text_data,
+                            .initial_size = 22,
+                        } }) catch |e| {
+                            std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
+                        };
+                    }
+
+                    return false;
                 }
+            } else {
+                if (findTargetObject(self.x, self.y, 0.33)) |object| {
+                    const dead = object.hp <= self.props.min_damage;
 
-                return false;
-            }
-        } else {
-            if (findTargetObject(self.x, self.y, 0.33)) |object| {
-                const dead = object.hp <= self.props.min_damage;
+                    network.sendEnemyHit(time, self.bullet_id, object.obj_id, dead);
 
-                network.sendEnemyHit(time, self.bullet_id, object.obj_id, dead);
+                    assets.playSfx(object.hit_sound);
+                    if (self.props.min_damage > 0) {
+                        const piercing: bool = self.props.piercing;
+                        var damage_color: i32 = 0xB02020;
+                        if (piercing)
+                            damage_color = 0x890AFF;
 
-                assets.playSfx(object.hit_sound);
-                if (self.props.min_damage > 0) {
-                    const piercing: bool = self.props.piercing;
-                    var damage_color: i32 = 0xB02020;
-                    if (piercing)
-                        damage_color = 0x890AFF;
+                        const damage = @as(i32, calculateDamage(
+                            self,
+                            object.obj_id,
+                            self.owner_id,
+                            piercing,
+                        ));
 
-                    const damage = @as(i32, calculateDamage(
-                        self,
-                        object.obj_id,
-                        self.owner_id,
-                        piercing,
-                    ));
+                        if (damage > object.hp)
+                            assets.playSfx(object.death_sound);
 
-                    if (damage > object.hp)
-                        assets.playSfx(object.death_sound);
+                        const text_data = ui.TextData{
+                            .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable,
+                            .text_type = .bold,
+                            .size = 22,
+                            .color = damage_color,
+                            .backing_buffer = &[0]u8{},
+                        };
 
-                    const text_data = ui.TextData{
-                        .text = std.fmt.allocPrint(allocator, "-{d}", .{damage}) catch unreachable,
-                        .text_type = .bold,
-                        .size = 22,
-                        .color = damage_color,
-                        .backing_buffer = &[0]u8{},
-                    };
+                        ui.elements.add(.{ .status = ui.StatusText{
+                            .obj_id = object.obj_id,
+                            .start_time = time,
+                            .text_data = text_data,
+                            .initial_size = 22,
+                        } }) catch |e| {
+                            std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage, e });
+                        };
+                    }
 
-                    ui.elements.add(.{ .status = ui.StatusText{
-                        .obj_id = object.obj_id,
-                        .start_time = time,
-                        .text_data = text_data,
-                        .initial_size = 22,
-                    } }) catch |e| {
-                        std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage, e });
-                    };
+                    return false;
                 }
-
-                return false;
             }
+            self.last_hit_check = time;
         }
 
         return true;
@@ -1363,13 +1329,10 @@ pub fn init(allocator: std.mem.Allocator) !void {
 pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
     switch (en) {
         .object => |obj| {
-            if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
-                if (class_props == .wall) {
+            if (game_data.obj_type_to_props.get(obj.obj_type)) |props| {
+                if (props.full_occupy or props.static and props.occupy_square) {
                     var square = map.getSquareUnsafe(obj.x, obj.y);
-                    square.occupy_square = false;
-                    square.full_occupy = false;
-                    square.has_wall = false;
-                    square.blocking = false;
+                    square.obj = null;
                 }
             }
 
@@ -1428,10 +1391,10 @@ pub fn getLightIntensity(time: i64) f32 {
     const server_time_clamped: f32 = @floatFromInt(@mod(time + server_time_offset, day_cycle_ms));
     const intensity_delta = day_light_intensity - night_light_intensity;
     if (server_time_clamped <= day_cycle_ms_half) {
-        const scale: f32 = server_time_clamped / day_cycle_ms_half;
+        const scale = server_time_clamped / day_cycle_ms_half;
         return night_light_intensity + intensity_delta * scale;
     } else {
-        const scale: f32 = (server_time_clamped - day_cycle_ms_half) / day_cycle_ms_half;
+        const scale = (server_time_clamped - day_cycle_ms_half) / day_cycle_ms_half;
         return day_light_intensity - intensity_delta * scale;
     }
 }
@@ -1449,6 +1412,10 @@ pub fn setWH(w: isize, h: isize, allocator: std.mem.Allocator) void {
         squares[i] = Square{};
 
     @memset(minimap.data, 0);
+
+    const size = @max(w, h);
+    const max_zoom: f32 = @floatFromInt(@divFloor(size, 32));
+    camera.minimap_zoom = @max(1, @min(max_zoom, camera.minimap_zoom));
 }
 
 pub fn localPlayerConst() ?Player {
@@ -1673,18 +1640,8 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
         }
     }
 
-    if (game_data.ground_type_to_props.get(tile_type)) |props| {
-        square.sink = if (props.sink) 0.75 else 0.0;
-        square.sinking = props.sinking;
-        square.speed = props.speed;
-        square.light_color = props.light_color;
-        square.light_intensity = props.light_intensity;
-        square.light_radius = props.light_radius;
-        square.damage = props.min_damage;
-        square.blocking = props.no_walk;
-        square.anim_type = props.anim_type;
-        square.anim_dx = props.anim_dx;
-        square.anim_dy = props.anim_dy;
+    if (game_data.ground_type_to_props.getPtr(tile_type)) |props| {
+        square.props = props;
         if (props.random_offset) {
             const u_offset: f32 = @floatFromInt(utils.rng.next() % 8);
             const v_offset: f32 = @floatFromInt(utils.rng.next() % 8);

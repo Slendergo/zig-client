@@ -263,8 +263,8 @@ fn handleAllyShoot() void {
         if (en.* == .player) {
             const player = &en.player;
             const weapon = player.inventory[0];
-            const item_props = game_data.item_type_to_props.get(@intCast(weapon));
-            const proj_props = item_props.?.projectile.?;
+            const item_props = game_data.item_type_to_props.getPtr(@intCast(weapon));
+            const proj_props = &item_props.?.projectile.?;
             const projs_len = item_props.?.num_projectiles;
             for (0..projs_len) |_| {
                 var proj = map.Projectile{
@@ -367,13 +367,13 @@ fn handleEnemyShoot() void {
     if (owner == null)
         return;
 
-    const owner_props = game_data.obj_type_to_props.get(owner.?.obj_type);
+    const owner_props = game_data.obj_type_to_props.getPtr(owner.?.obj_type);
     if (owner_props == null)
         return;
 
     const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
     var current_angle = angle - total_angle / 2.0;
-    const proj_props = owner_props.?.projectiles[bullet_type];
+    const proj_props = &owner_props.?.projectiles[bullet_type];
     for (0..num_shots) |i| {
         var proj = map.Projectile{
             .x = starting_pos.x,
@@ -660,11 +660,11 @@ fn handleServerPlayerShoot() void {
     const needs_ack = owner_id == map.local_player_id;
     if (map.findEntityConst(owner_id)) |en| {
         if (en == .player) {
-            const item_props = game_data.item_type_to_props.get(@intCast(container_type));
+            const item_props = game_data.item_type_to_props.getPtr(@intCast(container_type));
             if (item_props == null or item_props.?.projectile == null)
                 return;
 
-            const proj_props = item_props.?.projectile.?;
+            const proj_props = &item_props.?.projectile.?;
             const total_angle = angle_inc * @as(f32, @floatFromInt(num_shots - 1));
             var current_angle = angle - total_angle / 2.0;
             for (0..num_shots) |i| {

@@ -419,7 +419,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const top_sq = map.squares[(floor_y - 1) * @as(u32, @intCast(map.width)) + floor_x];
-                if (top_sq.has_wall)
+                if (top_sq.obj != null and top_sq.obj.?.is_wall)
                     break :topSide;
 
                 if (top_sq.tile_type == 0xFFFF or top_sq.tile_type == 0xFF) {
@@ -454,7 +454,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const bottom_sq = map.squares[(floor_y + 1) * @as(u32, @intCast(map.width)) + floor_x];
-                if (bottom_sq.has_wall)
+                if (bottom_sq.obj != null and bottom_sq.obj.?.is_wall)
                     break :bottomSide;
 
                 if (bottom_sq.tile_type == 0xFFFF or bottom_sq.tile_type == 0xFF) {
@@ -490,7 +490,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const left_sq = map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x - 1];
-                if (left_sq.has_wall)
+                if (left_sq.obj != null and left_sq.obj.?.is_wall)
                     break :leftSide;
 
                 if (left_sq.tile_type == 0xFFFF or left_sq.tile_type == 0xFF) {
@@ -526,7 +526,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const right_sq = map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x + 1];
-                if (right_sq.has_wall)
+                if (right_sq.obj != null and right_sq.obj.?.is_wall)
                     break :rightSide;
 
                 if (right_sq.tile_type == 0xFFFF or right_sq.tile_type == 0xFF) {
@@ -1298,32 +1298,37 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     const screen_x = screen_pos.x - camera.screen_width / 2.0;
                     const screen_y = -(screen_pos.y - camera.screen_height / 2.0);
 
-                    if (settings.enable_lights and square.light_color > 0) {
-                        drawLight(
-                            light_idx,
-                            camera.px_per_tile * square.light_radius,
-                            camera.px_per_tile * square.light_radius,
-                            screen_pos.x,
-                            screen_pos.y,
-                            square.light_color,
-                            square.light_intensity,
-                        );
-                        light_idx += 4;
-                    }
-
                     var u_offset = square.u_offset;
                     var v_offset = square.v_offset;
-                    const float_time_ms = @as(f32, @floatFromInt(time)) / std.time.us_per_ms;
-                    switch (square.anim_type) {
-                        .wave => {
-                            u_offset += @sin(square.anim_dx * float_time_ms / 1000.0) * assets.base_texel_w;
-                            v_offset += @sin(square.anim_dy * float_time_ms / 1000.0) * assets.base_texel_h;
-                        },
-                        .flow => {
-                            u_offset += (square.anim_dx * float_time_ms / 1000.0) * assets.base_texel_w;
-                            v_offset += (square.anim_dy * float_time_ms / 1000.0) * assets.base_texel_h;
-                        },
-                        else => {},
+                    if (square.props != null) {
+                        if (settings.enable_lights) {
+                            const light_color = square.props.?.light_color;
+                            if (light_color > 0) {
+                                drawLight(
+                                    light_idx,
+                                    camera.px_per_tile * square.props.?.light_radius,
+                                    camera.px_per_tile * square.props.?.light_radius,
+                                    screen_pos.x,
+                                    screen_pos.y,
+                                    light_color,
+                                    square.props.?.light_intensity,
+                                );
+                                light_idx += 4;
+                            }
+                        }
+
+                        const float_time_ms = @as(f32, @floatFromInt(time)) / std.time.us_per_ms;
+                        switch (square.props.?.anim_type) {
+                            .wave => {
+                                u_offset += @sin(square.props.?.anim_dx * float_time_ms / 1000.0) * assets.base_texel_w;
+                                v_offset += @sin(square.props.?.anim_dy * float_time_ms / 1000.0) * assets.base_texel_h;
+                            },
+                            .flow => {
+                                u_offset += (square.props.?.anim_dx * float_time_ms / 1000.0) * assets.base_texel_w;
+                                v_offset += (square.props.?.anim_dy * float_time_ms / 1000.0) * assets.base_texel_h;
+                            },
+                            else => {},
+                        }
                     }
 
                     const x_cos = camera.pad_x_cos;
@@ -1435,7 +1440,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         const square = player.getSquare();
                         var sink: f32 = 1.0;
                         if (square.tile_type != 0xFFFF) {
-                            sink += square.sink;
+                            sink += if (square.props != null and square.props.?.sink) 0.75 else 0;
                         }
 
                         atlas_data.tex_h /= sink;
@@ -1707,7 +1712,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                         var sink: f32 = 1.0;
                         if (square.tile_type != 0xFFFF) {
-                            sink += square.sink;
+                            sink += if (square.props != null and square.props.?.sink) 0.75 else 0;
                         }
 
                         atlas_data.tex_h /= sink;
