@@ -922,10 +922,8 @@ pub const Player = struct {
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
 
-        const walkable = square.props == null or !square.props.?.no_walk;
-        const not_occupied = !square.occupy_square;
-        std.log.info("{any} | walkable: {any} and not_occupied: {any}", .{ map.last_tick_time, walkable, not_occupied });
-        return walkable and not_occupied;
+        // return true if u can walk and its not occupied and returns false by default if props is null
+        return square.props != null and !square.props.?.no_walk and !square.occupy_square;
     }
 
     fn isFullOccupy(x: f32, y: f32) bool {
@@ -1194,6 +1192,14 @@ pub const Projectile = struct {
                 const y = @sin(2 * t) * if (self.bullet_id % 4 < 2) @as(f32, 1.0) else @as(f32, -1.0);
                 self.x += (x * @cos(self.angle) - y * @sin(self.angle)) * self.props.magnitude;
                 self.y += (x * @sin(self.angle) + y * @cos(self.angle)) * self.props.magnitude;
+            } else if (self.props.wavy) {
+                const period_factor = 6.0 * std.math.pi;
+                const amplitude_factor = std.math.pi / 64.0;
+                const phase: f32 = if (self.bullet_id % 2 == 0) 0.0 else std.math.pi;
+                const elapsed_cast: f32 = @floatFromInt(elapsed);
+                const theta = self.angle + amplitude_factor * @sin(phase + period_factor * elapsed_cast / 1000.0);
+                self.x += dist * @cos(theta);
+                self.y += dist * @sin(theta);
             } else {
                 if (self.props.boomerang and elapsed > self.props.lifetime_ms / 2)
                     dist = -dist;

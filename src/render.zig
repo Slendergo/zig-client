@@ -1873,7 +1873,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         screen_pos.y += proj.z * -camera.px_per_tile - (h - size * assets.padding);
                         const rotation = proj.props.rotation;
                         const angle = -(proj.visual_angle + proj.props.angle_correction +
-                            (if (rotation == 0) 0 else @as(f32, @floatFromInt(time)) / rotation) - camera.angle);
+                            (if (rotation == 0) 0 else @as(f32, @floatFromInt(time)) / rotation / std.time.us_per_ms) - camera.angle);
 
                         drawQuad(
                             idx,
