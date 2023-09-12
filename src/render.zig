@@ -419,7 +419,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const top_sq = map.squares[(floor_y - 1) * @as(u32, @intCast(map.width)) + floor_x];
-                if (top_sq.obj != null and top_sq.obj.?.is_wall)
+                if (top_sq.has_wall)
                     break :topSide;
 
                 if (top_sq.tile_type == 0xFFFF or top_sq.tile_type == 0xFF) {
@@ -454,7 +454,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const bottom_sq = map.squares[(floor_y + 1) * @as(u32, @intCast(map.width)) + floor_x];
-                if (bottom_sq.obj != null and bottom_sq.obj.?.is_wall)
+                if (bottom_sq.has_wall)
                     break :bottomSide;
 
                 if (bottom_sq.tile_type == 0xFFFF or bottom_sq.tile_type == 0xFF) {
@@ -490,7 +490,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const left_sq = map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x - 1];
-                if (left_sq.obj != null and left_sq.obj.?.is_wall)
+                if (left_sq.has_wall)
                     break :leftSide;
 
                 if (left_sq.tile_type == 0xFFFF or left_sq.tile_type == 0xFF) {
@@ -526,7 +526,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
                 const right_sq = map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x + 1];
-                if (right_sq.obj != null and right_sq.obj.?.is_wall)
+                if (right_sq.has_wall)
                     break :rightSide;
 
                 if (right_sq.tile_type == 0xFFFF or right_sq.tile_type == 0xFF) {

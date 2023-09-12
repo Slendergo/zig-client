@@ -35,7 +35,11 @@ pub const Square = struct {
     bottom_blend_u: f32 = -1.0,
     bottom_blend_v: f32 = -1.0,
     props: ?*const game_data.GroundProps = null,
-    obj: ?*const GameObject = null,
+    sinking: bool = false,
+    blocking: bool = false,
+    full_occupy: bool = false,
+    occupy_square: bool = false,
+    has_wall: bool = false,
     u_offset: f32 = 0,
     v_offset: f32 = 0,
 
@@ -249,7 +253,9 @@ pub const GameObject = struct {
 
             if (props.full_occupy or props.static and props.occupy_square) {
                 if (validPos(floor_x, floor_y)) {
-                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].obj = self;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].occupy_square = props.occupy_square;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].full_occupy = props.full_occupy;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = true;
                 }
             }
         }
@@ -325,7 +331,8 @@ pub const GameObject = struct {
         if (game_data.obj_type_to_class.get(self.obj_type)) |class_props| {
             self.is_wall = class_props == .wall;
             if (self.is_wall and validPos(floor_x, floor_y)) {
-                squares[floor_y * @as(u32, @intCast(width)) + floor_x].obj = self;
+                squares[floor_y * @as(u32, @intCast(width)) + floor_x].has_wall = self.is_wall;
+                squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = self.is_wall;
             }
         }
 
@@ -916,7 +923,7 @@ pub const Player = struct {
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
 
         const walkable = square.props == null or !square.props.?.no_walk;
-        const not_occupied = square.obj == null or !square.obj.?.occupy_square;
+        const not_occupied = !square.occupy_square;
         std.log.info("{any} | walkable: {any} and not_occupied: {any}", .{ map.last_tick_time, walkable, not_occupied });
         return walkable and not_occupied;
     }
@@ -928,7 +935,7 @@ pub const Player = struct {
         const floor_x: u32 = @intFromFloat(@floor(x));
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-        return square.tile_type == 0xFF or (square.obj != null and square.obj.?.full_occupy);
+        return square.tile_type == 0xFF or square.full_occupy;
     }
 
     fn modifyStep(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
@@ -1226,7 +1233,7 @@ pub const Projectile = struct {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
         if (validPos(floor_x, floor_y)) {
             const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-            if (square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.obj != null) {
+            if (square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.blocking) {
                 // network.otherHit(time, self.bullet_id, self.owner_id) catch |e| {
                 //     std.log.err("Could not send other hit: {any}", .{e});
                 // };
@@ -1443,10 +1450,13 @@ pub fn init(allocator: std.mem.Allocator) !void {
 pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
     switch (en) {
         .object => |obj| {
-            if (game_data.obj_type_to_props.get(obj.obj_type)) |props| {
-                if (props.full_occupy or props.static and props.occupy_square) {
+            if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
+                if (class_props == .wall) {
                     var square = map.getSquareUnsafe(obj.x, obj.y);
-                    square.obj = null;
+                    square.occupy_square = false;
+                    square.full_occupy = false;
+                    square.has_wall = false;
+                    square.blocking = false;
                 }
             }
 
