@@ -909,15 +909,16 @@ pub const Player = struct {
 
     fn isWalkable(x: f32, y: f32) bool {
         if (x < 0 or y < 0)
-            return true;
+            return false;
 
         const floor_x: u32 = @intFromFloat(@floor(x));
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-        if (square.props) |props| {
-            return !props.no_walk and (square.obj == null or !square.obj.?.occupy_square);
-        }
-        return false;
+
+        const walkable = square.props == null or !square.props.?.no_walk;
+        const not_occupied = square.obj == null or !square.obj.?.occupy_square;
+        std.log.info("{any} | walkable: {any} and not_occupied: {any}", .{ map.last_tick_time, walkable, not_occupied });
+        return walkable and not_occupied;
     }
 
     fn isFullOccupy(x: f32, y: f32) bool {
@@ -927,7 +928,7 @@ pub const Player = struct {
         const floor_x: u32 = @intFromFloat(@floor(x));
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-        return square.obj != null and square.obj.?.full_occupy;
+        return square.tile_type == 0xFF or (square.obj != null and square.obj.?.full_occupy);
     }
 
     fn modifyStep(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {

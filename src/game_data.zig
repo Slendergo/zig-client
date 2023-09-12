@@ -317,12 +317,6 @@ pub const ObjProps = struct {
             try proj_list.add(try ProjProps.parse(proj_node, allocator));
 
         const float_node = node.findChild("Float");
-
-        var o = node.elementExists("OccupySquare");
-        if (o) {
-            std.log.info("Found: {s}", .{obj_id});
-        }
-
         return ObjProps{
             .obj_type = try node.getAttributeInt("type", u16, 0),
             .obj_id = obj_id,
