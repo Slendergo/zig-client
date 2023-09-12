@@ -803,6 +803,8 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
         map.setSquare(tile.x, tile.y, tile.tile_type);
     }
 
+    main.need_minimap_update = tiles.len > 0;
+
     const drops = reader.read([]i32);
     {
         while (!map.object_lock.tryLock()) {}

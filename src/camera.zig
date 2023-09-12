@@ -12,6 +12,8 @@ pub var x = std.atomic.Atomic(f32).init(0.0);
 pub var y = std.atomic.Atomic(f32).init(0.0);
 pub var z = std.atomic.Atomic(f32).init(0.0);
 
+pub var minimap_zoom: f32 = 4.0;
+
 pub var pad_x_cos: f32 = 0.0;
 pub var pad_y_cos: f32 = 0.0;
 pub var pad_x_sin: f32 = 0.0;

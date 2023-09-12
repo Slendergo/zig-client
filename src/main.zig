@@ -102,6 +102,8 @@ pub var render_thread: std.Thread = undefined;
 pub var tick_render = true;
 pub var tick_frame = false;
 pub var sent_hello = false;
+pub var need_minimap_update = false;
+pub var last_minimap_update: i64 = 0;
 var _allocator: std.mem.Allocator = undefined;
 
 fn onResize(window: *zglfw.Window, w: i32, h: i32) callconv(.C) void {
@@ -165,6 +167,22 @@ fn renderTick(allocator: std.mem.Allocator) !void {
 
         // this has to be updated on render thread to avoid headaches (gctx sharing)
         try ui.in_game_screen.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
+
+        if (need_minimap_update and current_time - last_minimap_update > 1000 * std.time.us_per_ms) {
+            gctx.queue.writeTexture(
+                .{ .texture = gctx.lookupResource(render.minimap_texture).? },
+                .{
+                    .bytes_per_row = map.minimap.bytes_per_row,
+                    .rows_per_image = map.minimap.height,
+                },
+                .{ .width = map.minimap.width, .height = map.minimap.height },
+                u8,
+                map.minimap.data,
+            );
+
+            need_minimap_update = false;
+            last_minimap_update = current_time;
+        }
     }
 }
 
@@ -277,6 +295,7 @@ pub fn main() !void {
     _ = window.setCharCallback(input.charEvent);
     _ = window.setCursorPosCallback(input.mouseMoveEvent);
     _ = window.setMouseButtonCallback(input.mouseEvent);
+    _ = window.setScrollCallback(input.scrollEvent);
     _ = window.setFramebufferSizeCallback(onResize);
 
     render.init(gctx);

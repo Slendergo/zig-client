@@ -9,6 +9,7 @@ const utils = @import("utils.zig");
 const map = @import("map.zig");
 const assets = @import("assets.zig");
 const ui = @import("ui/ui.zig");
+const zstbi = @import("zstbi");
 
 pub const move_threshold: f32 = 0.4;
 pub const min_move_speed: f32 = 0.004;
@@ -260,6 +261,35 @@ pub const GameObject = struct {
         }
         defer if (should_lock) object_lock.unlock();
 
+        const floor_y: u32 = @intFromFloat(@floor(self.y));
+        const floor_x: u32 = @intFromFloat(@floor(self.x));
+
+        var _props: ?game_data.ObjProps = null;
+        if (game_data.obj_type_to_props.get(self.obj_type)) |props| {
+            _props = props;
+            self.size = props.getSize();
+            self.draw_on_ground = props.draw_on_ground;
+            self.light_color = props.light_color;
+            self.light_intensity = props.light_intensity;
+            self.light_radius = props.light_radius;
+            self.is_enemy = props.is_enemy;
+            self.show_name = props.show_name;
+            self.name = @constCast(props.display_id);
+            self.hit_sound = props.hit_sound;
+            self.death_sound = props.death_sound;
+
+            if (props.draw_on_ground)
+                self.atlas_data.removePadding();
+
+            if (props.full_occupy or props.static and props.occupy_square) {
+                if (validPos(floor_x, floor_y)) {
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].occupy_square = props.occupy_square;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].full_occupy = props.full_occupy;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = true;
+                }
+            }
+        }
+
         texParse: {
             if (game_data.obj_type_to_tex_data.get(self.obj_type)) |tex_list| {
                 if (tex_list.len == 0) {
@@ -282,6 +312,17 @@ pub const GameObject = struct {
                     } else {
                         std.log.err("Could not find sheet {s} for object with type 0x{x}. Using error texture", .{ tex.sheet, self.obj_type });
                         self.atlas_data = assets.error_data;
+                    }
+
+                    if (_props != null and _props.?.static and _props.?.occupy_square) {
+                        if (assets.color_data.get(tex.sheet)) |color_data| {
+                            const color = color_data[tex.index];
+                            const base_data_idx: usize = @intCast(floor_y * minimap.num_components * minimap.width + floor_x * minimap.num_components);
+                            minimap.data[base_data_idx] = color.r;
+                            minimap.data[base_data_idx + 1] = color.g;
+                            minimap.data[base_data_idx + 2] = color.b;
+                            minimap.data[base_data_idx + 3] = color.a;
+                        }
                     }
 
                     if (game_data.obj_type_to_class.get(self.obj_type) == .wall) {
@@ -314,37 +355,9 @@ pub const GameObject = struct {
 
         if (game_data.obj_type_to_class.get(self.obj_type)) |class_props| {
             self.is_wall = class_props == .wall;
-            const floor_y: u32 = @intFromFloat(@floor(self.y));
-            const floor_x: u32 = @intFromFloat(@floor(self.x));
             if (validPos(floor_x, floor_y)) {
                 squares[floor_y * @as(u32, @intCast(width)) + floor_x].has_wall = self.is_wall;
                 squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = self.is_wall;
-            }
-        }
-
-        if (game_data.obj_type_to_props.get(self.obj_type)) |props| {
-            self.size = props.getSize();
-            self.draw_on_ground = props.draw_on_ground;
-            self.light_color = props.light_color;
-            self.light_intensity = props.light_intensity;
-            self.light_radius = props.light_radius;
-            self.is_enemy = props.is_enemy;
-            self.show_name = props.show_name;
-            self.name = @constCast(props.display_id);
-            self.hit_sound = props.hit_sound;
-            self.death_sound = props.death_sound;
-
-            if (props.draw_on_ground)
-                self.atlas_data.removePadding();
-
-            if (props.full_occupy or props.static and props.occupy_square) {
-                const floor_x: u32 = @intFromFloat(@floor(self.x));
-                const floor_y: u32 = @intFromFloat(@floor(self.y));
-                if (validPos(floor_x, floor_y)) {
-                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].occupy_square = props.occupy_square;
-                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].full_occupy = props.full_occupy;
-                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = true;
-                }
             }
         }
 
@@ -1331,12 +1344,15 @@ pub var server_time_offset: i64 = 0;
 pub var move_records: utils.DynSlice(network.TimedPosition) = undefined;
 pub var last_records_clear_time: i64 = 0;
 pub var random: utils.Random = utils.Random{};
+pub var minimap: zstbi.Image = undefined;
 var last_sort: i64 = -1;
 
 pub fn init(allocator: std.mem.Allocator) !void {
     entities = try utils.DynSlice(Entity).init(16384, allocator);
     entity_indices_to_remove = try utils.DynSlice(usize).init(256, allocator);
     move_records = try utils.DynSlice(network.TimedPosition).init(10, allocator);
+
+    minimap = try zstbi.Image.createEmpty(4096, 4096, 4, .{});
 }
 
 pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
@@ -1419,6 +1435,8 @@ pub fn setWH(w: isize, h: isize, allocator: std.mem.Allocator) void {
 
     for (0..squares.len) |i|
         squares[i] = Square{};
+
+    @memset(minimap.data, 0);
 }
 
 pub fn localPlayerConst() ?Player {
@@ -1620,6 +1638,15 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
             } else {
                 std.log.err("Could not find sheet {s} for square with type 0x{x}. Using error texture", .{ tex.sheet, tile_type });
                 square.atlas_data = assets.error_data;
+            }
+
+            if (assets.color_data.get(tex.sheet)) |color_data| {
+                const color = color_data[tex.index];
+                const base_data_idx: usize = @intCast(y * minimap.num_components * minimap.width + x * minimap.num_components);
+                minimap.data[base_data_idx] = color.r;
+                minimap.data[base_data_idx + 1] = color.g;
+                minimap.data[base_data_idx + 2] = color.b;
+                minimap.data[base_data_idx + 3] = color.a;
             }
 
             square.updateBlends();

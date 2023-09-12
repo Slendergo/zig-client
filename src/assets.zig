@@ -175,6 +175,13 @@ const AudioState = struct {
     }
 };
 
+const RGBA = packed struct(u32) {
+    r: u8 = 255,
+    g: u8 = 255,
+    b: u8 = 255,
+    a: u8 = 255,
+};
+
 pub var audio_state: *AudioState = undefined;
 pub var main_music: *zaudio.Sound = undefined;
 
@@ -208,6 +215,7 @@ pub var target_ally_cursor_pressed: *zglfw.Cursor = undefined;
 pub var target_ally_cursor: *zglfw.Cursor = undefined;
 
 pub var sfx_map: std.StringHashMap(*zaudio.Sound) = undefined;
+pub var color_data: std.StringHashMap([]RGBA) = undefined;
 pub var atlas_data: std.StringHashMap([]AtlasData) = undefined;
 pub var ui_atlas_data: std.StringHashMap([]AtlasData) = undefined;
 pub var anim_enemies: std.StringHashMap([]AnimEnemyData) = undefined;
@@ -307,6 +315,8 @@ fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, co
     }
 
     if (zstbrp.packRects(ctx, current_rects)) {
+        var colors = try allocator.alloc(RGBA, len);
+
         for (0..len) |i| {
             const rect = current_rects[i];
             if (rect.w == 0 or rect.h == 0)
@@ -317,12 +327,35 @@ fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, co
             const cur_src_x = (i * cut_width) % img.width;
             const cur_src_y = @divFloor(i * cut_width, img.width) * cut_height;
 
+            var color_counts = std.AutoHashMap(RGBA, u32).init(allocator);
+            defer color_counts.deinit();
+
             for (0..img_size) |j| {
                 const row_count = @divFloor(j, cut_width);
                 const row_idx = j % cut_width;
                 const atlas_idx = ((cur_atlas_y + row_count) * atlas_width + cur_atlas_x + row_idx) * 4;
                 const src_idx = ((cur_src_y + row_count) * img.width + cur_src_x + row_idx) * 4;
                 @memcpy(atlas.data[atlas_idx .. atlas_idx + 4], img.data[src_idx .. src_idx + 4]);
+
+                const rgba = RGBA{
+                    .r = img.data[src_idx],
+                    .g = img.data[src_idx + 1],
+                    .b = img.data[src_idx + 2],
+                };
+                if (color_counts.get(rgba)) |count| {
+                    try color_counts.put(rgba, count + 1);
+                } else {
+                    try color_counts.put(rgba, 1);
+                }
+            }
+
+            var max: u32 = 0;
+            var count_iter = color_counts.iterator();
+            while (count_iter.next()) |count| {
+                if (count.value_ptr.* > max) {
+                    colors[i] = count.key_ptr.*;
+                    max = count.value_ptr.*;
+                }
             }
         }
 
@@ -331,6 +364,7 @@ fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, co
         }
 
         try atlas_data.put(sheet_name, data);
+        try color_data.put(sheet_name, colors);
     } else {
         std.log.err("Could not pack " ++ image_name ++ " into the atlas", .{});
     }
@@ -642,6 +676,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         }
     }
 
+    color_data.deinit();
     atlas_data.deinit();
     ui_atlas_data.deinit();
     anim_enemies.deinit();
@@ -650,6 +685,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 
 pub fn init(allocator: std.mem.Allocator) !void {
     sfx_map = std.StringHashMap(*zaudio.Sound).init(allocator);
+    color_data = std.StringHashMap([]RGBA).init(allocator);
     atlas_data = std.StringHashMap([]AtlasData).init(allocator);
     ui_atlas_data = std.StringHashMap([]AtlasData).init(allocator);
     anim_enemies = std.StringHashMap([]AnimEnemyData).init(allocator);

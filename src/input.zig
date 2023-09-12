@@ -346,6 +346,17 @@ pub fn mouseMoveEvent(window: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) 
     ui.mouseMove(@floatCast(mouse_x), @floatCast(mouse_y));
 }
 
+pub fn scrollEvent(window: *zglfw.Window, xoffset: f64, yoffset: f64) callconv(.C) void {
+    _ = xoffset;
+    _ = window;
+    const size = @max(map.width, map.height);
+    const max_zoom: f32 = @floatFromInt(@divFloor(size, 32));
+    const scroll_speed = @as(f32, @floatFromInt(size)) / 1280;
+
+    camera.minimap_zoom += @floatCast(yoffset * scroll_speed);
+    camera.minimap_zoom = @max(1, @min(max_zoom, camera.minimap_zoom));
+}
+
 fn useAbility() void {
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();

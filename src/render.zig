@@ -24,7 +24,7 @@ pub const BaseVertexData = extern struct {
     distance_factor: f32 = 0.0,
     render_type: f32,
     outline_color: ui.RGBF32 = ui.RGBF32.fromInt(0),
-    outline_width: f32,
+    outline_width: f32 = 0.0,
 };
 
 pub const GroundVertexData = extern struct {
@@ -59,6 +59,7 @@ const text_normal_render_type = 4.0;
 const text_drop_shadow_render_type = 5.0;
 const text_normal_no_subpixel_render_type = 6.0;
 const text_drop_shadow_no_subpixel_render_type = 7.0;
+const minimap_render_type = 8.0;
 
 pub var base_pipeline: zgpu.RenderPipelineHandle = .{};
 pub var base_bind_group: zgpu.BindGroupHandle = undefined;
@@ -71,6 +72,7 @@ pub var base_vb: zgpu.wgpu.Buffer = undefined;
 pub var ground_vb: zgpu.wgpu.Buffer = undefined;
 pub var light_vb: zgpu.wgpu.Buffer = undefined;
 pub var index_buffer: zgpu.wgpu.Buffer = undefined;
+pub var minimap_buffer: zgpu.wgpu.Buffer = undefined;
 
 pub var base_vert_data: [40000]BaseVertexData = undefined;
 pub var ground_vert_data: [40000]GroundVertexData = undefined;
@@ -91,6 +93,8 @@ pub var ui_texture: zgpu.TextureHandle = undefined;
 pub var ui_texture_view: zgpu.TextureViewHandle = undefined;
 pub var light_texture: zgpu.TextureHandle = undefined;
 pub var light_texture_view: zgpu.TextureViewHandle = undefined;
+pub var minimap_texture: zgpu.TextureHandle = undefined;
+pub var minimap_texture_view: zgpu.TextureViewHandle = undefined;
 
 pub var sampler: zgpu.SamplerHandle = undefined;
 pub var linear_sampler: zgpu.SamplerHandle = undefined;
@@ -161,6 +165,13 @@ pub fn init(gctx: *zgpu.GraphicsContext) void {
     createTexture(gctx, &texture, &texture_view, assets.atlas);
     createTexture(gctx, &ui_texture, &ui_texture_view, assets.ui_atlas);
     createTexture(gctx, &light_texture, &light_texture_view, assets.light_tex);
+    createTexture(gctx, &minimap_texture, &minimap_texture_view, map.minimap);
+
+    minimap_buffer = gctx.device.createBuffer(.{
+        .usage = .{ .copy_dst = true, .copy_src = true, .storage = true },
+        .size = map.minimap.data.len,
+    });
+    gctx.queue.writeBuffer(minimap_buffer, 0, u8, map.minimap.data[0..]);
 
     sampler = gctx.createSampler(.{});
     linear_sampler = gctx.createSampler(.{ .min_filter = .linear, .mag_filter = .linear });
@@ -196,6 +207,7 @@ pub fn init(gctx: *zgpu.GraphicsContext) void {
         zgpu.textureEntry(5, .{ .fragment = true }, .float, .tvdim_2d, false),
         zgpu.textureEntry(6, .{ .fragment = true }, .float, .tvdim_2d, false),
         zgpu.textureEntry(7, .{ .fragment = true }, .float, .tvdim_2d, false),
+        zgpu.textureEntry(8, .{ .fragment = true }, .float, .tvdim_2d, false),
     });
     defer gctx.releaseResource(base_bind_group_layout);
     base_bind_group = gctx.createBindGroup(base_bind_group_layout, &.{
@@ -207,6 +219,7 @@ pub fn init(gctx: *zgpu.GraphicsContext) void {
         .{ .binding = 5, .texture_view_handle = medium_italic_text_texture_view },
         .{ .binding = 6, .texture_view_handle = bold_text_texture_view },
         .{ .binding = 7, .texture_view_handle = bold_italic_text_texture_view },
+        .{ .binding = 8, .texture_view_handle = minimap_texture_view },
     });
 
     {
@@ -558,6 +571,60 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     idx_new += 4;
 
     return idx_new;
+}
+
+fn drawMinimap(
+    idx: u16,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    target_x: f32,
+    target_y: f32,
+    tex_w: f32,
+    tex_h: f32,
+    rotation: f32,
+) void {
+    const scaled_w = w * camera.clip_scale_x;
+    const scaled_h = h * camera.clip_scale_y;
+    const scaled_x = (x - camera.screen_width / 2.0 + w / 2.0) * camera.clip_scale_x;
+    const scaled_y = -(y - camera.screen_height / 2.0 + h / 2.0) * camera.clip_scale_y;
+
+    const cos_angle = @cos(rotation);
+    const sin_angle = @sin(rotation);
+    const x_cos = cos_angle * scaled_w * 0.5;
+    const x_sin = sin_angle * scaled_w * 0.5;
+    const y_cos = cos_angle * scaled_h * 0.5;
+    const y_sin = sin_angle * scaled_h * 0.5;
+
+    const tex_u = target_x / 4096.0;
+    const tex_v = target_y / 4096.0;
+    const tex_w_half = tex_w / 2.0 / 4096.0;
+    const tex_h_half = tex_h / 2.0 / 4096.0;
+
+    base_vert_data[idx] = BaseVertexData{
+        .pos = [2]f32{ -x_cos + x_sin + scaled_x, -y_sin - y_cos + scaled_y },
+        .uv = [2]f32{ tex_u - tex_w_half, tex_v + tex_h_half },
+        .render_type = minimap_render_type,
+    };
+
+    base_vert_data[idx + 1] = BaseVertexData{
+        .pos = [2]f32{ x_cos + x_sin + scaled_x, y_sin - y_cos + scaled_y },
+        .uv = [2]f32{ tex_u + tex_w_half, tex_v + tex_h_half },
+        .render_type = minimap_render_type,
+    };
+
+    base_vert_data[idx + 2] = BaseVertexData{
+        .pos = [2]f32{ x_cos - x_sin + scaled_x, y_sin + y_cos + scaled_y },
+        .uv = [2]f32{ tex_u + tex_w_half, tex_v - tex_h_half },
+        .render_type = minimap_render_type,
+    };
+
+    base_vert_data[idx + 3] = BaseVertexData{
+        .pos = [2]f32{ -x_cos - x_sin + scaled_x, -y_sin + y_cos + scaled_y },
+        .uv = [2]f32{ tex_u - tex_w_half, tex_v - tex_h_half },
+        .render_type = minimap_render_type,
+    };
 }
 
 const QuadOptions = struct {
@@ -2015,6 +2082,25 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                                 ui_idx = 0;
                             }
                         },
+                    }
+
+                    if (image.is_minimap_decor) {
+                        const float_w: f32 = @floatFromInt(map.width);
+                        const float_h: f32 = @floatFromInt(map.height);
+                        const zoom = camera.minimap_zoom;
+                        drawMinimap(
+                            ui_idx,
+                            image.x + image.minimap_offset_x,
+                            image.y + image.minimap_offset_y,
+                            image.minimap_width,
+                            image.minimap_height,
+                            cam_x,
+                            cam_y,
+                            float_w / zoom,
+                            float_h / zoom,
+                            0,
+                        );
+                        ui_idx += 4;
                     }
                 },
                 .item => |item| {

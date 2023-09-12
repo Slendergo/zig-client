@@ -282,6 +282,12 @@ pub const Image = struct {
     image_data: ImageData,
     max_width: f32 = std.math.maxInt(u32),
     visible: bool = true,
+    // hack
+    is_minimap_decor: bool = false,
+    minimap_offset_x: f32 = 0.0,
+    minimap_offset_y: f32 = 0.0,
+    minimap_width: f32 = 0.0,
+    minimap_height: f32 = 0.0,
     _disposed: bool = false,
 
     pub inline fn width(self: Image) f32 {

@@ -135,6 +135,11 @@ pub const InGameScreen = struct {
             .x = camera.screen_width - minimap_data.texWRaw() - 10,
             .y = 10,
             .image_data = .{ .normal = .{ .atlas_data = minimap_data } },
+            .is_minimap_decor = true,
+            .minimap_offset_x = 7.0,
+            .minimap_offset_y = 10.0,
+            .minimap_width = 172.0,
+            .minimap_height = 172.0,
         };
         try ui.elements.add(.{ .image = screen.minimap_decor });
 
