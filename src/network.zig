@@ -328,6 +328,8 @@ fn handleDamage() void {
     const bullet_id = reader.read(i8);
     const object_id = reader.read(i32);
 
+    // todo find entity and call object.takeDamage();
+
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
         std.log.debug("Recv - Damage: target_id={d}, effects={d}, damage_amount={d}, kill={any}, bullet_id={d}, object_id={d}", .{ target_id, effects, damage_amount, kill, bullet_id, object_id });
 }
