@@ -103,7 +103,10 @@ pub var tick_render = true;
 pub var tick_frame = false;
 pub var sent_hello = false;
 pub var need_minimap_update = false;
-pub var last_minimap_update: i64 = 0;
+pub var minimap_update_min_x: u32 = 4096;
+pub var minimap_update_max_x: u32 = 0;
+pub var minimap_update_min_y: u32 = 4096;
+pub var minimap_update_max_y: u32 = 0;
 var _allocator: std.mem.Allocator = undefined;
 
 fn onResize(window: *zglfw.Window, w: i32, h: i32) callconv(.C) void {
@@ -168,30 +171,54 @@ fn renderTick(allocator: std.mem.Allocator) !void {
         // this has to be updated on render thread to avoid headaches (gctx sharing)
         try ui.in_game_screen.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
 
-        if (need_minimap_update and current_time - last_minimap_update > 1000 * std.time.us_per_ms) {
+        if (need_minimap_update) {
+            const w = minimap_update_max_x - minimap_update_min_x;
+            const h = minimap_update_max_y - minimap_update_min_y;
+            const comp_len = map.minimap.num_components * map.minimap.bytes_per_component;
+            var copy = try stack_allocator.alloc(u8, w * h * comp_len);
+            defer stack_allocator.free(copy);
+
+            var idx: u32 = 0;
+            for (minimap_update_min_y..minimap_update_max_y) |y| {
+                const base_map_idx = y * map.minimap.width * comp_len + minimap_update_min_x * comp_len;
+                @memcpy(
+                    copy[idx * w * comp_len .. (idx + 1) * w * comp_len],
+                    map.minimap.data[base_map_idx .. base_map_idx + w * comp_len],
+                );
+                idx += 1;
+            }
+
             gctx.queue.writeTexture(
-                .{ .texture = gctx.lookupResource(render.minimap_texture).? },
                 .{
-                    .bytes_per_row = map.minimap.bytes_per_row,
-                    .rows_per_image = map.minimap.height,
+                    .texture = gctx.lookupResource(render.minimap_texture).?,
+                    .origin = .{
+                        .x = minimap_update_min_x,
+                        .y = minimap_update_min_y,
+                    },
                 },
-                .{ .width = map.minimap.width, .height = map.minimap.height },
+                .{
+                    .bytes_per_row = comp_len * w,
+                    .rows_per_image = h,
+                },
+                .{
+                    .width = w,
+                    .height = h,
+                },
                 u8,
-                map.minimap.data,
+                copy,
             );
 
             need_minimap_update = false;
-            last_minimap_update = current_time;
+            minimap_update_min_x = 4096;
+            minimap_update_max_x = 0;
+            minimap_update_min_y = 4096;
+            minimap_update_max_y = 0;
         }
     }
 }
 
 pub fn clear() void {
-    map.local_player_id = -1;
-    map.interactive_id.store(-1, .Release);
-    map.interactive_type.store(.game_object, .Release);
     map.dispose(_allocator);
-    map.entities.clear();
 }
 
 pub fn disconnect() void {

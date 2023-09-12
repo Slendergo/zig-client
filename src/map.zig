@@ -322,6 +322,11 @@ pub const GameObject = struct {
                             minimap.data[base_data_idx + 1] = color.g;
                             minimap.data[base_data_idx + 2] = color.b;
                             minimap.data[base_data_idx + 3] = color.a;
+
+                            main.minimap_update_min_x = @min(main.minimap_update_min_x, floor_x);
+                            main.minimap_update_max_x = @max(main.minimap_update_max_x, floor_x);
+                            main.minimap_update_min_y = @min(main.minimap_update_min_y, floor_y);
+                            main.minimap_update_max_y = @max(main.minimap_update_max_y, floor_y);
                         }
                     }
 
@@ -1381,9 +1386,16 @@ pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
 }
 
 pub fn dispose(allocator: std.mem.Allocator) void {
+    local_player_id = -1;
+    interactive_id.store(-1, .Release);
+    interactive_type.store(.game_object, .Release);
+
     for (entities.items()) |en| {
         disposeEntity(allocator, en);
     }
+
+    entities.clear();
+    @memset(minimap.data, 0);
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
@@ -1647,6 +1659,14 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
                 minimap.data[base_data_idx + 1] = color.g;
                 minimap.data[base_data_idx + 2] = color.b;
                 minimap.data[base_data_idx + 3] = color.a;
+
+                const ux: u32 = @intCast(x);
+                const uy: u32 = @intCast(y);
+
+                main.minimap_update_min_x = @min(main.minimap_update_min_x, ux);
+                main.minimap_update_max_x = @max(main.minimap_update_max_x, ux);
+                main.minimap_update_min_y = @min(main.minimap_update_min_y, uy);
+                main.minimap_update_max_y = @max(main.minimap_update_max_y, uy);
             }
 
             square.updateBlends();
