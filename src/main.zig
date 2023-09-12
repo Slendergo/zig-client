@@ -103,6 +103,7 @@ pub var tick_render = true;
 pub var tick_frame = false;
 pub var sent_hello = false;
 pub var need_minimap_update = false;
+pub var need_force_update = false;
 pub var minimap_update_min_x: u32 = 4096;
 pub var minimap_update_max_x: u32 = 0;
 pub var minimap_update_min_y: u32 = 4096;
@@ -213,12 +214,30 @@ fn renderTick(allocator: std.mem.Allocator) !void {
             minimap_update_max_x = 0;
             minimap_update_min_y = 4096;
             minimap_update_max_y = 0;
+        } else if (need_force_update) {
+            gctx.queue.writeTexture(
+                .{
+                    .texture = gctx.lookupResource(render.minimap_texture).?,
+                },
+                .{
+                    .bytes_per_row = map.minimap.bytes_per_row,
+                    .rows_per_image = map.minimap.height,
+                },
+                .{
+                    .width = map.minimap.width,
+                    .height = map.minimap.height,
+                },
+                u8,
+                map.minimap.data,
+            );
+            need_force_update = false;
         }
     }
 }
 
 pub fn clear() void {
     map.dispose(_allocator);
+    need_force_update = true;
 }
 
 pub fn disconnect() void {
