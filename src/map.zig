@@ -19,7 +19,6 @@ pub const max_attack_freq: f32 = 0.008;
 pub const min_attack_mult: f32 = 0.5;
 pub const max_attack_mult: f32 = 2;
 pub const max_sink_level: u32 = 18;
-const tick_ms = 200.0;
 const object_attack_period: u32 = 300 * std.time.us_per_ms;
 
 pub const Square = struct {
@@ -424,7 +423,7 @@ pub const GameObject = struct {
                     break :moveBlock;
                 }
 
-                const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_ms;
+                const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / last_tick_ms;
                 if (scale_dt >= 1.0) {
                     self.x = self.target_x;
                     self.y = self.target_y;
@@ -806,7 +805,7 @@ pub const Player = struct {
                         break :moveBlock;
                     }
 
-                    const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / tick_ms;
+                    const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / last_tick_ms;
                     if (scale_dt >= 1.0) {
                         self.x = self.target_x;
                         self.y = self.target_y;
@@ -1411,6 +1410,7 @@ const day_cycle_ms_half: f32 = @as(f32, day_cycle_ms) / 2;
 pub var object_lock: std.Thread.RwLock = .{};
 pub var entities: utils.DynSlice(Entity) = undefined;
 pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
+pub var last_tick_ms: f32 = 0.0;
 pub var last_tick_time: i64 = 0;
 pub var local_player_id: i32 = -1;
 pub var interactive_id = std.atomic.Atomic(i32).init(-1);

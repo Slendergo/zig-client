@@ -580,6 +580,7 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
     }
 
     map.last_tick_time = @divFloor(main.current_time, std.time.us_per_ms);
+    map.last_tick_ms = @floatFromInt(tick_time);
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
         std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });
@@ -815,6 +816,7 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
         for (drops) |drop| {
             if (map.removeEntity(drop)) |en| {
                 map.disposeEntity(allocator, en);
+                continue;
             }
 
             std.log.err("Could not remove object with id {d}", .{drop});
