@@ -861,7 +861,6 @@ pub const Player = struct {
     }
 
     fn isValidPosition(x: f32, y: f32) bool {
-        //if(square != map_square and map_square != null and !isWalkable(x, y)) // way flash does it so we dont do a check if were not on a new tile
         if (!isWalkable(x, y)) {
             return false;
         }
@@ -922,9 +921,8 @@ pub const Player = struct {
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
 
-        const walkable = square.props == null or !square.props.?.no_walk;
+        const walkable = square.tile_type == 0xFFFF or square.tile_type == 0xFF or square.props == null or !square.props.?.no_walk;
         const not_occupied = !square.occupy_square;
-        std.log.info("{any} | walkable: {any} and not_occupied: {any}", .{ map.last_tick_time, walkable, not_occupied });
         return walkable and not_occupied;
     }
 
@@ -935,7 +933,7 @@ pub const Player = struct {
         const floor_x: u32 = @intFromFloat(@floor(x));
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-        return square.tile_type == 0xFF or square.full_occupy;
+        return square.full_occupy;
     }
 
     fn modifyStep(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
