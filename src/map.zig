@@ -215,12 +215,6 @@ pub const GameObject = struct {
     occupy_square: bool = false,
     enemy_occupy_square: bool = false,
 
-    pub fn getSquare(self: GameObject) Square {
-        const floor_x: u32 = @intFromFloat(@floor(self.x));
-        const floor_y: u32 = @intFromFloat(@floor(self.y));
-        return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-    }
-
     pub fn addToMap(self: *GameObject) void {
         const should_lock = entities.isFull();
         if (should_lock) {
@@ -549,14 +543,8 @@ pub const Player = struct {
     action: u8 = 0,
     float_period: f32 = 0.0,
 
-    pub fn getSquare(self: Player) Square {
-        const floor_x: u32 = @intFromFloat(@floor(self.x));
-        const floor_y: u32 = @intFromFloat(@floor(self.y));
-        return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-    }
-
     pub fn onMove(self: *Player) void {
-        const square = self.getSquare();
+        const square = getSquare(self.x, self.y);
         if (square.props == null)
             return;
 
@@ -917,23 +905,17 @@ pub const Player = struct {
         if (x < 0 or y < 0)
             return false;
 
-        const floor_x: u32 = @intFromFloat(@floor(x));
-        const floor_y: u32 = @intFromFloat(@floor(y));
-        const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-
-        const walkable = square.tile_type == 0xFFFF or square.tile_type == 0xFF or square.props == null or !square.props.?.no_walk;
+        const square = getSquare(x, y);
+        const walkable = square.props == null or !square.props.?.no_walk;
         const not_occupied = !square.occupy_square;
-        return walkable and not_occupied;
+        return square.tile_type != 0xFFFF and square.tile_type != 0xFF and walkable and not_occupied;
     }
 
     fn isFullOccupy(x: f32, y: f32) bool {
         if (x < 0 or y < 0)
             return true;
 
-        const floor_x: u32 = @intFromFloat(@floor(x));
-        const floor_y: u32 = @intFromFloat(@floor(y));
-        const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-        return square.full_occupy;
+        return getSquare(x, y).full_occupy;
     }
 
     fn modifyStep(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
@@ -1040,14 +1022,7 @@ pub const Projectile = struct {
     damage_players: bool = false,
     damage: i32 = 0,
     props: *const game_data.ProjProps,
-    // do we need the container properties from the item or entity? like flash does
     last_hit_check: i64 = 0,
-
-    pub fn getSquare(self: Projectile) Square {
-        const floor_x: u32 = @intFromFloat(@floor(self.x));
-        const floor_y: u32 = @intFromFloat(@floor(self.y));
-        return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-    }
 
     pub fn addToMap(self: *Projectile, needs_lock: bool) void {
         const should_lock = needs_lock and entities.isFull();
@@ -1450,7 +1425,7 @@ pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
         .object => |obj| {
             if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
                 if (class_props == .wall) {
-                    var square = map.getSquareUnsafe(obj.x, obj.y);
+                    var square = map.getSquare(obj.x, obj.y);
                     square.occupy_square = false;
                     square.full_occupy = false;
                     square.has_wall = false;
@@ -1687,7 +1662,7 @@ pub inline fn validPos(x: isize, y: isize) bool {
     return !(x < 0 or x >= width or y < 0 or y >= height);
 }
 
-pub inline fn getSquareUnsafe(x: f32, y: f32) Square {
+pub inline fn getSquare(x: f32, y: f32) Square {
     const floor_x: u32 = @intFromFloat(@floor(x));
     const floor_y: u32 = @intFromFloat(@floor(y));
     return squares[floor_y * @as(u32, @intCast(width)) + floor_x];

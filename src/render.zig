@@ -1437,7 +1437,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             }
                         }
 
-                        const square = player.getSquare();
+                        const square = map.getSquare(player.x, player.y);
                         var sink: f32 = 1.0;
                         if (square.tile_type != 0xFFFF) {
                             sink += if (square.props != null and square.props.?.sink) 0.75 else 0;
@@ -1641,7 +1641,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         var screen_pos = camera.rotateAroundCamera(bo.x, bo.y);
                         const size = camera.size_mult * camera.scale * bo.size;
 
-                        const square = bo.getSquare();
+                        const square = map.getSquare(bo.x, bo.y);
                         if (bo.draw_on_ground) {
                             const tile_size = @as(f32, camera.px_per_tile) * camera.scale;
                             drawQuad(
