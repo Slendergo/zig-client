@@ -634,7 +634,7 @@ pub const Player = struct {
     pub fn shoot(self: *Player, angle: f32, time: i64, useMult: bool) void {
         if (self.condition.stunned or self.condition.stasis)
             return;
-            
+
         const weapon = self.inventory[0];
         if (weapon == -1)
             return;
@@ -661,9 +661,12 @@ pub const Player = struct {
             const x = self.x + @cos(current_angle) * 0.25;
             const y = self.y + @sin(current_angle) * 0.25;
 
-            const attMult = if (useMult) self.attackMultiplier() else 1.0;
-            const damageRaw = @as(f32, @floatFromInt(random.nextIntRange(@intCast(proj_props.min_damage), @intCast(proj_props.max_damage)))) * attMult;
-            const damage = @as(i32, @intFromFloat(damageRaw));
+            const att_mult = if (useMult) self.attackMultiplier() else 1.0;
+            const damage_raw: f32 = @floatFromInt(random.nextIntRange(
+                @intCast(proj_props.min_damage),
+                @intCast(proj_props.max_damage),
+            ));
+            const damage: i32 = @intFromFloat(damage_raw * att_mult);
 
             // todo add once move records are added
             // var damage: i32 = @as(i32, @intFromFloat(damageRaw));
@@ -1447,6 +1450,9 @@ pub fn dispose(allocator: std.mem.Allocator) void {
     local_player_id = -1;
     interactive_id.store(-1, .Release);
     interactive_type.store(.game_object, .Release);
+    width = 0;
+    height = 0;
+    seed = 0;
 
     for (entities.items()) |en| {
         disposeEntity(allocator, en);

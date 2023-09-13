@@ -471,6 +471,8 @@ fn handleInvResult() void {
 }
 
 fn handleMapInfo(allocator: std.mem.Allocator) void {
+    main.clear();
+
     const width: isize = @intCast(reader.read(i32));
     const height: isize = @intCast(reader.read(i32));
     map.setWH(width, height, allocator);
@@ -492,7 +494,6 @@ fn handleMapInfo(allocator: std.mem.Allocator) void {
     }
     map.random = utils.Random{ .seed = map.seed };
 
-    main.clear();
     main.tick_frame = true;
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)

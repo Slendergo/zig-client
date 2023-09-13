@@ -65,6 +65,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     const dims = vec2<f32>(8.0 / 4096.0, 8.0 / 4096.0);
-    let uv = (in.uv + in.uv_offsets + dims) % dims;
+    let uv = abs((in.uv + in.uv_offsets + dims) % dims);
     return textureSampleGrad(tex, default_sampler, uv + in.base_uv, dx, dy);
 }
