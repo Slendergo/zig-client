@@ -632,6 +632,9 @@ pub const Player = struct {
     }
 
     pub fn shoot(self: *Player, angle: f32, time: i64, useMult: bool) void {
+        if (self.condition.stunned or self.condition.stasis)
+            return;
+            
         const weapon = self.inventory[0];
         if (weapon == -1)
             return;
@@ -769,6 +772,11 @@ pub const Player = struct {
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
+                if (self.condition.paralyzed or self.condition.stasis) {
+                    self.move_angle = std.math.nan(f32);
+                    return;
+                }
+
                 const move_speed = self.moveSpeedMultiplier();
                 const total_angle = camera.angle_unbound + self.move_angle;
                 const next_x = self.x + move_speed * dt * @cos(total_angle);
@@ -817,12 +825,6 @@ pub const Player = struct {
     }
 
     fn modifyMove(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
-        if (self.condition.paralyzed) {
-            target_x.* = self.x;
-            target_y.* = self.y;
-            return;
-        }
-
         const dx = x - self.x;
         const dy = y - self.y;
 
@@ -866,13 +868,12 @@ pub const Player = struct {
         } else if (x_frac > 0.5) {
             if (isFullOccupy(x + 1, y))
                 return false;
-            
+
             if (y_frac < 0.5 and (isFullOccupy(x, y - 1) or isFullOccupy(x + 1, y - 1)))
                 return false;
 
             if (y_frac > 0.5 and (isFullOccupy(x, y + 1) or isFullOccupy(x + 1, y + 1)))
                 return false;
-
         } else {
             if (y_frac < 0.5 and isFullOccupy(x, y - 1))
                 return false;
@@ -1202,6 +1203,13 @@ pub const Projectile = struct {
 
             if (self.damage_players) {
                 if (findTargetPlayer(self.x, self.y, 0.33)) |player| {
+                    if (player.condition.invincible)
+                        return true;
+
+                    if (player.condition.invulnerable or player.condition.stasis) {
+                        assets.playSfx(player.hit_sound);
+                        return false;
+                    }
 
                     // player hit only for self
                     if (map.local_player_id == player.obj_id) {
@@ -1254,6 +1262,14 @@ pub const Projectile = struct {
                 }
             } else {
                 if (findTargetObject(self.x, self.y, 0.33)) |object| {
+                    if (object.condition.invincible)
+                        return true;
+
+                    if (object.condition.invulnerable or object.condition.stasis) {
+                        assets.playSfx(object.hit_sound);
+                        return false;
+                    }
+
                     if (object.is_enemy) {
                         const pierced = self.props.armor_piercing;
                         const d = damageWithDefense(self.damage, object.defense, pierced, object.condition);

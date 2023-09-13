@@ -1456,6 +1456,15 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         if (player.condition.invisible)
                             alpha_mult = 0.6;
 
+                        var color: i32 = -1;
+                        var color_intensity: f32 = 0.0;
+                        if (player.condition.stasis) {
+                            color = 0x777777;
+                            color_intensity = 0.7;
+                        } else {
+                            // flash
+                        }
+
                         if (settings.enable_lights and player.light_color > 0) {
                             drawLight(
                                 light_idx,
@@ -1495,7 +1504,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             w,
                             h,
                             atlas_data,
-                            .{ .shadow_texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
+                            .{ .shadow_texel_mult = 2.0 / size, .alpha_mult = alpha_mult, .base_color = color, .base_color_intensity = color_intensity },
                         );
                         idx += 4;
 
@@ -1727,6 +1736,15 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         if (bo.condition.invisible)
                             alpha_mult = 0.6;
 
+                        var color: i32 = -1;
+                        var color_intensity: f32 = 0.0;
+                        if (bo.condition.stasis) {
+                            color = 0x777777;
+                            color_intensity = 0.7;
+                        } else {
+                            // flash
+                        }
+
                         if (settings.enable_lights and bo.light_color > 0) {
                             drawLight(
                                 light_idx,
@@ -1781,7 +1799,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             w,
                             h,
                             atlas_data,
-                            .{ .shadow_texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
+                            .{ .shadow_texel_mult = 2.0 / size, .alpha_mult = alpha_mult, .base_color = color, .base_color_intensity = color_intensity },
                         );
                         idx += 4;
 
