@@ -7,7 +7,7 @@ A zig client for a mmorpg bullet hell game
   
 ## Prerequisites
 - zig
-- zig compatiable IDE (VSCode, Rider)
+- IDE (VSCode, Rider)
 
 ## Zig Setup
 ### Windows
