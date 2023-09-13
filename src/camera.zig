@@ -78,11 +78,15 @@ pub fn update(target_x: f32, target_y: f32, dt: f32, rotate: i8) void {
 
     const min_x_dt = target_x - max_dist;
     min_x = if (min_x_dt < 0) 0 else @intFromFloat(min_x_dt);
+    min_x = @max(0, min_x);
     max_x = @intFromFloat(target_x + max_dist);
+    max_x = @min(@as(u32, @intCast(map.width)), max_x);
 
     const min_y_dt = target_y - max_dist;
     min_y = if (min_y_dt < 0) 0 else @intFromFloat(min_y_dt);
+    min_y = @max(0, min_y);
     max_y = @intFromFloat(target_y + max_dist);
+    max_y = @min(@as(u32, @intCast(map.height)), max_y);
 }
 
 pub inline fn rotateAroundCamera(x_in: f32, y_in: f32) utils.Point {

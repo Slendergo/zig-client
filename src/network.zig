@@ -525,6 +525,9 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
         const position = reader.read(Position);
 
         const stats_len = reader.read(u16);
+        const stats_byte_len = reader.read(u16);
+        const next_obj_idx = reader.index + stats_byte_len;
+
         if (map.findEntityRef(obj_id)) |en| {
             switch (en.*) {
                 .player => |*player| {
@@ -543,10 +546,14 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
                         const stat_id = reader.read(u8);
                         const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
                             std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
-                            return;
+                            reader.index = next_obj_idx;
+                            continue;
                         };
-                        if (!parsePlrStatData(&player.*, stat, allocator))
-                            return;
+                        if (!parsePlrStatData(&player.*, stat, allocator)) {
+                            std.log.err("Stat data parsing for stat {d} failed, player: {any}", .{ stat_id, player });
+                            reader.index = next_obj_idx;
+                            continue;
+                        }
                     }
 
                     continue;
@@ -563,10 +570,14 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
                         const stat_id = reader.read(u8);
                         const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
                             std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
-                            return;
+                            reader.index = next_obj_idx;
+                            continue;
                         };
-                        if (!parseObjStatData(&object.*, stat, allocator))
-                            return;
+                        if (!parseObjStatData(&object.*, stat, allocator)) {
+                            std.log.err("Stat data parsing for stat {d} failed, object: {any}", .{ stat_id, object });
+                            reader.index = next_obj_idx;
+                            continue;
+                        }
                     }
 
                     continue;
@@ -575,8 +586,8 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
             }
         }
 
+        reader.index = next_obj_idx;
         std.log.err("Could not find object in NewTick (obj_id={d}, x={d}, y={d})", .{ obj_id, position.x, position.y });
-        return;
     }
 
     map.last_tick_time = @divFloor(main.current_time, std.time.us_per_ms);
@@ -830,6 +841,8 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
         const position = reader.read(Position);
 
         const stats_len = reader.read(u16);
+        const stats_byte_len = reader.read(u16);
+        const next_obj_idx = reader.index + stats_byte_len;
         const class = game_data.obj_type_to_class.get(obj_type) orelse game_data.ClassType.game_object;
 
         switch (class) {
@@ -839,10 +852,14 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
                     const stat_id = reader.read(u8);
                     const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
                         std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
-                        return;
+                        reader.index = next_obj_idx;
+                        continue;
                     };
-                    if (!parsePlrStatData(&player, stat, allocator))
-                        return;
+                    if (!parsePlrStatData(&player, stat, allocator)) {
+                        std.log.err("Stat data parsing for stat {d} failed, player: {any}", .{ stat_id, player });
+                        reader.index = next_obj_idx;
+                        continue;
+                    }
                 }
 
                 player.addToMap();
@@ -853,10 +870,13 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
                     const stat_id = reader.read(u8);
                     const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
                         std.log.err("Could not parse stat {d}: {any}", .{ stat_id, e });
-                        return;
+                        reader.index = next_obj_idx;
+                        continue;
                     };
                     if (!parseObjStatData(&obj, stat, allocator)) {
-                        return;
+                        std.log.err("Stat data parsing for stat {d} failed, object: {any}", .{ stat_id, obj });
+                        reader.index = next_obj_idx;
+                        continue;
                     }
                 }
 

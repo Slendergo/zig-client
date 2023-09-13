@@ -215,12 +215,6 @@ pub const GameObject = struct {
     occupy_square: bool = false,
     enemy_occupy_square: bool = false,
 
-    pub fn getSquare(self: GameObject) Square {
-        const floor_x: u32 = @intFromFloat(@floor(self.x));
-        const floor_y: u32 = @intFromFloat(@floor(self.y));
-        return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-    }
-
     pub fn addToMap(self: *GameObject) void {
         const should_lock = entities.isFull();
         if (should_lock) {
@@ -549,14 +543,8 @@ pub const Player = struct {
     action: u8 = 0,
     float_period: f32 = 0.0,
 
-    pub fn getSquare(self: Player) Square {
-        const floor_x: u32 = @intFromFloat(@floor(self.x));
-        const floor_y: u32 = @intFromFloat(@floor(self.y));
-        return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-    }
-
     pub fn onMove(self: *Player) void {
-        const square = self.getSquare();
+        const square = getSquare(self.x, self.y);
         if (square.props == null)
             return;
 
@@ -644,6 +632,9 @@ pub const Player = struct {
     }
 
     pub fn shoot(self: *Player, angle: f32, time: i64, useMult: bool) void {
+        if (self.condition.stunned or self.condition.stasis)
+            return;
+            
         const weapon = self.inventory[0];
         if (weapon == -1)
             return;
@@ -781,6 +772,11 @@ pub const Player = struct {
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
             if (!std.math.isNan(self.move_angle)) {
+                if (self.condition.paralyzed or self.condition.stasis) {
+                    self.move_angle = std.math.nan(f32);
+                    return;
+                }
+
                 const move_speed = self.moveSpeedMultiplier();
                 const total_angle = camera.angle_unbound + self.move_angle;
                 const next_x = self.x + move_speed * dt * @cos(total_angle);
@@ -829,12 +825,6 @@ pub const Player = struct {
     }
 
     fn modifyMove(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
-        if (self.condition.paralyzed) {
-            target_x.* = self.x;
-            target_y.* = self.y;
-            return;
-        }
-
         const dx = x - self.x;
         const dy = y - self.y;
 
@@ -849,11 +839,10 @@ pub const Player = struct {
         target_y.* = self.y;
 
         var d: f32 = 0.0;
-        var done: bool = false;
-        while (!done) {
+        while (true) {
             if (d + step_size >= 1.0) {
                 step_size = 1.0 - d;
-                done = true;
+                break;
             }
             modifyStep(self, target_x.* + dx * step_size, target_y.* + dy * step_size, target_x, target_y);
             d += step_size;
@@ -861,55 +850,36 @@ pub const Player = struct {
     }
 
     fn isValidPosition(x: f32, y: f32) bool {
-        //if(square != map_square and map_square != null and !isWalkable(x, y)) // way flash does it so we dont do a check if were not on a new tile
-        if (!isWalkable(x, y)) {
+        if (!isWalkable(x, y))
             return false;
-        }
 
         const x_frac = x - @floor(x);
         const y_frac = y - @floor(y);
 
         if (x_frac < 0.5) {
-            if (isFullOccupy(x - 1, y)) {
+            if (isFullOccupy(x - 1, y))
                 return false;
-            }
 
-            if (y_frac < 0.5) {
-                if (isFullOccupy(x, y - 1) or isFullOccupy(x - 1, y - 1)) {
-                    return false;
-                }
-            }
+            if (y_frac < 0.5 and (isFullOccupy(x, y - 1) or isFullOccupy(x - 1, y - 1)))
+                return false;
 
-            if (y_frac > 0.5) {
-                if (isFullOccupy(x, y + 1) or isFullOccupy(x - 1, y + 1)) {
-                    return false;
-                }
-            }
+            if (y_frac > 0.5 and (isFullOccupy(x, y + 1) or isFullOccupy(x - 1, y + 1)))
+                return false;
         } else if (x_frac > 0.5) {
-            if (isFullOccupy(x + 1, y)) {
+            if (isFullOccupy(x + 1, y))
                 return false;
-            }
-            if (y_frac < 0.5) {
-                if (isFullOccupy(x, y - 1) or isFullOccupy(x + 1, y - 1)) {
-                    return false;
-                }
-            }
-            if (y_frac > 0.5) {
-                if (isFullOccupy(x, y + 1) or isFullOccupy(x + 1, y + 1)) {
-                    return false;
-                }
-            }
+
+            if (y_frac < 0.5 and (isFullOccupy(x, y - 1) or isFullOccupy(x + 1, y - 1)))
+                return false;
+
+            if (y_frac > 0.5 and (isFullOccupy(x, y + 1) or isFullOccupy(x + 1, y + 1)))
+                return false;
         } else {
-            if (y_frac < 0.5) {
-                if (isFullOccupy(x, y - 1)) {
-                    return false;
-                }
-            }
-            if (y_frac > 0.5) {
-                if (isFullOccupy(x, y + 1)) {
-                    return false;
-                }
-            }
+            if (y_frac < 0.5 and isFullOccupy(x, y - 1))
+                return false;
+
+            if (y_frac > 0.5 and isFullOccupy(x, y + 1))
+                return false;
         }
         return true;
     }
@@ -918,29 +888,24 @@ pub const Player = struct {
         if (x < 0 or y < 0)
             return false;
 
-        const floor_x: u32 = @intFromFloat(@floor(x));
-        const floor_y: u32 = @intFromFloat(@floor(y));
-        const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-
-        // return true if u can walk and its not occupied and returns false by default if props is null
-        return square.props != null and !square.props.?.no_walk and !square.occupy_square;
+        const square = getSquare(x, y);
+        const walkable = square.props == null or !square.props.?.no_walk;
+        const not_occupied = !square.occupy_square;
+        return square.tile_type != 0xFFFF and square.tile_type != 0xFF and walkable and not_occupied;
     }
 
     fn isFullOccupy(x: f32, y: f32) bool {
         if (x < 0 or y < 0)
             return true;
 
-        const floor_x: u32 = @intFromFloat(@floor(x));
-        const floor_y: u32 = @intFromFloat(@floor(y));
-        const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-        return square.tile_type == 0xFF or square.full_occupy;
+        return getSquare(x, y).full_occupy;
     }
 
     fn modifyStep(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
         const x_cross = (@mod(self.x, 0.5) == 0 and x != self.x) or (@floor(self.x / 0.5) != @floor(x / 0.5));
         const y_cross = (@mod(self.y, 0.5) == 0 and y != self.y) or (@floor(self.y / 0.5) != @floor(y / 0.5));
 
-        if ((!x_cross and !y_cross) or isValidPosition(x, y)) {
+        if (!x_cross and !y_cross or isValidPosition(x, y)) {
             target_x.* = x;
             target_y.* = y;
             return;
@@ -950,16 +915,14 @@ pub const Player = struct {
         var next_y_border: f32 = 0.0;
         if (x_cross) {
             next_x_border = if (x > self.x) @floor(x * 2) / 2.0 else @floor(self.x * 2) / 2.0;
-            if (@floor(next_x_border) > @floor(self.x)) {
+            if (@floor(next_x_border) > @floor(self.x))
                 next_x_border -= 0.01;
-            }
         }
 
         if (y_cross) {
             next_y_border = if (y > self.y) @floor(y * 2) / 2.0 else @floor(self.y * 2) / 2.0;
-            if (@floor(next_y_border) > @floor(self.y)) {
+            if (@floor(next_y_border) > @floor(self.y))
                 next_y_border -= 0.01;
-            }
         }
 
         // when we add in sliding i will do this
@@ -1040,14 +1003,7 @@ pub const Projectile = struct {
     damage_players: bool = false,
     damage: i32 = 0,
     props: *const game_data.ProjProps,
-    // do we need the container properties from the item or entity? like flash does
     last_hit_check: i64 = 0,
-
-    pub fn getSquare(self: Projectile) Square {
-        const floor_x: u32 = @intFromFloat(@floor(self.x));
-        const floor_y: u32 = @intFromFloat(@floor(self.y));
-        return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-    }
 
     pub fn addToMap(self: *Projectile, needs_lock: bool) void {
         const should_lock = needs_lock and entities.isFull();
@@ -1067,6 +1023,8 @@ pub const Projectile = struct {
 
         self.obj_id = Projectile.next_obj_id + 1;
         Projectile.next_obj_id += 1;
+        if (Projectile.next_obj_id == std.math.maxInt(i32))
+            Projectile.next_obj_id = 0x7F000000;
 
         entities.add(.{ .projectile = self.* }) catch |e| {
             std.log.err("Could not add projectile to map (obj_id={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.x, self.y, e });
@@ -1192,14 +1150,6 @@ pub const Projectile = struct {
                 const y = @sin(2 * t) * if (self.bullet_id % 4 < 2) @as(f32, 1.0) else @as(f32, -1.0);
                 self.x += (x * @cos(self.angle) - y * @sin(self.angle)) * self.props.magnitude;
                 self.y += (x * @sin(self.angle) + y * @cos(self.angle)) * self.props.magnitude;
-            } else if (self.props.wavy) {
-                const period_factor = 6.0 * std.math.pi;
-                const amplitude_factor = std.math.pi / 64.0;
-                const phase: f32 = if (self.bullet_id % 2 == 0) 0.0 else std.math.pi;
-                const elapsed_cast: f32 = @floatFromInt(elapsed);
-                const theta = self.angle + amplitude_factor * @sin(phase + period_factor * elapsed_cast / 1000.0);
-                self.x += dist * @cos(theta);
-                self.y += dist * @sin(theta);
             } else {
                 if (self.props.boomerang and elapsed > self.props.lifetime_ms / 2)
                     dist = -dist;
@@ -1253,6 +1203,13 @@ pub const Projectile = struct {
 
             if (self.damage_players) {
                 if (findTargetPlayer(self.x, self.y, 0.33)) |player| {
+                    if (player.condition.invincible)
+                        return true;
+
+                    if (player.condition.invulnerable or player.condition.stasis) {
+                        assets.playSfx(player.hit_sound);
+                        return false;
+                    }
 
                     // player hit only for self
                     if (map.local_player_id == player.obj_id) {
@@ -1305,6 +1262,14 @@ pub const Projectile = struct {
                 }
             } else {
                 if (findTargetObject(self.x, self.y, 0.33)) |object| {
+                    if (object.condition.invincible)
+                        return true;
+
+                    if (object.condition.invulnerable or object.condition.stasis) {
+                        assets.playSfx(object.hit_sound);
+                        return false;
+                    }
+
                     if (object.is_enemy) {
                         const pierced = self.props.armor_piercing;
                         const d = damageWithDefense(self.damage, object.defense, pierced, object.condition);
@@ -1458,7 +1423,7 @@ pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
         .object => |obj| {
             if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
                 if (class_props == .wall) {
-                    var square = map.getSquareUnsafe(obj.x, obj.y);
+                    var square = map.getSquare(obj.x, obj.y);
                     square.occupy_square = false;
                     square.full_occupy = false;
                     square.has_wall = false;
@@ -1618,8 +1583,8 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     const ms_time = @divFloor(time, std.time.us_per_ms);
     const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
 
-    var cam_x: f32 = 0.0;
-    var cam_y: f32 = 0.0;
+    var cam_x: f32 = camera.x.load(.Acquire);
+    var cam_y: f32 = camera.y.load(.Acquire);
 
     var interactive_set = false;
     for (0..entities.capacity) |i| {
@@ -1628,8 +1593,6 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
             en.player.update(ms_time, ms_dt);
             if (en.player.obj_id == local_player_id) {
                 camera.update(en.player.x, en.player.y, ms_dt, input.rotate);
-                cam_x = en.player.x;
-                cam_y = en.player.y;
                 if (input.attacking) {
                     const y: f32 = @floatCast(input.mouse_y);
                     const x: f32 = @floatCast(input.mouse_x);
@@ -1697,7 +1660,7 @@ pub inline fn validPos(x: isize, y: isize) bool {
     return !(x < 0 or x >= width or y < 0 or y >= height);
 }
 
-pub inline fn getSquareUnsafe(x: f32, y: f32) Square {
+pub inline fn getSquare(x: f32, y: f32) Square {
     const floor_x: u32 = @intFromFloat(@floor(x));
     const floor_y: u32 = @intFromFloat(@floor(y));
     return squares[floor_y * @as(u32, @intCast(width)) + floor_x];

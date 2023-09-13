@@ -99,6 +99,8 @@ pub var minimap_texture_view: zgpu.TextureViewHandle = undefined;
 pub var sampler: zgpu.SamplerHandle = undefined;
 pub var linear_sampler: zgpu.SamplerHandle = undefined;
 
+pub var condition_rects: [@bitSizeOf(utils.Condition)][]const assets.AtlasData = undefined;
+
 fn createVertexBuffer(gctx: *zgpu.GraphicsContext, comptime T: type, vb: *zgpu.wgpu.Buffer, buffer: []const T) void {
     vb.* = gctx.device.createBuffer(.{
         .usage = .{ .copy_dst = true, .vertex = true },
@@ -136,7 +138,55 @@ fn createTexture(gctx: *zgpu.GraphicsContext, tex: *zgpu.TextureHandle, view: *z
     );
 }
 
-pub fn init(gctx: *zgpu.GraphicsContext) void {
+pub fn deinit(allocator: std.mem.Allocator) void {
+    for (condition_rects) |rects| {
+        if (rects.len > 0)
+            allocator.free(rects);
+    }
+}
+
+pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
+    for (0..@bitSizeOf(utils.Condition)) |i| {
+        const sheet_name = "lofiInterface2";
+        const sheet_indices: []const u16 = switch (std.meta.intToEnum(utils.ConditionEnum, i + 1) catch continue) {
+            .quiet => &[_]u16{32},
+            .weak => &[_]u16{ 34, 35, 36, 37 },
+            .slowed => &[_]u16{1},
+            .sick => &[_]u16{39},
+            .dazed => &[_]u16{44},
+            .stunned => &[_]u16{45},
+            .blind => &[_]u16{41},
+            .hallucinating => &[_]u16{42},
+            .drunk => &[_]u16{43},
+            .confused => &[_]u16{2},
+            .paralyzed => &[_]u16{ 53, 54 },
+            .speedy => &[_]u16{0},
+            .bleeding => &[_]u16{46},
+            .healing => &[_]u16{47},
+            .damaging => &[_]u16{49},
+            .berserk => &[_]u16{50},
+            .invulnerable => &[_]u16{17},
+            .armored => &[_]u16{16},
+            .armor_broken => &[_]u16{55},
+            .hexed => &[_]u16{42},
+            .ninja_speedy => &[_]u16{0},
+            else => &[0]u16{},
+        };
+
+        const indices_len = sheet_indices.len;
+        if (indices_len == 0) {
+            condition_rects[i] = &[0]assets.AtlasData{};
+            continue;
+        }
+
+        var rects = allocator.alloc(assets.AtlasData, indices_len) catch continue;
+        for (0..indices_len) |j| {
+            rects[j] = (assets.atlas_data.get(sheet_name) orelse @panic("Could not find sheet for cond parsing"))[sheet_indices[j]];
+        }
+
+        condition_rects[i] = rects;
+    }
+
     createVertexBuffer(gctx, BaseVertexData, &base_vb, base_vert_data[0..]);
     createVertexBuffer(gctx, GroundVertexData, &ground_vb, ground_vert_data[0..]);
     createVertexBuffer(gctx, LightVertexData, &light_vb, light_vert_data[0..]);
@@ -1437,7 +1487,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             }
                         }
 
-                        const square = player.getSquare();
+                        const square = map.getSquare(player.x, player.y);
                         var sink: f32 = 1.0;
                         if (square.tile_type != 0xFFFF) {
                             sink += if (square.props != null and square.props.?.sink) 0.75 else 0;
@@ -1455,6 +1505,15 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         var alpha_mult: f32 = 1.0;
                         if (player.condition.invisible)
                             alpha_mult = 0.6;
+
+                        var color: i32 = -1;
+                        var color_intensity: f32 = 0.0;
+                        if (player.condition.stasis) {
+                            color = 0x777777;
+                            color_intensity = 0.7;
+                        } else {
+                            // flash
+                        }
 
                         if (settings.enable_lights and player.light_color > 0) {
                             drawLight(
@@ -1495,7 +1554,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             w,
                             h,
                             atlas_data,
-                            .{ .shadow_texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
+                            .{ .shadow_texel_mult = 2.0 / size, .alpha_mult = alpha_mult, .base_color = color, .base_color_intensity = color_intensity },
                         );
                         idx += 4;
 
@@ -1632,6 +1691,42 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             y_pos += mp_bar_h - pad_scale_bar;
                         }
+
+                        const cond_int: u64 = @bitCast(player.condition);
+                        if (cond_int > 0) {
+                            var cond_len: f32 = 0.0;
+                            for (0..@bitSizeOf(utils.Condition)) |i| {
+                                if (cond_int & (@as(usize, 1) << @intCast(i)) != 0)
+                                    cond_len += if (condition_rects[i].len > 0) 1.0 else 0.0;
+                            }
+
+                            var cond_idx: f32 = 0.0;
+                            for (0..@bitSizeOf(utils.Condition)) |i| {
+                                if (cond_int & (@as(usize, 1) << @intCast(i)) != 0) {
+                                    const data = condition_rects[i];
+                                    if (data.len > 0) {
+                                        const frame_idx: usize = @intCast(@divFloor(time, 500 * std.time.us_per_ms));
+                                        const current_frame = data[@mod(frame_idx, data.len)];
+                                        const cond_w = current_frame.texWRaw() * 2;
+                                        const cond_h = current_frame.texHRaw() * 2;
+
+                                        drawQuad(
+                                            idx,
+                                            screen_pos.x - x_offset - cond_len * (cond_w + 2) / 2 + cond_idx * (cond_w + 2),
+                                            screen_pos.y + h - pad_scale_obj + y_pos,
+                                            cond_w,
+                                            cond_h,
+                                            current_frame,
+                                            .{ .shadow_texel_mult = 0.5, .force_glow_off = true },
+                                        );
+                                        idx += 4;
+                                        cond_idx += 1.0;
+                                    }
+                                }
+                            }
+
+                            y_pos += 20;
+                        }
                     },
                     .object => |bo| {
                         if (!camera.visibleInCamera(bo.x, bo.y)) {
@@ -1641,7 +1736,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         var screen_pos = camera.rotateAroundCamera(bo.x, bo.y);
                         const size = camera.size_mult * camera.scale * bo.size;
 
-                        const square = bo.getSquare();
+                        const square = map.getSquare(bo.x, bo.y);
                         if (bo.draw_on_ground) {
                             const tile_size = @as(f32, camera.px_per_tile) * camera.scale;
                             drawQuad(
@@ -1727,6 +1822,15 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         if (bo.condition.invisible)
                             alpha_mult = 0.6;
 
+                        var color: i32 = -1;
+                        var color_intensity: f32 = 0.0;
+                        if (bo.condition.stasis) {
+                            color = 0x777777;
+                            color_intensity = 0.7;
+                        } else {
+                            // flash
+                        }
+
                         if (settings.enable_lights and bo.light_color > 0) {
                             drawLight(
                                 light_idx,
@@ -1781,7 +1885,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             w,
                             h,
                             atlas_data,
-                            .{ .shadow_texel_mult = 2.0 / size, .alpha_mult = alpha_mult },
+                            .{ .shadow_texel_mult = 2.0 / size, .alpha_mult = alpha_mult, .base_color = color, .base_color_intensity = color_intensity },
                         );
                         idx += 4;
 
@@ -1859,6 +1963,42 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             }
 
                             y_pos += hp_bar_h - pad_scale_bar;
+                        }
+
+                        const cond_int: u64 = @bitCast(bo.condition);
+                        if (cond_int > 0) {
+                            var cond_len: f32 = 0.0;
+                            for (0..@bitSizeOf(utils.Condition)) |i| {
+                                if (cond_int & (@as(usize, 1) << @intCast(i)) != 0)
+                                    cond_len += if (condition_rects[i].len > 0) 1.0 else 0.0;
+                            }
+
+                            var cond_idx: f32 = 0.0;
+                            for (0..@bitSizeOf(utils.Condition)) |i| {
+                                if (cond_int & (@as(usize, 1) << @intCast(i)) != 0) {
+                                    const data = condition_rects[i];
+                                    if (data.len > 0) {
+                                        const frame_idx: usize = @intCast(@divFloor(time, 500 * std.time.us_per_ms));
+                                        const current_frame = data[@mod(frame_idx, data.len)];
+                                        const cond_w = current_frame.texWRaw() * 2;
+                                        const cond_h = current_frame.texHRaw() * 2;
+
+                                        drawQuad(
+                                            idx,
+                                            screen_pos.x - x_offset - cond_len * (cond_w + 2) / 2 + cond_idx * (cond_w + 2),
+                                            screen_pos.y + h - pad_scale_obj + y_pos,
+                                            cond_w,
+                                            cond_h,
+                                            current_frame,
+                                            .{ .shadow_texel_mult = 0.5, .force_glow_off = true },
+                                        );
+                                        idx += 4;
+                                        cond_idx += 1.0;
+                                    }
+                                }
+                            }
+
+                            y_pos += 20;
                         }
                     },
                     .projectile => |proj| {
