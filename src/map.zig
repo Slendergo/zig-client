@@ -1310,7 +1310,7 @@ pub fn damageWithDefense(orig_damage: i32, target_defense: i32, armor_piercing: 
         def *= 1.5;
     }
 
-    const min = @divFloor(@as(f32, @floatFromInt(orig_damage * 2)), 20.0);
+    const min = @as(f32, @floatFromInt(orig_damage * 2)) / 20.0;
     var d: f32 = @max(min, @as(f32, @floatFromInt(orig_damage)) - def);
     if (condition.invulnerable or condition.invincible) {
         d = 0.0;
