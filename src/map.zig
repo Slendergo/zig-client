@@ -922,8 +922,10 @@ pub const Player = struct {
         const floor_y: u32 = @intFromFloat(@floor(y));
         const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
 
-        // return true if u can walk and its not occupied and returns false by default if props is null
-        return square.props != null and !square.props.?.no_walk and !square.occupy_square;
+        const walkable = square.props == null or !square.props.?.no_walk;
+        const not_occupied = !square.occupy_square;
+        std.log.info("{any} | walkable: {any} and not_occupied: {any}", .{ map.last_tick_time, walkable, not_occupied });
+        return walkable and not_occupied;
     }
 
     fn isFullOccupy(x: f32, y: f32) bool {
@@ -1192,14 +1194,6 @@ pub const Projectile = struct {
                 const y = @sin(2 * t) * if (self.bullet_id % 4 < 2) @as(f32, 1.0) else @as(f32, -1.0);
                 self.x += (x * @cos(self.angle) - y * @sin(self.angle)) * self.props.magnitude;
                 self.y += (x * @sin(self.angle) + y * @cos(self.angle)) * self.props.magnitude;
-            } else if (self.props.wavy) {
-                const period_factor = 6.0 * std.math.pi;
-                const amplitude_factor = std.math.pi / 64.0;
-                const phase: f32 = if (self.bullet_id % 2 == 0) 0.0 else std.math.pi;
-                const elapsed_cast: f32 = @floatFromInt(elapsed);
-                const theta = self.angle + amplitude_factor * @sin(phase + period_factor * elapsed_cast / 1000.0);
-                self.x += dist * @cos(theta);
-                self.y += dist * @sin(theta);
             } else {
                 if (self.props.boomerang and elapsed > self.props.lifetime_ms / 2)
                     dist = -dist;
@@ -1618,8 +1612,8 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     const ms_time = @divFloor(time, std.time.us_per_ms);
     const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
 
-    var cam_x: f32 = 0.0;
-    var cam_y: f32 = 0.0;
+    var cam_x: f32 = camera.x.load(.Acquire);
+    var cam_y: f32 = camera.y.load(.Acquire);
 
     var interactive_set = false;
     for (0..entities.capacity) |i| {
@@ -1628,8 +1622,6 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
             en.player.update(ms_time, ms_dt);
             if (en.player.obj_id == local_player_id) {
                 camera.update(en.player.x, en.player.y, ms_dt, input.rotate);
-                cam_x = en.player.x;
-                cam_y = en.player.y;
                 if (input.attacking) {
                     const y: f32 = @floatCast(input.mouse_y);
                     const x: f32 = @floatCast(input.mouse_x);
