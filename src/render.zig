@@ -1964,6 +1964,42 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             y_pos += hp_bar_h - pad_scale_bar;
                         }
+
+                        const cond_int: u64 = @bitCast(bo.condition);
+                        if (cond_int > 0) {
+                            var cond_len: f32 = 0.0;
+                            for (0..@bitSizeOf(utils.Condition)) |i| {
+                                if (cond_int & (@as(usize, 1) << @intCast(i)) != 0)
+                                    cond_len += if (condition_rects[i].len > 0) 1.0 else 0.0;
+                            }
+
+                            var cond_idx: f32 = 0.0;
+                            for (0..@bitSizeOf(utils.Condition)) |i| {
+                                if (cond_int & (@as(usize, 1) << @intCast(i)) != 0) {
+                                    const data = condition_rects[i];
+                                    if (data.len > 0) {
+                                        const frame_idx: usize = @intCast(@divFloor(time, 500 * std.time.us_per_ms));
+                                        const current_frame = data[@mod(frame_idx, data.len)];
+                                        const cond_w = current_frame.texWRaw() * 2;
+                                        const cond_h = current_frame.texHRaw() * 2;
+
+                                        drawQuad(
+                                            idx,
+                                            screen_pos.x - x_offset - cond_len * (cond_w + 2) / 2 + cond_idx * (cond_w + 2),
+                                            screen_pos.y + h - pad_scale_obj + y_pos,
+                                            cond_w,
+                                            cond_h,
+                                            current_frame,
+                                            .{ .shadow_texel_mult = 0.5, .force_glow_off = true },
+                                        );
+                                        idx += 4;
+                                        cond_idx += 1.0;
+                                    }
+                                }
+                            }
+
+                            y_pos += 20;
+                        }
                     },
                     .projectile => |proj| {
                         if (!camera.visibleInCamera(proj.x, proj.y)) {
