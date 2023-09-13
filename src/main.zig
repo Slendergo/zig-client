@@ -344,7 +344,8 @@ pub fn main() !void {
     _ = window.setScrollCallback(input.scrollEvent);
     _ = window.setFramebufferSizeCallback(onResize);
 
-    render.init(gctx);
+    render.init(gctx, allocator);
+    defer render.deinit(allocator);
 
     network_thread = try std.Thread.spawn(.{}, networkTick, .{allocator});
     defer {
