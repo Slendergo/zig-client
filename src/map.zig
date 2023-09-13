@@ -837,11 +837,10 @@ pub const Player = struct {
         target_y.* = self.y;
 
         var d: f32 = 0.0;
-        var done: bool = false;
-        while (!done) {
+        while (true) {
             if (d + step_size >= 1.0) {
                 step_size = 1.0 - d;
-                done = true;
+                break;
             }
             modifyStep(self, target_x.* + dx * step_size, target_y.* + dy * step_size, target_x, target_y);
             d += step_size;
@@ -849,54 +848,37 @@ pub const Player = struct {
     }
 
     fn isValidPosition(x: f32, y: f32) bool {
-        if (!isWalkable(x, y)) {
+        if (!isWalkable(x, y))
             return false;
-        }
 
         const x_frac = x - @floor(x);
         const y_frac = y - @floor(y);
 
         if (x_frac < 0.5) {
-            if (isFullOccupy(x - 1, y)) {
+            if (isFullOccupy(x - 1, y))
                 return false;
-            }
 
-            if (y_frac < 0.5) {
-                if (isFullOccupy(x, y - 1) or isFullOccupy(x - 1, y - 1)) {
-                    return false;
-                }
-            }
+            if (y_frac < 0.5 and (isFullOccupy(x, y - 1) or isFullOccupy(x - 1, y - 1)))
+                return false;
 
-            if (y_frac > 0.5) {
-                if (isFullOccupy(x, y + 1) or isFullOccupy(x - 1, y + 1)) {
-                    return false;
-                }
-            }
+            if (y_frac > 0.5 and (isFullOccupy(x, y + 1) or isFullOccupy(x - 1, y + 1)))
+                return false;
         } else if (x_frac > 0.5) {
-            if (isFullOccupy(x + 1, y)) {
+            if (isFullOccupy(x + 1, y))
                 return false;
-            }
-            if (y_frac < 0.5) {
-                if (isFullOccupy(x, y - 1) or isFullOccupy(x + 1, y - 1)) {
-                    return false;
-                }
-            }
-            if (y_frac > 0.5) {
-                if (isFullOccupy(x, y + 1) or isFullOccupy(x + 1, y + 1)) {
-                    return false;
-                }
-            }
+            
+            if (y_frac < 0.5 and (isFullOccupy(x, y - 1) or isFullOccupy(x + 1, y - 1)))
+                return false;
+
+            if (y_frac > 0.5 and (isFullOccupy(x, y + 1) or isFullOccupy(x + 1, y + 1)))
+                return false;
+
         } else {
-            if (y_frac < 0.5) {
-                if (isFullOccupy(x, y - 1)) {
-                    return false;
-                }
-            }
-            if (y_frac > 0.5) {
-                if (isFullOccupy(x, y + 1)) {
-                    return false;
-                }
-            }
+            if (y_frac < 0.5 and isFullOccupy(x, y - 1))
+                return false;
+
+            if (y_frac > 0.5 and isFullOccupy(x, y + 1))
+                return false;
         }
         return true;
     }
@@ -922,7 +904,7 @@ pub const Player = struct {
         const x_cross = (@mod(self.x, 0.5) == 0 and x != self.x) or (@floor(self.x / 0.5) != @floor(x / 0.5));
         const y_cross = (@mod(self.y, 0.5) == 0 and y != self.y) or (@floor(self.y / 0.5) != @floor(y / 0.5));
 
-        if ((!x_cross and !y_cross) or isValidPosition(x, y)) {
+        if (!x_cross and !y_cross or isValidPosition(x, y)) {
             target_x.* = x;
             target_y.* = y;
             return;
@@ -932,16 +914,14 @@ pub const Player = struct {
         var next_y_border: f32 = 0.0;
         if (x_cross) {
             next_x_border = if (x > self.x) @floor(x * 2) / 2.0 else @floor(self.x * 2) / 2.0;
-            if (@floor(next_x_border) > @floor(self.x)) {
+            if (@floor(next_x_border) > @floor(self.x))
                 next_x_border -= 0.01;
-            }
         }
 
         if (y_cross) {
             next_y_border = if (y > self.y) @floor(y * 2) / 2.0 else @floor(self.y * 2) / 2.0;
-            if (@floor(next_y_border) > @floor(self.y)) {
+            if (@floor(next_y_border) > @floor(self.y))
                 next_y_border -= 0.01;
-            }
         }
 
         // when we add in sliding i will do this
@@ -1042,6 +1022,8 @@ pub const Projectile = struct {
 
         self.obj_id = Projectile.next_obj_id + 1;
         Projectile.next_obj_id += 1;
+        if (Projectile.next_obj_id == std.math.maxInt(i32))
+            Projectile.next_obj_id = 0x7F000000;
 
         entities.add(.{ .projectile = self.* }) catch |e| {
             std.log.err("Could not add projectile to map (obj_id={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.x, self.y, e });
