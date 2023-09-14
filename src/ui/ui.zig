@@ -782,6 +782,7 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                 if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
                     button.state = .pressed;
                     button.press_callback();
+                    assets.playSfx("button_click");
                     return true;
                 }
             },

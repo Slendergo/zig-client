@@ -279,7 +279,7 @@ pub fn main() !void {
     fba = std.heap.FixedBufferAllocator.init(&buf);
     stack_allocator = fba.allocator();
 
-    var buf_minimap: [20 * 20 * 4]u8 = undefined;
+    var buf_minimap: [40 * 40 * 4]u8 = undefined;
     var fba_minimap = std.heap.FixedBufferAllocator.init(&buf_minimap);
     stack_minimap_allocator = fba_minimap.allocator();
 
