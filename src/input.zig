@@ -276,7 +276,6 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
                         const msg = main.chat_history.items[main.chat_history_idx];
                         const msg_len = msg.len;
                         @memcpy(input_field.text_data.backing_buffer[0..msg_len], msg);
-                        input_field.text_data.backing_buffer[msg_len] = 0;
                         input_field.text_data.text = input_field.text_data.backing_buffer[0..msg_len];
                         input_field._index = @intCast(msg_len);
                     }
