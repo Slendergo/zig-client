@@ -269,13 +269,16 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
                 return;
             }
 
-            if (main.chat_history_idx != 65535) {
+            if (input_field.allow_chat_history and main.chat_history_idx != 65535) {
                 if (key == .up) {
                     if (main.chat_history_idx > 0) {
                         main.chat_history_idx -= 1;
-                        const msg_d = main._allocator.dupe(u8, main.chat_history.items[main.chat_history_idx]) catch unreachable;
-                        input_field.text_data.text = msg_d;
-                        input_field._index = @intCast(msg_d.len);
+                        const msg = main.chat_history.items[main.chat_history_idx];
+                        const msg_len = msg.len;
+                        @memcpy(input_field.text_data.backing_buffer[0..msg_len], msg);
+                        input_field.text_data.backing_buffer[msg_len] = 0;
+                        input_field.text_data.text = input_field.text_data.backing_buffer[0..msg_len];
+                        input_field._index = @intCast(msg_len);
                     }
 
                     return;
@@ -288,9 +291,11 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
                         if (main.chat_history_idx == main.chat_history.items.len - 1) {
                             input_field.clear();
                         } else {
-                            const msg_d = main._allocator.dupe(u8, main.chat_history.items[main.chat_history_idx]) catch unreachable;
-                            input_field.text_data.text = msg_d;
-                            input_field._index = @intCast(msg_d.len);
+                            const msg = main.chat_history.items[main.chat_history_idx];
+                            const msg_len = msg.len;
+                            @memcpy(input_field.text_data.backing_buffer[0..msg_len], msg);
+                            input_field.text_data.text = input_field.text_data.backing_buffer[0..msg_len];
+                            input_field._index = @intCast(msg_len);
                         }
                     }
 

@@ -340,6 +340,7 @@ pub const InGameScreen = struct {
             },
             .allocator = allocator,
             .enter_callback = chatCallback,
+            .allow_chat_history = true,
         };
         try ui.elements.add(.{ .input_field = screen.chat_input });
 

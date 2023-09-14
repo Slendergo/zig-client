@@ -50,6 +50,7 @@ pub const InputField = struct {
     hover_decor_data: ?ImageData = null,
     press_decor_data: ?ImageData = null,
     visible: bool = true,
+    allow_chat_history: bool = false,
     _index: u32 = 0,
     _disposed: bool = false,
 
