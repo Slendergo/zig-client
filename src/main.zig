@@ -109,7 +109,9 @@ pub var minimap_update_min_x: u32 = 4096;
 pub var minimap_update_max_x: u32 = 0;
 pub var minimap_update_min_y: u32 = 4096;
 pub var minimap_update_max_y: u32 = 0;
-var _allocator: std.mem.Allocator = undefined;
+pub var chat_history: std.ArrayList([]const u8) = undefined;
+pub var chat_history_idx: u16 = 65535;
+pub var _allocator: std.mem.Allocator = undefined;
 
 fn onResize(window: *zglfw.Window, w: i32, h: i32) callconv(.C) void {
     _ = window;
@@ -282,6 +284,9 @@ pub fn main() !void {
     var buf_minimap: [std.math.maxInt(u16)]u8 = undefined;
     var fba_minimap = std.heap.FixedBufferAllocator.init(&buf_minimap);
     stack_minimap_allocator = fba_minimap.allocator();
+
+    chat_history = std.ArrayList([]const u8).init(allocator);
+    defer chat_history.deinit();
 
     zglfw.init() catch |e| {
         std.log.err("Failed to initialize GLFW library: {any}", .{e});

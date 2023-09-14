@@ -269,6 +269,35 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
                 return;
             }
 
+            if (main.chat_history_idx != 65535) {
+                if (key == .up) {
+                    if (main.chat_history_idx > 0) {
+                        main.chat_history_idx -= 1;
+                        const msg_d = main._allocator.dupe(u8, main.chat_history.items[main.chat_history_idx]) catch unreachable;
+                        input_field.text_data.text = msg_d;
+                        input_field._index = @intCast(msg_d.len);
+                    }
+
+                    return;
+                }
+
+                if (key == .down) {
+                    if (main.chat_history_idx < main.chat_history.items.len - 1) {
+                        main.chat_history_idx += 1;
+
+                        if (main.chat_history_idx == main.chat_history.items.len - 1) {
+                            input_field.clear();
+                        } else {
+                            const msg_d = main._allocator.dupe(u8, main.chat_history.items[main.chat_history_idx]) catch unreachable;
+                            input_field.text_data.text = msg_d;
+                            input_field._index = @intCast(msg_d.len);
+                        }
+                    }
+
+                    return;
+                }
+            }
+
             return;
         }
     }
@@ -326,7 +355,7 @@ pub fn updateState() void {
     if (map.localPlayerRef()) |local_player| {
         if (local_player.condition.paralyzed or local_player.condition.stasis)
             return;
-            
+
         const y_dt = move_down - move_up;
         const x_dt = move_right - move_left;
         local_player.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);

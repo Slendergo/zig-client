@@ -374,7 +374,7 @@ pub const InGameScreen = struct {
         allocator.destroy(self.chat_decor);
         allocator.destroy(self.chat_input);
         allocator.destroy(self.fps_text);
-        
+
         for (self.inventory_items) |item| {
             allocator.destroy(item);
         }
@@ -696,7 +696,13 @@ pub const InGameScreen = struct {
     }
 
     fn chatCallback(input_text: []u8) void {
-        network.sendPlayerText(input_text);
+        if (input_text.len != 0) {
+            network.sendPlayerText(input_text);
+
+            const msg_d = main._allocator.dupe(u8, input_text) catch unreachable;
+            main.chat_history.append(msg_d) catch unreachable;
+            main.chat_history_idx = @intCast(main.chat_history.items.len);
+        }
     }
 
     fn itemDragEndCallback(item: *ui.Item) void {
