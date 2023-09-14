@@ -1076,7 +1076,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     region_type_to_color.deinit();
 }
 
-inline fn parseTexture(node: xml.Node, allocator: std.mem.Allocator) ![]TextureData {
+fn parseTexture(node: xml.Node, allocator: std.mem.Allocator) ![]TextureData {
     if (node.findChild("RandomTexture")) |random_tex_child| {
         var tex_iter = random_tex_child.iterate(&.{}, "Texture");
         var tex_list = try utils.DynSlice(TextureData).init(4, allocator);

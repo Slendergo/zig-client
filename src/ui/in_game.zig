@@ -593,6 +593,8 @@ pub const InGameScreen = struct {
                     } else {
                         self.setInvItem(start_item, start_slot.idx);
                     }
+
+                    assets.playSfx("error");
                     return;
                 }
 
@@ -627,6 +629,8 @@ pub const InGameScreen = struct {
                         .object_type = end_item,
                     },
                 );
+
+                assets.playSfx("inventory_move_item");
             }
         }
     }
@@ -655,6 +659,7 @@ pub const InGameScreen = struct {
                         },
                         0,
                     );
+                    assets.playSfx("use_potion");
                 }
 
                 return;
@@ -742,6 +747,7 @@ pub const InGameScreen = struct {
                         },
                         0,
                     );
+                    assets.playSfx("use_potion");
                 }
 
                 return;

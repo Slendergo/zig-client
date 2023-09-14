@@ -328,6 +328,9 @@ pub const GameObject = struct {
                 squares[floor_y * @as(u32, @intCast(width)) + floor_x].has_wall = self.is_wall;
                 squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = self.is_wall;
             }
+
+            if (class_props == .container)
+                assets.playSfx("loot_appears");
         }
 
         self.class = game_data.obj_type_to_class.get(self.obj_type) orelse .game_object;
