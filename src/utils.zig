@@ -245,6 +245,40 @@ pub const ConditionEnum = enum(u8) {
     pub fn fromString(str: []const u8) ConditionEnum {
         return map.get(str) orelse .unknown;
     }
+
+    pub fn toString(self: ConditionEnum) []const u8 {
+        return switch (self) {
+            .dead => "Dead",
+            .quiet => "Quiet",
+            .weak => "Weak",
+            .slowed => "Slowed",
+            .sick => "Sick",
+            .dazed => "Dazed",
+            .stunned => "Stunned",
+            .blind => "Blind",
+            .hallucinating => "Hallucinating",
+            .drunk => "Drunk",
+            .confused => "Confused",
+            .stun_immune => "Stun Immune",
+            .invisible => "Invisible",
+            .paralyzed => "Paralyzed",
+            .speedy => "Speedy",
+            .bleeding => "Bleeding",
+            .healing => "Healing",
+            .damaging => "Damaging",
+            .berserk => "Berserk",
+            .paused => "Paused",
+            .stasis => "Stasis",
+            .stasis_immune => "Stasis Immune",
+            .invincible => "Invincible",
+            .invulnerable => "Invulnerable",
+            .armored => "Armored",
+            .armor_broken => "Armor Broken",
+            .hexed => "Hexed",
+            .ninja_speedy => "Ninja Speedy",
+            else => "",
+        };
+    }
 };
 
 pub const Condition = packed struct(u64) {

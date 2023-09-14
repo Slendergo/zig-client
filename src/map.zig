@@ -337,21 +337,47 @@ pub const GameObject = struct {
         };
     }
 
-    // idk why compiler wants a *const GameObject
-    pub fn takeDamage(self: *const GameObject, damageAmount: i32, kill: bool, armorPierce: bool, time: i64, allocator: std.mem.Allocator) void {
+    pub fn takeDamage(
+        self: *const GameObject,
+        damage_amount: i32,
+        kill: bool,
+        armor_pierce: bool,
+        time: i64,
+        effects: []game_data.ConditionEffect,
+        allocator: std.mem.Allocator,
+    ) void {
         assets.playSfx(self.hit_sound);
 
-        var is_ground_damage: bool = false;
         if (kill) {
-            // self.dead = true; disabled because im stupid and idk how to stop compiler moaning in zig when trying to call object.takeDamage(...);
+            assets.playSfx(self.death_sound);
         } else {
-            // todo apply conditioneffects and ground damage effect here
-            // apply condition effect here from projectile
+            for (effects) |eff| {
+                const cond_str = eff.condition.toString();
+                if (cond_str.len == 0)
+                    continue;
+
+                const text_data = ui.TextData{
+                    .text = std.fmt.allocPrint(allocator, "{s}", .{cond_str}) catch unreachable,
+                    .text_type = .bold,
+                    .size = 22,
+                    .color = 0xB02020,
+                    .backing_buffer = &[0]u8{},
+                };
+
+                ui.elements.add(.{ .status = ui.StatusText{
+                    .obj_id = self.obj_id,
+                    .start_time = time,
+                    .text_data = text_data,
+                    .initial_size = 22,
+                } }) catch |e| {
+                    std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
+                };
+            }
         }
 
-        if (damageAmount > 0) {
-            const pierced = self.condition.armor_broken or is_ground_damage or armorPierce;
-            showDamageText(time, damageAmount, pierced, self.obj_id, allocator);
+        if (damage_amount > 0) {
+            const pierced = self.condition.armor_broken or armor_pierce;
+            showDamageText(time, damage_amount, pierced, self.obj_id, allocator);
         }
     }
 
@@ -703,30 +729,56 @@ pub const Player = struct {
         self.attack_start = time;
     }
 
-    // idk why compiler wants a *const Player
-    pub fn takeDamage(self: *const Player, damageAmount: i32, kill: bool, armorPierce: bool, time: i64, allocator: std.mem.Allocator) void {
+    pub fn takeDamage(
+        self: *const Player,
+        damage_amount: i32,
+        kill: bool,
+        armor_pierce: bool,
+        time: i64,
+        effects: []game_data.ConditionEffect,
+        allocator: std.mem.Allocator,
+    ) void {
         assets.playSfx(self.hit_sound);
 
-        var is_ground_damage: bool = false;
         if (kill) {
-            // self.dead = true; disabled because im stupid and idk how to stop compiler moaning in zig when trying to call player.takeDamage(...);
+            assets.playSfx(self.death_sound);
         } else {
-            // todo apply conditioneffects and ground damage effect here
-            // apply condition effect here from projectile
+            for (effects) |eff| {
+                const cond_str = eff.condition.toString();
+                if (cond_str.len == 0)
+                    continue;
+
+                const text_data = ui.TextData{
+                    .text = std.fmt.allocPrint(allocator, "{s}", .{cond_str}) catch unreachable,
+                    .text_type = .bold,
+                    .size = 22,
+                    .color = 0xB02020,
+                    .backing_buffer = &[0]u8{},
+                };
+
+                ui.elements.add(.{ .status = ui.StatusText{
+                    .obj_id = self.obj_id,
+                    .start_time = time,
+                    .text_data = text_data,
+                    .initial_size = 22,
+                } }) catch |e| {
+                    std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
+                };
+            }
         }
 
-        if (damageAmount > 0) {
-            const pierced = self.condition.armor_broken or is_ground_damage or armorPierce;
-            showDamageText(time, damageAmount, pierced, self.obj_id, allocator);
+        if (damage_amount > 0) {
+            const pierced = self.condition.armor_broken or armor_pierce;
+            showDamageText(time, damage_amount, pierced, self.obj_id, allocator);
         }
     }
 
-    pub fn update(self: *Player, time: i64, dt: f32) void {
+    pub fn update(self: *Player, time: i64, dt: f32, allocator: std.mem.Allocator) void {
         const normal_time = main.current_time;
         if (normal_time < self.attack_start + self.attack_period) {
             self.facing = self.attack_angle_raw;
             const time_dt: f32 = @floatFromInt(normal_time - self.attack_start);
-            self.float_period = @as(f32, @floatFromInt(self.attack_period));
+            self.float_period = @floatFromInt(self.attack_period);
             self.float_period = @mod(time_dt, self.float_period) / self.float_period;
             self.action = assets.attack_action;
         } else if (!std.math.isNan(self.move_angle)) {
@@ -788,13 +840,22 @@ pub const Player = struct {
                 modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
 
-            if (time - self.last_ground_damage >= 550) {
+            if (!self.condition.invulnerable and !self.condition.invincible and !self.condition.stasis and time - self.last_ground_damage >= 550) {
                 const floor_x: u32 = @intFromFloat(@floor(self.x));
                 const floor_y: u32 = @intFromFloat(@floor(self.y));
                 if (validPos(floor_x, floor_y)) {
                     const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
                     if (square.tile_type != 0xFFFF and square.tile_type != 0xFF and square.props != null and square.props.?.min_damage > 0) {
+                        const dmg = random.nextIntRange(square.props.?.min_damage, square.props.?.max_damage);
                         network.sendGroundDamage(time, .{ .x = self.x, .y = self.y });
+                        self.takeDamage(
+                            @intCast(dmg),
+                            dmg >= self.hp,
+                            true,
+                            time,
+                            &[0]game_data.ConditionEffect{},
+                            allocator,
+                        );
                         self.last_ground_damage = time;
                     }
                 }
@@ -1193,9 +1254,7 @@ pub const Projectile = struct {
         if (validPos(floor_x, floor_y)) {
             const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
             if (square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.blocking) {
-                // network.otherHit(time, self.bullet_id, self.owner_id) catch |e| {
-                //     std.log.err("Could not send other hit: {any}", .{e});
-                // };
+                network.sendSquareHit(time, self.bullet_id, self.owner_id);
                 return false;
             }
         }
@@ -1214,43 +1273,20 @@ pub const Projectile = struct {
                         return false;
                     }
 
-                    // player hit only for self
                     if (map.local_player_id == player.obj_id) {
                         const pierced = self.props.armor_piercing;
                         const d = damageWithDefense(self.damage, player.defense, pierced, player.condition);
                         const dead = player.hp <= d;
 
-                        player.takeDamage(d, dead, pierced, time, allocator);
+                        player.takeDamage(
+                            d,
+                            dead,
+                            pierced,
+                            time,
+                            self.props.effects,
+                            allocator,
+                        );
                         network.sendPlayerHit(self.bullet_id, self.owner_id);
-
-                        // todo redo with self.damage(); call
-                        // if (self.props.damage > 0 or self.props.min_damage > 0) {
-                        //     const piercing: bool = self.props.armor_piercing;
-                        //     var damage_color: i32 = 0xB02020;
-                        //     if (piercing)
-                        //         damage_color = 0x890AFF;
-
-                        //     const damage_value = if (self.props.damage > 0) self.props.damage else self.props.min_damage;
-                        //     if (damage_value > player.hp)
-                        //         assets.playSfx(player.death_sound);
-
-                        //     const text_data = ui.TextData{
-                        //         .text = std.fmt.allocPrint(allocator, "-{d}", .{damage_value}) catch unreachable,
-                        //         .text_type = .bold,
-                        //         .size = 22,
-                        //         .color = damage_color,
-                        //         .backing_buffer = &[0]u8{},
-                        //     };
-
-                        //     ui.elements.add(.{ .status = ui.StatusText{
-                        //         .obj_id = player.obj_id,
-                        //         .start_time = time,
-                        //         .text_data = text_data,
-                        //         .initial_size = 22,
-                        //     } }) catch |e| {
-                        //         std.log.err("Allocation for damage text \"-{d}\" failed: {any}", .{ damage_value, e });
-                        //     };
-                        // }
                     } else if (!self.props.multi_hit) {
                         network.sendOtherHit(time, self.bullet_id, self.obj_id, player.obj_id);
                     } else {
@@ -1278,10 +1314,15 @@ pub const Projectile = struct {
                         const d = damageWithDefense(self.damage, object.defense, pierced, object.condition);
                         const dead = object.hp <= d;
 
-                        object.takeDamage(d, dead, pierced, time, allocator);
+                        object.takeDamage(
+                            d,
+                            dead,
+                            pierced,
+                            time,
+                            self.props.effects,
+                            allocator,
+                        );
                         network.sendEnemyHit(time, self.bullet_id, object.obj_id, dead);
-
-                        std.log.info("damage to entity: {any}", .{d});
                     } else if (!self.props.multi_hit) {
                         network.sendOtherHit(time, self.bullet_id, self.obj_id, object.obj_id);
                     } else {
@@ -1303,7 +1344,7 @@ pub const Projectile = struct {
 };
 
 pub fn damageWithDefense(orig_damage: i32, target_defense: i32, armor_piercing: bool, condition: utils.Condition) i32 {
-    var def: f32 = @as(f32, @floatFromInt(target_defense));
+    var def: f32 = @floatFromInt(target_defense);
     if (armor_piercing or condition.armor_broken) {
         def = 0.0;
     } else if (condition.armored) {
@@ -1315,13 +1356,11 @@ pub fn damageWithDefense(orig_damage: i32, target_defense: i32, armor_piercing: 
     if (condition.invulnerable or condition.invincible) {
         d = 0.0;
     }
-    // exposed if have
-    // petrified
-    // cursed
+
     return @as(i32, @intFromFloat(d));
 }
 
-pub fn showDamageText(time: i64, damage: i32, pierced: bool, objectId: i32, allocator: std.mem.Allocator) void {
+pub fn showDamageText(time: i64, damage: i32, pierced: bool, object_id: i32, allocator: std.mem.Allocator) void {
     var damage_color: i32 = 0xB02020;
     if (pierced) {
         damage_color = 0x890AFF;
@@ -1335,10 +1374,8 @@ pub fn showDamageText(time: i64, damage: i32, pierced: bool, objectId: i32, allo
         .backing_buffer = &[0]u8{},
     };
 
-    std.log.info("{any} | show_damage: {any}", .{ time, damage });
-
     ui.elements.add(.{ .status = ui.StatusText{
-        .obj_id = objectId,
+        .obj_id = object_id,
         .start_time = time,
         .text_data = text_data,
         .initial_size = 22,
@@ -1596,7 +1633,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     for (0..entities.capacity) |i| {
         var en = entities._items[i];
         if (en == .player) {
-            en.player.update(ms_time, ms_dt);
+            en.player.update(ms_time, ms_dt, allocator);
             if (en.player.obj_id == local_player_id) {
                 camera.update(en.player.x, en.player.y, ms_dt, input.rotate);
                 if (input.attacking) {

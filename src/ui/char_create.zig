@@ -26,7 +26,7 @@ pub const CharCreateScreen = struct {
     pub fn toggle(self: *CharCreateScreen, state: bool) void {
         _ = self;
         if (state) {
-            main.char_create_type = 782;
+            main.char_create_type = 0x030e;
             main.char_create_skin_type = 0;
             main.selected_char_id = main.next_char_id;
             main.next_char_id += 1;

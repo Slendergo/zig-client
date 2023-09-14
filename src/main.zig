@@ -85,6 +85,7 @@ const embedded_font_data = @embedFile(asset_dir ++ "fonts/Ubuntu-Medium.ttf");
 pub var gctx: *zgpu.GraphicsContext = undefined;
 pub var fba: std.heap.FixedBufferAllocator = undefined;
 pub var stack_allocator: std.mem.Allocator = undefined;
+pub var stack_minimap_allocator: std.mem.Allocator = undefined;
 pub var current_account = AccountData{};
 pub var character_list: []CharacterData = undefined;
 pub var server_list: ?[]ServerData = null;
@@ -176,8 +177,8 @@ fn renderTick(allocator: std.mem.Allocator) !void {
             const w = minimap_update_max_x - minimap_update_min_x;
             const h = minimap_update_max_y - minimap_update_min_y;
             const comp_len = map.minimap.num_components * map.minimap.bytes_per_component;
-            var copy = try stack_allocator.alloc(u8, w * h * comp_len);
-            defer stack_allocator.free(copy);
+            var copy = stack_minimap_allocator.alloc(u8, w * h * comp_len) catch @panic("Minimap alloc failed");
+            defer stack_minimap_allocator.free(copy);
 
             var idx: u32 = 0;
             for (minimap_update_min_y..minimap_update_max_y) |y| {
@@ -277,6 +278,10 @@ pub fn main() !void {
     var buf: [std.math.maxInt(u16)]u8 = undefined;
     fba = std.heap.FixedBufferAllocator.init(&buf);
     stack_allocator = fba.allocator();
+
+    var buf_minimap: [256 * 256 * 4]u8 = undefined;
+    var fba_minimap = std.heap.FixedBufferAllocator.init(&buf_minimap);
+    stack_minimap_allocator = fba_minimap.allocator();
 
     zglfw.init() catch |e| {
         std.log.err("Failed to initialize GLFW library: {any}", .{e});
