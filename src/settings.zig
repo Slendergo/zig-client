@@ -78,11 +78,11 @@ pub var respond: Button = .{ .key = .F2 };
 pub var toggle_centering: Button = .{ .key = .x };
 pub var shoot: Button = .{ .mouse = .left };
 pub var ability: Button = .{ .mouse = .right };
-pub var sfx_volume: f32 = 0.0; // 0.33;
-pub var music_volume: f32 = 0.0; // 0.33;
-pub var enable_glow = false;
-pub var enable_lights = false;
-pub var enable_vsync = false;
+pub var sfx_volume: f32 = 0.33;
+pub var music_volume: f32 = 0.33;
+pub var enable_glow = true;
+pub var enable_lights = true;
+pub var enable_vsync = true;
 pub var selected_cursor = CursorType.aztec;
 
 pub fn init() void {}
