@@ -286,6 +286,12 @@ pub fn main() !void {
     stack_minimap_allocator = fba_minimap.allocator();
 
     chat_history = std.ArrayList([]const u8).init(allocator);
+    defer {
+        for (chat_history.items) |msg| {
+            allocator.free(msg);
+        }
+        chat_history.deinit();
+    }
 
     zglfw.init() catch |e| {
         std.log.err("Failed to initialize GLFW library: {any}", .{e});
@@ -404,12 +410,5 @@ pub fn main() !void {
             defer allocator.free(srv.dns);
         }
         defer allocator.free(srv_list);
-    }
-
-    defer {
-        for (chat_history.items) |msg| {
-            allocator.free(msg);
-        }
-        chat_history.deinit();
     }
 }
