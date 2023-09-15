@@ -1494,6 +1494,8 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     entities.deinit();
     entity_indices_to_remove.deinit();
     move_records.deinit();
+
+    minimap.deinit();
 }
 
 pub fn getLightIntensity(time: i64) f32 {

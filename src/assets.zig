@@ -650,6 +650,11 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     medium_atlas.deinit();
     medium_italic_atlas.deinit();
 
+    var colors_iter = color_data.valueIterator();
+    while (colors_iter.next()) |color| {
+        allocator.free(color.*);
+    }
+
     var rects_iter = atlas_data.valueIterator();
     while (rects_iter.next()) |sheet_rects| {
         if (sheet_rects.len > 0) {
