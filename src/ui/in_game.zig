@@ -8,6 +8,7 @@ const main = @import("../main.zig");
 const utils = @import("../utils.zig");
 const game_data = @import("../game_data.zig");
 const map = @import("../map.zig");
+const input = @import("../input.zig");
 
 pub const InGameScreen = struct {
     pub const Slot = struct {
@@ -702,12 +703,12 @@ pub const InGameScreen = struct {
     }
 
     fn chatCallback(input_text: []u8) void {
-        if (input_text.len != 0) {
+        if (input_text.len > 0) {
             network.sendPlayerText(input_text);
 
-            const msg_d = main._allocator.dupe(u8, input_text) catch unreachable;
-            main.chat_history.append(msg_d) catch unreachable;
-            main.chat_history_idx = @intCast(main.chat_history.items.len);
+            const msg_d = ui.in_game_screen._allocator.dupe(u8, input_text) catch unreachable;
+            input.input_history.append(msg_d) catch unreachable;
+            input.input_history_idx = @intCast(input.input_history.items.len);
         }
     }
 

@@ -23,6 +23,8 @@ pub var mouse_x: f64 = 0.0;
 pub var mouse_y: f64 = 0.0;
 
 pub var selected_input_field: ?*ui.InputField = null;
+pub var input_history: std.ArrayList([]const u8) = undefined;
+pub var input_history_idx: u16 = 0;
 
 pub fn reset() void {
     move_up = 0.0;
@@ -33,6 +35,17 @@ pub fn reset() void {
     rotate_right = 0;
     rotate = 0;
     attacking = false;
+}
+
+pub fn init(allocator: std.mem.Allocator) void {
+    input_history = std.ArrayList([]const u8).init(allocator);
+}
+
+pub fn deinit(allocator: std.mem.Allocator) void {
+    for (input_history.items) |msg| {
+        allocator.free(msg);
+    }
+    input_history.deinit();
 }
 
 fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
@@ -269,11 +282,11 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
                 return;
             }
 
-            if (input_field.allow_chat_history and main.chat_history_idx != 65535) {
+            if (input_field.allow_chat_history) {
                 if (key == .up) {
-                    if (main.chat_history_idx > 0) {
-                        main.chat_history_idx -= 1;
-                        const msg = main.chat_history.items[main.chat_history_idx];
+                    if (input_history_idx > 0) {
+                        input_history_idx -= 1;
+                        const msg = input_history.items[input_history_idx];
                         const msg_len = msg.len;
                         @memcpy(input_field.text_data.backing_buffer[0..msg_len], msg);
                         input_field.text_data.text = input_field.text_data.backing_buffer[0..msg_len];
@@ -284,13 +297,13 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zg
                 }
 
                 if (key == .down) {
-                    if (main.chat_history_idx < main.chat_history.items.len - 1) {
-                        main.chat_history_idx += 1;
+                    if (input_history_idx < input_history.items.len) {
+                        input_history_idx += 1;
 
-                        if (main.chat_history_idx == main.chat_history.items.len - 1) {
+                        if (input_history_idx == input_history.items.len) {
                             input_field.clear();
                         } else {
-                            const msg = main.chat_history.items[main.chat_history_idx];
+                            const msg = input_history.items[input_history_idx];
                             const msg_len = msg.len;
                             @memcpy(input_field.text_data.backing_buffer[0..msg_len], msg);
                             input_field.text_data.text = input_field.text_data.backing_buffer[0..msg_len];
