@@ -1059,7 +1059,6 @@ pub const Projectile = struct {
     start_time: i64 = 0,
     angle: f32 = 0.0,
     visual_angle: f32 = 0.0,
-    heat_seek_fired: bool = false,
     total_angle_change: f32 = 0.0,
     zero_vel_dist: f32 = -1.0,
     start_x: f32 = 0.0,
@@ -1138,28 +1137,6 @@ pub const Projectile = struct {
     }
 
     fn updatePosition(self: *Projectile, elapsed: i64, dt: f32) void {
-        if (self.props.heat_seek_radius > 0 and elapsed >= self.props.heat_seek_delay and !self.heat_seek_fired) {
-            var target_x: f32 = -1.0;
-            var target_y: f32 = -1.0;
-
-            if (self.damage_players) {
-                if (findTargetPlayer(self.x, self.y, self.props.heat_seek_radius * self.props.heat_seek_radius)) |player| {
-                    target_x = player.x;
-                    target_y = player.y;
-                }
-            } else {
-                if (findTargetObject(self.x, self.y, self.props.heat_seek_radius * self.props.heat_seek_radius)) |object| {
-                    target_x = object.x;
-                    target_y = object.y;
-                }
-            }
-
-            if (target_x > 0 and target_y > 0) {
-                self.angle = @mod(std.math.atan2(f32, target_y - self.y, target_x - self.x), std.math.tau);
-                self.heat_seek_fired = true;
-            }
-        }
-
         var angle_change: f32 = 0.0;
         if (self.props.angle_change != 0 and elapsed < self.props.angle_change_end and elapsed >= self.props.angle_change_delay) {
             angle_change += dt / 1000.0 * self.props.angle_change;
@@ -1184,9 +1161,8 @@ pub const Projectile = struct {
         var dist: f32 = 0.0;
         const uses_zero_vel = self.props.zero_velocity_delay != -1;
         if (!uses_zero_vel or self.props.zero_velocity_delay > elapsed) {
-            const base_speed = if (self.heat_seek_fired) self.props.heat_seek_speed else self.props.speed;
             if (self.props.accel == 0.0 or elapsed < self.props.accel_delay) {
-                dist = dt * base_speed;
+                dist = dt * self.props.speed;
             } else {
                 const time_in_accel: f32 = @floatFromInt(elapsed - self.props.accel_delay);
                 const accel_dist = dt * ((self.props.speed * 10000.0 + self.props.accel * time_in_accel / 1000.0) / 10000.0);
@@ -1207,30 +1183,25 @@ pub const Projectile = struct {
             return;
         }
 
-        if (self.heat_seek_fired) {
+        if (self.props.parametric) {
+            const t = @as(f32, @floatFromInt(@divTrunc(elapsed, self.props.lifetime_ms))) * 2.0 * std.math.pi;
+            const x = @sin(t) * if (self.bullet_id % 2 == 0) @as(f32, 1.0) else @as(f32, -1.0);
+            const y = @sin(2 * t) * if (self.bullet_id % 4 < 2) @as(f32, 1.0) else @as(f32, -1.0);
+            self.x += (x * @cos(self.angle) - y * @sin(self.angle)) * self.props.magnitude;
+            self.y += (x * @sin(self.angle) + y * @cos(self.angle)) * self.props.magnitude;
+        } else {
+            if (self.props.boomerang and elapsed > self.props.lifetime_ms / 2)
+                dist = -dist;
+
             self.x += dist * @cos(self.angle);
             self.y += dist * @sin(self.angle);
-        } else {
-            if (self.props.parametric) {
-                const t = @as(f32, @floatFromInt(@divTrunc(elapsed, self.props.lifetime_ms))) * 2.0 * std.math.pi;
-                const x = @sin(t) * if (self.bullet_id % 2 == 0) @as(f32, 1.0) else @as(f32, -1.0);
-                const y = @sin(2 * t) * if (self.bullet_id % 4 < 2) @as(f32, 1.0) else @as(f32, -1.0);
-                self.x += (x * @cos(self.angle) - y * @sin(self.angle)) * self.props.magnitude;
-                self.y += (x * @sin(self.angle) + y * @cos(self.angle)) * self.props.magnitude;
-            } else {
-                if (self.props.boomerang and elapsed > self.props.lifetime_ms / 2)
-                    dist = -dist;
-
-                self.x += dist * @cos(self.angle);
-                self.y += dist * @sin(self.angle);
-                if (self.props.amplitude != 0) {
-                    const phase: f32 = if (self.bullet_id % 2 == 0) 0.0 else std.math.pi;
-                    const time_ratio: f32 = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(self.props.lifetime_ms));
-                    const deflection_target = self.props.amplitude * @sin(phase + time_ratio * self.props.frequency * 2.0 * std.math.pi);
-                    self.x += (deflection_target - self.last_deflect) * @cos(self.angle + std.math.pi / 2.0);
-                    self.y += (deflection_target - self.last_deflect) * @sin(self.angle + std.math.pi / 2.0);
-                    self.last_deflect = deflection_target;
-                }
+            if (self.props.amplitude != 0) {
+                const phase: f32 = if (self.bullet_id % 2 == 0) 0.0 else std.math.pi;
+                const time_ratio: f32 = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(self.props.lifetime_ms));
+                const deflection_target = self.props.amplitude * @sin(phase + time_ratio * self.props.frequency * 2.0 * std.math.pi);
+                self.x += (deflection_target - self.last_deflect) * @cos(self.angle + std.math.pi / 2.0);
+                self.y += (deflection_target - self.last_deflect) * @sin(self.angle + std.math.pi / 2.0);
+                self.last_deflect = deflection_target;
             }
         }
     }

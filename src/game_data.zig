@@ -418,9 +418,6 @@ pub const ProjProps = struct {
     angle_change_accel_delay: u16,
     angle_change_clamp: f32,
     zero_velocity_delay: i16,
-    heat_seek_speed: f32,
-    heat_seek_radius: f32,
-    heat_seek_delay: u16,
 
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !ProjProps {
         var effect_it = node.iterate(&.{}, "ConditionEffect");
@@ -465,9 +462,6 @@ pub const ProjProps = struct {
             .angle_change_accel_delay = try node.getValueInt("AngleChangeAccelDelay", u16, 0),
             .angle_change_clamp = try node.getValueFloat("AngleChangeClamp", f32, 0.0),
             .zero_velocity_delay = try node.getValueInt("ZeroVelocityDelay", i16, -1),
-            .heat_seek_speed = try node.getValueFloat("HeatSeekSpeed", f32, 0.0) / 10000.0,
-            .heat_seek_radius = try node.getValueFloat("HeatSeekRadius", f32, 0.0),
-            .heat_seek_delay = try node.getValueInt("HeatSeekDelay", u16, 0),
         };
     }
 };
