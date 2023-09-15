@@ -311,8 +311,8 @@ pub fn main() !void {
     try game_data.init(allocator);
     defer game_data.deinit(allocator);
 
-    settings.init();
-    defer settings.save();
+    try settings.init(allocator);
+    defer settings.deinit();
 
     requests.init(allocator);
     defer requests.deinit();

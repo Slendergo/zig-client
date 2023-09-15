@@ -1863,15 +1863,30 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             if (is_portal and map.interactive_id.load(.Acquire) == bo.obj_id) {
                                 const enter_text_data = ui.TextData{
-                                    .text = @constCast("Enter"), // meh
+                                    .text = @constCast("Enter"),
                                     .text_type = .bold,
                                     .size = 16,
                                     .backing_buffer = &[0]u8{},
                                 };
 
+                                const button_w = 100 / 4;
+                                const button_h = 100 / 4;
+                                const total_w = enter_text_data.width() + button_w ;
+
+                                drawQuad(
+                                    idx,
+                                    screen_pos.x - x_offset - total_w / 2,
+                                    screen_pos.y + h + 5,
+                                    button_w,
+                                    button_h,
+                                    settings.interact_key_tex,
+                                    .{ .force_glow_off = true },
+                                );
+                                idx += 4;
+
                                 idx += drawText(
                                     idx,
-                                    screen_pos.x - x_offset - enter_text_data.width() / 2,
+                                    screen_pos.x - x_offset - total_w / 2 + button_w,
                                     screen_pos.y + h + 5,
                                     enter_text_data,
                                 );

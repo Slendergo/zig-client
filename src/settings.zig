@@ -1,5 +1,7 @@
 const std = @import("std");
 const zglfw = @import("zglfw");
+const builtin = @import("builtin");
+const assets = @import("assets.zig");
 
 pub const LogType = enum(u8) {
     all = 0,
@@ -50,6 +52,10 @@ pub const print_ui_atlas = false;
 pub const rotate_speed = 0.002;
 pub const enable_tracy = false;
 
+pub const unset_key_tex: u16 = 0x68;
+pub var key_tex_map: std.AutoHashMap(Button, u16) = undefined;
+pub var interact_key_tex: assets.AtlasData = undefined;
+
 pub var inv_0: Button = .{ .key = .one };
 pub var inv_1: Button = .{ .key = .two };
 pub var inv_2: Button = .{ .key = .three };
@@ -78,16 +84,129 @@ pub var respond: Button = .{ .key = .F2 };
 pub var toggle_centering: Button = .{ .key = .x };
 pub var shoot: Button = .{ .mouse = .left };
 pub var ability: Button = .{ .mouse = .right };
-pub var sfx_volume: f32 = 0.33;
-pub var music_volume: f32 = 0.1;
+pub var sfx_volume: f32 = 0.0; // 0.33;
+pub var music_volume: f32 = 0.0; // 0.1;
 pub var enable_glow = true;
 pub var enable_lights = true;
 pub var enable_vsync = true;
 pub var selected_cursor = CursorType.aztec;
 
-pub fn init() void {}
+pub fn init(allocator: std.mem.Allocator) !void {
+    key_tex_map = std.AutoHashMap(Button, u16).init(allocator);
+    try key_tex_map.put(.{ .mouse = .left }, 0x2e);
+    try key_tex_map.put(.{ .mouse = .right }, 0x3b);
+    try key_tex_map.put(.{ .mouse = .middle }, 0x3a);
+    try key_tex_map.put(.{ .mouse = .four }, 0x6c);
+    try key_tex_map.put(.{ .mouse = .five }, 0x6d);
+    try key_tex_map.put(.{ .key = .zero }, 0x00);
+    try key_tex_map.put(.{ .key = .one }, 0x04);
+    try key_tex_map.put(.{ .key = .two }, 0x05);
+    try key_tex_map.put(.{ .key = .three }, 0x06);
+    try key_tex_map.put(.{ .key = .four }, 0x07);
+    try key_tex_map.put(.{ .key = .five }, 0x08);
+    try key_tex_map.put(.{ .key = .six }, 0x10);
+    try key_tex_map.put(.{ .key = .seven }, 0x11);
+    try key_tex_map.put(.{ .key = .eight }, 0x12);
+    try key_tex_map.put(.{ .key = .nine }, 0x13);
+    try key_tex_map.put(.{ .key = .kp_0 }, 0x5b);
+    try key_tex_map.put(.{ .key = .kp_1 }, 0x5c);
+    try key_tex_map.put(.{ .key = .kp_2 }, 0x5d);
+    try key_tex_map.put(.{ .key = .kp_3 }, 0x5e);
+    try key_tex_map.put(.{ .key = .kp_4 }, 0x5f);
+    try key_tex_map.put(.{ .key = .kp_5 }, 0x60);
+    try key_tex_map.put(.{ .key = .kp_6 }, 0x61);
+    try key_tex_map.put(.{ .key = .kp_7 }, 0x62);
+    try key_tex_map.put(.{ .key = .kp_8 }, 0x63);
+    try key_tex_map.put(.{ .key = .kp_9 }, 0x64);
+    try key_tex_map.put(.{ .key = .F1 }, 0x44);
+    try key_tex_map.put(.{ .key = .F2 }, 0x45);
+    try key_tex_map.put(.{ .key = .F3 }, 0x46);
+    try key_tex_map.put(.{ .key = .F4 }, 0x47);
+    try key_tex_map.put(.{ .key = .F5 }, 0x48);
+    try key_tex_map.put(.{ .key = .F6 }, 0x50);
+    try key_tex_map.put(.{ .key = .F7 }, 0x51);
+    try key_tex_map.put(.{ .key = .F8 }, 0x52);
+    try key_tex_map.put(.{ .key = .F9 }, 0x53);
+    try key_tex_map.put(.{ .key = .F10 }, 0x01);
+    try key_tex_map.put(.{ .key = .F11 }, 0x02);
+    try key_tex_map.put(.{ .key = .F12 }, 0x03);
+    try key_tex_map.put(.{ .key = .a }, 0x14);
+    try key_tex_map.put(.{ .key = .b }, 0x22);
+    try key_tex_map.put(.{ .key = .c }, 0x27);
+    try key_tex_map.put(.{ .key = .d }, 0x32);
+    try key_tex_map.put(.{ .key = .e }, 0x34);
+    try key_tex_map.put(.{ .key = .f }, 0x54);
+    try key_tex_map.put(.{ .key = .g }, 0x55);
+    try key_tex_map.put(.{ .key = .h }, 0x56);
+    try key_tex_map.put(.{ .key = .i }, 0x58);
+    try key_tex_map.put(.{ .key = .j }, 0x3f);
+    try key_tex_map.put(.{ .key = .k }, 0x4a);
+    try key_tex_map.put(.{ .key = .l }, 0x4b);
+    try key_tex_map.put(.{ .key = .m }, 0x4c);
+    try key_tex_map.put(.{ .key = .n }, 0x3d);
+    try key_tex_map.put(.{ .key = .o }, 0x41);
+    try key_tex_map.put(.{ .key = .p }, 0x42);
+    try key_tex_map.put(.{ .key = .q }, 0x19);
+    try key_tex_map.put(.{ .key = .r }, 0x1c);
+    try key_tex_map.put(.{ .key = .s }, 0x1d);
+    try key_tex_map.put(.{ .key = .t }, 0x49);
+    try key_tex_map.put(.{ .key = .u }, 0x43);
+    try key_tex_map.put(.{ .key = .v }, 0x1f);
+    try key_tex_map.put(.{ .key = .w }, 0x0a);
+    try key_tex_map.put(.{ .key = .x }, 0x0c);
+    try key_tex_map.put(.{ .key = .y }, 0x0d);
+    try key_tex_map.put(.{ .key = .z }, 0x0e);
+    try key_tex_map.put(.{ .key = .up }, 0x20);
+    try key_tex_map.put(.{ .key = .down }, 0x16);
+    try key_tex_map.put(.{ .key = .left }, 0x17);
+    try key_tex_map.put(.{ .key = .right }, 0x18);
+    try key_tex_map.put(.{ .key = .left_shift }, 0x0f);
+    try key_tex_map.put(.{ .key = .right_shift }, 0x09);
+    try key_tex_map.put(.{ .key = .left_bracket }, 0x25);
+    try key_tex_map.put(.{ .key = .right_bracket }, 0x26);
+    try key_tex_map.put(.{ .key = .left_control }, 0x31);
+    try key_tex_map.put(.{ .key = .right_control }, 0x31);
+    try key_tex_map.put(.{ .key = .left_alt }, 0x15);
+    try key_tex_map.put(.{ .key = .right_alt }, 0x15);
+    try key_tex_map.put(.{ .key = .comma }, 0x65);
+    try key_tex_map.put(.{ .key = .period }, 0x66);
+    try key_tex_map.put(.{ .key = .slash }, 0x67);
+    try key_tex_map.put(.{ .key = .backslash }, 0x29);
+    try key_tex_map.put(.{ .key = .semicolon }, 0x1e);
+    try key_tex_map.put(.{ .key = .minus }, 0x2d);
+    try key_tex_map.put(.{ .key = .equal }, 0x2a);
+    try key_tex_map.put(.{ .key = .tab }, 0x4f);
+    try key_tex_map.put(.{ .key = .space }, 0x39);
+    try key_tex_map.put(.{ .key = .backspace }, 0x23);
+    try key_tex_map.put(.{ .key = .enter }, 0x36);
+    try key_tex_map.put(.{ .key = .delete }, 0x33);
+    try key_tex_map.put(.{ .key = .end }, 0x35);
+    try key_tex_map.put(.{ .key = .print_screen }, 0x2c);
+    try key_tex_map.put(.{ .key = .insert }, 0x3e);
+    try key_tex_map.put(.{ .key = .escape }, 0x40);
+    try key_tex_map.put(.{ .key = .home }, 0x57);
+    try key_tex_map.put(.{ .key = .page_up }, 0x59);
+    try key_tex_map.put(.{ .key = .page_down }, 0x5a);
+    try key_tex_map.put(.{ .key = .caps_lock }, 0x28);
+    try key_tex_map.put(.{ .key = .kp_add }, 0x2b);
+    try key_tex_map.put(.{ .key = .kp_subtract }, 0x6b);
+    try key_tex_map.put(.{ .key = .kp_multiply }, 0x21);
+    try key_tex_map.put(.{ .key = .kp_divide }, 0x6a);
+    try key_tex_map.put(.{ .key = .kp_decimal }, 0x69);
+    try key_tex_map.put(.{ .key = .kp_enter }, 0x38);
 
-pub fn save() void {}
+    try key_tex_map.put(.{ .key = .left_super }, if (builtin.os.tag == .windows) 0x0b else 0x30);
+    try key_tex_map.put(.{ .key = .right_super }, if (builtin.os.tag == .windows) 0x0b else 0x30);
+
+    const tex_list = assets.atlas_data.get("keyIndicators");
+    if (tex_list) |list| {
+        interact_key_tex = list[key_tex_map.get(interact) orelse unset_key_tex];
+    }
+}
+
+pub fn deinit() void {
+    key_tex_map.deinit();
+}
 
 pub fn resetToDefault() void {
     move_left = .{ .key = .a };

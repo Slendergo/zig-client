@@ -349,11 +349,11 @@ pub const GameObject = struct {
         effects: []game_data.ConditionEffect,
         allocator: std.mem.Allocator,
     ) void {
-        assets.playSfx(self.hit_sound);
-
         if (kill) {
             assets.playSfx(self.death_sound);
         } else {
+            assets.playSfx(self.hit_sound);
+
             for (effects) |eff| {
                 const cond_str = eff.condition.toString();
                 if (cond_str.len == 0)
@@ -741,11 +741,11 @@ pub const Player = struct {
         effects: []game_data.ConditionEffect,
         allocator: std.mem.Allocator,
     ) void {
-        assets.playSfx(self.hit_sound);
-
         if (kill) {
             assets.playSfx(self.death_sound);
         } else {
+            assets.playSfx(self.hit_sound);
+
             for (effects) |eff| {
                 const cond_str = eff.condition.toString();
                 if (cond_str.len == 0)
