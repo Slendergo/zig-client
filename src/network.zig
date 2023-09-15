@@ -758,6 +758,8 @@ fn handleText(allocator: std.mem.Allocator) void {
                 .size = 16,
                 .max_width = 160,
                 .backing_buffer = &[0]u8{},
+                .outline_width = 1.5,
+                .disable_subpixel = true,
             },
             .target_id = object_id,
             .start_time = @divFloor(main.current_time, std.time.us_per_ms),

@@ -943,6 +943,13 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
     const max_width_off = text_data.max_width == @as(f32, std.math.maxInt(u32));
     const max_height_off = text_data.max_width == @as(f32, std.math.maxInt(u32));
 
+    var render_type: f32 = text_normal_render_type;
+    if (text_data.shadow_texel_offset_mult != 0) {
+        render_type = if (text_data.disable_subpixel) text_drop_shadow_no_subpixel_render_type else text_drop_shadow_render_type;
+    } else {
+        render_type = if (text_data.disable_subpixel) text_normal_no_subpixel_render_type else text_normal_render_type;
+    }
+
     var idx_new = idx;
     const start_x = x - camera.screen_width / 2.0;
     const start_y = y - camera.screen_height / 2.0 + line_height;
@@ -958,10 +965,68 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
     };
     var x_pointer = x_base;
     var y_pointer = y_base;
-    for (text_data.text) |char| {
+    var current_color = rgb;
+    var current_size = size_scale;
+    var current_type = text_data.text_type;
+    var index_offset: u8 = 0;
+    for (0..text_data.text.len) |i| {
+        if (i + index_offset >= text_data.text.len)
+            return idx_new - idx;
+
+        const char = text_data.text[i + index_offset];
+        specialChar: {
+            if (!text_data.handle_special_chars)
+                break :specialChar;
+
+            if (char == '&') {
+                const start_idx = i + index_offset + 3;
+                if (text_data.text.len <= start_idx or text_data.text[start_idx - 1] != '=')
+                    break :specialChar;
+
+                switch (text_data.text[start_idx - 2]) {
+                    'c' => {
+                        if (text_data.text.len <= start_idx + 6)
+                            break :specialChar;
+
+                        const int_color = std.fmt.parseInt(i32, text_data.text[start_idx .. start_idx + 6], 16) catch 0;
+                        current_color = ui.RGBF32.fromInt(int_color);
+                        index_offset += 8;
+                        continue;
+                    },
+                    's' => {
+                        var size_len: u8 = 0;
+                        while (start_idx + size_len < text_data.text.len and std.ascii.isDigit(text_data.text[start_idx + size_len])) {
+                            size_len += 1;
+                        }
+
+                        if (size_len == 0)
+                            break :specialChar;
+
+                        const size = std.fmt.parseFloat(f32, text_data.text[start_idx .. start_idx + size_len]) catch 16.0;
+                        current_size = size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
+                        index_offset += 2 + size_len;
+                        continue;
+                    },
+                    't' => {
+                        switch (text_data.text[start_idx]) {
+                            'm' => current_type = .medium,
+                            'i' => current_type = .medium_italic,
+                            'b' => current_type = .bold,
+                            // this has no reason to be 'c', just a hack...
+                            'c' => current_type = .bold_italic,
+                            else => {},
+                        }
+
+                        index_offset += 3;
+                        continue;
+                    },
+                    else => {},
+                }
+            }
+        }
         const mod_char = if (text_data.password) '*' else char;
 
-        const char_data = switch (text_data.text_type) {
+        const char_data = switch (current_type) {
             .medium => assets.medium_chars[mod_char],
             .medium_italic => assets.medium_italic_chars[mod_char],
             .bold => assets.bold_chars[mod_char],
@@ -973,7 +1038,7 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
             text_data.shadow_texel_offset_mult / char_data.atlas_h,
         };
 
-        const next_x_pointer = x_pointer + char_data.x_advance * size_scale;
+        const next_x_pointer = x_pointer + char_data.x_advance * current_size;
         if (char == '\n' or next_x_pointer - x_base > text_data.max_width) {
             x_pointer = x_base;
             y_pointer += line_height;
@@ -984,35 +1049,31 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
         }
 
         if (char_data.tex_w <= 0) {
-            x_pointer += char_data.x_advance * size_scale;
+            x_pointer += char_data.x_advance * current_size;
             continue;
         }
 
-        const w = char_data.width * size_scale;
-        const h = char_data.height * size_scale;
-        const scaled_x = (x_pointer + char_data.x_offset * size_scale + w / 2) * camera.clip_scale_x;
-        const scaled_y = -(y_pointer - char_data.y_offset * size_scale - h / 2) * camera.clip_scale_y;
+        const w = char_data.width * current_size;
+        const h = char_data.height * current_size;
+        const scaled_x = (x_pointer + char_data.x_offset * current_size + w / 2) * camera.clip_scale_x;
+        const scaled_y = -(y_pointer - char_data.y_offset * current_size - h / 2) * camera.clip_scale_y;
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
         const px_range = assets.CharacterData.px_range / camera.scale;
-        const text_type: f32 = @floatFromInt(@intFromEnum(text_data.text_type));
-        const render_type: f32 = if (text_data.shadow_texel_offset_mult > 0.0)
-            text_drop_shadow_render_type
-        else
-            text_normal_render_type;
+        const text_type: f32 = @floatFromInt(@intFromEnum(current_type));
 
         x_pointer = next_x_pointer;
 
         base_vert_data[idx_new] = BaseVertexData{
             .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
             .uv = [2]f32{ char_data.tex_u, char_data.tex_v },
-            .base_color = rgb,
+            .base_color = current_color,
             .base_color_intensity = 1.0,
             .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
             .shadow_texel = shadow_texel_size,
             .text_type = text_type,
-            .distance_factor = size_scale * px_range,
+            .distance_factor = current_size * px_range,
             .render_type = render_type,
             .outline_color = outline_rgb,
             .outline_width = text_data.outline_width,
@@ -1021,13 +1082,13 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
         base_vert_data[idx_new + 1] = BaseVertexData{
             .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
             .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v },
-            .base_color = rgb,
+            .base_color = current_color,
             .base_color_intensity = 1.0,
             .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
             .shadow_texel = shadow_texel_size,
             .text_type = text_type,
-            .distance_factor = size_scale * px_range,
+            .distance_factor = current_size * px_range,
             .render_type = render_type,
             .outline_color = outline_rgb,
             .outline_width = text_data.outline_width,
@@ -1036,13 +1097,13 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
         base_vert_data[idx_new + 2] = BaseVertexData{
             .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
             .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v + char_data.tex_h },
-            .base_color = rgb,
+            .base_color = current_color,
             .base_color_intensity = 1.0,
             .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
             .shadow_texel = shadow_texel_size,
             .text_type = text_type,
-            .distance_factor = size_scale * px_range,
+            .distance_factor = current_size * px_range,
             .render_type = render_type,
             .outline_color = outline_rgb,
             .outline_width = text_data.outline_width,
@@ -1051,13 +1112,13 @@ fn drawText(idx: u16, x: f32, y: f32, text_data: ui.TextData) u16 {
         base_vert_data[idx_new + 3] = BaseVertexData{
             .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
             .uv = [2]f32{ char_data.tex_u, char_data.tex_v + char_data.tex_h },
-            .base_color = rgb,
+            .base_color = current_color,
             .base_color_intensity = 1.0,
             .alpha_mult = text_data.alpha,
             .shadow_color = shadow_rgb,
             .shadow_texel = shadow_texel_size,
             .text_type = text_type,
-            .distance_factor = size_scale * px_range,
+            .distance_factor = current_size * px_range,
             .render_type = render_type,
             .outline_color = outline_rgb,
             .outline_width = text_data.outline_width,
@@ -1871,7 +1932,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                                 const button_w = 100 / 4;
                                 const button_h = 100 / 4;
-                                const total_w = enter_text_data.width() + button_w ;
+                                const total_w = enter_text_data.width() + button_w;
 
                                 drawQuad(
                                     idx,

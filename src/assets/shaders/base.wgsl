@@ -220,6 +220,25 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let outlined_pixel = mix(vec4(in.outline_color, outline_alpha), base_pixel, alpha);
 
         return outlined_pixel;
+    } else if in.render_type == text_normal_no_subpixel_render_type {
+        var tex = vec4(0.0, 0.0, 0.0, 0.0);
+        if in.text_type == medium_text_type {
+            tex = textureSampleGrad(medium_tex, linear_sampler, in.uv, dx, dy);
+        } else if in.text_type == medium_italic_text_type {
+            tex = textureSampleGrad(medium_italic_tex, linear_sampler, in.uv, dx, dy);
+        } else if in.text_type == bold_text_type {
+            tex = textureSampleGrad(bold_tex, linear_sampler, in.uv, dx, dy);
+        } else if in.text_type == bold_italic_text_type {
+            tex = textureSampleGrad(bold_italic_tex, linear_sampler, in.uv, dx, dy);
+        }
+
+        let alpha = sample_msdf(tex, in.distance_factor, in.alpha_mult, 0.5);
+        let base_pixel = vec4(in.base_color, alpha);
+
+        let outline_alpha = sample_msdf(tex, in.distance_factor, in.alpha_mult, in.outline_width);
+        let outlined_pixel = mix(vec4(in.outline_color, outline_alpha), base_pixel, alpha);
+
+        return outlined_pixel;
     } else if in.render_type == text_drop_shadow_render_type {
         const subpixel = 1.0 / 3.0;
         let subpixel_width = (abs(dx.x) + abs(dy.x)) * subpixel; // this is just fwidth(in.uv).x * subpixel
@@ -261,6 +280,33 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let outlined_pixel = mix(vec4(in.outline_color, outline_alpha), base_pixel, alpha);
 
         // don't subpixel aa the offset, it's supposed to be a shadow
+        let offset_opacity = sample_msdf(tex_offset, in.distance_factor, in.alpha_mult, in.outline_width);
+        let offset_pixel = vec4(in.shadow_color, offset_opacity);
+
+        return mix(offset_pixel, base_pixel, outline_alpha);
+    } else if in.render_type == text_drop_shadow_no_subpixel_render_type {
+        var tex = vec4(0.0, 0.0, 0.0, 0.0);
+        var tex_offset = vec4(0.0, 0.0, 0.0, 0.0);
+        if in.text_type == medium_text_type {
+            tex = textureSampleGrad(medium_tex, linear_sampler, in.uv, dx, dy);
+            tex_offset = textureSampleGrad(medium_tex, linear_sampler, in.uv - in.shadow_texel, dx, dy);
+        } else if in.text_type == medium_italic_text_type {
+            tex = textureSampleGrad(medium_italic_tex, linear_sampler, in.uv, dx, dy);
+            tex_offset = textureSampleGrad(medium_italic_tex, linear_sampler, in.uv - in.shadow_texel, dx, dy);
+        } else if in.text_type == bold_text_type {
+            tex = textureSampleGrad(bold_tex, linear_sampler, in.uv, dx, dy);
+            tex_offset = textureSampleGrad(bold_tex, linear_sampler, in.uv - in.shadow_texel, dx, dy);
+        } else if in.text_type == bold_italic_text_type {
+            tex = textureSampleGrad(bold_italic_tex, linear_sampler, in.uv, dx, dy);
+            tex_offset = textureSampleGrad(bold_italic_tex, linear_sampler, in.uv - in.shadow_texel, dx, dy);
+        }
+
+        let alpha = sample_msdf(tex, in.distance_factor, in.alpha_mult, 0.5);
+        let base_pixel = vec4(in.base_color, alpha);
+
+        let outline_alpha = sample_msdf(tex, in.distance_factor, in.alpha_mult, in.outline_width);
+        let outlined_pixel = mix(vec4(in.outline_color, outline_alpha), base_pixel, alpha);
+
         let offset_opacity = sample_msdf(tex_offset, in.distance_factor, in.alpha_mult, in.outline_width);
         let offset_pixel = vec4(in.shadow_color, offset_opacity);
 

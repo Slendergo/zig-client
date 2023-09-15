@@ -338,6 +338,7 @@ pub const InGameScreen = struct {
                 .size = 12,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 256),
+                .handle_special_chars = false,
             },
             .allocator = allocator,
             .enter_callback = chatCallback,

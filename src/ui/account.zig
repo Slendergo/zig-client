@@ -73,6 +73,7 @@ pub const AccountScreen = struct {
                 .size = 20,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 256),
+                .handle_special_chars = false,
             },
             .allocator = allocator,
         };
@@ -138,6 +139,7 @@ pub const AccountScreen = struct {
                 .text_type = .bold,
                 .password = true,
                 .backing_buffer = try allocator.alloc(u8, 256),
+                .handle_special_chars = false,
             },
             .allocator = allocator,
         };

@@ -426,13 +426,13 @@ pub const TextType = enum(u32) {
     bold_italic = 3,
 };
 
-pub const TextAlignmentHori = enum(u8) {
+pub const AlignHori = enum(u8) {
     left = 0,
     middle = 1,
     right = 2,
 };
 
-pub const TextAlignmentVert = enum(u8) {
+pub const AlignVert = enum(u8) {
     top = 0,
     middle = 1,
     bottom = 2,
@@ -451,10 +451,12 @@ pub const TextData = struct {
     outline_color: i32 = 0x000000,
     outline_width: f32 = 1.2, // 0.5 for off
     password: bool = false,
+    handle_special_chars: bool = true,
+    disable_subpixel: bool = false,
     // alignments other than default need max width/height defined respectively
     // no support for multi-line alignment currently
-    hori_align: TextAlignmentHori = .left,
-    vert_align: TextAlignmentVert = .top,
+    hori_align: AlignHori = .left,
+    vert_align: AlignVert = .top,
     max_width: f32 = @as(f32, std.math.maxInt(u32)),
     max_height: f32 = @as(f32, std.math.maxInt(u32)),
 
@@ -463,20 +465,76 @@ pub const TextData = struct {
 
         var x_max: f32 = 0.0;
         var x_pointer: f32 = 0.0;
-        for (self.text) |char| {
+        var current_size = size_scale;
+        var current_type = self.text_type;
+        var index_offset: u8 = 0;
+        for (0..self.text.len) |i| {
+            if (i + index_offset >= self.text.len)
+                return @min(x_max, self.max_width);
+
+            const char = self.text[i + index_offset];
+            specialChar: {
+                if (!self.handle_special_chars)
+                    break :specialChar;
+
+                if (char == '&') {
+                    const start_idx = i + index_offset + 3;
+                    if (self.text.len <= start_idx or self.text[start_idx - 1] != '=')
+                        break :specialChar;
+
+                    switch (self.text[start_idx - 2]) {
+                        'c' => {
+                            if (self.text.len <= start_idx + 6)
+                                break :specialChar;
+
+                            index_offset += 8;
+                            continue;
+                        },
+                        's' => {
+                            var size_len: u8 = 0;
+                            while (start_idx + size_len < self.text.len and std.ascii.isDigit(self.text[start_idx + size_len])) {
+                                size_len += 1;
+                            }
+
+                            if (size_len == 0)
+                                break :specialChar;
+
+                            const size = std.fmt.parseFloat(f32, self.text[start_idx .. start_idx + size_len]) catch 16.0;
+                            current_size = size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
+                            index_offset += 2 + size_len;
+                            continue;
+                        },
+                        't' => {
+                            switch (self.text[start_idx]) {
+                                'm' => current_type = .medium,
+                                'i' => current_type = .medium_italic,
+                                'b' => current_type = .bold,
+                                // this has no reason to be 'c', just a hack...
+                                'c' => current_type = .bold_italic,
+                                else => {},
+                            }
+
+                            index_offset += 3;
+                            continue;
+                        },
+                        else => {},
+                    }
+                }
+            }
+
             if (char == '\n') {
                 x_pointer = 0;
                 continue;
             }
 
-            const char_data = switch (self.text_type) {
+            const char_data = switch (current_type) {
                 .medium => assets.medium_chars[char],
                 .medium_italic => assets.medium_italic_chars[char],
                 .bold => assets.bold_chars[char],
                 .bold_italic => assets.bold_italic_chars[char],
             };
 
-            x_pointer += char_data.x_advance * size_scale;
+            x_pointer += char_data.x_advance * current_size;
             if (x_pointer > x_max)
                 x_max = x_pointer;
         }
@@ -490,7 +548,63 @@ pub const TextData = struct {
 
         var x_pointer: f32 = 0.0;
         var y_pointer: f32 = line_height;
-        for (self.text) |char| {
+        var current_size = size_scale;
+        var current_type = self.text_type;
+        var index_offset: u8 = 0;
+        for (0..self.text.len) |i| {
+            if (i + index_offset >= self.text.len)
+                return y_pointer;
+
+            const char = self.text[i + index_offset];
+            specialChar: {
+                if (!self.handle_special_chars)
+                    break :specialChar;
+
+                if (char == '&') {
+                    const start_idx = i + index_offset + 3;
+                    if (self.text.len <= start_idx or self.text[start_idx - 1] != '=')
+                        break :specialChar;
+
+                    switch (self.text[start_idx - 2]) {
+                        'c' => {
+                            if (self.text.len <= start_idx + 6)
+                                break :specialChar;
+
+                            index_offset += 8;
+                            continue;
+                        },
+                        's' => {
+                            var size_len: u8 = 0;
+                            while (start_idx + size_len < self.text.len and std.ascii.isDigit(self.text[start_idx + size_len])) {
+                                size_len += 1;
+                            }
+
+                            if (size_len == 0)
+                                break :specialChar;
+
+                            const size = std.fmt.parseFloat(f32, self.text[start_idx .. start_idx + size_len]) catch 16.0;
+                            current_size = size / assets.CharacterData.size * camera.scale * assets.CharacterData.padding_mult;
+                            index_offset += 2 + size_len;
+                            continue;
+                        },
+                        't' => {
+                            switch (self.text[start_idx]) {
+                                'm' => current_type = .medium,
+                                'i' => current_type = .medium_italic,
+                                'b' => current_type = .bold,
+                                // this has no reason to be 'c', just a hack...
+                                'c' => current_type = .bold_italic,
+                                else => {},
+                            }
+
+                            index_offset += 3;
+                            continue;
+                        },
+                        else => {},
+                    }
+                }
+            }
+
             const char_data = switch (self.text_type) {
                 .medium => assets.medium_chars[char],
                 .medium_italic => assets.medium_italic_chars[char],
