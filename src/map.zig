@@ -325,8 +325,8 @@ pub const GameObject = struct {
         if (game_data.obj_type_to_class.get(self.obj_type)) |class_props| {
             self.is_wall = class_props == .wall;
             if (self.is_wall and validPos(floor_x, floor_y)) {
-                squares[floor_y * @as(u32, @intCast(width)) + floor_x].has_wall = self.is_wall;
-                squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = self.is_wall;
+                squares[floor_y * @as(u32, @intCast(width)) + floor_x].has_wall = true;
+                squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = true;
             }
 
             if (class_props == .container)
@@ -563,7 +563,7 @@ pub const Player = struct {
     light_color: i32 = -1,
     light_intensity: f32 = 0.1,
     light_radius: f32 = 1.0,
-    last_ground_damage: i64 = -1,
+    last_ground_damage_time: i64 = -1,
     anim_data: assets.AnimPlayerData = undefined,
     move_multiplier: f32 = 1.0,
     sink_level: u16 = 0,
@@ -829,28 +829,101 @@ pub const Player = struct {
 
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
+            var move_vec_x: f32 = 0.0;
+            var move_vec_y: f32 = 0.0;
+
             if (!std.math.isNan(self.move_angle)) {
-                if (self.condition.paralyzed or self.condition.stasis) {
-                    self.move_angle = std.math.nan(f32);
-                    return;
-                }
+                const move_angle = camera.angle_unbound + self.move_angle;
+                self.move_angle_camera_included = move_angle;
 
                 const move_speed = self.moveSpeedMultiplier();
-                const total_angle = camera.angle_unbound + self.move_angle;
-                const next_x = self.x + move_speed * dt * @cos(total_angle);
-                const next_y = self.y + move_speed * dt * @sin(total_angle);
-                self.move_angle_camera_included = total_angle;
+                move_vec_x = move_speed * @cos(move_angle);
+                move_vec_y = move_speed * @sin(move_angle);
+            }
+
+            const floor_x: u32 = @intFromFloat(@floor(self.x));
+            const floor_y: u32 = @intFromFloat(@floor(self.y));
+            if (validPos(floor_x, floor_y)) {
+                const current_square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
+                if (current_square.props) |props| {
+                    if (props.slide_amount > 0) {
+                        // todo
+                        // reset the move_vec_s
+                        // var moveVecTemp:Vector3D = new Vector3D();
+                        // moveVecTemp.x = moveSpeed * Math.cos(playerAngle + moveVecAngle);
+                        // moveVecTemp.y = moveSpeed * Math.sin(playerAngle + moveVecAngle);
+                        // moveVecTemp.z = 0;
+                        // var maxMoveLength:Number = moveVecTemp.length;
+                        // moveVecTemp.scaleBy(-1 * (square_.props_.slideAmount_ - 1));
+                        // moveVec_.scaleBy(square_.props_.slideAmount_);
+                        // if (moveVec_.length < maxMoveLength) {
+                        //     moveVec_ = moveVec_.add(moveVecTemp);
+                        // }
+                    }
+
+                    if (props.push) {
+                        move_vec_x -= props.anim_dx / 1000.0;
+                        move_vec_y -= props.anim_dy / 1000.0;
+                    }
+                } else {
+                    move_vec_x = 0.0;
+                    move_vec_y = 0.0;
+                }
+            }
+
+            if (!std.math.isNan(move_vec_x) and !std.math.isNan(move_vec_y)) {
+                const next_x = self.x + move_vec_x * dt;
+                const next_y = self.y + move_vec_y * dt;
                 modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
 
-            if (!self.condition.invulnerable and !self.condition.invincible and !self.condition.stasis and time - self.last_ground_damage >= 550) {
-                const floor_x: u32 = @intFromFloat(@floor(self.x));
-                const floor_y: u32 = @intFromFloat(@floor(self.y));
-                if (validPos(floor_x, floor_y)) {
-                    const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
+            // if (!std.math.isNan(self.move_angle)) {
+
+            //     // current square player is on
+            //     const square = getSquare(self.x, self.y);
+
+            //     const move_angle = camera.angle_unbound + self.move_angle;
+            //     self.move_angle_camera_included = move_angle;
+
+            //     // if (props.slide_amount > 0.0) {
+            //     //     // todo may need to store move_vec for player to recreate a version of this
+            //     // } else {
+            //     //     move_vec_x = move_speed * @cos(move_angle);
+            //     //     move_vec_y = move_speed * @sin(move_angle);
+            //     // }
+
+            //     const move_speed = self.moveSpeedMultiplier();
+            //     move_vec_x = move_speed * @cos(move_angle);
+            //     move_vec_y = move_speed * @sin(move_angle);
+
+            //     if (square.props) |props| {
+            //         if (props.slide_amount > 0) {
+            //             // todo
+            //         }
+
+            //         if (props.push) {
+            //             move_vec_x -= props.anim_dx / 1000.0;
+            //             move_vec_y -= props.anim_dy / 1000.0;
+            //         }
+            //     } else {}
+
+            //     const next_x = self.x + move_vec_x * dt;
+            //     const next_y = self.y + move_vec_y * dt;
+            //     modifyMove(self, next_x, next_y, &self.x, &self.y);
+            // }
+
+            //todo add protectFromGroundDamage_
+            if (!self.condition.invulnerable and !self.condition.invincible and !self.condition.stasis and time - self.last_ground_damage_time >= 500) {
+                const floor_ground_x: u32 = @intFromFloat(@floor(self.x));
+                const floor_ground_y: u32 = @intFromFloat(@floor(self.y));
+                if (validPos(floor_ground_x, floor_ground_y)) {
+                    const square = squares[floor_ground_y * @as(u32, @intCast(width)) + floor_ground_x];
                     if (square.tile_type != 0xFFFF and square.tile_type != 0xFF and square.props != null and square.props.?.min_damage > 0) {
                         const dmg = random.nextIntRange(square.props.?.min_damage, square.props.?.max_damage);
-                        network.sendGroundDamage(time, .{ .x = self.x, .y = self.y });
+                        network.sendGroundDamage(time, .{
+                            .x = self.x,
+                            .y = self.y,
+                        });
                         self.takeDamage(
                             @intCast(dmg),
                             dmg >= self.hp,
@@ -859,7 +932,7 @@ pub const Player = struct {
                             &[0]game_data.ConditionEffect{},
                             allocator,
                         );
-                        self.last_ground_damage = time;
+                        self.last_ground_damage_time = time;
                     }
                 }
             }
@@ -892,6 +965,12 @@ pub const Player = struct {
     }
 
     fn modifyMove(self: *Player, x: f32, y: f32, target_x: *f32, target_y: *f32) void {
+        if (self.condition.paralyzed or self.condition.stasis) {
+            target_x.* = self.x;
+            target_y.* = self.y;
+            return;
+        }
+
         const dx = x - self.x;
         const dy = y - self.y;
 
@@ -1740,6 +1819,8 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
             square.u_offset = u_offset * assets.base_texel_w;
             square.v_offset = v_offset * assets.base_texel_h;
         }
+        square.u_offset += props.x_offset * 10.0 * assets.base_texel_w;
+        square.v_offset += props.y_offset * 10.0 * assets.base_texel_h;
     }
 
     squares[idx] = square;

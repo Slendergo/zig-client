@@ -222,6 +222,7 @@ pub const GroundProps = struct {
     anim_type: GroundAnimType,
     anim_dx: f32,
     anim_dy: f32,
+    slide_amount: f32,
 
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !GroundProps {
         var anim_type: GroundAnimType = .none;
@@ -244,6 +245,7 @@ pub const GroundProps = struct {
             .speed = try node.getValueFloat("Speed", f32, 1.0),
             .x_offset = try node.getValueFloat("XOffset", f32, 0.0),
             .y_offset = try node.getValueFloat("YOffset", f32, 0.0),
+            .slide_amount = try node.getValueFloat("SlideAmount", f32, 0.0),
             .push = node.elementExists("Push"),
             .sink = node.elementExists("Sink"),
             .sinking = node.elementExists("Sinking"),
