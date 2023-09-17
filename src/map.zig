@@ -837,8 +837,8 @@ pub const Player = struct {
                 self.move_angle_camera_included = move_angle;
 
                 const move_speed = self.moveSpeedMultiplier();
-                move_vec_x = move_speed * @cos(move_angle);
-                move_vec_y = move_speed * @sin(move_angle);
+                move_vec_x = move_speed * @cos(move_angle) * dt;
+                move_vec_y = move_speed * @sin(move_angle) * dt;
             }
 
             const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -862,8 +862,8 @@ pub const Player = struct {
                     }
 
                     if (props.push) {
-                        move_vec_x -= props.anim_dx / 1000.0;
-                        move_vec_y -= props.anim_dy / 1000.0;
+                        move_vec_x -= props.anim_dx * dt / 1000.0;
+                        move_vec_y -= props.anim_dy * dt / 1000.0;
                     }
                 } else {
                     move_vec_x = 0.0;
@@ -872,8 +872,8 @@ pub const Player = struct {
             }
 
             if (!std.math.isNan(move_vec_x) and !std.math.isNan(move_vec_y)) {
-                const next_x = self.x + move_vec_x * dt;
-                const next_y = self.y + move_vec_y * dt;
+                const next_x = self.x + move_vec_x;
+                const next_y = self.y + move_vec_y;
                 modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
 
