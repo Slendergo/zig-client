@@ -60,6 +60,7 @@ const text_drop_shadow_render_type = 5.0;
 const text_normal_no_subpixel_render_type = 6.0;
 const text_drop_shadow_no_subpixel_render_type = 7.0;
 const minimap_render_type = 8.0;
+const menu_bg_render_type = 9.0;
 
 const base_batch_vert_size = 40000;
 const ground_batch_vert_size = 40000;
@@ -97,6 +98,8 @@ pub var light_texture: zgpu.TextureHandle = undefined;
 pub var light_texture_view: zgpu.TextureViewHandle = undefined;
 pub var minimap_texture: zgpu.TextureHandle = undefined;
 pub var minimap_texture_view: zgpu.TextureViewHandle = undefined;
+pub var menu_bg_texture: zgpu.TextureHandle = undefined;
+pub var menu_bg_texture_view: zgpu.TextureViewHandle = undefined;
 
 pub var sampler: zgpu.SamplerHandle = undefined;
 pub var linear_sampler: zgpu.SamplerHandle = undefined;
@@ -233,6 +236,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
     createTexture(gctx, &ui_texture, &ui_texture_view, assets.ui_atlas);
     createTexture(gctx, &light_texture, &light_texture_view, assets.light_tex);
     createTexture(gctx, &minimap_texture, &minimap_texture_view, map.minimap);
+    createTexture(gctx, &menu_bg_texture, &menu_bg_texture_view, assets.menu_background);
 
     sampler = gctx.createSampler(.{});
     linear_sampler = gctx.createSampler(.{ .min_filter = .linear, .mag_filter = .linear });
@@ -269,6 +273,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         zgpu.textureEntry(6, .{ .fragment = true }, .float, .tvdim_2d, false),
         zgpu.textureEntry(7, .{ .fragment = true }, .float, .tvdim_2d, false),
         zgpu.textureEntry(8, .{ .fragment = true }, .float, .tvdim_2d, false),
+        zgpu.textureEntry(9, .{ .fragment = true }, .float, .tvdim_2d, false),
     });
     defer gctx.releaseResource(base_bind_group_layout);
     base_bind_group = gctx.createBindGroup(base_bind_group_layout, &.{
@@ -281,6 +286,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         .{ .binding = 6, .texture_view_handle = bold_text_texture_view },
         .{ .binding = 7, .texture_view_handle = bold_italic_text_texture_view },
         .{ .binding = 8, .texture_view_handle = minimap_texture_view },
+        .{ .binding = 9, .texture_view_handle = menu_bg_texture_view },
     });
 
     {
@@ -696,6 +702,74 @@ fn drawMinimap(
         .pos = [2]f32{ -x_cos - x_sin + scaled_x, -y_sin + y_cos + scaled_y },
         .uv = [2]f32{ tex_u - tex_w_half, tex_v - tex_h_half },
         .render_type = minimap_render_type,
+    };
+
+    idx_new += 4;
+
+    if (idx_new == base_batch_vert_size) {
+        draw_data.encoder.writeBuffer(
+            draw_data.buffer,
+            0,
+            BaseVertexData,
+            base_vert_data[0..base_batch_vert_size],
+        );
+        endDraw(
+            draw_data,
+            base_batch_vert_size * @sizeOf(BaseVertexData),
+            @divExact(base_batch_vert_size, 4) * 6,
+            null,
+        );
+        idx_new = 0;
+    }
+
+    return idx_new;
+}
+
+fn drawMenuBackground(
+    idx: u16,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    rotation: f32,
+    draw_data: DrawData,
+) u16 {
+    var idx_new = idx;
+
+    const scaled_w = w * camera.clip_scale_x;
+    const scaled_h = h * camera.clip_scale_y;
+    const scaled_x = (x - camera.screen_width / 2.0 + w / 2.0) * camera.clip_scale_x;
+    const scaled_y = -(y - camera.screen_height / 2.0 + h / 2.0) * camera.clip_scale_y;
+
+    const cos_angle = @cos(rotation);
+    const sin_angle = @sin(rotation);
+    const x_cos = cos_angle * scaled_w * 0.5;
+    const x_sin = sin_angle * scaled_w * 0.5;
+    const y_cos = cos_angle * scaled_h * 0.5;
+    const y_sin = sin_angle * scaled_h * 0.5;
+
+    base_vert_data[idx_new] = BaseVertexData{
+        .pos = [2]f32{ -x_cos + x_sin + scaled_x, -y_sin - y_cos + scaled_y },
+        .uv = [2]f32{ 0, 1 },
+        .render_type = menu_bg_render_type,
+    };
+
+    base_vert_data[idx_new + 1] = BaseVertexData{
+        .pos = [2]f32{ x_cos + x_sin + scaled_x, y_sin - y_cos + scaled_y },
+        .uv = [2]f32{ 1, 1 },
+        .render_type = menu_bg_render_type,
+    };
+
+    base_vert_data[idx_new + 2] = BaseVertexData{
+        .pos = [2]f32{ x_cos - x_sin + scaled_x, y_sin + y_cos + scaled_y },
+        .uv = [2]f32{ 1, 0 },
+        .render_type = menu_bg_render_type,
+    };
+
+    base_vert_data[idx_new + 3] = BaseVertexData{
+        .pos = [2]f32{ -x_cos - x_sin + scaled_x, -y_sin + y_cos + scaled_y },
+        .uv = [2]f32{ 0, 0 },
+        .render_type = menu_bg_render_type,
     };
 
     idx_new += 4;
@@ -2277,6 +2351,20 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             draw_data,
                         );
                     }
+                },
+                .menu_bg => |menu_bg| {
+                    if (!menu_bg.visible)
+                        continue;
+
+                    ui_idx = drawMenuBackground(
+                        ui_idx,
+                        menu_bg.x,
+                        menu_bg.y,
+                        menu_bg.w,
+                        menu_bg.h,
+                        0,
+                        draw_data,
+                    );
                 },
                 .item => |item| {
                     if (!item.visible)

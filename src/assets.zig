@@ -188,6 +188,7 @@ pub var main_music: *zaudio.Sound = undefined;
 pub var atlas: zstbi.Image = undefined;
 pub var ui_atlas: zstbi.Image = undefined;
 pub var light_tex: zstbi.Image = undefined;
+pub var menu_background: zstbi.Image = undefined;
 
 pub var bold_atlas: zstbi.Image = undefined;
 pub var bold_chars: [256]CharacterData = undefined;
@@ -698,6 +699,8 @@ pub fn init(allocator: std.mem.Allocator) !void {
     anim_enemies = std.StringHashMap([]AnimEnemyData).init(allocator);
     anim_players = std.StringHashMap([]AnimPlayerData).init(allocator);
 
+    menu_background = try zstbi.Image.loadFromFile(asset_dir ++ "ui/menuBackground.jpg", 4);
+
     bold_atlas = try zstbi.Image.loadFromFile(asset_dir ++ "fonts/Ubuntu-Bold.png", 4);
     bold_italic_atlas = try zstbi.Image.loadFromFile(asset_dir ++ "fonts/Ubuntu-BoldItalic.png", 4);
     medium_atlas = try zstbi.Image.loadFromFile(asset_dir ++ "fonts/Ubuntu-Medium.png", 4);
@@ -867,7 +870,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addUiImage("playerStatusBarsDecor", "ui/playerStatusBarsDecor.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("playerStatusBarStatIcon", "ui/playerStatusBarStatIcon.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("playerStatusBarXp", "ui/playerStatusBarXp.png", imply_size, imply_size, &ui_ctx, allocator);
-    try addUiImage("menuBackground", "ui/menuBackground.png", imply_size, imply_size, &ui_ctx, allocator);
 
     if (settings.print_ui_atlas)
         try zstbi.Image.writeToFile(ui_atlas, "ui_atlas.png", .png);

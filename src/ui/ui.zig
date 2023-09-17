@@ -306,6 +306,15 @@ pub const Image = struct {
     }
 };
 
+pub const MenuBackground = struct {
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    visible: bool = true,
+    _disposed: bool = false,
+};
+
 pub const Item = struct {
     x: f32,
     y: f32,
@@ -650,6 +659,7 @@ pub const UiElement = union(enum) {
     text: *UiText,
     char_box: *CharacterBox,
     container: *DisplayContainer,
+    menu_bg: *MenuBackground,
     // pointers on these would imply allocation, which is pointless and wasteful
     balloon: SpeechBalloon,
     status: StatusText,
@@ -661,7 +671,7 @@ pub var elements: utils.DynSlice(UiElement) = undefined;
 pub var elements_to_remove: utils.DynSlice(usize) = undefined;
 pub var current_screen = ScreenType.main_menu;
 
-var menu_background: *Image = undefined;
+var menu_background: *MenuBackground = undefined;
 
 pub var account_screen: AccountScreen = undefined;
 pub var char_select_screen: CharSelectScreen = undefined;
@@ -672,19 +682,14 @@ pub fn init(allocator: std.mem.Allocator) !void {
     elements = try utils.DynSlice(UiElement).init(64, allocator);
     elements_to_remove = try utils.DynSlice(usize).init(64, allocator);
 
-    menu_background = try allocator.create(Image);
-    var menu_bg_data = assets.getUiSingle("menuBackground");
-    menu_bg_data.removePadding();
-    menu_background.* = Image{
+    menu_background = try allocator.create(MenuBackground);
+    menu_background.* = MenuBackground{
         .x = 0,
         .y = 0,
-        .image_data = .{ .normal = .{
-            .scale_x = camera.screen_width / menu_bg_data.texWRaw(),
-            .scale_y = camera.screen_height / menu_bg_data.texHRaw(),
-            .atlas_data = menu_bg_data,
-        } },
+        .w = camera.screen_width,
+        .h = camera.screen_height,
     };
-    try elements.add(.{ .image = menu_background });
+    try elements.add(.{ .menu_bg = menu_background });
 
     account_screen = try AccountScreen.init(allocator);
     char_select_screen = try CharSelectScreen.init(allocator);
@@ -781,8 +786,8 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 }
 
 pub fn resize(w: f32, h: f32) void {
-    menu_background.image_data.normal.scale_x = camera.screen_width / menu_background.image_data.normal.atlas_data.texWRaw();
-    menu_background.image_data.normal.scale_y = camera.screen_height / menu_background.image_data.normal.atlas_data.texHRaw();
+    menu_background.w = camera.screen_width;
+    menu_background.h = camera.screen_height;
 
     account_screen.resize(w, h);
     in_game_screen.resize(w, h);

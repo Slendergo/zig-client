@@ -7,6 +7,7 @@
 @group(0) @binding(6) var bold_tex: texture_2d<f32>;
 @group(0) @binding(7) var bold_italic_tex: texture_2d<f32>;
 @group(0) @binding(8) var minimap_tex: texture_2d<f32>;
+@group(0) @binding(9) var menu_bg_tex: texture_2d<f32>;
 
 const medium_text_type = 0.0;
 const medium_italic_text_type = 1.0;
@@ -22,6 +23,7 @@ const text_drop_shadow_render_type = 5.0;
 const text_normal_no_subpixel_render_type = 6.0;
 const text_drop_shadow_no_subpixel_render_type = 7.0;
 const minimap_render_type = 8.0;
+const menu_bg_render_type = 9.0;
 
 struct VertexInput {
     @location(0) pos: vec2<f32>,
@@ -313,6 +315,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         return mix(offset_pixel, base_pixel, outline_alpha);
     } else if in.render_type == minimap_render_type {
         return textureSampleGrad(minimap_tex, default_sampler, in.uv, dx, dy);
+    } else if in.render_type == menu_bg_render_type {
+        return textureSampleGrad(menu_bg_tex, linear_sampler, in.uv, dx, dy);
     }
 
     return vec4(0.0, 0.0, 0.0, 0.0);
