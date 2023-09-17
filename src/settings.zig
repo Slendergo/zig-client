@@ -89,6 +89,7 @@ pub var music_volume: f32 = 0.0; // 0.1;
 pub var enable_glow = true;
 pub var enable_lights = true;
 pub var enable_vsync = false;
+pub var always_show_xp_gain = true;
 pub var selected_cursor = CursorType.aztec;
 
 pub fn init(allocator: std.mem.Allocator) !void {

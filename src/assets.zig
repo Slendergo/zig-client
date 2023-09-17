@@ -643,6 +643,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     target_ally_cursor_pressed.destroy();
     target_ally_cursor.destroy();
 
+    menu_background.deinit();
     atlas.deinit();
     ui_atlas.deinit();
     light_tex.deinit();

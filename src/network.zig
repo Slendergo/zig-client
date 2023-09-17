@@ -901,8 +901,48 @@ fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: 
         .max_mp => plr.max_mp = reader.read(i32),
         .mp => plr.mp = reader.read(i32),
         .exp_goal => plr.exp_goal = reader.read(i32),
-        .exp => plr.exp = reader.read(i32),
-        .level => plr.level = reader.read(i32),
+        .exp => {
+            const last_xp = plr.exp;
+            plr.exp = reader.read(i32);
+            if (last_xp != 0 and last_xp < plr.exp and (settings.always_show_xp_gain or plr.level < 20)) {
+                const text_data = ui.TextData{
+                    .text = std.fmt.allocPrint(allocator, "+{d} XP", .{plr.exp - last_xp}) catch return false,
+                    .text_type = .bold,
+                    .size = 22,
+                    .color = 0x0D5936,
+                    .backing_buffer = &[0]u8{},
+                };
+
+                ui.elements.add(.{ .status = ui.StatusText{
+                    .obj_id = plr.obj_id,
+                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                    .lifetime = 2000,
+                    .text_data = text_data,
+                    .initial_size = 22,
+                } }) catch return false;
+            }
+        },
+        .level => {
+            const last_level = plr.level;
+            plr.level = reader.read(i32);
+            if (last_level != 0 and last_level < plr.level) {
+                const text_data = ui.TextData{
+                    .text = std.fmt.allocPrint(allocator, "Level Up!", .{}) catch return false,
+                    .text_type = .bold,
+                    .size = 22,
+                    .color = 0x0D5936,
+                    .backing_buffer = &[0]u8{},
+                };
+
+                ui.elements.add(.{ .status = ui.StatusText{
+                    .obj_id = plr.obj_id,
+                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                    .lifetime = 2000,
+                    .text_data = text_data,
+                    .initial_size = 22,
+                } }) catch return false;
+            }
+        },
         .attack => plr.attack = reader.read(i32),
         .defense => plr.defense = reader.read(i32),
         .speed => plr.speed = reader.read(i32),
@@ -933,7 +973,27 @@ fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: 
         .wisdom_bonus => plr.wisdom_bonus = reader.read(i32),
         .dexterity_bonus => plr.dexterity_bonus = reader.read(i32),
         .name_chosen => plr.name_chosen = reader.read(bool),
-        .fame => plr.fame = reader.read(i32),
+        .fame => {
+            const last_fame = plr.fame;
+            plr.fame = reader.read(i32);
+            if (last_fame != 0 and last_fame < plr.fame and plr.level >= 20) {
+                const text_data = ui.TextData{
+                    .text = std.fmt.allocPrint(allocator, "+{d} Fame", .{plr.fame - last_fame}) catch return false,
+                    .text_type = .bold,
+                    .size = 22,
+                    .color = 0xE64F2A,
+                    .backing_buffer = &[0]u8{},
+                };
+
+                ui.elements.add(.{ .status = ui.StatusText{
+                    .obj_id = plr.obj_id,
+                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                    .lifetime = 2000,
+                    .text_data = text_data,
+                    .initial_size = 22,
+                } }) catch return false;
+            }
+        },
         .fame_goal => plr.fame_goal = reader.read(i32),
         .glow => plr.glow = reader.read(i32),
         .sink_level => plr.sink_level = reader.read(u16),
