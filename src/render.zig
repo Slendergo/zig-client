@@ -75,7 +75,6 @@ pub var base_vb: zgpu.wgpu.Buffer = undefined;
 pub var ground_vb: zgpu.wgpu.Buffer = undefined;
 pub var light_vb: zgpu.wgpu.Buffer = undefined;
 pub var index_buffer: zgpu.wgpu.Buffer = undefined;
-pub var minimap_buffer: zgpu.wgpu.Buffer = undefined;
 
 pub var base_vert_data: [base_batch_vert_size]BaseVertexData = undefined;
 pub var ground_vert_data: [ground_batch_vert_size]GroundVertexData = undefined;
@@ -103,14 +102,6 @@ pub var sampler: zgpu.SamplerHandle = undefined;
 pub var linear_sampler: zgpu.SamplerHandle = undefined;
 
 pub var condition_rects: [@bitSizeOf(utils.Condition)][]const assets.AtlasData = undefined;
-
-fn createVertexBuffer(gctx: *zgpu.GraphicsContext, comptime T: type, vb: *zgpu.wgpu.Buffer, buffer: []const T) void {
-    vb.* = gctx.device.createBuffer(.{
-        .usage = .{ .copy_dst = true, .vertex = true },
-        .size = buffer.len * @sizeOf(T),
-    });
-    gctx.queue.writeBuffer(vb.*, 0, T, buffer);
-}
 
 fn createTexture(gctx: *zgpu.GraphicsContext, tex: *zgpu.TextureHandle, view: *zgpu.TextureViewHandle, img: zstbi.Image) void {
     tex.* = gctx.createTexture(.{
@@ -190,9 +181,32 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         condition_rects[i] = rects;
     }
 
-    createVertexBuffer(gctx, BaseVertexData, &base_vb, base_vert_data[0..]);
-    createVertexBuffer(gctx, GroundVertexData, &ground_vb, ground_vert_data[0..]);
-    createVertexBuffer(gctx, LightVertexData, &light_vb, light_vert_data[0..]);
+    base_vb = gctx.device.createBuffer(.{
+        .usage = .{ .copy_dst = true, .vertex = true },
+        .size = base_vert_data.len * @sizeOf(BaseVertexData),
+    });
+    gctx.queue.writeBuffer(base_vb, 0, BaseVertexData, base_vert_data[0..]);
+
+    ground_vb = gctx.device.createBuffer(.{
+        .usage = .{ .copy_dst = true, .vertex = true },
+        .size = ground_vert_data.len * @sizeOf(GroundVertexData),
+    });
+    gctx.queue.writeBuffer(ground_vb, 0, GroundVertexData, ground_vert_data[0..]);
+
+    light_vb = gctx.device.createBuffer(.{
+        .usage = .{ .copy_dst = true, .vertex = true },
+        .size = light_vert_data.len * @sizeOf(LightVertexData),
+    });
+    gctx.queue.writeBuffer(light_vb, 0, LightVertexData, light_vert_data[0..]);
+
+    const ground_uniforms = gctx.createBuffer(.{
+        .usage = .{ .copy_dst = true, .uniform = true },
+        .size = @sizeOf(GroundUniformData),
+    });
+    gctx.queue.writeBuffer(gctx.lookupResource(ground_uniforms).?, 0, GroundUniformData, &[_]GroundUniformData{.{
+        .left_top_mask_uv = assets.left_top_mask_uv,
+        .right_bottom_mask_uv = assets.right_bottom_mask_uv,
+    }});
 
     var index_data: [60000]u16 = undefined;
     for (0..10000) |i| {
@@ -220,23 +234,17 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
     createTexture(gctx, &light_texture, &light_texture_view, assets.light_tex);
     createTexture(gctx, &minimap_texture, &minimap_texture_view, map.minimap);
 
-    minimap_buffer = gctx.device.createBuffer(.{
-        .usage = .{ .copy_dst = true, .copy_src = true, .storage = true },
-        .size = map.minimap.data.len,
-    });
-    gctx.queue.writeBuffer(minimap_buffer, 0, u8, map.minimap.data[0..]);
-
     sampler = gctx.createSampler(.{});
     linear_sampler = gctx.createSampler(.{ .min_filter = .linear, .mag_filter = .linear });
 
     const ground_bind_group_layout = gctx.createBindGroupLayout(&.{
-        zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, true, 0),
+        zgpu.bufferEntry(0, .{ .vertex = true, .fragment = true }, .uniform, false, 0),
         zgpu.samplerEntry(1, .{ .fragment = true }, .filtering),
         zgpu.textureEntry(2, .{ .fragment = true }, .float, .tvdim_2d, false),
     });
     defer gctx.releaseResource(ground_bind_group_layout);
     ground_bind_group = gctx.createBindGroup(ground_bind_group_layout, &.{
-        .{ .binding = 0, .buffer_handle = gctx.uniforms.buffer, .offset = 0, .size = @sizeOf(GroundUniformData) },
+        .{ .binding = 0, .buffer_handle = ground_uniforms, .size = @sizeOf(GroundUniformData) },
         .{ .binding = 1, .sampler_handle = sampler },
         .{ .binding = 2, .texture_view_handle = texture_view },
     });
@@ -1455,12 +1463,6 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             const pipeline = gctx.lookupResource(ground_pipeline) orelse break :groundPass;
             const bind_group = gctx.lookupResource(ground_bind_group) orelse break :groundPass;
 
-            const mem = gctx.uniformsAllocate(GroundUniformData, 1);
-            mem.slice[0] = .{
-                .left_top_mask_uv = assets.left_top_mask_uv,
-                .right_bottom_mask_uv = assets.right_bottom_mask_uv,
-            };
-
             var first: bool = false;
             var square_idx: u16 = 0;
             for (camera.min_y..camera.max_y) |y| {
@@ -1482,7 +1484,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             },
                             ground_batch_vert_size * @sizeOf(GroundVertexData),
                             @divExact(ground_batch_vert_size, 4) / 6,
-                            &.{mem.offset},
+                            null,
                         );
                         square_idx = 0;
                         first = false;
@@ -1583,7 +1585,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     },
                     @as(u64, square_idx) * @sizeOf(GroundVertexData),
                     @divFloor(square_idx, 4) * 6,
-                    &.{mem.offset},
+                    null,
                 );
             }
         }

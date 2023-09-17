@@ -171,7 +171,7 @@ pub const GraphicsContext = struct {
             var response = Response{};
             adapter.requestDevice(
                 wgpu.DeviceDescriptor{
-                    .next_in_chain = if (zgpu_options.dawn_skip_validation or zgpu_options.disable_robustness or zgpu_options.use_d3d12_render_pass)
+                    .next_in_chain = if (zgpu_options.dawn_skip_validation or zgpu_options.disable_robustness)
                         @ptrCast(&dawn_toggles)
                     else
                         null,

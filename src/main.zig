@@ -154,8 +154,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
     }
 }
 
-fn renderTick(allocator: std.mem.Allocator) !void {
-    _ = allocator;
+fn renderTick() !void {
     while (tick_render) {
         const back_buffer = gctx.swapchain.getCurrentTextureView();
         const encoder = gctx.device.createCommandEncoder(null);
@@ -361,7 +360,7 @@ pub fn main() !void {
         network_thread.join();
     }
 
-    render_thread = try std.Thread.spawn(.{}, renderTick, .{allocator});
+    render_thread = try std.Thread.spawn(.{}, renderTick, .{});
     defer {
         tick_render = false;
         render_thread.join();
