@@ -1695,7 +1695,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                     const y: f32 = @floatCast(input.mouse_y);
                     const x: f32 = @floatCast(input.mouse_x);
                     const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-                    en.player.shoot(shoot_angle, time, true); // ability???
+                    en.player.shoot(shoot_angle, time, true);
                 }
             }
         } else if (en == .object) {

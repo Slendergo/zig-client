@@ -516,6 +516,8 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
         if (main.tick_frame) {
             if (map.localPlayerConst()) |local_player| {
                 sendMove(tick_id, main.last_update, local_player.x, local_player.y, map.move_records.items());
+            } else {
+                sendMove(tick_id, main.last_update, -1, -1, &[0]TimedPosition{});
             }
         }
     }
