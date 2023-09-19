@@ -746,7 +746,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
     defer allocator.free(nodes);
     zstbrp.initPack(&ctx, nodes);
 
-    try addImage("particle", "Particle.png", 8, 8, &ctx, allocator);
     try addImage("textile4x4", "Textile4x4.png", 4, 4, &ctx, allocator);
     try addImage("textile5x5", "Textile5x5.png", 5, 5, &ctx, allocator);
     try addImage("textile9x9", "Textile9x9.png", 9, 9, &ctx, allocator);
@@ -780,6 +779,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addImage("lofiProjsBig", "LofiProjsBig.png", 16, 16, &ctx, allocator);
     try addImage("stars", "Stars.png", 8, 8, &ctx, allocator);
     try addImage("wallBackface", "WallBackface.png", 8, 8, &ctx, allocator);
+    try addImage("particles", "Particles.png", 8, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dEncounters", "Chars8x8dEncounters.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dHero1", "Chars8x8dHero1.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dBeach", "Chars8x8dBeach.png", 8, 8, 48, 8, &ctx, allocator);

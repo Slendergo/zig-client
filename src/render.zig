@@ -795,11 +795,11 @@ fn drawMenuBackground(
 
 const QuadOptions = struct {
     rotation: f32 = 0.0,
-    base_color: i32 = -1,
+    base_color: u32 = 0,
     base_color_intensity: f32 = 0.0,
     alpha_mult: f32 = 1.0,
     shadow_texel_mult: f32 = 0.0,
-    shadow_color: i32 = -1,
+    shadow_color: u32 = 0,
     force_glow_off: bool = false,
     ui_quad: bool = false,
 };
@@ -817,11 +817,11 @@ fn drawQuad(
     var idx_new = idx;
 
     var base_rgb = ui.RGBF32.fromValues(0.0, 0.0, 0.0);
-    if (opts.base_color != -1)
+    if (opts.base_color != 0)
         base_rgb = ui.RGBF32.fromInt(opts.base_color);
 
     var shadow_rgb = ui.RGBF32.fromValues(0.0, 0.0, 0.0);
-    if (opts.shadow_color != -1)
+    if (opts.shadow_color != 0)
         shadow_rgb = ui.RGBF32.fromInt(opts.shadow_color);
 
     const texel_w = assets.base_texel_w * opts.shadow_texel_mult;
@@ -1156,7 +1156,7 @@ fn drawText(
                         if (text_data.text.len <= start_idx + 6)
                             break :specialChar;
 
-                        const int_color = std.fmt.parseInt(i32, text_data.text[start_idx .. start_idx + 6], 16) catch 0;
+                        const int_color = std.fmt.parseInt(u32, text_data.text[start_idx .. start_idx + 6], 16) catch 0;
                         current_color = ui.RGBF32.fromInt(int_color);
                         index_offset += 8;
                         continue;
@@ -1445,7 +1445,7 @@ fn drawNineSlice(
     return idx_new;
 }
 
-fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: i32, intensity: f32) u16 {
+fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: u32, intensity: f32) u16 {
     var idx_new = idx;
 
     const rgb = ui.RGBF32.fromInt(color);
@@ -1685,6 +1685,37 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             var idx: u16 = 0;
             for (map.entities.items()) |en| {
                 switch (en) {
+                    .particle_effect => {},
+                    .particle => |pt| {
+                        switch (pt) {
+                            inline else => |particle| {
+                                if (!camera.visibleInCamera(particle.x, particle.y))
+                                    continue;
+
+                                const w = particle.atlas_data.texWRaw() * particle.size;
+                                const h = particle.atlas_data.texHRaw() * particle.size;
+                                const screen_pos = camera.rotateAroundCamera(particle.x, particle.y);
+                                const z_off = particle.z * -camera.px_per_tile - (h - particle.size * assets.padding);
+
+                                idx = drawQuad(
+                                    idx,
+                                    screen_pos.x - w / 2.0,
+                                    screen_pos.y + z_off,
+                                    w,
+                                    h,
+                                    particle.atlas_data,
+                                    draw_data,
+                                    .{
+                                        .shadow_texel_mult = 1.0 / particle.size,
+                                        .alpha_mult = particle.alpha_mult,
+                                        .base_color = particle.color,
+                                        .base_color_intensity = 1.0,
+                                        .force_glow_off = true,
+                                    },
+                                );
+                            },
+                        }
+                    },
                     .player => |player| {
                         if (!camera.visibleInCamera(player.x, player.y)) {
                             continue;
@@ -1745,7 +1776,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         if (player.condition.invisible)
                             alpha_mult = 0.6;
 
-                        var color: i32 = -1;
+                        var color: u32 = 0;
                         var color_intensity: f32 = 0.0;
                         if (player.condition.stasis) {
                             color = 0x777777;
@@ -1995,7 +2026,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         if (bo.condition.invisible)
                             alpha_mult = 0.6;
 
-                        var color: i32 = -1;
+                        var color: u32 = 0;
                         var color_intensity: f32 = 0.0;
                         if (bo.condition.stasis) {
                             color = 0x777777;

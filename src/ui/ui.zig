@@ -22,7 +22,7 @@ pub const RGBF32 = extern struct {
         return RGBF32{ .r = r, .g = g, .b = b };
     }
 
-    pub fn fromInt(int: i32) RGBF32 {
+    pub fn fromInt(int: u32) RGBF32 {
         return RGBF32{
             .r = @as(f32, @floatFromInt((int & 0x00FF0000) >> 16)) / 255.0,
             .g = @as(f32, @floatFromInt((int & 0x0000FF00) >> 8)) / 255.0,
@@ -452,12 +452,12 @@ pub const TextData = struct {
     size: f32,
     backing_buffer: []u8,
     text_type: TextType = .medium,
-    color: i32 = 0xFFFFFF,
+    color: u32 = 0xFFFFFFFF,
     alpha: f32 = 1.0,
-    shadow_color: i32 = 0x000000,
+    shadow_color: u32 = 0xFF000000,
     shadow_alpha_mult: f32 = 0.5,
     shadow_texel_offset_mult: f32 = 0.0,
-    outline_color: i32 = 0x000000,
+    outline_color: u32 = 0xFF000000,
     outline_width: f32 = 1.2, // 0.5 for off
     password: bool = false,
     handle_special_chars: bool = true,
@@ -1003,6 +1003,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
                 status_text.text_data.alpha = 1.0 - frac + 0.33;
                 if (map.findEntityConst(status_text.obj_id)) |en| {
                     switch (en) {
+                        .particle, .particle_effect => {},
                         inline else => |obj| {
                             status_text._screen_x = obj.screen_x - status_text.text_data.width() / 2;
                             status_text._screen_y = obj.screen_y - status_text.text_data.height() - frac * 40;
@@ -1026,6 +1027,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
                 speech_balloon.text_data.alpha = alpha;
                 if (map.findEntityConst(speech_balloon.target_id)) |en| {
                     switch (en) {
+                        .particle, .particle_effect => {},
                         inline else => |obj| {
                             speech_balloon._screen_x = obj.screen_x - speech_balloon.width() / 2;
                             speech_balloon._screen_y = obj.screen_y - speech_balloon.height();

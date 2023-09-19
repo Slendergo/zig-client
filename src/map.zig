@@ -202,7 +202,7 @@ pub const GameObject = struct {
     draw_on_ground: bool = false,
     is_wall: bool = false,
     is_enemy: bool = false,
-    light_color: i32 = -1,
+    light_color: u32 = 0,
     light_intensity: f32 = 0.1,
     light_radius: f32 = 1.0,
     class: game_data.ClassType = .game_object,
@@ -560,7 +560,7 @@ pub const Player = struct {
     move_angle_camera_included: f32 = std.math.nan(f32),
     facing: f32 = std.math.nan(f32),
     walk_speed_multiplier: f32 = 1.0,
-    light_color: i32 = -1,
+    light_color: u32 = 0,
     light_intensity: f32 = 0.1,
     light_radius: f32 = 1.0,
     last_ground_damage_time: i64 = -1,
@@ -1414,7 +1414,7 @@ pub fn damageWithDefense(orig_damage: i32, target_defense: i32, armor_piercing: 
 }
 
 pub fn showDamageText(time: i64, damage: i32, pierced: bool, object_id: i32, allocator: std.mem.Allocator) void {
-    var damage_color: i32 = 0xB02020;
+    var damage_color: u32 = 0xB02020;
     if (pierced) {
         damage_color = 0x890AFF;
     }
@@ -1449,6 +1449,12 @@ fn lessThan(_: void, lhs: Entity, rhs: Entity) bool {
                 lhs_sort_val = camera.rotateAroundCamera(object.x, object.y).y + object.z * -camera.px_per_tile;
             }
         },
+        .particle_effect => lhs_sort_val = 0,
+        .particle => |pt| {
+            switch (pt) {
+                inline else => |particle| lhs_sort_val = camera.rotateAroundCamera(particle.x, particle.y).y + particle.z * -camera.px_per_tile,
+            }
+        },
         inline else => |en| {
             lhs_sort_val = camera.rotateAroundCamera(en.x, en.y).y + en.z * -camera.px_per_tile;
         },
@@ -1462,6 +1468,12 @@ fn lessThan(_: void, lhs: Entity, rhs: Entity) bool {
                 rhs_sort_val = camera.rotateAroundCamera(object.x, object.y).y + object.z * -camera.px_per_tile;
             }
         },
+        .particle_effect => rhs_sort_val = 0,
+        .particle => |pt| {
+            switch (pt) {
+                inline else => |particle| rhs_sort_val = camera.rotateAroundCamera(particle.x, particle.y).y + particle.z * -camera.px_per_tile,
+            }
+        },
         inline else => |en| {
             rhs_sort_val = camera.rotateAroundCamera(en.x, en.y).y + en.z * -camera.px_per_tile;
         },
@@ -1470,10 +1482,413 @@ fn lessThan(_: void, lhs: Entity, rhs: Entity) bool {
     return lhs_sort_val < rhs_sort_val;
 }
 
+pub const ThrowParticle = struct {
+    obj_id: i32 = 0,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
+    z: f32 = 0.0,
+    color: u32 = 0,
+    size: f32 = 1.0,
+    alpha_mult: f32 = 1.0,
+    atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
+
+    initial_size: f32 = 1.0,
+    lifetime: f32 = 0,
+    time_left: f32 = 0,
+    dx: f32 = 0.0,
+    dy: f32 = 0.0,
+
+    _last_update: i64 = 0,
+
+    pub fn addToMap(self: *ThrowParticle) void {
+        self.obj_id = Particle.next_obj_id + 1;
+        Particle.next_obj_id += 1;
+        if (Particle.next_obj_id == 0x7F000000)
+            Particle.next_obj_id = 0x7E000000;
+
+        if (assets.atlas_data.get("particles")) |data| {
+            self.atlas_data = data[0];
+        } else {
+            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
+            self.atlas_data = assets.error_data;
+        }
+    }
+
+    pub fn update(self: *ThrowParticle, time: i64, dt: f32) bool {
+        self.time_left -= dt;
+        if (self.time_left <= 0)
+            return false;
+
+        self.z = @sin(self.time_left / self.lifetime * std.math.pi) * 2;
+        self.x += self.dx * dt;
+        self.y += self.dy * dt;
+
+        if (time - self._last_update >= 16) {
+            const duration: f32 = 400.0;
+            var particle = SparkParticle{
+                .size = @floor(self.z + 1),
+                .initial_size = @floor(self.z + 1),
+                .color = self.color,
+                .lifetime = duration,
+                .time_left = duration,
+                .dx = utils.plusMinus(1),
+                .dy = utils.plusMinus(1),
+                .x = self.x,
+                .y = self.y,
+                .z = self.z,
+            };
+            particle.addToMap();
+
+            entities.add(.{ .particle = .{ .spark = particle } }) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
+
+            self._last_update = time;
+        }
+        return true;
+    }
+};
+
+pub const SparkerParticle = struct {
+    obj_id: i32 = 0,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
+    z: f32 = 0.0,
+    color: u32 = 0,
+    size: f32 = 1.0,
+    alpha_mult: f32 = 1.0,
+    atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
+
+    initial_size: f32 = 1.0,
+    lifetime: f32 = 0,
+    time_left: f32 = 0,
+    dx: f32 = 0.0,
+    dy: f32 = 0.0,
+
+    _last_update: i64 = 0,
+
+    pub fn addToMap(self: *SparkerParticle) void {
+        self.obj_id = Particle.next_obj_id + 1;
+        Particle.next_obj_id += 1;
+        if (Particle.next_obj_id == 0x7F000000)
+            Particle.next_obj_id = 0x7E000000;
+
+        if (assets.atlas_data.get("particles")) |data| {
+            self.atlas_data = data[0];
+        } else {
+            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
+            self.atlas_data = assets.error_data;
+        }
+    }
+
+    pub fn update(self: *SparkerParticle, time: i64, dt: f32) bool {
+        self.time_left -= dt;
+        if (self.time_left <= 0)
+            return false;
+
+        self.x += self.dx * dt;
+        self.y += self.dy * dt;
+
+        if (time - self._last_update >= 16) {
+            const duration: f32 = 600.0;
+            var particle = SparkParticle{
+                .size = 0.5,
+                .initial_size = 0.5,
+                .color = self.color,
+                .lifetime = duration,
+                .time_left = duration,
+                .dx = utils.plusMinus(1),
+                .dy = utils.plusMinus(1),
+                .x = self.x,
+                .y = self.y,
+                .z = self.z,
+            };
+            particle.addToMap();
+
+            entities.add(.{ .particle = .{ .spark = particle } }) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
+
+            self._last_update = time;
+        }
+
+        return true;
+    }
+};
+
+pub const SparkParticle = struct {
+    obj_id: i32 = 0,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
+    z: f32 = 0.0,
+    color: u32 = 0,
+    size: f32 = 1.0,
+    alpha_mult: f32 = 1.0,
+    atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
+
+    initial_size: f32 = 1.0,
+    lifetime: f32 = 0,
+    time_left: f32 = 0,
+    dx: f32 = 0.0,
+    dy: f32 = 0.0,
+
+    pub fn addToMap(self: *SparkParticle) void {
+        self.obj_id = Particle.next_obj_id + 1;
+        Particle.next_obj_id += 1;
+        if (Particle.next_obj_id == 0x7F000000)
+            Particle.next_obj_id = 0x7E000000;
+
+        if (assets.atlas_data.get("particles")) |data| {
+            self.atlas_data = data[0];
+        } else {
+            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
+            self.atlas_data = assets.error_data;
+        }
+    }
+
+    pub fn update(self: *SparkParticle, time: i64, dt: f32) bool {
+        _ = time;
+
+        self.time_left -= dt;
+        if (self.time_left <= 0)
+            return false;
+
+        self.x += self.dx * (dt / 1000.0);
+        self.y += self.dy * (dt / 1000.0);
+        self.size = self.time_left / self.lifetime * self.initial_size;
+        return true;
+    }
+};
+
+pub const TeleportParticle = struct {
+    obj_id: i32 = 0,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
+    z: f32 = 0.0,
+    color: u32 = 0,
+    size: f32 = 1.0,
+    alpha_mult: f32 = 1.0,
+    atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
+
+    time_left: f32 = 0,
+    z_dir: f32 = 0.0,
+
+    pub fn addToMap(self: *TeleportParticle) void {
+        self.obj_id = Particle.next_obj_id + 1;
+        Particle.next_obj_id += 1;
+        if (Particle.next_obj_id == 0x7F000000)
+            Particle.next_obj_id = 0x7E000000;
+
+        if (assets.atlas_data.get("particles")) |data| {
+            self.atlas_data = data[0];
+        } else {
+            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
+            self.atlas_data = assets.error_data;
+        }
+    }
+
+    pub fn update(self: *TeleportParticle, time: i64, dt: f32) bool {
+        _ = time;
+
+        self.time_left -= dt;
+        if (self.time_left <= 0)
+            return false;
+
+        self.z += self.z_dir * dt * 0.008;
+        return true;
+    }
+};
+
+pub const Particle = union(enum) {
+    var next_obj_id: i32 = 0x7E000000;
+
+    throw: ThrowParticle,
+    spark: SparkParticle,
+    sparker: SparkerParticle,
+    teleport: TeleportParticle,
+};
+
+pub const ThrowEffect = struct {
+    obj_id: i32 = 0,
+    start_x: f32 = 0.0,
+    start_y: f32 = 0.0,
+    end_x: f32 = 0.0,
+    end_y: f32 = 0.0,
+    color: u32 = 0,
+    duration: i64 = 0,
+
+    pub fn addToMap(self: *ThrowEffect) void {
+        self.obj_id = ParticleEffect.next_obj_id + 1;
+        ParticleEffect.next_obj_id += 1;
+        if (ParticleEffect.next_obj_id == 0x7E000000)
+            ParticleEffect.next_obj_id = 0x7D000000;
+    }
+
+    pub fn update(self: *ThrowEffect, time: i64, dt: f32) bool {
+        _ = time;
+        _ = dt;
+        const duration: f32 = @floatFromInt(if (self.duration == 0) 1500 else self.duration);
+        var particle = ThrowParticle{
+            .size = 2.0,
+            .initial_size = 2.0,
+            .color = self.color,
+            .lifetime = duration,
+            .time_left = duration,
+            .dx = (self.end_x - self.start_x) / duration,
+            .dy = (self.end_y - self.start_y) / duration,
+            .x = self.start_x,
+            .y = self.start_y,
+        };
+        particle.addToMap();
+        entities.add(.{ .particle = .{ .throw = particle } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
+
+        return false;
+    }
+};
+
+pub const AoeEffect = struct {
+    obj_id: i32 = 0,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
+    radius: f32 = 0.0,
+    color: u32 = 0,
+
+    pub fn addToMap(self: *AoeEffect) void {
+        self.obj_id = ParticleEffect.next_obj_id + 1;
+        ParticleEffect.next_obj_id += 1;
+        if (ParticleEffect.next_obj_id == 0x7E000000)
+            ParticleEffect.next_obj_id = 0x7D000000;
+    }
+
+    pub fn update(self: *AoeEffect, time: i64, dt: f32) bool {
+        _ = time;
+        _ = dt;
+        const part_num = 4 + self.radius * 2;
+        for (0..@intFromFloat(part_num)) |i| {
+            const float_i: f32 = @floatFromInt(i);
+            const angle = (float_i * 2.0 * std.math.pi) / part_num;
+            const end_x = self.x + self.radius * @cos(angle);
+            const end_y = self.y + self.radius * @sin(angle);
+            const duration = 200.0;
+            var particle = SparkerParticle{
+                .size = 0.4,
+                .initial_size = 0.4,
+                .color = self.color,
+                .lifetime = duration,
+                .time_left = duration,
+                .dx = (end_x - self.x) / duration,
+                .dy = (end_y - self.y) / duration,
+                .x = self.x,
+                .y = self.y,
+            };
+            particle.addToMap();
+            entities.add(.{ .particle = .{ .sparker = particle } }) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
+        }
+
+        return false;
+    }
+};
+
+pub const TeleportEffect = struct {
+    obj_id: i32 = 0,
+    x: f32,
+    y: f32,
+
+    pub fn addToMap(self: *TeleportEffect) void {
+        self.obj_id = ParticleEffect.next_obj_id + 1;
+        ParticleEffect.next_obj_id += 1;
+        if (ParticleEffect.next_obj_id == 0x7E000000)
+            ParticleEffect.next_obj_id = 0x7D000000;
+    }
+
+    pub fn update(self: *TeleportEffect, time: i64, dt: f32) bool {
+        _ = time;
+        _ = dt;
+        for (0..20) |_| {
+            const rand = utils.rng.random().float(f32);
+            const angle = 2.0 * std.math.pi * rand;
+            const radius = 0.7 * rand;
+
+            var particle = TeleportParticle{
+                .size = 0.8,
+                .color = 0x0000FF,
+                .time_left = 500 + 1000 * rand,
+                .z_dir = 0.1,
+                .x = self.x + radius * @cos(angle),
+                .y = self.y + radius * @sin(angle),
+            };
+            particle.addToMap();
+            entities.add(.{ .particle = .{ .teleport = particle } }) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
+        }
+
+        return false;
+    }
+};
+
+pub const LineEffect = struct {
+    obj_id: i32 = 0,
+    start_x: f32 = 0.0,
+    start_y: f32 = 0.0,
+    end_x: f32 = 0.0,
+    end_y: f32 = 0.0,
+    color: u32 = 0,
+
+    pub fn addToMap(self: *LineEffect) void {
+        self.obj_id = ParticleEffect.next_obj_id + 1;
+        ParticleEffect.next_obj_id += 1;
+        if (ParticleEffect.next_obj_id == 0x7E000000)
+            ParticleEffect.next_obj_id = 0x7D000000;
+    }
+
+    pub fn update(self: *LineEffect, time: i64, dt: f32) bool {
+        _ = time;
+        _ = dt;
+        const duration = 700.0;
+        for (0..30) |i| {
+            const f = @as(f32, @floatFromInt(i)) / 30;
+            var particle = SparkParticle{
+                .size = 1.0,
+                .initial_size = 1.0,
+                .color = self.color,
+                .lifetime = duration,
+                .time_left = duration,
+                .dx = (self.end_x - self.start_x) / duration,
+                .dy = (self.end_y - self.start_y) / duration,
+                .x = self.end_x + f * (self.start_x - self.end_x),
+                .y = self.end_y + f * (self.start_y - self.end_y),
+                .z = 0.5,
+            };
+            particle.addToMap();
+            entities.add(.{ .particle = .{ .spark = particle } }) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
+        }
+
+        return false;
+    }
+};
+
+pub const ParticleEffect = union(enum) {
+    var next_obj_id: i32 = 0x7D000000;
+
+    throw: ThrowEffect,
+    aoe: AoeEffect,
+    teleport: TeleportEffect,
+    line: LineEffect,
+};
+
 pub const Entity = union(enum) {
     player: Player,
     object: GameObject,
     projectile: Projectile,
+    particle: Particle,
+    particle_effect: ParticleEffect,
 };
 
 const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
@@ -1492,7 +1907,7 @@ pub var seed: u32 = 0;
 pub var width: isize = 0;
 pub var height: isize = 0;
 pub var squares: []Square = &[0]Square{};
-pub var bg_light_color: i32 = -1;
+pub var bg_light_color: u32 = 0;
 pub var bg_light_intensity: f32 = 0.0;
 pub var day_light_intensity: f32 = 0.0;
 pub var night_light_intensity: f32 = 0.0;
@@ -1636,6 +2051,22 @@ pub fn localPlayerRef() ?*Player {
 pub fn findEntityConst(obj_id: i32) ?Entity {
     for (entities.items()) |en| {
         switch (en) {
+            .particle => |pt| {
+                switch (pt) {
+                    inline else => |particle| {
+                        if (particle.obj_id == obj_id)
+                            return en;
+                    },
+                }
+            },
+            .particle_effect => |pt_eff| {
+                switch (pt_eff) {
+                    inline else => |effect| {
+                        if (effect.obj_id == obj_id)
+                            return en;
+                    },
+                }
+            },
             inline else => |obj| {
                 if (obj.obj_id == obj_id)
                     return en;
@@ -1649,6 +2080,22 @@ pub fn findEntityConst(obj_id: i32) ?Entity {
 pub fn findEntityRef(obj_id: i32) ?*Entity {
     for (entities.items()) |*en| {
         switch (en.*) {
+            .particle => |*pt| {
+                switch (pt.*) {
+                    inline else => |*particle| {
+                        if (particle.obj_id == obj_id)
+                            return en;
+                    },
+                }
+            },
+            .particle_effect => |*pt_eff| {
+                switch (pt_eff.*) {
+                    inline else => |*effect| {
+                        if (effect.obj_id == obj_id)
+                            return en;
+                    },
+                }
+            },
             inline else => |*obj| {
                 if (obj.obj_id == obj_id)
                     return en;
@@ -1662,6 +2109,22 @@ pub fn findEntityRef(obj_id: i32) ?*Entity {
 pub fn removeEntity(obj_id: i32) ?Entity {
     for (entities.items(), 0..) |en, i| {
         switch (en) {
+            .particle => |*pt| {
+                switch (pt.*) {
+                    inline else => |*particle| {
+                        if (particle.obj_id == obj_id)
+                            return entities.remove(i);
+                    },
+                }
+            },
+            .particle_effect => |*pt_eff| {
+                switch (pt_eff.*) {
+                    inline else => |*effect| {
+                        if (effect.obj_id == obj_id)
+                            return entities.remove(i);
+                    },
+                }
+            },
             inline else => |obj| {
                 if (obj.obj_id == obj_id)
                     return entities.remove(i);
@@ -1685,51 +2148,73 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     var cam_y: f32 = camera.y.load(.Acquire);
 
     var interactive_set = false;
-    for (0..entities.capacity) |i| {
-        var en = entities._items[i];
-        if (en == .player) {
-            en.player.update(ms_time, ms_dt, allocator);
-            if (en.player.obj_id == local_player_id) {
-                camera.update(en.player.x, en.player.y, ms_dt, input.rotate);
-                if (input.attacking) {
-                    const y: f32 = @floatCast(input.mouse_y);
-                    const x: f32 = @floatCast(input.mouse_x);
-                    const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-                    en.player.shoot(shoot_angle, time, true);
+    for (entities.items(), 0..) |*en, i| {
+        switch (en.*) {
+            .player => |*player| {
+                player.update(ms_time, ms_dt, allocator);
+                if (player.obj_id == local_player_id) {
+                    camera.update(player.x, player.y, ms_dt, input.rotate);
+                    if (input.attacking) {
+                        const y: f32 = @floatCast(input.mouse_y);
+                        const x: f32 = @floatCast(input.mouse_x);
+                        const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
+                        player.shoot(shoot_angle, time, true);
+                    }
                 }
-            }
-        } else if (en == .object) {
-            const is_container = en.object.class == .container;
-            if (!interactive_set and (en.object.class == .portal or is_container)) {
-                const dt_x = cam_x - en.object.x;
-                const dt_y = cam_y - en.object.y;
-                if (dt_x * dt_x + dt_y * dt_y < 1) {
-                    interactive_id.store(en.object.obj_id, .Release);
-                    interactive_type.store(en.object.class, .Release);
+            },
+            .object => |*object| {
+                const is_container = object.class == .container;
+                if (!interactive_set and (object.class == .portal or is_container)) {
+                    const dt_x = cam_x - object.x;
+                    const dt_y = cam_y - object.y;
+                    if (dt_x * dt_x + dt_y * dt_y < 1) {
+                        interactive_id.store(object.obj_id, .Release);
+                        interactive_type.store(object.class, .Release);
 
-                    if (is_container) {
-                        if (ui.in_game_screen.container_id != en.object.obj_id) {
-                            inline for (0..8) |idx| {
-                                ui.in_game_screen.setContainerItem(en.object.inventory[idx], idx);
+                        if (is_container) {
+                            if (ui.in_game_screen.container_id != object.obj_id) {
+                                inline for (0..8) |idx| {
+                                    ui.in_game_screen.setContainerItem(object.inventory[idx], idx);
+                                }
                             }
+
+                            ui.in_game_screen.container_id = object.obj_id;
+                            ui.in_game_screen.setContainerVisible(true);
                         }
 
-                        ui.in_game_screen.container_id = en.object.obj_id;
-                        ui.in_game_screen.setContainerVisible(true);
+                        interactive_set = true;
                     }
-
-                    interactive_set = true;
                 }
-            }
 
-            en.object.update(ms_time, ms_dt);
-        } else if (en == .projectile) {
-            if (!en.projectile.update(ms_time, ms_dt, allocator))
-                entity_indices_to_remove.add(i) catch |e| {
-                    std.log.err("Out of memory: {any}", .{e});
-                };
+                object.update(ms_time, ms_dt);
+            },
+            .projectile => |*projectile| {
+                if (!projectile.update(ms_time, ms_dt, allocator))
+                    entity_indices_to_remove.add(i) catch |e| {
+                        std.log.err("Out of memory: {any}", .{e});
+                    };
+            },
+            .particle => |*pt| {
+                switch (pt.*) {
+                    inline else => |*particle| {
+                        if (!particle.update(ms_time, ms_dt))
+                            entity_indices_to_remove.add(i) catch |e| {
+                                std.log.err("Out of memory: {any}", .{e});
+                            };
+                    },
+                }
+            },
+            .particle_effect => |*pt_eff| {
+                switch (pt_eff.*) {
+                    inline else => |*effect| {
+                        if (!effect.update(ms_time, ms_dt))
+                            entity_indices_to_remove.add(i) catch |e| {
+                                std.log.err("Out of memory: {any}", .{e});
+                            };
+                    },
+                }
+            },
         }
-        entities._items[i] = en;
     }
 
     if (!interactive_set) {

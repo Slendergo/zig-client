@@ -296,9 +296,20 @@ fn handleAoe() void {
     const position = reader.read(Position);
     const radius = reader.read(f32);
     const damage = reader.read(i16);
-    const condition_effect = reader.read(u64);
+    const condition_effect = reader.read(utils.Condition);
     const duration = reader.read(f32);
     const orig_type = reader.read(u8);
+
+    var effect = map.AoeEffect{
+        .x = position.x,
+        .y = position.y,
+        .color = 0xFF0000,
+        .radius = radius,
+    };
+    effect.addToMap();
+    map.entities.add(.{ .particle_effect = .{ .aoe = effect } }) catch |e| {
+        std.log.err("Out of memory: {any}", .{e});
+    };
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
         std.log.debug("Recv - Aoe: x={e}, y={e}, radius={e}, damage={d}, condition_effect={d}, duration={e}, orig_type={d}", .{ position.x, position.y, radius, damage, condition_effect, duration, orig_type });
@@ -484,7 +495,7 @@ fn handleMapInfo(allocator: std.mem.Allocator) void {
     const allow_player_teleport = reader.read(bool);
     const show_displays = reader.read(bool);
 
-    map.bg_light_color = reader.read(i32);
+    map.bg_light_color = reader.read(u32);
     map.bg_light_intensity = reader.read(f32);
     const uses_day_night = reader.read(bool);
     if (uses_day_night) {
@@ -603,7 +614,7 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
 fn handleNotification(allocator: std.mem.Allocator) void {
     const object_id = reader.read(i32);
     const message = reader.read([]u8);
-    const color = @byteSwap(@as(i32, @bitCast(reader.read(ARGB))));
+    const color = @byteSwap(@as(u32, @bitCast(reader.read(ARGB))));
 
     if (map.findEntityConst(object_id)) |en| {
         const text_data = ui.TextData{
@@ -712,11 +723,86 @@ fn handleServerPlayerShoot() void {
 }
 
 fn handleShowEffect() void {
-    const effect_type = @as(EffectType, @enumFromInt(reader.read(u8)));
+    const effect_type: EffectType = @enumFromInt(reader.read(u8));
     const target_object_id = reader.read(i32);
     const pos1 = reader.read(Position);
     const pos2 = reader.read(Position);
     const color = @byteSwap(@as(u32, @bitCast(reader.read(ARGB))));
+
+    switch (effect_type) {
+        .throw => {
+            var start_x = pos2.x;
+            var start_y = pos2.y;
+
+            if (map.findEntityConst(target_object_id)) |en| {
+                switch (en) {
+                    .object => |object| {
+                        start_x = object.x;
+                        start_y = object.y;
+                    },
+                    .player => |player| {
+                        start_x = player.x;
+                        start_y = player.y;
+                    },
+                    else => {},
+                }
+            }
+
+            var effect = map.ThrowEffect{
+                .start_x = start_x,
+                .start_y = start_y,
+                .end_x = pos1.x,
+                .end_y = pos1.y,
+                .color = color,
+                .duration = 1000,
+            };
+            effect.addToMap();
+            map.entities.add(.{ .particle_effect = .{ .throw = effect } }) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
+        },
+        .teleport => {
+            var effect = map.TeleportEffect{
+                .x = pos1.x,
+                .y = pos1.y,
+            };
+            effect.addToMap();
+            map.entities.add(.{ .particle_effect = .{ .teleport = effect } }) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
+        },
+        .trail => {
+            var start_x = pos2.x;
+            var start_y = pos2.y;
+
+            if (map.findEntityConst(target_object_id)) |en| {
+                switch (en) {
+                    .object => |object| {
+                        start_x = object.x;
+                        start_y = object.y;
+                    },
+                    .player => |player| {
+                        start_x = player.x;
+                        start_y = player.y;
+                    },
+                    else => {},
+                }
+            }
+
+            var effect = map.LineEffect{
+                .start_x = start_x,
+                .start_y = start_y,
+                .end_x = pos1.x,
+                .end_y = pos1.y,
+                .color = color,
+            };
+            effect.addToMap();
+            map.entities.add(.{ .particle_effect = .{ .line = effect } }) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
+        },
+        else => {},
+    }
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - ShowEffect: effect_type={any}, target_object_id={d}, x1={e}, y1={e}, x2={e}, y2={e}, color={any}", .{ effect_type, target_object_id, pos1.x, pos1.y, pos2.x, pos2.y, color });
