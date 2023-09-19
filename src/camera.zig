@@ -13,6 +13,8 @@ pub var y = std.atomic.Atomic(f32).init(0.0);
 pub var z = std.atomic.Atomic(f32).init(0.0);
 
 pub var minimap_zoom: f32 = 4.0;
+pub var quake = false;
+pub var quake_amount: f32 = 0.0;
 
 pub var pad_x_cos: f32 = 0.0;
 pub var pad_y_cos: f32 = 0.0;
@@ -43,8 +45,20 @@ pub var clip_scale_y: f32 = 2.0 / 720.0;
 pub var scale: f32 = 1.0;
 
 pub fn update(target_x: f32, target_y: f32, dt: f32, rotate: i8) void {
-    x.store(target_x, .Release);
-    y.store(target_y, .Release);
+    var tx: f32 = target_x;
+    var ty: f32 = target_y;
+    if (quake) {
+        const max_quake = 0.5;
+        const quake_buildup_ms = 10000;
+        quake_amount += dt * max_quake / quake_buildup_ms;
+        if (quake_amount > max_quake)
+            quake_amount = max_quake;
+        tx += utils.plusMinus(quake_amount);
+        ty += utils.plusMinus(quake_amount);
+    }
+
+    x.store(tx, .Release);
+    y.store(ty, .Release);
 
     if (rotate != 0) {
         const float_rotate: f32 = @floatFromInt(rotate);
@@ -68,24 +82,24 @@ pub fn update(target_x: f32, target_y: f32, dt: f32, rotate: i8) void {
     y_cos = cos * clip_scale_y * 0.5;
     x_sin = sin * clip_scale_x * 0.5;
     y_sin = sin * clip_scale_y * 0.5;
-    clip_x = (target_x * cos_angle + target_y * sin_angle) * -px_per_tile * scale;
-    clip_y = (target_x * -sin_angle + target_y * cos_angle) * -px_per_tile * scale;
+    clip_x = (tx * cos_angle + ty * sin_angle) * -px_per_tile * scale;
+    clip_y = (tx * -sin_angle + ty * cos_angle) * -px_per_tile * scale;
 
     const w_half = screen_width / (2 * px_per_tile * scale);
     const h_half = screen_height / (2 * px_per_tile * scale);
     const max_dist = @ceil(@sqrt(w_half * w_half + h_half * h_half));
     max_dist_sq = max_dist * max_dist;
 
-    const min_x_dt = target_x - max_dist;
+    const min_x_dt = tx - max_dist;
     min_x = if (min_x_dt < 0) 0 else @intFromFloat(min_x_dt);
     min_x = @max(0, min_x);
-    max_x = @intFromFloat(target_x + max_dist);
+    max_x = @intFromFloat(tx + max_dist);
     max_x = @min(@as(u32, @intCast(map.width - 1)), max_x);
 
-    const min_y_dt = target_y - max_dist;
+    const min_y_dt = ty - max_dist;
     min_y = if (min_y_dt < 0) 0 else @intFromFloat(min_y_dt);
     min_y = @max(0, min_y);
-    max_y = @intFromFloat(target_y + max_dist);
+    max_y = @intFromFloat(ty + max_dist);
     max_y = @min(@as(u32, @intCast(map.height - 1)), max_y);
 }
 

@@ -483,6 +483,7 @@ fn handleInvResult() void {
 
 fn handleMapInfo(allocator: std.mem.Allocator) void {
     main.clear();
+    camera.quake = false;
 
     const width: isize = @intCast(reader.read(i32));
     const height: isize = @intCast(reader.read(i32));
@@ -800,6 +801,10 @@ fn handleShowEffect() void {
             map.entities.add(.{ .particle_effect = .{ .line = effect } }) catch |e| {
                 std.log.err("Out of memory: {any}", .{e});
             };
+        },
+        .earthquake => {
+            camera.quake = true;
+            camera.quake_amount = 0.0;
         },
         else => {},
     }
