@@ -1717,7 +1717,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         }
                     },
                     .player => |player| {
-                        if (!camera.visibleInCamera(player.x, player.y)) {
+                        if (player.dead or !camera.visibleInCamera(player.x, player.y)) {
                             continue;
                         }
 
@@ -1944,7 +1944,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         }
                     },
                     .object => |bo| {
-                        if (!camera.visibleInCamera(bo.x, bo.y)) {
+                        if (bo.dead or !camera.visibleInCamera(bo.x, bo.y)) {
                             continue;
                         }
 

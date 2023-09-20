@@ -214,8 +214,9 @@ pub const GameObject = struct {
     full_occupy: bool = false,
     occupy_square: bool = false,
     enemy_occupy_square: bool = false,
+    colors: []u32 = &[0]u32{},
 
-    pub fn addToMap(self: *GameObject) void {
+    pub fn addToMap(self: *GameObject, allocator: std.mem.Allocator) void {
         const should_lock = entities.isFull();
         if (should_lock) {
             while (!object_lock.tryLock()) {}
@@ -279,7 +280,7 @@ pub const GameObject = struct {
                     }
 
                     if (_props != null and _props.?.static and _props.?.occupy_square) {
-                        if (assets.color_data.get(tex.sheet)) |color_data| {
+                        if (assets.dominant_color_data.get(tex.sheet)) |color_data| {
                             const color = color_data[tex.index];
                             const base_data_idx: usize = @intCast(floor_y * minimap.num_components * minimap.width + floor_x * minimap.num_components);
                             minimap.data[base_data_idx] = color.r;
@@ -296,6 +297,46 @@ pub const GameObject = struct {
 
                     if (game_data.obj_type_to_class.get(self.obj_type) == .wall) {
                         self.atlas_data.removePadding();
+                    }
+                }
+
+                colorParse: {
+                    const atlas_data = if (tex.animated) self.anim_data.?.walk_anims[0][0] else self.atlas_data;
+                    if (atlas_to_color_data.get(@bitCast(atlas_data))) |colors| {
+                        self.colors = colors;
+                    } else {
+                        var colors = std.ArrayList(u32).init(allocator);
+                        defer colors.deinit();
+
+                        const num_comps = assets.atlas.num_components;
+                        const atlas_w = assets.atlas.width;
+                        const tex_x: u32 = @intFromFloat(atlas_data.texURaw());
+                        const tex_y: u32 = @intFromFloat(atlas_data.texVRaw());
+                        const tex_w: u32 = @intFromFloat(atlas_data.texWRaw());
+                        const tex_h: u32 = @intFromFloat(atlas_data.texHRaw());
+
+                        for (tex_y..tex_y + tex_h) |y| {
+                            colorParseInner: for (tex_x..tex_x + tex_w) |x| {
+                                if (assets.atlas.data[(y * atlas_w + x) * num_comps + 3] > 0) {
+                                    const r: u32 = @intCast(assets.atlas.data[(y * atlas_w + x) * num_comps]);
+                                    const g: u32 = @intCast(assets.atlas.data[(y * atlas_w + x) * num_comps + 1]);
+                                    const b: u32 = @intCast(assets.atlas.data[(y * atlas_w + x) * num_comps + 2]);
+                                    const color: u32 = r << 16 | g << 8 | b;
+                                    for (colors.items) |out_color| {
+                                        if (out_color == color)
+                                            continue :colorParseInner;
+                                    }
+
+                                    colors.append(color) catch break :colorParse;
+                                }
+                            }
+                        }
+
+                        if (colors.items.len == 0)
+                            break :colorParse;
+
+                        self.colors = allocator.dupe(u32, colors.items) catch break :colorParse;
+                        atlas_to_color_data.put(@bitCast(atlas_data), self.colors) catch break :colorParse;
                     }
                 }
             } else {
@@ -341,18 +382,51 @@ pub const GameObject = struct {
     }
 
     pub fn takeDamage(
-        self: *const GameObject,
+        self: *GameObject,
         damage_amount: i32,
         kill: bool,
         armor_pierce: bool,
         time: i64,
         effects: []game_data.ConditionEffect,
+        proj_colors: []u32,
+        proj_angle: f32,
+        proj_speed: f32,
         allocator: std.mem.Allocator,
     ) void {
+        if (self.dead)
+            return;
+
         if (kill) {
+            self.dead = true;
+
             assets.playSfx(self.death_sound);
+            var effect = map.ExplosionEffect{
+                .x = self.x,
+                .y = self.y,
+                .colors = self.colors,
+                .size = self.size,
+                .amount = 30,
+            };
+            effect.addToMap();
+            map.entities.add(.{ .particle_effect = .{ .explosion = effect } }) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
         } else {
             assets.playSfx(self.hit_sound);
+
+            var effect = map.HitEffect{
+                .x = self.x,
+                .y = self.y,
+                .colors = proj_colors,
+                .angle = proj_angle,
+                .speed = proj_speed,
+                .size = 1.0,
+                .amount = 3,
+            };
+            effect.addToMap();
+            map.entities.add(.{ .particle_effect = .{ .hit = effect } }) catch |e| {
+                std.log.err("Out of memory: {any}", .{e});
+            };
 
             for (effects) |eff| {
                 const cond_str = eff.condition.toString();
@@ -384,9 +458,7 @@ pub const GameObject = struct {
         }
     }
 
-    pub fn update(self: *GameObject, time: i64, dt: f32) void {
-        _ = dt;
-
+    pub fn update(self: *GameObject, time: i64, _: f32) void {
         // todo: clean this up, reuse
         const normal_time = main.current_time;
         if (normal_time < self.attack_start + object_attack_period) {
@@ -571,6 +643,7 @@ pub const Player = struct {
     death_sound: []const u8 = &[0]u8{},
     action: u8 = 0,
     float_period: f32 = 0.0,
+    colors: []u32 = &[0]u32{},
 
     pub fn onMove(self: *Player) void {
         const square = getSquare(self.x, self.y);
@@ -611,7 +684,7 @@ pub const Player = struct {
         return move_speed * self.move_multiplier * self.walk_speed_multiplier;
     }
 
-    pub fn addToMap(self: *Player) void {
+    pub fn addToMap(self: *Player, allocator: std.mem.Allocator) void {
         const should_lock = entities.isFull();
         if (should_lock) {
             while (!object_lock.tryLock()) {}
@@ -625,6 +698,46 @@ pub const Player = struct {
             } else {
                 std.log.err("Could not find anim sheet {s} for player with type {d}. Using error texture", .{ tex.sheet, self.obj_type });
                 self.anim_data = assets.error_data_player;
+            }
+
+            colorParse: {
+                const atlas_data = self.anim_data.walk_anims[0][0];
+                if (atlas_to_color_data.get(@bitCast(atlas_data))) |colors| {
+                    self.colors = colors;
+                } else {
+                    var colors = std.ArrayList(u32).init(allocator);
+                    defer colors.deinit();
+
+                    const num_comps = assets.atlas.num_components;
+                    const atlas_w = assets.atlas.width;
+                    const tex_x: u32 = @intFromFloat(atlas_data.texURaw());
+                    const tex_y: u32 = @intFromFloat(atlas_data.texVRaw());
+                    const tex_w: u32 = @intFromFloat(atlas_data.texWRaw());
+                    const tex_h: u32 = @intFromFloat(atlas_data.texHRaw());
+
+                    for (tex_y..tex_y + tex_h) |y| {
+                        colorParseInner: for (tex_x..tex_x + tex_w) |x| {
+                            if (assets.atlas.data[(y * atlas_w + x) * num_comps + 3] > 0) {
+                                const r: u32 = @intCast(assets.atlas.data[(y * atlas_w + x) * num_comps]);
+                                const g: u32 = @intCast(assets.atlas.data[(y * atlas_w + x) * num_comps + 1]);
+                                const b: u32 = @intCast(assets.atlas.data[(y * atlas_w + x) * num_comps + 2]);
+                                const color: u32 = r << 16 | g << 8 | b;
+                                for (colors.items) |out_color| {
+                                    if (out_color == color)
+                                        continue :colorParseInner;
+                                }
+
+                                colors.append(color) catch break :colorParse;
+                            }
+                        }
+                    }
+
+                    if (colors.items.len == 0)
+                        break :colorParse;
+
+                    self.colors = allocator.dupe(u32, colors.items) catch break :colorParse;
+                    atlas_to_color_data.put(@bitCast(atlas_data), self.colors) catch break :colorParse;
+                }
             }
         }
 
@@ -733,18 +846,45 @@ pub const Player = struct {
     }
 
     pub fn takeDamage(
-        self: *const Player,
+        self: *Player,
         damage_amount: i32,
         kill: bool,
         armor_pierce: bool,
         time: i64,
         effects: []game_data.ConditionEffect,
+        hit_colors: []u32,
+        hit_angle: f32,
+        hit_speed: f32,
         allocator: std.mem.Allocator,
     ) void {
+        if (self.dead)
+            return;
+
         if (kill) {
+            self.dead = true;
+
             assets.playSfx(self.death_sound);
+            var effect = map.ExplosionEffect{
+                .x = self.x,
+                .y = self.y,
+                .colors = self.colors,
+                .size = self.size,
+                .amount = 30,
+            };
+            effect.addToMap();
         } else {
             assets.playSfx(self.hit_sound);
+
+            var effect = map.HitEffect{
+                .x = self.x,
+                .y = self.y,
+                .colors = hit_colors,
+                .angle = hit_angle,
+                .speed = hit_speed,
+                .size = 1.0,
+                .amount = 3,
+            };
+            effect.addToMap();
 
             for (effects) |eff| {
                 const cond_str = eff.condition.toString();
@@ -930,6 +1070,9 @@ pub const Player = struct {
                             true,
                             time,
                             &[0]game_data.ConditionEffect{},
+                            &[0]u32{},
+                            0,
+                            0,
                             allocator,
                         );
                         self.last_ground_damage_time = time;
@@ -1149,6 +1292,7 @@ pub const Projectile = struct {
     damage: i32 = 0,
     props: *const game_data.ProjProps,
     last_hit_check: i64 = 0,
+    colors: []u32 = &[0]u32{},
 
     pub fn addToMap(self: *Projectile, needs_lock: bool) void {
         const should_lock = needs_lock and entities.isFull();
@@ -1166,6 +1310,45 @@ pub const Projectile = struct {
             self.atlas_data = assets.error_data;
         }
 
+        colorParse: {
+            if (atlas_to_color_data.get(@bitCast(self.atlas_data))) |colors| {
+                self.colors = colors;
+            } else {
+                var colors = std.ArrayList(u32).init(main._allocator);
+                defer colors.deinit();
+
+                const num_comps = assets.atlas.num_components;
+                const atlas_w = assets.atlas.width;
+                const tex_x: u32 = @intFromFloat(self.atlas_data.texURaw());
+                const tex_y: u32 = @intFromFloat(self.atlas_data.texVRaw());
+                const tex_w: u32 = @intFromFloat(self.atlas_data.texWRaw());
+                const tex_h: u32 = @intFromFloat(self.atlas_data.texHRaw());
+
+                for (tex_y..tex_y + tex_h) |y| {
+                    colorParseInner: for (tex_x..tex_x + tex_w) |x| {
+                        if (assets.atlas.data[(y * atlas_w + x) * num_comps + 3] > 0) {
+                            const r: u32 = @intCast(assets.atlas.data[(y * atlas_w + x) * num_comps]);
+                            const g: u32 = @intCast(assets.atlas.data[(y * atlas_w + x) * num_comps + 1]);
+                            const b: u32 = @intCast(assets.atlas.data[(y * atlas_w + x) * num_comps + 2]);
+                            const color: u32 = r << 16 | g << 8 | b;
+                            for (colors.items) |out_color| {
+                                if (out_color == color)
+                                    continue :colorParseInner;
+                            }
+
+                            colors.append(color) catch break :colorParse;
+                        }
+                    }
+                }
+
+                if (colors.items.len == 0)
+                    break :colorParse;
+
+                self.colors = main._allocator.dupe(u32, colors.items) catch break :colorParse;
+                atlas_to_color_data.put(@bitCast(self.atlas_data), self.colors) catch break :colorParse;
+            }
+        }
+
         self.obj_id = Projectile.next_obj_id + 1;
         Projectile.next_obj_id += 1;
         if (Projectile.next_obj_id == std.math.maxInt(i32))
@@ -1176,17 +1359,16 @@ pub const Projectile = struct {
         };
     }
 
-    fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?Player {
-        var min_dist = std.math.floatMax(f32);
-        var target: ?Player = null;
+    fn findTargetPlayer(x: f32, y: f32, radius_sqr: f32) ?*Player {
+        var min_dist = radius_sqr;
+        var target: ?*Player = null;
 
-        for (entities.items()) |en| {
-            if (en == .player) {
-                const player = en.player;
-                const dist_sqr = utils.distSqr(player.x, player.y, x, y);
-                if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
+        for (entities.items()) |*en| {
+            if (en.* == .player) {
+                const dist_sqr = utils.distSqr(en.player.x, en.player.y, x, y);
+                if (dist_sqr < min_dist) {
                     min_dist = dist_sqr;
-                    target = player;
+                    target = &en.player;
                 }
             }
         }
@@ -1194,19 +1376,18 @@ pub const Projectile = struct {
         return target;
     }
 
-    fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?GameObject {
-        var min_dist = std.math.floatMax(f32);
-        var target: ?GameObject = null;
+    fn findTargetObject(x: f32, y: f32, radius_sqr: f32) ?*GameObject {
+        var min_dist = radius_sqr;
+        var target: ?*GameObject = null;
 
         // todo check multi_hit container
-        for (entities.items()) |en| {
-            if (en == .object) {
-                const obj = en.object;
-                if (obj.is_enemy) {
-                    const dist_sqr = utils.distSqr(obj.x, obj.y, x, y);
-                    if (dist_sqr < radius_sqr and dist_sqr < min_dist) {
+        for (entities.items()) |*en| {
+            if (en.* == .object) {
+                if (en.object.is_enemy or en.object.occupy_square or en.object.enemy_occupy_square) {
+                    const dist_sqr = utils.distSqr(en.object.x, en.object.y, x, y);
+                    if (dist_sqr < min_dist) {
                         min_dist = dist_sqr;
-                        target = obj;
+                        target = &en.object;
                     }
                 }
             }
@@ -1306,16 +1487,14 @@ pub const Projectile = struct {
         const floor_x: u32 = @intFromFloat(@floor(self.x));
         if (validPos(floor_x, floor_y)) {
             const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
-            if (square.tile_type == 0xFF or square.tile_type == 0xFFFF or square.blocking) {
+            if (square.tile_type == 0xFF or square.tile_type == 0xFFFF) {
                 network.sendSquareHit(time, self.bullet_id, self.owner_id);
                 return false;
             }
         }
 
         if (time - self.last_hit_check > 16) {
-
             // todo other hit from multi projectiles
-
             if (self.damage_players) {
                 if (findTargetPlayer(self.x, self.y, 0.33)) |player| {
                     if (player.condition.invincible)
@@ -1328,7 +1507,12 @@ pub const Projectile = struct {
 
                     if (map.local_player_id == player.obj_id) {
                         const pierced = self.props.armor_piercing;
-                        const d = damageWithDefense(self.damage, player.defense, pierced, player.condition);
+                        const d = damageWithDefense(
+                            @floatFromInt(self.damage),
+                            @floatFromInt(player.defense),
+                            pierced,
+                            player.condition,
+                        );
                         const dead = player.hp <= d;
 
                         player.takeDamage(
@@ -1337,11 +1521,25 @@ pub const Projectile = struct {
                             pierced,
                             time,
                             self.props.effects,
+                            self.colors,
+                            self.angle,
+                            self.props.speed,
                             allocator,
                         );
                         network.sendPlayerHit(self.bullet_id, self.owner_id);
                     } else if (!self.props.multi_hit) {
-                        network.sendOtherHit(time, self.bullet_id, self.obj_id, player.obj_id);
+                        var effect = map.HitEffect{
+                            .x = self.x,
+                            .y = self.y,
+                            .colors = self.colors,
+                            .angle = self.angle,
+                            .speed = self.props.speed,
+                            .size = 1.0,
+                            .amount = 3,
+                        };
+                        effect.addToMap();
+
+                        network.sendOtherHit(time, self.bullet_id, player.obj_id, player.obj_id);
                     } else {
                         std.log.err("Unknown logic for player side of hit logic unexpected branch", .{});
                     }
@@ -1364,7 +1562,12 @@ pub const Projectile = struct {
 
                     if (object.is_enemy) {
                         const pierced = self.props.armor_piercing;
-                        const d = damageWithDefense(self.damage, object.defense, pierced, object.condition);
+                        const d = damageWithDefense(
+                            @floatFromInt(self.damage),
+                            @floatFromInt(object.defense),
+                            pierced,
+                            object.condition,
+                        );
                         const dead = object.hp <= d;
 
                         object.takeDamage(
@@ -1373,11 +1576,25 @@ pub const Projectile = struct {
                             pierced,
                             time,
                             self.props.effects,
+                            self.colors,
+                            self.angle,
+                            self.props.speed,
                             allocator,
                         );
                         network.sendEnemyHit(time, self.bullet_id, object.obj_id, dead);
                     } else if (!self.props.multi_hit) {
-                        network.sendOtherHit(time, self.bullet_id, self.obj_id, object.obj_id);
+                        var effect = map.HitEffect{
+                            .x = self.x,
+                            .y = self.y,
+                            .colors = self.colors,
+                            .angle = self.angle,
+                            .speed = self.props.speed,
+                            .size = 1.0,
+                            .amount = 3,
+                        };
+                        effect.addToMap();
+
+                        network.sendOtherHit(time, self.bullet_id, object.obj_id, object.obj_id);
                     } else {
                         std.log.err("Unknown logic for object side of hit logic unexpected branch", .{});
                     }
@@ -1396,21 +1613,20 @@ pub const Projectile = struct {
     }
 };
 
-pub fn damageWithDefense(orig_damage: i32, target_defense: i32, armor_piercing: bool, condition: utils.Condition) i32 {
-    var def: f32 = @floatFromInt(target_defense);
+pub fn damageWithDefense(orig_damage: f32, target_defense: f32, armor_piercing: bool, condition: utils.Condition) i32 {
+    var def = target_defense;
     if (armor_piercing or condition.armor_broken) {
         def = 0.0;
     } else if (condition.armored) {
-        def *= 1.5;
+        def *= 2.0;
     }
 
-    const min = @as(f32, @floatFromInt(orig_damage * 2)) / 20.0;
-    var d: f32 = @max(min, @as(f32, @floatFromInt(orig_damage)) - def);
     if (condition.invulnerable or condition.invincible) {
-        d = 0.0;
+        return 0;
     }
 
-    return @as(i32, @intFromFloat(d));
+    const min = orig_damage * 3.0 / 20.0;
+    return @intFromFloat(@max(min, orig_damage - def));
 }
 
 pub fn showDamageText(time: i64, damage: i32, pierced: bool, object_id: i32, allocator: std.mem.Allocator) void {
@@ -1512,6 +1728,10 @@ pub const ThrowParticle = struct {
             std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
             self.atlas_data = assets.error_data;
         }
+
+        entities.add(.{ .particle = .{ .throw = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
     }
 
     pub fn update(self: *ThrowParticle, time: i64, dt: f32) bool {
@@ -1538,10 +1758,6 @@ pub const ThrowParticle = struct {
                 .z = self.z,
             };
             particle.addToMap();
-
-            entities.add(.{ .particle = .{ .spark = particle } }) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
-            };
 
             self._last_update = time;
         }
@@ -1579,6 +1795,10 @@ pub const SparkerParticle = struct {
             std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
             self.atlas_data = assets.error_data;
         }
+
+        entities.add(.{ .particle = .{ .sparker = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
     }
 
     pub fn update(self: *SparkerParticle, time: i64, dt: f32) bool {
@@ -1604,10 +1824,6 @@ pub const SparkerParticle = struct {
                 .z = self.z,
             };
             particle.addToMap();
-
-            entities.add(.{ .particle = .{ .spark = particle } }) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
-            };
 
             self._last_update = time;
         }
@@ -1644,11 +1860,13 @@ pub const SparkParticle = struct {
             std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
             self.atlas_data = assets.error_data;
         }
+
+        entities.add(.{ .particle = .{ .spark = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
     }
 
-    pub fn update(self: *SparkParticle, time: i64, dt: f32) bool {
-        _ = time;
-
+    pub fn update(self: *SparkParticle, _: i64, dt: f32) bool {
         self.time_left -= dt;
         if (self.time_left <= 0)
             return false;
@@ -1685,15 +1903,109 @@ pub const TeleportParticle = struct {
             std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
             self.atlas_data = assets.error_data;
         }
+
+        entities.add(.{ .particle = .{ .teleport = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
     }
 
-    pub fn update(self: *TeleportParticle, time: i64, dt: f32) bool {
-        _ = time;
-
+    pub fn update(self: *TeleportParticle, _: i64, dt: f32) bool {
         self.time_left -= dt;
         if (self.time_left <= 0)
             return false;
 
+        self.z += self.z_dir * dt * 0.008;
+        return true;
+    }
+};
+
+pub const ExplosionParticle = struct {
+    obj_id: i32 = 0,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
+    z: f32 = 0.0,
+    color: u32 = 0,
+    size: f32 = 1.0,
+    alpha_mult: f32 = 1.0,
+    atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
+
+    lifetime: f32 = 0.0,
+    time_left: f32 = 0.0,
+    x_dir: f32 = 0.0,
+    y_dir: f32 = 0.0,
+    z_dir: f32 = 0.0,
+
+    pub fn addToMap(self: *ExplosionParticle) void {
+        self.obj_id = Particle.next_obj_id + 1;
+        Particle.next_obj_id += 1;
+        if (Particle.next_obj_id == 0x7F000000)
+            Particle.next_obj_id = 0x7E000000;
+
+        if (assets.atlas_data.get("particles")) |data| {
+            self.atlas_data = data[0];
+        } else {
+            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
+            self.atlas_data = assets.error_data;
+        }
+
+        entities.add(.{ .particle = .{ .explosion = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
+    }
+
+    pub fn update(self: *ExplosionParticle, _: i64, dt: f32) bool {
+        self.time_left -= dt;
+        if (self.time_left <= 0)
+            return false;
+
+        self.x += self.x_dir * dt * 0.008;
+        self.y += self.y_dir * dt * 0.008;
+        self.z += self.z_dir * dt * 0.008;
+        return true;
+    }
+};
+
+pub const HitParticle = struct {
+    obj_id: i32 = 0,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
+    z: f32 = 0.0,
+    color: u32 = 0,
+    size: f32 = 1.0,
+    alpha_mult: f32 = 1.0,
+    atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
+
+    lifetime: f32 = 0.0,
+    time_left: f32 = 0.0,
+    x_dir: f32 = 0.0,
+    y_dir: f32 = 0.0,
+    z_dir: f32 = 0.0,
+
+    pub fn addToMap(self: *HitParticle) void {
+        self.obj_id = Particle.next_obj_id + 1;
+        Particle.next_obj_id += 1;
+        if (Particle.next_obj_id == 0x7F000000)
+            Particle.next_obj_id = 0x7E000000;
+
+        if (assets.atlas_data.get("particles")) |data| {
+            self.atlas_data = data[0];
+        } else {
+            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
+            self.atlas_data = assets.error_data;
+        }
+
+        entities.add(.{ .particle = .{ .hit = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
+    }
+
+    pub fn update(self: *HitParticle, _: i64, dt: f32) bool {
+        self.time_left -= dt;
+        if (self.time_left <= 0)
+            return false;
+
+        self.x += self.x_dir * dt * 0.008;
+        self.y += self.y_dir * dt * 0.008;
         self.z += self.z_dir * dt * 0.008;
         return true;
     }
@@ -1706,6 +2018,8 @@ pub const Particle = union(enum) {
     spark: SparkParticle,
     sparker: SparkerParticle,
     teleport: TeleportParticle,
+    explosion: ExplosionParticle,
+    hit: HitParticle,
 };
 
 pub const ThrowEffect = struct {
@@ -1722,11 +2036,13 @@ pub const ThrowEffect = struct {
         ParticleEffect.next_obj_id += 1;
         if (ParticleEffect.next_obj_id == 0x7E000000)
             ParticleEffect.next_obj_id = 0x7D000000;
+
+        entities.add(.{ .particle_effect = .{ .throw = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
     }
 
-    pub fn update(self: *ThrowEffect, time: i64, dt: f32) bool {
-        _ = time;
-        _ = dt;
+    pub fn update(self: *ThrowEffect, _: i64, _: f32) bool {
         const duration: f32 = @floatFromInt(if (self.duration == 0) 1500 else self.duration);
         var particle = ThrowParticle{
             .size = 2.0,
@@ -1740,9 +2056,6 @@ pub const ThrowEffect = struct {
             .y = self.start_y,
         };
         particle.addToMap();
-        entities.add(.{ .particle = .{ .throw = particle } }) catch |e| {
-            std.log.err("Out of memory: {any}", .{e});
-        };
 
         return false;
     }
@@ -1760,11 +2073,13 @@ pub const AoeEffect = struct {
         ParticleEffect.next_obj_id += 1;
         if (ParticleEffect.next_obj_id == 0x7E000000)
             ParticleEffect.next_obj_id = 0x7D000000;
+
+        entities.add(.{ .particle_effect = .{ .aoe = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
     }
 
-    pub fn update(self: *AoeEffect, time: i64, dt: f32) bool {
-        _ = time;
-        _ = dt;
+    pub fn update(self: *AoeEffect, _: i64, _: f32) bool {
         const part_num = 4 + self.radius * 2;
         for (0..@intFromFloat(part_num)) |i| {
             const float_i: f32 = @floatFromInt(i);
@@ -1784,9 +2099,6 @@ pub const AoeEffect = struct {
                 .y = self.y,
             };
             particle.addToMap();
-            entities.add(.{ .particle = .{ .sparker = particle } }) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
-            };
         }
 
         return false;
@@ -1803,11 +2115,13 @@ pub const TeleportEffect = struct {
         ParticleEffect.next_obj_id += 1;
         if (ParticleEffect.next_obj_id == 0x7E000000)
             ParticleEffect.next_obj_id = 0x7D000000;
+
+        entities.add(.{ .particle_effect = .{ .teleport = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
     }
 
-    pub fn update(self: *TeleportEffect, time: i64, dt: f32) bool {
-        _ = time;
-        _ = dt;
+    pub fn update(self: *TeleportEffect, _: i64, _: f32) bool {
         for (0..20) |_| {
             const rand = utils.rng.random().float(f32);
             const angle = 2.0 * std.math.pi * rand;
@@ -1822,9 +2136,6 @@ pub const TeleportEffect = struct {
                 .y = self.y + radius * @sin(angle),
             };
             particle.addToMap();
-            entities.add(.{ .particle = .{ .teleport = particle } }) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
-            };
         }
 
         return false;
@@ -1844,11 +2155,13 @@ pub const LineEffect = struct {
         ParticleEffect.next_obj_id += 1;
         if (ParticleEffect.next_obj_id == 0x7E000000)
             ParticleEffect.next_obj_id = 0x7D000000;
+
+        entities.add(.{ .particle_effect = .{ .line = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
     }
 
-    pub fn update(self: *LineEffect, time: i64, dt: f32) bool {
-        _ = time;
-        _ = dt;
+    pub fn update(self: *LineEffect, _: i64, _: f32) bool {
         const duration = 700.0;
         for (0..30) |i| {
             const f = @as(f32, @floatFromInt(i)) / 30;
@@ -1865,9 +2178,99 @@ pub const LineEffect = struct {
                 .z = 0.5,
             };
             particle.addToMap();
-            entities.add(.{ .particle = .{ .spark = particle } }) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
+        }
+
+        return false;
+    }
+};
+
+pub const ExplosionEffect = struct {
+    obj_id: i32 = 0,
+    x: f32,
+    y: f32,
+    colors: []u32 = &[0]u32{},
+    size: f32 = 0.0,
+    amount: u32 = 0,
+
+    pub fn addToMap(self: *ExplosionEffect) void {
+        self.obj_id = ParticleEffect.next_obj_id + 1;
+        ParticleEffect.next_obj_id += 1;
+        if (ParticleEffect.next_obj_id == 0x7E000000)
+            ParticleEffect.next_obj_id = 0x7D000000;
+
+        entities.add(.{ .particle_effect = .{ .explosion = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
+    }
+
+    pub fn update(self: *ExplosionEffect, _: i64, _: f32) bool {
+        if (self.colors.len == 0)
+            return false;
+
+        for (0..self.amount) |_| {
+            const duration = 200.0 + utils.rng.random().float(f32) * 100.0;
+            var particle = ExplosionParticle{
+                .size = self.size,
+                .color = self.colors[utils.rng.next() % self.colors.len],
+                .lifetime = duration,
+                .time_left = duration,
+                .x_dir = utils.rng.random().float(f32) - 0.5,
+                .y_dir = utils.rng.random().float(f32) - 0.5,
+                .z_dir = 0,
+                .x = self.x,
+                .y = self.y,
+                .z = 0.5,
             };
+            particle.addToMap();
+        }
+
+        return false;
+    }
+};
+
+pub const HitEffect = struct {
+    obj_id: i32 = 0,
+    x: f32,
+    y: f32,
+    colors: []u32 = &[0]u32{},
+    size: f32 = 0.0,
+    angle: f32 = 0.0,
+    speed: f32 = 0.0,
+    amount: u32 = 0,
+
+    pub fn addToMap(self: *HitEffect) void {
+        self.obj_id = ParticleEffect.next_obj_id + 1;
+        ParticleEffect.next_obj_id += 1;
+        if (ParticleEffect.next_obj_id == 0x7E000000)
+            ParticleEffect.next_obj_id = 0x7D000000;
+
+        entities.add(.{ .particle_effect = .{ .hit = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
+    }
+
+    pub fn update(self: *HitEffect, _: i64, _: f32) bool {
+        if (self.colors.len == 0)
+            return false;
+
+        const cos = self.speed / 600.0 * -@cos(self.angle);
+        const sin = self.speed / 600.0 * -@sin(self.angle);
+
+        for (0..self.amount) |_| {
+            const duration = 200.0 + utils.rng.random().float(f32) * 100.0;
+            var particle = HitParticle{
+                .size = self.size,
+                .color = self.colors[utils.rng.next() % self.colors.len],
+                .lifetime = duration,
+                .time_left = duration,
+                .x_dir = cos + (utils.rng.random().float(f32) - 0.5) * 0.4,
+                .y_dir = sin + (utils.rng.random().float(f32) - 0.5) * 0.4,
+                .z_dir = 0,
+                .x = self.x,
+                .y = self.y,
+                .z = 0.5,
+            };
+            particle.addToMap();
         }
 
         return false;
@@ -1881,6 +2284,8 @@ pub const ParticleEffect = union(enum) {
     aoe: AoeEffect,
     teleport: TeleportEffect,
     line: LineEffect,
+    explosion: ExplosionEffect,
+    hit: HitEffect,
 };
 
 pub const Entity = union(enum) {
@@ -1891,12 +2296,15 @@ pub const Entity = union(enum) {
     particle_effect: ParticleEffect,
 };
 
+const AtlasHashHack = [4]u32;
+
 const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
 const day_cycle_ms_half: f32 = @as(f32, day_cycle_ms) / 2;
 
 pub var object_lock: std.Thread.RwLock = .{};
 pub var entities: utils.DynSlice(Entity) = undefined;
 pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
+pub var atlas_to_color_data: std.AutoHashMap(AtlasHashHack, []u32) = undefined;
 pub var last_tick_ms: f32 = 0.0;
 pub var last_tick_time: i64 = 0;
 pub var local_player_id: i32 = -1;
@@ -1922,6 +2330,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     entities = try utils.DynSlice(Entity).init(16384, allocator);
     entity_indices_to_remove = try utils.DynSlice(usize).init(256, allocator);
     move_records = try utils.DynSlice(network.TimedPosition).init(10, allocator);
+    atlas_to_color_data = std.AutoHashMap(AtlasHashHack, []u32).init(allocator);
 
     minimap = try zstbi.Image.createEmpty(4096, 4096, 4, .{});
 }
@@ -1985,10 +2394,15 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         }
     }
 
+    var colors_iter = atlas_to_color_data.valueIterator();
+    while (colors_iter.next()) |colors| {
+        allocator.free(colors.*);
+    }
+
     entities.deinit();
     entity_indices_to_remove.deinit();
     move_records.deinit();
-
+    atlas_to_color_data.deinit();
     minimap.deinit();
 }
 
@@ -2231,7 +2645,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     std.mem.reverse(usize, entity_indices_to_remove.items());
 
     for (entity_indices_to_remove.items()) |idx| {
-        _ = entities.remove(idx);
+        disposeEntity(allocator, entities.remove(idx));
     }
 
     entity_indices_to_remove.clear();
@@ -2275,7 +2689,7 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
                 square.atlas_data = assets.error_data;
             }
 
-            if (assets.color_data.get(tex.sheet)) |color_data| {
+            if (assets.dominant_color_data.get(tex.sheet)) |color_data| {
                 const color = color_data[tex.index];
                 const base_data_idx: usize = @intCast(y * minimap.num_components * minimap.width + x * minimap.num_components);
                 minimap.data[base_data_idx] = color.r;
@@ -2322,14 +2736,14 @@ pub fn addMoveRecord(time: i64, position: network.Position) void {
     }
 
     if (move_records.capacity == 0) {
-        move_records.add(network.TimedPosition{ .time = time, .position = position });
+        move_records.add(.{ .time = time, .position = position });
         return;
     }
 
     const curr_record = move_records.items()[move_records.capacity - 1];
     const curr_id = getId(curr_record.time);
     if (id != curr_id) {
-        move_records.add(network.TimedPosition{ .time = time, .position = position });
+        move_records.add(.{ .time = time, .position = position });
         return;
     }
 

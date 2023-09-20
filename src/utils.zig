@@ -166,7 +166,7 @@ pub const PacketReader = struct {
 
     inline fn readArray(self: *PacketReader, comptime T: type) []T {
         const len = self.read(u16);
-        const buf = main.stack_allocator.alloc(T, len) catch unreachable;
+        const buf = main.network_stack_allocator.alloc(T, len) catch unreachable;
         for (0..len) |i| {
             buf[i] = self.read(T);
         }
@@ -437,8 +437,8 @@ pub fn currentMemoryUse() !f32 {
             const file = try std.fs.cwd().openFile("/proc/self/statm", .{});
             defer file.close();
 
-            const data = try file.readToEndAlloc(main.stack_allocator, std.math.maxInt(u8));
-            defer main.stack_allocator.free(data);
+            const data = try file.readToEndAlloc(main.network_stack_allocator, std.math.maxInt(u8));
+            defer main.network_stack_allocator.free(data);
 
             var split_iter = std.mem.split(u8, data, " ");
             _ = split_iter.next(); // total size

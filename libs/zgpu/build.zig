@@ -80,11 +80,11 @@ pub const Package = struct {
 
         exe.addCSourceFile(.{
             .file = .{ .path = thisDir() ++ "/src/dawn.cpp" },
-            .flags = &.{ "-std=c++17", "-fno-sanitize=undefined", "-Ofast", "-ffast-math" },
+            .flags = &.{ "-std=c++17", "-fno-sanitize=undefined", },
         });
         exe.addCSourceFile(.{
             .file = .{ .path = thisDir() ++ "/src/dawn_proc.c" },
-            .flags = &.{ "-fno-sanitize=undefined", "-Ofast", "-ffast-math" },
+            .flags = &.{ "-fno-sanitize=undefined", },
         });
     }
 };

@@ -216,8 +216,7 @@ fn mouseRelease(button: zglfw.MouseButton) void {
     }
 }
 
-pub fn charEvent(window: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
-    _ = window;
+pub fn charEvent(_: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
     if (selected_input_field) |input_field| {
         const char_code = @intFromEnum(char);
         if (char_code > std.math.maxInt(u8) or char_code < std.math.minInt(u8)) {
@@ -235,9 +234,7 @@ pub fn charEvent(window: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
     }
 }
 
-pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, scancode: i32, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
-    _ = scancode;
-
+pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
     if (action == .press or action == .repeat) {
         if (selected_input_field) |input_field| {
             if (mods.control) {
@@ -391,17 +388,14 @@ pub fn updateState() void {
     }
 }
 
-pub fn mouseMoveEvent(window: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) void {
-    _ = window;
+pub fn mouseMoveEvent(_: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) void {
     mouse_x = xpos;
     mouse_y = ypos;
 
     ui.mouseMove(@floatCast(mouse_x), @floatCast(mouse_y));
 }
 
-pub fn scrollEvent(window: *zglfw.Window, xoffset: f64, yoffset: f64) callconv(.C) void {
-    _ = xoffset;
-    _ = window;
+pub fn scrollEvent(_: *zglfw.Window, _: f64, yoffset: f64) callconv(.C) void {
     const size = @max(map.width, map.height);
     const max_zoom: f32 = @floatFromInt(@divFloor(size, 32));
     const scroll_speed = @as(f32, @floatFromInt(size)) / 1280;

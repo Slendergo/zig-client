@@ -240,7 +240,7 @@ pub fn accept(allocator: std.mem.Allocator) void {
         message_len = 65535;
     }
 
-    main.fba.reset();
+    main.network_fba.reset();
     reader.index = 0;
     buffer_idx = 0;
 }
@@ -307,9 +307,6 @@ fn handleAoe() void {
         .radius = radius,
     };
     effect.addToMap();
-    map.entities.add(.{ .particle_effect = .{ .aoe = effect } }) catch |e| {
-        std.log.err("Out of memory: {any}", .{e});
-    };
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
         std.log.debug("Recv - Aoe: x={e}, y={e}, radius={e}, damage={d}, condition_effect={d}, duration={e}, orig_type={d}", .{ position.x, position.y, radius, damage, condition_effect, duration, orig_type });
@@ -758,9 +755,6 @@ fn handleShowEffect() void {
                 .duration = 1000,
             };
             effect.addToMap();
-            map.entities.add(.{ .particle_effect = .{ .throw = effect } }) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
-            };
         },
         .teleport => {
             var effect = map.TeleportEffect{
@@ -768,9 +762,6 @@ fn handleShowEffect() void {
                 .y = pos1.y,
             };
             effect.addToMap();
-            map.entities.add(.{ .particle_effect = .{ .teleport = effect } }) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
-            };
         },
         .trail => {
             var start_x = pos2.x;
@@ -798,9 +789,6 @@ fn handleShowEffect() void {
                 .color = color,
             };
             effect.addToMap();
-            map.entities.add(.{ .particle_effect = .{ .line = effect } }) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
-            };
         },
         .earthquake => {
             camera.quake = true;
@@ -958,7 +946,7 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
                     }
                 }
 
-                player.addToMap();
+                player.addToMap(allocator);
             },
             inline else => {
                 var obj = map.GameObject{ .x = position.x, .y = position.y, .obj_id = obj_id, .obj_type = obj_type };
@@ -976,7 +964,7 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
                     }
                 }
 
-                obj.addToMap();
+                obj.addToMap(allocator);
             },
         }
     }
@@ -989,7 +977,11 @@ fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: 
     @setEvalBranchQuota(5000);
     switch (stat_type) {
         .max_hp => plr.max_hp = reader.read(i32),
-        .hp => plr.hp = reader.read(i32),
+        .hp => {
+            plr.hp = reader.read(i32);
+            if (plr.hp > 0)
+                plr.dead = false;
+        },
         .size => plr.size = @as(f32, @floatFromInt(reader.read(i32))) / 100.0,
         .max_mp => plr.max_mp = reader.read(i32),
         .mp => plr.mp = reader.read(i32),
@@ -1117,7 +1109,11 @@ fn parseObjStatData(obj: *map.GameObject, stat_type: game_data.StatType, allocat
     @setEvalBranchQuota(5000);
     switch (stat_type) {
         .max_hp => obj.max_hp = reader.read(i32),
-        .hp => obj.hp = reader.read(i32),
+        .hp => {
+            obj.hp = reader.read(i32);
+            if (obj.hp > 0)
+                obj.dead = false;
+        },
         .size => obj.size = @as(f32, @floatFromInt(reader.read(i32))) / 100.0,
         .level => obj.level = reader.read(i32),
         .defense => obj.defense = reader.read(i32),

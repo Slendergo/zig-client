@@ -81,7 +81,7 @@ pub const AnimPlayerData = struct {
     attack_anims: [4][2]AtlasData,
 };
 
-pub const AtlasData = struct {
+pub const AtlasData = packed struct {
     tex_u: f32,
     tex_v: f32,
     tex_w: f32,
@@ -216,7 +216,7 @@ pub var target_ally_cursor_pressed: *zglfw.Cursor = undefined;
 pub var target_ally_cursor: *zglfw.Cursor = undefined;
 
 pub var sfx_map: std.StringHashMap(*zaudio.Sound) = undefined;
-pub var color_data: std.StringHashMap([]RGBA) = undefined;
+pub var dominant_color_data: std.StringHashMap([]RGBA) = undefined;
 pub var atlas_data: std.StringHashMap([]AtlasData) = undefined;
 pub var ui_atlas_data: std.StringHashMap([]AtlasData) = undefined;
 pub var anim_enemies: std.StringHashMap([]AnimEnemyData) = undefined;
@@ -256,8 +256,8 @@ fn addCursors(comptime image_name: []const u8, comptime cut_width: u32, comptime
         const cur_src_x = (i * cut_width) % img.width;
         const cur_src_y = @divFloor(i * cut_width, img.width) * cut_height;
 
-        var temp = try main.stack_allocator.alloc(u8, img_size * 4);
-        defer main.stack_allocator.free(temp);
+        var temp = try main.network_stack_allocator.alloc(u8, img_size * 4);
+        defer main.network_stack_allocator.free(temp);
 
         for (0..img_size) |j| {
             const row_count = @divFloor(j, cut_width);
@@ -316,7 +316,7 @@ fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, co
     }
 
     if (zstbrp.packRects(ctx, current_rects)) {
-        var colors = try allocator.alloc(RGBA, len);
+        var dominant_colors = try allocator.alloc(RGBA, len);
 
         for (0..len) |i| {
             const rect = current_rects[i];
@@ -356,7 +356,7 @@ fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, co
             var count_iter = color_counts.iterator();
             while (count_iter.next()) |count| {
                 if (count.value_ptr.* > max) {
-                    colors[i] = count.key_ptr.*;
+                    dominant_colors[i] = count.key_ptr.*;
                     max = count.value_ptr.*;
                 }
             }
@@ -367,7 +367,7 @@ fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, co
         }
 
         try atlas_data.put(sheet_name, data);
-        try color_data.put(sheet_name, colors);
+        try dominant_color_data.put(sheet_name, dominant_colors);
     } else {
         std.log.err("Could not pack " ++ image_name ++ " into the atlas", .{});
     }
@@ -609,8 +609,8 @@ pub fn playSfx(name: []const u8) void {
         return;
     }
 
-    const path = std.fmt.allocPrintZ(main.stack_allocator, "{s}sfx/{s}.mp3", .{ asset_dir, name }) catch return;
-    defer main.stack_allocator.free(path);
+    const path = std.fmt.allocPrintZ(main.network_stack_allocator, "{s}sfx/{s}.mp3", .{ asset_dir, name }) catch return;
+    defer main.network_stack_allocator.free(path);
 
     var audio = audio_state.engine.createSoundFromFile(path, .{}) catch return;
     audio.setVolume(settings.sfx_volume);
@@ -652,9 +652,9 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     medium_atlas.deinit();
     medium_italic_atlas.deinit();
 
-    var colors_iter = color_data.valueIterator();
-    while (colors_iter.next()) |color| {
-        allocator.free(color.*);
+    var dominant_colors_iter = dominant_color_data.valueIterator();
+    while (dominant_colors_iter.next()) |color_data| {
+        allocator.free(color_data.*);
     }
 
     var rects_iter = atlas_data.valueIterator();
@@ -685,7 +685,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
         }
     }
 
-    color_data.deinit();
+    dominant_color_data.deinit();
     atlas_data.deinit();
     ui_atlas_data.deinit();
     anim_enemies.deinit();
@@ -694,7 +694,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 
 pub fn init(allocator: std.mem.Allocator) !void {
     sfx_map = std.StringHashMap(*zaudio.Sound).init(allocator);
-    color_data = std.StringHashMap([]RGBA).init(allocator);
+    dominant_color_data = std.StringHashMap([]RGBA).init(allocator);
     atlas_data = std.StringHashMap([]AtlasData).init(allocator);
     ui_atlas_data = std.StringHashMap([]AtlasData).init(allocator);
     anim_enemies = std.StringHashMap([]AnimEnemyData).init(allocator);

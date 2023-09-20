@@ -83,9 +83,9 @@ pub const CharacterData = struct {
 const embedded_font_data = @embedFile(asset_dir ++ "fonts/Ubuntu-Medium.ttf");
 
 pub var gctx: *zgpu.GraphicsContext = undefined;
-pub var fba: std.heap.FixedBufferAllocator = undefined;
-pub var stack_allocator: std.mem.Allocator = undefined;
-pub var stack_minimap_allocator: std.mem.Allocator = undefined;
+pub var network_fba: std.heap.FixedBufferAllocator = undefined;
+pub var network_stack_allocator: std.mem.Allocator = undefined;
+pub var minimap_stack_allocator: std.mem.Allocator = undefined;
 pub var current_account = AccountData{};
 pub var character_list: []CharacterData = undefined;
 pub var server_list: ?[]ServerData = null;
@@ -111,9 +111,7 @@ pub var minimap_update_min_y: u32 = 4096;
 pub var minimap_update_max_y: u32 = 0;
 pub var _allocator: std.mem.Allocator = undefined;
 
-fn onResize(window: *zglfw.Window, w: i32, h: i32) callconv(.C) void {
-    _ = window;
-
+fn onResize(_: *zglfw.Window, w: i32, h: i32) callconv(.C) void {
     const float_w: f32 = @floatFromInt(w);
     const float_h: f32 = @floatFromInt(h);
 
@@ -176,8 +174,8 @@ fn renderTick() !void {
             const w = minimap_update_max_x - minimap_update_min_x;
             const h = minimap_update_max_y - minimap_update_min_y;
             const comp_len = map.minimap.num_components * map.minimap.bytes_per_component;
-            var copy = stack_minimap_allocator.alloc(u8, w * h * comp_len) catch @panic("Minimap alloc failed");
-            defer stack_minimap_allocator.free(copy);
+            var copy = minimap_stack_allocator.alloc(u8, w * h * comp_len) catch @panic("Minimap alloc failed");
+            defer minimap_stack_allocator.free(copy);
 
             var idx: u32 = 0;
             for (minimap_update_min_y..minimap_update_max_y) |y| {
@@ -274,13 +272,13 @@ pub fn main() !void {
     };
     _allocator = allocator;
 
-    var buf: [std.math.maxInt(u16)]u8 = undefined;
-    fba = std.heap.FixedBufferAllocator.init(&buf);
-    stack_allocator = fba.allocator();
+    var network_buf: [std.math.maxInt(u16)]u8 = undefined;
+    network_fba = std.heap.FixedBufferAllocator.init(&network_buf);
+    network_stack_allocator = network_fba.allocator();
 
-    var buf_minimap: [40 * 40 * 4]u8 = undefined;
-    var fba_minimap = std.heap.FixedBufferAllocator.init(&buf_minimap);
-    stack_minimap_allocator = fba_minimap.allocator();
+    var minimap_buf: [40 * 40 * 4]u8 = undefined;
+    var minimap_fba = std.heap.FixedBufferAllocator.init(&minimap_buf);
+    minimap_stack_allocator = minimap_fba.allocator();
 
     zglfw.init() catch |e| {
         std.log.err("Failed to initialize GLFW library: {any}", .{e});
