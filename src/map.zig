@@ -408,9 +408,6 @@ pub const GameObject = struct {
                 .amount = 30,
             };
             effect.addToMap();
-            map.entities.add(.{ .particle_effect = .{ .explosion = effect } }) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
-            };
         } else {
             assets.playSfx(self.hit_sound);
 
@@ -424,9 +421,6 @@ pub const GameObject = struct {
                 .amount = 3,
             };
             effect.addToMap();
-            map.entities.add(.{ .particle_effect = .{ .hit = effect } }) catch |e| {
-                std.log.err("Out of memory: {any}", .{e});
-            };
 
             for (effects) |eff| {
                 const cond_str = eff.condition.toString();
