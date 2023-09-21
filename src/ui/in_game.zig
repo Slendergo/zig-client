@@ -248,10 +248,14 @@ pub const InGameScreen = struct {
             .size = 12,
             .text_type = .bold,
             .backing_buffer = try allocator.alloc(u8, 8),
+            .max_width = 24,
+            .max_height = 24,
+            .vert_align = .middle,
+            .hori_align = .middle,
         };
         screen.level_text.* = ui.UiText{
-            .x = screen.bars_decor.x + 181,
-            .y = screen.bars_decor.y + 13,
+            .x = screen.bars_decor.x + 178,
+            .y = screen.bars_decor.y + 9,
             .text_data = level_text_data,
         };
         try ui.elements.add(.{ .text = screen.level_text });
@@ -436,8 +440,8 @@ pub const InGameScreen = struct {
         self.bars_decor.y = h - self.bars_decor.height() - 10;
         self.stats_button.x = self.bars_decor.x + 7;
         self.stats_button.y = self.bars_decor.y + 8;
-        self.level_text.x = self.bars_decor.x + 181;
-        self.level_text.y = self.bars_decor.y + 13;
+        self.level_text.x = self.bars_decor.x + 178;
+        self.level_text.y = self.bars_decor.y + 9;
         self.xp_bar.x = self.bars_decor.x + 42;
         self.xp_bar.y = self.bars_decor.y + 12;
         self.fame_bar.x = self.bars_decor.x + 42;
