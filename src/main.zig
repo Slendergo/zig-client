@@ -85,7 +85,6 @@ const embedded_font_data = @embedFile(asset_dir ++ "fonts/Ubuntu-Medium.ttf");
 pub var gctx: *zgpu.GraphicsContext = undefined;
 pub var network_fba: std.heap.FixedBufferAllocator = undefined;
 pub var network_stack_allocator: std.mem.Allocator = undefined;
-pub var minimap_stack_allocator: std.mem.Allocator = undefined;
 pub var current_account = AccountData{};
 pub var character_list: []CharacterData = undefined;
 pub var server_list: ?[]ServerData = null;
@@ -152,7 +151,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
     }
 }
 
-fn renderTick() !void {
+fn renderTick(allocator: std.mem.Allocator) !void {
     while (tick_render) {
         const back_buffer = gctx.swapchain.getCurrentTextureView();
         const encoder = gctx.device.createCommandEncoder(null);
@@ -174,8 +173,8 @@ fn renderTick() !void {
             const w = minimap_update_max_x - minimap_update_min_x;
             const h = minimap_update_max_y - minimap_update_min_y;
             const comp_len = map.minimap.num_components * map.minimap.bytes_per_component;
-            var copy = minimap_stack_allocator.alloc(u8, w * h * comp_len) catch @panic("Minimap alloc failed");
-            defer minimap_stack_allocator.free(copy);
+            var copy = allocator.alloc(u8, w * h * comp_len) catch @panic("Minimap alloc failed");
+            defer allocator.free(copy);
 
             var idx: u32 = 0;
             for (minimap_update_min_y..minimap_update_max_y) |y| {
@@ -276,10 +275,6 @@ pub fn main() !void {
     network_fba = std.heap.FixedBufferAllocator.init(&network_buf);
     network_stack_allocator = network_fba.allocator();
 
-    var minimap_buf: [40 * 40 * 4]u8 = undefined;
-    var minimap_fba = std.heap.FixedBufferAllocator.init(&minimap_buf);
-    minimap_stack_allocator = minimap_fba.allocator();
-
     zglfw.init() catch |e| {
         std.log.err("Failed to initialize GLFW library: {any}", .{e});
         return;
@@ -358,7 +353,7 @@ pub fn main() !void {
         network_thread.join();
     }
 
-    render_thread = try std.Thread.spawn(.{}, renderTick, .{});
+    render_thread = try std.Thread.spawn(.{}, renderTick, .{allocator});
     defer {
         tick_render = false;
         render_thread.join();
