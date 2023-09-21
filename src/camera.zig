@@ -103,6 +103,13 @@ pub fn update(target_x: f32, target_y: f32, dt: f32, rotate: i8) void {
     max_y = @min(@as(u32, @intCast(map.height - 1)), max_y);
 }
 
+pub inline fn rotateAroundCameraClip(x_in: f32, y_in: f32) utils.Point {
+    return utils.Point{
+        .x = x_in * cos + y_in * sin + clip_x,
+        .y = x_in * -sin + y_in * cos + clip_y,
+    };
+}
+
 pub inline fn rotateAroundCamera(x_in: f32, y_in: f32) utils.Point {
     return utils.Point{
         .x = x_in * cos + y_in * sin + clip_x + screen_width / 2.0,

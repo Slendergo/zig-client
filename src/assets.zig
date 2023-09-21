@@ -13,10 +13,10 @@ const zglfw = @import("zglfw");
 
 pub const padding = 2;
 
-pub const atlas_width: u32 = 4096;
-pub const atlas_height: u32 = 4096;
-pub const base_texel_w: f32 = 1.0 / 4096.0;
-pub const base_texel_h: f32 = 1.0 / 4096.0;
+pub const atlas_width: u32 = 2048;
+pub const atlas_height: u32 = 2048;
+pub const base_texel_w: f32 = 1.0 / 2048.0;
+pub const base_texel_h: f32 = 1.0 / 2048.0;
 
 // todo turn into enum in future
 pub const stand_action: u8 = 0;
