@@ -415,7 +415,6 @@ pub fn currentMemoryUse() !f32 {
     if (main.current_time - last_memory_access < 5000 * std.time.us_per_ms)
         return last_memory_value;
 
-    // todo figure out why the values are all wrong
     var memory_value: f32 = -1.0;
     switch (builtin.os.tag) {
         .windows => {

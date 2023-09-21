@@ -1003,8 +1003,14 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
                 status_text.text_data.alpha = 1.0 - frac + 0.33;
                 if (map.findEntityConst(status_text.obj_id)) |en| {
                     switch (en) {
-                        .particle, .particle_effect => {},
+                        .particle, .particle_effect, .projectile => {},
                         inline else => |obj| {
+                            if (obj.dead) {
+                                elements_to_remove.add(i) catch |e| {
+                                    std.log.err("Status text disposing failed: {any}", .{e});
+                                };
+                                continue;
+                            }
                             status_text._screen_x = obj.screen_x - status_text.text_data.width() / 2;
                             status_text._screen_y = obj.screen_y - status_text.text_data.height() - frac * 40;
                         },
@@ -1027,8 +1033,14 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
                 speech_balloon.text_data.alpha = alpha;
                 if (map.findEntityConst(speech_balloon.target_id)) |en| {
                     switch (en) {
-                        .particle, .particle_effect => {},
+                        .particle, .particle_effect, .projectile => {},
                         inline else => |obj| {
+                            if (obj.dead) {
+                                elements_to_remove.add(i) catch |e| {
+                                    std.log.err("Speech balloon disposing failed: {any}", .{e});
+                                };
+                                continue;
+                            }
                             speech_balloon._screen_x = obj.screen_x - speech_balloon.width() / 2;
                             speech_balloon._screen_y = obj.screen_y - speech_balloon.height();
                         },

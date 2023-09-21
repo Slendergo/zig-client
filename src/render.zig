@@ -1851,16 +1851,19 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             const float_hp: f32 = @floatFromInt(player.hp);
                             const float_max_hp: f32 = @floatFromInt(player.max_hp);
-                            const hp_perc = 1.0 / (float_hp / float_max_hp);
+                            const left_pad = 2.0;
+                            const w_no_pad = 20.0;
+                            const total_w = 24.0;
+                            const hp_perc = (left_pad / total_w) + (w_no_pad / total_w) * (float_hp / float_max_hp);
 
                             var hp_bar_data = assets.hp_bar_data;
-                            hp_bar_data.tex_w /= hp_perc;
+                            hp_bar_data.tex_w *= hp_perc;
 
                             idx = drawQuad(
                                 idx,
                                 screen_pos.x - x_offset - hp_bar_w / 2.0,
                                 hp_bar_y,
-                                hp_bar_w / hp_perc,
+                                hp_bar_w * hp_perc,
                                 hp_bar_h,
                                 hp_bar_data,
                                 draw_data,
@@ -1888,16 +1891,19 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             const float_mp: f32 = @floatFromInt(player.mp);
                             const float_max_mp: f32 = @floatFromInt(player.max_mp);
-                            const mp_perc = 1.0 / (float_mp / float_max_mp);
+                            const left_pad = 2.0;
+                            const w_no_pad = 20.0;
+                            const total_w = 24.0;
+                            const mp_perc = (left_pad / total_w) + (w_no_pad / total_w) * (float_mp / float_max_mp);
 
                             var mp_bar_data = assets.mp_bar_data;
-                            mp_bar_data.tex_w /= mp_perc;
+                            mp_bar_data.tex_w *= mp_perc;
 
                             idx = drawQuad(
                                 idx,
                                 screen_pos.x - x_offset - mp_bar_w / 2.0,
                                 mp_bar_y,
-                                mp_bar_w / mp_perc,
+                                mp_bar_w * mp_perc,
                                 mp_bar_h,
                                 mp_bar_data,
                                 draw_data,
