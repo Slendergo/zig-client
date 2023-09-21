@@ -7,6 +7,7 @@ const game_data = @import("game_data.zig");
 const ui = @import("ui/ui.zig");
 const camera = @import("camera.zig");
 const assets = @import("assets.zig");
+const particles = @import("particles.zig");
 
 pub const ObjectSlot = extern struct {
     object_id: i32 align(1),
@@ -300,7 +301,7 @@ fn handleAoe() void {
     const duration = reader.read(f32);
     const orig_type = reader.read(u8);
 
-    var effect = map.AoeEffect{
+    var effect = particles.AoeEffect{
         .x = position.x,
         .y = position.y,
         .color = 0xFF0000,
@@ -746,7 +747,7 @@ fn handleShowEffect() void {
                 }
             }
 
-            var effect = map.ThrowEffect{
+            var effect = particles.ThrowEffect{
                 .start_x = start_x,
                 .start_y = start_y,
                 .end_x = pos1.x,
@@ -757,7 +758,7 @@ fn handleShowEffect() void {
             effect.addToMap();
         },
         .teleport => {
-            var effect = map.TeleportEffect{
+            var effect = particles.TeleportEffect{
                 .x = pos1.x,
                 .y = pos1.y,
             };
@@ -781,7 +782,7 @@ fn handleShowEffect() void {
                 }
             }
 
-            var effect = map.LineEffect{
+            var effect = particles.LineEffect{
                 .start_x = start_x,
                 .start_y = start_y,
                 .end_x = pos1.x,
