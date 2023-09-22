@@ -152,7 +152,14 @@ fn networkTick(allocator: std.mem.Allocator) void {
 }
 
 fn renderTick(allocator: std.mem.Allocator) !void {
+    var time_start = std.time.nanoTimestamp();
     while (tick_render) {
+        const magic = 1.03; // we have to guess, can only adjust for rendering time the next frame and negative values are "lost"
+        std.time.sleep(@intCast(@max(0, @divFloor(1000 * std.time.ns_per_ms, @as(i64, @intFromFloat(settings.fps_cap * magic)))
+            - (std.time.nanoTimestamp() - time_start))));
+
+        time_start = std.time.nanoTimestamp();
+
         const back_buffer = gctx.swapchain.getCurrentTextureView();
         const encoder = gctx.device.createCommandEncoder(null);
 

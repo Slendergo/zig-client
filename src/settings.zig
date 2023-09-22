@@ -90,6 +90,7 @@ pub var enable_glow = true;
 pub var enable_lights = true;
 pub var enable_vsync = true;
 pub var always_show_xp_gain = true;
+pub var fps_cap: f32 = 360.0;
 pub var selected_cursor = CursorType.aztec;
 
 pub fn init(allocator: std.mem.Allocator) !void {
