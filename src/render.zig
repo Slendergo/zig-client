@@ -1610,62 +1610,35 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         }
                     }
 
-                    if (camera.angle == 0) {
-                        const px_dist = camera.px_per_tile / 2;
-                        drawSquare(
-                            square_idx,
-                            (screen_x + px_dist) * camera.clip_scale_x,
-                            (screen_y - px_dist) * camera.clip_scale_y,
-                            (screen_x - px_dist) * camera.clip_scale_x,
-                            (screen_y - px_dist) * camera.clip_scale_y,
-                            (screen_x - px_dist) * camera.clip_scale_x,
-                            (screen_y + px_dist) * camera.clip_scale_y,
-                            (screen_x + px_dist) * camera.clip_scale_x,
-                            (screen_y + px_dist) * camera.clip_scale_y,
-                            square.atlas_data,
-                            u_offset,
-                            v_offset,
-                            square.left_blend_u,
-                            square.left_blend_v,
-                            square.top_blend_u,
-                            square.top_blend_v,
-                            square.right_blend_u,
-                            square.right_blend_v,
-                            square.bottom_blend_u,
-                            square.bottom_blend_v,
-                        );
-                        square_idx += 4;
-                    } else {
-                        const radius = @sqrt(@as(f32, camera.px_per_tile * camera.px_per_tile / 2));
-                        const top_right_angle = std.math.pi / 4.0;
-                        const bottom_right_angle = 3.0 * std.math.pi / 4.0;
-                        const bottom_left_angle = 5.0 * std.math.pi / 4.0;
-                        const top_left_angle = 7.0 * std.math.pi / 4.0;
+                    const radius = @sqrt(@as(f32, camera.px_per_tile * camera.px_per_tile / 2));
+                    const top_right_angle = std.math.pi / 4.0;
+                    const bottom_right_angle = 3.0 * std.math.pi / 4.0;
+                    const bottom_left_angle = 5.0 * std.math.pi / 4.0;
+                    const top_left_angle = 7.0 * std.math.pi / 4.0;
 
-                        drawSquare(
-                            square_idx,
-                            (screen_x + radius * @cos(top_left_angle + camera.angle)) * camera.clip_scale_x,
-                            (screen_y + radius * @sin(top_left_angle + camera.angle)) * camera.clip_scale_y,
-                            (screen_x + radius * @cos(bottom_left_angle + camera.angle)) * camera.clip_scale_x,
-                            (screen_y + radius * @sin(bottom_left_angle + camera.angle)) * camera.clip_scale_y,
-                            (screen_x + radius * @cos(bottom_right_angle + camera.angle)) * camera.clip_scale_x,
-                            (screen_y + radius * @sin(bottom_right_angle + camera.angle)) * camera.clip_scale_y,
-                            (screen_x + radius * @cos(top_right_angle + camera.angle)) * camera.clip_scale_x,
-                            (screen_y + radius * @sin(top_right_angle + camera.angle)) * camera.clip_scale_y,
-                            square.atlas_data,
-                            u_offset,
-                            v_offset,
-                            square.left_blend_u,
-                            square.left_blend_v,
-                            square.top_blend_u,
-                            square.top_blend_v,
-                            square.right_blend_u,
-                            square.right_blend_v,
-                            square.bottom_blend_u,
-                            square.bottom_blend_v,
-                        );
-                        square_idx += 4;
-                    }
+                    drawSquare(
+                        square_idx,
+                        (screen_x + radius * @cos(top_left_angle + camera.angle)) * camera.clip_scale_x,
+                        (screen_y + radius * @sin(top_left_angle + camera.angle)) * camera.clip_scale_y,
+                        (screen_x + radius * @cos(bottom_left_angle + camera.angle)) * camera.clip_scale_x,
+                        (screen_y + radius * @sin(bottom_left_angle + camera.angle)) * camera.clip_scale_y,
+                        (screen_x + radius * @cos(bottom_right_angle + camera.angle)) * camera.clip_scale_x,
+                        (screen_y + radius * @sin(bottom_right_angle + camera.angle)) * camera.clip_scale_y,
+                        (screen_x + radius * @cos(top_right_angle + camera.angle)) * camera.clip_scale_x,
+                        (screen_y + radius * @sin(top_right_angle + camera.angle)) * camera.clip_scale_y,
+                        square.atlas_data,
+                        u_offset,
+                        v_offset,
+                        square.left_blend_u,
+                        square.left_blend_v,
+                        square.top_blend_u,
+                        square.top_blend_v,
+                        square.right_blend_u,
+                        square.right_blend_v,
+                        square.bottom_blend_u,
+                        square.bottom_blend_v,
+                    );
+                    square_idx += 4;
                 }
             }
 

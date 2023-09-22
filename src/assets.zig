@@ -588,7 +588,7 @@ fn parseFontData(allocator: std.mem.Allocator, comptime atlas_w: f32, comptime a
     const data = try file.readToEndAlloc(allocator, std.math.maxInt(u16));
     defer allocator.free(data);
 
-    var iter = std.mem.splitSequence(u8, data, if (builtin.os.tag == .windows) "\r\n" else "\n");
+    var iter = std.mem.splitSequence(u8, data, if (std.mem.indexOf(u8, data, "\r\n") != null) "\r\n" else "\n");
     while (iter.next()) |line| {
         if (line.len == 0)
             continue;
