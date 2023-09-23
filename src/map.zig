@@ -822,16 +822,13 @@ pub const Player = struct {
             };
             proj.addToMap(false);
 
-            network.queuePacket(.{
-                .id = .player_shoot,
-                .data = .{ .player_shoot = .{
-                    .time = time,
-                    .bullet_id = bullet_id,
-                    .container_type = @intCast(weapon),
-                    .starting_pos = .{ .x = x, .y = y },
-                    .angle = current_angle,
-                } },
-            });
+            network.queuePacket(.{ .player_shoot = .{
+                .time = time,
+                .bullet_id = bullet_id,
+                .container_type = @intCast(weapon),
+                .starting_pos = .{ .x = x, .y = y },
+                .angle = current_angle,
+            } });
 
             current_angle += arc_gap;
         }
@@ -1057,13 +1054,7 @@ pub const Player = struct {
                     const square = squares[floor_ground_y * @as(u32, @intCast(width)) + floor_ground_x];
                     if (square.tile_type != 0xFFFF and square.tile_type != 0xFF and square.props != null and square.props.?.min_damage > 0) {
                         const dmg = random.nextIntRange(square.props.?.min_damage, square.props.?.max_damage);
-                        network.queuePacket(.{
-                            .id = .ground_damage,
-                            .data = .{ .ground_damage = .{
-                                .time = time,
-                                .position = .{ .x = self.x, .y = self.y },
-                            } },
-                        });
+                        network.queuePacket(.{ .ground_damage = .{ .time = time, .position = .{ .x = self.x, .y = self.y } } });
                         self.takeDamage(
                             @intCast(dmg),
                             dmg >= self.hp,
@@ -1488,14 +1479,11 @@ pub const Projectile = struct {
         if (validPos(floor_x, floor_y)) {
             const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
             if (square.tile_type == 0xFF or square.tile_type == 0xFFFF) {
-                network.queuePacket(.{
-                    .id = .square_hit,
-                    .data = .{ .square_hit = .{
-                        .time = time,
-                        .bullet_id = self.bullet_id,
-                        .obj_id = self.owner_id,
-                    } },
-                });
+                network.queuePacket(.{ .square_hit = .{
+                    .time = time,
+                    .bullet_id = self.bullet_id,
+                    .obj_id = self.owner_id,
+                } });
                 return false;
             }
         }
@@ -1533,13 +1521,7 @@ pub const Projectile = struct {
                             self.props.speed,
                             allocator,
                         );
-                        network.queuePacket(.{
-                            .id = .player_hit,
-                            .data = .{ .player_hit = .{
-                                .bullet_id = self.bullet_id,
-                                .object_id = self.owner_id,
-                            } },
-                        });
+                        network.queuePacket(.{ .player_hit = .{ .bullet_id = self.bullet_id, .object_id = self.owner_id } });
                     } else if (!self.props.multi_hit) {
                         var effect = particles.HitEffect{
                             .x = self.x,
@@ -1552,15 +1534,12 @@ pub const Projectile = struct {
                         };
                         effect.addToMap();
 
-                        network.queuePacket(.{
-                            .id = .other_hit,
-                            .data = .{ .other_hit = .{
-                                .time = time,
-                                .bullet_id = self.bullet_id,
-                                .object_id = player.obj_id,
-                                .target_id = player.obj_id,
-                            } },
-                        });
+                        network.queuePacket(.{ .other_hit = .{
+                            .time = time,
+                            .bullet_id = self.bullet_id,
+                            .object_id = player.obj_id,
+                            .target_id = player.obj_id,
+                        } });
                     } else {
                         std.log.err("Unknown logic for player side of hit logic unexpected branch", .{});
                     }
@@ -1603,15 +1582,12 @@ pub const Projectile = struct {
                             allocator,
                         );
 
-                        network.queuePacket(.{
-                            .id = .enemy_hit,
-                            .data = .{ .enemy_hit = .{
-                                .time = time,
-                                .bullet_id = self.bullet_id,
-                                .target_id = object.obj_id,
-                                .killed = dead,
-                            } },
-                        });
+                        network.queuePacket(.{ .enemy_hit = .{
+                            .time = time,
+                            .bullet_id = self.bullet_id,
+                            .target_id = object.obj_id,
+                            .killed = dead,
+                        } });
                     } else if (!self.props.multi_hit) {
                         var effect = particles.HitEffect{
                             .x = self.x,
@@ -1624,15 +1600,12 @@ pub const Projectile = struct {
                         };
                         effect.addToMap();
 
-                        network.queuePacket(.{
-                            .id = .other_hit,
-                            .data = .{ .other_hit = .{
-                                .time = time,
-                                .bullet_id = self.bullet_id,
-                                .object_id = object.obj_id,
-                                .target_id = object.obj_id,
-                            } },
-                        });
+                        network.queuePacket(.{ .other_hit = .{
+                            .time = time,
+                            .bullet_id = self.bullet_id,
+                            .object_id = object.obj_id,
+                            .target_id = object.obj_id,
+                        } });
                     } else {
                         std.log.err("Unknown logic for object side of hit logic unexpected branch", .{});
                     }

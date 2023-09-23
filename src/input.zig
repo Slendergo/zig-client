@@ -74,20 +74,12 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     } else if (key == settings.options.getKey()) {
         main.disconnect();
     } else if (key == settings.escape.getKey()) {
-        network.queuePacket(.{
-            .id = .escape,
-            .data = .{ .escape = .{} },
-        });
+        network.queuePacket(.{ .escape = .{} });
     } else if (key == settings.interact.getKey()) {
         const int_id = map.interactive_id.load(.Acquire);
         if (int_id != -1) {
             switch (map.interactive_type.load(.Acquire)) {
-                .portal => network.queuePacket(.{
-                    .id = .use_portal,
-                    .data = .{ .use_portal = .{
-                        .obj_id = int_id,
-                    } },
-                }),
+                .portal => network.queuePacket(.{ .use_portal = .{ .obj_id = int_id } }),
                 else => {},
             }
         }
@@ -166,20 +158,12 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
     } else if (button == settings.options.getMouse()) {
         main.disconnect();
     } else if (button == settings.escape.getMouse()) {
-        network.queuePacket(.{
-            .id = .escape,
-            .data = .{ .escape = .{} },
-        });
+        network.queuePacket(.{ .escape = .{} });
     } else if (button == settings.interact.getMouse()) {
         const int_id = map.interactive_id.load(.Acquire);
         if (int_id != -1) {
             switch (map.interactive_type.load(.Acquire)) {
-                .portal => network.queuePacket(.{
-                    .id = .use_portal,
-                    .data = .{ .use_portal = .{
-                        .obj_id = int_id,
-                    } },
-                }),
+                .portal => network.queuePacket(.{ .use_portal = .{ .obj_id = int_id } }),
                 else => {},
             }
         }
@@ -427,18 +411,15 @@ fn useAbility() void {
     if (map.localPlayerConst()) |local_player| {
         const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
 
-        network.queuePacket(.{
-            .id = .use_item,
-            .data = .{ .use_item = .{
-                .slot_object = .{
-                    .object_id = local_player.obj_id,
-                    .slot_id = 1,
-                    .object_type = local_player.inventory[1],
-                },
-                .use_position = .{ .x = world_pos.x, .y = world_pos.y },
-                .time = main.current_time,
-                .use_type = 0,
-            } },
-        });
+        network.queuePacket(.{ .use_item = .{
+            .slot_object = .{
+                .object_id = local_player.obj_id,
+                .slot_id = 1,
+                .object_type = local_player.inventory[1],
+            },
+            .use_position = .{ .x = world_pos.x, .y = world_pos.y },
+            .time = main.current_time,
+            .use_type = 0,
+        } });
     }
 }

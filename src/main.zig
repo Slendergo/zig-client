@@ -132,19 +132,16 @@ fn networkTick(allocator: std.mem.Allocator) void {
 
             if (network.connected) {
                 if (selected_char_id != 65535 and !sent_hello) {
-                    network.queuePacket(.{
-                        .id = .hello,
-                        .data = .{ .hello = .{
-                            .build_ver = settings.build_version,
-                            .game_id = -2,
-                            .email = current_account.email,
-                            .password = current_account.password,
-                            .char_id = @intCast(selected_char_id),
-                            .create_char = char_create_type != 0,
-                            .class_type = char_create_type,
-                            .skin_type = char_create_skin_type,
-                        } },
-                    });
+                    network.queuePacket(.{ .hello = .{
+                        .build_ver = settings.build_version,
+                        .game_id = -2,
+                        .email = current_account.email,
+                        .password = current_account.password,
+                        .char_id = @intCast(selected_char_id),
+                        .create_char = char_create_type != 0,
+                        .class_type = char_create_type,
+                        .skin_type = char_create_skin_type,
+                    } });
                     sent_hello = true;
                 }
 

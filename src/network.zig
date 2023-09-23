@@ -209,7 +209,8 @@ pub const UsePortal = struct {
     obj_id: i32,
 };
 
-pub const C2SPacketData = union(enum) {
+pub const C2SPacket = union(C2SPacketId) {
+    unknown: struct {},
     accept_trade: AcceptTrade,
     aoe_ack: AoeAck,
     buy: Buy,
@@ -243,11 +244,6 @@ pub const C2SPacketData = union(enum) {
     update_ack: UpdateAck,
     use_item: UseItem,
     use_portal: UsePortal,
-};
-
-pub const C2SPacket = struct {
-    id: C2SPacketId,
-    data: C2SPacketData,
 };
 
 const EffectType = enum(u8) {
@@ -627,12 +623,7 @@ fn handleEnemyShoot() void {
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
         std.log.debug("Recv - EnemyShoot: bullet_id={d}, owner_id={d}, bullet_type={d}, x={e}, y={e}, angle={e}, damage={d}, num_shots={d}, angle_inc={e}", .{ bullet_id, owner_id, bullet_type, starting_pos.x, starting_pos.y, angle, damage, num_shots, angle_inc });
 
-    sendPacket(.{
-        .id = .shoot_ack,
-        .data = .{ .shoot_ack = .{
-            .time = main.current_time,
-        } },
-    });
+    sendPacket(.{ .shoot_ack = .{ .time = main.current_time } });
 }
 
 fn handleFailure() void {
@@ -674,12 +665,7 @@ fn handleGoto() void {
         std.log.err("Object id {d} not found while attempting to goto to pos {any}", .{ object_id, position });
     }
 
-    sendPacket(.{
-        .id = .goto_ack,
-        .data = .{ .goto_ack = .{
-            .time = main.current_time,
-        } },
-    });
+    sendPacket(.{ .goto_ack = .{ .time = main.current_time } });
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - Goto: object_id={d}, x={e}, y={e}", .{ object_id, position.x, position.y });
@@ -754,27 +740,21 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
     defer {
         if (main.tick_frame) {
             if (map.localPlayerConst()) |local_player| {
-                sendPacket(.{
-                    .id = .move,
-                    .data = .{ .move = .{
-                        .tick_id = tick_id,
-                        .time = main.current_time,
-                        .pos_x = local_player.x,
-                        .pos_y = local_player.y,
-                        .records = map.move_records.items(),
-                    } },
-                });
+                sendPacket(.{ .move = .{
+                    .tick_id = tick_id,
+                    .time = main.current_time,
+                    .pos_x = local_player.x,
+                    .pos_y = local_player.y,
+                    .records = map.move_records.items(),
+                } });
             } else {
-                sendPacket(.{
-                    .id = .move,
-                    .data = .{ .move = .{
-                        .tick_id = tick_id,
-                        .time = main.current_time,
-                        .pos_x = -1,
-                        .pos_y = -1,
-                        .records = &[0]TimedPosition{},
-                    } },
-                });
+                sendPacket(.{ .move = .{
+                    .tick_id = tick_id,
+                    .time = main.current_time,
+                    .pos_x = -1,
+                    .pos_y = -1,
+                    .records = &[0]TimedPosition{},
+                } });
             }
         }
     }
@@ -897,13 +877,7 @@ fn handleNotification(allocator: std.mem.Allocator) void {
 fn handlePing() void {
     const serial = reader.read(i32);
 
-    sendPacket(.{
-        .id = .pong,
-        .data = .{ .pong = .{
-            .serial = serial,
-            .time = main.current_time,
-        } },
-    });
+    sendPacket(.{ .pong = .{ .serial = serial, .time = main.current_time } });
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
         std.log.debug("Recv - Ping: serial={d}", .{serial});
@@ -964,21 +938,11 @@ fn handleServerPlayerShoot() void {
             }
 
             if (needs_ack) {
-                sendPacket(.{
-                    .id = .shoot_ack,
-                    .data = .{ .shoot_ack = .{
-                        .time = main.current_time,
-                    } },
-                });
+                sendPacket(.{ .shoot_ack = .{ .time = main.current_time } });
             }
         } else {
             if (needs_ack) {
-                sendPacket(.{
-                    .id = .shoot_ack,
-                    .data = .{ .shoot_ack = .{
-                        .time = -1,
-                    } },
-                });
+                sendPacket(.{ .shoot_ack = .{ .time = -1 } });
             }
         }
     }
@@ -1157,10 +1121,7 @@ fn handleTradeStart() void {
 fn handleUpdate(allocator: std.mem.Allocator) void {
     defer {
         if (main.tick_frame)
-            sendPacket(.{
-                .id = .update_ack,
-                .data = .{ .update_ack = .{} },
-            });
+            sendPacket(.{ .update_ack = .{} });
     }
 
     const tiles = reader.read([]TileData);
@@ -1418,7 +1379,7 @@ fn parseObjStatData(obj: *map.GameObject, stat_type: game_data.StatType, allocat
 }
 
 pub fn queuePacket(packet: C2SPacket) void {
-    if (packet.id == .use_portal or packet.id == .escape) {
+    if (packet == .use_portal or packet == .escape) {
         while (queue.pop()) |_| {} // not ideal...
         main.clear();
         main.tick_frame = false;
@@ -1431,15 +1392,16 @@ pub fn queuePacket(packet: C2SPacket) void {
 }
 
 fn sendPacket(packet: C2SPacket) void {
+    const tag = std.meta.activeTag(packet);
     if (!connected) {
-        std.log.err("Could not send {any}, client is not connected", .{packet.id});
+        std.log.err("Could not send {any}, client is not connected", .{tag});
     }
 
     writer.writeLength();
-    writer.write(@intFromEnum(packet.id));
-    var data_bytes = std.mem.asBytes(&packet.data);
-    switch (packet.data) {
+    writer.write(@intFromEnum(tag));
+    switch (packet) {
         inline else => |data| {
+            var data_bytes = std.mem.asBytes(&data);
             const data_type = @TypeOf(data);
             inline for (@typeInfo(data_type).Struct.fields) |field| {
                 const base_offset = @offsetOf(data_type, field.name);

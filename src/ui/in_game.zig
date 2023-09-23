@@ -571,28 +571,18 @@ pub const InGameScreen = struct {
         if (end_slot.idx == 255) {
             if (start_slot.is_container) {
                 self.setContainerItem(-1, start_slot.idx);
-                network.queuePacket(.{
-                    .id = .inv_drop,
-                    .data = .{ .inv_drop = .{
-                        .slot_object = .{
-                            .object_id = int_id,
-                            .slot_id = start_slot.idx,
-                            .object_type = self.container_items[start_slot.idx]._item,
-                        },
-                    } },
-                });
+                network.queuePacket(.{ .inv_drop = .{ .slot_object = .{
+                    .object_id = int_id,
+                    .slot_id = start_slot.idx,
+                    .object_type = self.container_items[start_slot.idx]._item,
+                } } });
             } else {
                 self.setInvItem(-1, start_slot.idx);
-                network.queuePacket(.{
-                    .id = .inv_drop,
-                    .data = .{ .inv_drop = .{
-                        .slot_object = .{
-                            .object_id = map.local_player_id,
-                            .slot_id = start_slot.idx,
-                            .object_type = self.inventory_items[start_slot.idx]._item,
-                        },
-                    } },
-                });
+                network.queuePacket(.{ .inv_drop = .{ .slot_object = .{
+                    .object_id = map.local_player_id,
+                    .slot_id = start_slot.idx,
+                    .object_type = self.inventory_items[start_slot.idx]._item,
+                } } });
             }
         } else {
             while (!map.object_lock.tryLockShared()) {}
@@ -632,23 +622,20 @@ pub const InGameScreen = struct {
                     self.setInvItem(start_item, end_slot.idx);
                 }
 
-                network.queuePacket(.{
-                    .id = .inv_swap,
-                    .data = .{ .inv_swap = .{
-                        .time = main.current_time,
-                        .position = .{ .x = local_player.x, .y = local_player.y },
-                        .from_slot = .{
-                            .object_id = if (start_slot.is_container) int_id else map.local_player_id,
-                            .slot_id = start_slot.idx,
-                            .object_type = start_item,
-                        },
-                        .to_slot = .{
-                            .object_id = if (end_slot.is_container) int_id else map.local_player_id,
-                            .slot_id = end_slot.idx,
-                            .object_type = end_item,
-                        },
-                    } },
-                });
+                network.queuePacket(.{ .inv_swap = .{
+                    .time = main.current_time,
+                    .position = .{ .x = local_player.x, .y = local_player.y },
+                    .from_slot = .{
+                        .object_id = if (start_slot.is_container) int_id else map.local_player_id,
+                        .slot_id = start_slot.idx,
+                        .object_type = start_item,
+                    },
+                    .to_slot = .{
+                        .object_id = if (end_slot.is_container) int_id else map.local_player_id,
+                        .slot_id = end_slot.idx,
+                        .object_type = end_item,
+                    },
+                } });
 
                 assets.playSfx("inventory_move_item");
             }
@@ -666,19 +653,16 @@ pub const InGameScreen = struct {
                 defer map.object_lock.unlockShared();
 
                 if (map.localPlayerConst()) |local_player| {
-                    network.queuePacket(.{
-                        .id = .use_item,
-                        .data = .{ .use_item = .{
-                            .slot_object = .{
-                                .object_id = map.local_player_id,
-                                .slot_id = start_slot.idx,
-                                .object_type = item._item,
-                            },
-                            .use_position = .{ .x = local_player.x, .y = local_player.y },
-                            .time = main.current_time,
-                            .use_type = 0,
-                        } },
-                    });
+                    network.queuePacket(.{ .use_item = .{
+                        .slot_object = .{
+                            .object_id = map.local_player_id,
+                            .slot_id = start_slot.idx,
+                            .object_type = item._item,
+                        },
+                        .use_position = .{ .x = local_player.x, .y = local_player.y },
+                        .time = main.current_time,
+                        .use_type = 0,
+                    } });
                     assets.playSfx("use_potion");
                 }
 
@@ -722,12 +706,7 @@ pub const InGameScreen = struct {
 
     fn chatCallback(input_text: []u8) void {
         if (input_text.len > 0) {
-            network.queuePacket(.{
-                .id = .player_text,
-                .data = .{ .player_text = .{
-                    .text = input_text,
-                } },
-            });
+            network.queuePacket(.{ .player_text = .{ .text = input_text } });
 
             const msg_d = ui.in_game_screen._allocator.dupe(u8, input_text) catch unreachable;
             input.input_history.append(msg_d) catch unreachable;
@@ -759,19 +738,16 @@ pub const InGameScreen = struct {
                 defer map.object_lock.unlockShared();
 
                 if (map.localPlayerConst()) |local_player| {
-                    network.queuePacket(.{
-                        .id = .use_item,
-                        .data = .{ .use_item = .{
-                            .slot_object = .{
-                                .object_id = if (slot.is_container) ui.in_game_screen.container_id else map.local_player_id,
-                                .slot_id = slot.idx,
-                                .object_type = item._item,
-                            },
-                            .use_position = .{ .x = local_player.x, .y = local_player.y },
-                            .time = main.current_time,
-                            .use_type = 0,
-                        } },
-                    });
+                    network.queuePacket(.{ .use_item = .{
+                        .slot_object = .{
+                            .object_id = if (slot.is_container) ui.in_game_screen.container_id else map.local_player_id,
+                            .slot_id = slot.idx,
+                            .object_type = item._item,
+                        },
+                        .use_position = .{ .x = local_player.x, .y = local_player.y },
+                        .time = main.current_time,
+                        .use_type = 0,
+                    } });
                     assets.playSfx("use_potion");
                 }
 
