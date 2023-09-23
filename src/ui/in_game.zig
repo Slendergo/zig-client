@@ -131,7 +131,7 @@ pub const InGameScreen = struct {
         screen.parseItemRects();
 
         screen.minimap_decor = try allocator.create(ui.Image);
-        const minimap_data = assets.getUiSingle("minimap");
+        const minimap_data = assets.getUi("minimap", 0);
         screen.minimap_decor.* = ui.Image{
             .x = camera.screen_width - minimap_data.texWRaw() - 10,
             .y = 10,
@@ -145,7 +145,7 @@ pub const InGameScreen = struct {
         try ui.elements.add(.{ .image = screen.minimap_decor });
 
         screen.inventory_decor = try allocator.create(ui.Image);
-        const inventory_data = assets.getUiSingle("playerInventory");
+        const inventory_data = assets.getUi("playerInventory", 0);
         screen.inventory_decor.* = ui.Image{
             .x = camera.screen_width - inventory_data.texWRaw() - 10,
             .y = camera.screen_height - inventory_data.texHRaw() - 10,
@@ -184,7 +184,7 @@ pub const InGameScreen = struct {
         }
 
         screen.container_decor = try allocator.create(ui.Image);
-        const container_data = assets.getUiSingle("containerView");
+        const container_data = assets.getUi("containerView", 0);
         screen.container_decor.* = ui.Image{
             .x = screen.inventory_decor.x - container_data.texWRaw() - 10,
             .y = camera.screen_height - container_data.texHRaw() - 10,
@@ -224,7 +224,7 @@ pub const InGameScreen = struct {
         }
 
         screen.bars_decor = try allocator.create(ui.Image);
-        const bars_data = assets.getUiSingle("playerStatusBarsDecor");
+        const bars_data = assets.getUi("playerStatusBarsDecor", 0);
         screen.bars_decor.* = ui.Image{
             .x = (camera.screen_width - bars_data.texWRaw()) / 2,
             .y = camera.screen_height - bars_data.texHRaw() - 10,
@@ -233,7 +233,7 @@ pub const InGameScreen = struct {
         try ui.elements.add(.{ .image = screen.bars_decor });
 
         screen.stats_button = try allocator.create(ui.Button);
-        const stats_data = assets.getUiSingle("playerStatusBarStatIcon");
+        const stats_data = assets.getUi("playerStatusBarStatIcon", 0);
         screen.stats_button.* = ui.Button{
             .x = screen.bars_decor.x + 7,
             .y = screen.bars_decor.y + 8,
@@ -261,7 +261,7 @@ pub const InGameScreen = struct {
         try ui.elements.add(.{ .text = screen.level_text });
 
         screen.xp_bar = try allocator.create(ui.Bar);
-        const xp_bar_data = assets.getUiSingle("playerStatusBarXp");
+        const xp_bar_data = assets.getUi("playerStatusBarXp", 0);
         screen.xp_bar.* = ui.Bar{
             .x = screen.bars_decor.x + 42,
             .y = screen.bars_decor.y + 12,
@@ -276,7 +276,7 @@ pub const InGameScreen = struct {
         try ui.elements.add(.{ .bar = screen.xp_bar });
 
         screen.fame_bar = try allocator.create(ui.Bar);
-        const fame_bar_data = assets.getUiSingle("playerStatusBarFame");
+        const fame_bar_data = assets.getUi("playerStatusBarFame", 0);
         screen.fame_bar.* = ui.Bar{
             .x = screen.bars_decor.x + 42,
             .y = screen.bars_decor.y + 12,
@@ -291,7 +291,7 @@ pub const InGameScreen = struct {
         try ui.elements.add(.{ .bar = screen.fame_bar });
 
         screen.health_bar = try allocator.create(ui.Bar);
-        const health_bar_data = assets.getUiSingle("playerStatusBarHealth");
+        const health_bar_data = assets.getUi("playerStatusBarHealth", 0);
         screen.health_bar.* = ui.Bar{
             .x = screen.bars_decor.x + 8,
             .y = screen.bars_decor.y + 47,
@@ -306,7 +306,7 @@ pub const InGameScreen = struct {
         try ui.elements.add(.{ .bar = screen.health_bar });
 
         screen.mana_bar = try allocator.create(ui.Bar);
-        const mana_bar_data = assets.getUiSingle("playerStatusBarMana");
+        const mana_bar_data = assets.getUi("playerStatusBarMana", 0);
         screen.mana_bar.* = ui.Bar{
             .x = screen.bars_decor.x + 8,
             .y = screen.bars_decor.y + 73,
@@ -321,8 +321,8 @@ pub const InGameScreen = struct {
         try ui.elements.add(.{ .bar = screen.mana_bar });
 
         screen.chat_decor = try allocator.create(ui.Image);
-        const chat_data = assets.getUiSingle("chatboxBackground");
-        const input_data = assets.getUiSingle("chatboxInput");
+        const chat_data = assets.getUi("chatboxBackground", 0);
+        const input_data = assets.getUi("chatboxInput", 0);
         screen.chat_decor.* = ui.Image{
             .x = 10,
             .y = camera.screen_height - chat_data.texHRaw() - input_data.texHRaw() - 10,

@@ -51,9 +51,9 @@ pub const CharSelectScreen = struct {
         if (!state)
             return;
 
-        const button_data_base = assets.getUiSingle("buttonBase");
-        const button_data_hover = assets.getUiSingle("buttonHover");
-        const button_data_press = assets.getUiSingle("buttonPress");
+        const button_data_base = assets.getUi("buttonBase", 0);
+        const button_data_hover = assets.getUi("buttonHover", 0);
+        const button_data_press = assets.getUi("buttonPress", 0);
 
         for (main.character_list, 0..) |char, i| {
             const box = self._allocator.create(ui.CharacterBox) catch return;

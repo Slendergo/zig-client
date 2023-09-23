@@ -663,6 +663,22 @@ fn drawMinimap(
 ) u16 {
     var idx_new = idx;
 
+    if (idx_new == base_batch_vert_size) {
+        draw_data.encoder.writeBuffer(
+            draw_data.buffer,
+            0,
+            BaseVertexData,
+            base_vert_data[0..base_batch_vert_size],
+        );
+        endDraw(
+            draw_data,
+            base_batch_vert_size * @sizeOf(BaseVertexData),
+            @divExact(base_batch_vert_size, 4) * 6,
+            null,
+        );
+        idx_new = 0;
+    }
+
     const scaled_w = w * camera.clip_scale_x;
     const scaled_h = h * camera.clip_scale_y;
     const scaled_x = (x - camera.screen_width / 2.0 + w / 2.0) * camera.clip_scale_x;
@@ -704,7 +720,19 @@ fn drawMinimap(
         .render_type = minimap_render_type,
     };
 
-    idx_new += 4;
+    return idx_new + 4;
+}
+
+fn drawMenuBackground(
+    idx: u16,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    rotation: f32,
+    draw_data: DrawData,
+) u16 {
+    var idx_new = idx;
 
     if (idx_new == base_batch_vert_size) {
         draw_data.encoder.writeBuffer(
@@ -721,20 +749,6 @@ fn drawMinimap(
         );
         idx_new = 0;
     }
-
-    return idx_new;
-}
-
-fn drawMenuBackground(
-    idx: u16,
-    x: f32,
-    y: f32,
-    w: f32,
-    h: f32,
-    rotation: f32,
-    draw_data: DrawData,
-) u16 {
-    var idx_new = idx;
 
     const scaled_w = w * camera.clip_scale_x;
     const scaled_h = h * camera.clip_scale_y;
@@ -772,25 +786,7 @@ fn drawMenuBackground(
         .render_type = menu_bg_render_type,
     };
 
-    idx_new += 4;
-
-    if (idx_new == base_batch_vert_size) {
-        draw_data.encoder.writeBuffer(
-            draw_data.buffer,
-            0,
-            BaseVertexData,
-            base_vert_data[0..base_batch_vert_size],
-        );
-        endDraw(
-            draw_data,
-            base_batch_vert_size * @sizeOf(BaseVertexData),
-            @divExact(base_batch_vert_size, 4) * 6,
-            null,
-        );
-        idx_new = 0;
-    }
-
-    return idx_new;
+    return idx_new + 4;
 }
 
 const QuadOptions = struct {
@@ -815,6 +811,22 @@ fn drawQuad(
     opts: QuadOptions,
 ) u16 {
     var idx_new = idx;
+
+    if (idx_new == base_batch_vert_size) {
+        draw_data.encoder.writeBuffer(
+            draw_data.buffer,
+            0,
+            BaseVertexData,
+            base_vert_data[0..base_batch_vert_size],
+        );
+        endDraw(
+            draw_data,
+            base_batch_vert_size * @sizeOf(BaseVertexData),
+            @divExact(base_batch_vert_size, 4) * 6,
+            null,
+        );
+        idx_new = 0;
+    }
 
     var base_rgb = ui.RGBF32.fromValues(0.0, 0.0, 0.0);
     if (opts.base_color != 0)
@@ -900,25 +912,7 @@ fn drawQuad(
         .outline_width = 0.5,
     };
 
-    idx_new += 4;
-
-    if (idx_new == base_batch_vert_size) {
-        draw_data.encoder.writeBuffer(
-            draw_data.buffer,
-            0,
-            BaseVertexData,
-            base_vert_data[0..base_batch_vert_size],
-        );
-        endDraw(
-            draw_data,
-            base_batch_vert_size * @sizeOf(BaseVertexData),
-            @divExact(base_batch_vert_size, 4) * 6,
-            null,
-        );
-        idx_new = 0;
-    }
-
-    return idx_new;
+    return idx_new + 4;
 }
 
 fn drawQuadVerts(
@@ -936,6 +930,22 @@ fn drawQuadVerts(
     opts: QuadOptions,
 ) u16 {
     var idx_new = idx;
+
+    if (idx_new == base_batch_vert_size) {
+        draw_data.encoder.writeBuffer(
+            draw_data.buffer,
+            0,
+            BaseVertexData,
+            base_vert_data[0..base_batch_vert_size],
+        );
+        endDraw(
+            draw_data,
+            base_batch_vert_size * @sizeOf(BaseVertexData),
+            @divExact(base_batch_vert_size, 4) * 6,
+            null,
+        );
+        idx_new = 0;
+    }
 
     var base_rgb = ui.RGBF32.fromValues(-1.0, -1.0, -1.0);
     if (opts.base_color != -1)
@@ -1006,25 +1016,7 @@ fn drawQuadVerts(
         .outline_width = 0.5,
     };
 
-    idx_new += 4;
-
-    if (idx_new == base_batch_vert_size) {
-        draw_data.encoder.writeBuffer(
-            draw_data.buffer,
-            0,
-            BaseVertexData,
-            base_vert_data[0..base_batch_vert_size],
-        );
-        endDraw(
-            draw_data,
-            base_batch_vert_size * @sizeOf(BaseVertexData),
-            @divExact(base_batch_vert_size, 4) * 6,
-            null,
-        );
-        idx_new = 0;
-    }
-
-    return idx_new;
+    return idx_new + 4;
 }
 
 fn drawSquare(
@@ -1552,6 +1544,21 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                     float_h / zoom,
                     0,
                     draw_data,
+                );
+
+                const player_icon = assets.getUi("minimapIcons", 0); // doing a hashmap lookup every frame is not wise. todo
+                const scale = 2.0;
+                const player_icon_w = player_icon.texWRaw() * scale;
+                const player_icon_h = player_icon.texHRaw() * scale;
+                ui_idx = drawQuad(
+                    ui_idx,
+                    image.x + image.minimap_offset_x + x_offset + (image.minimap_width - player_icon_w) / 2.0,
+                    image.y + image.minimap_offset_y + y_offset + (image.minimap_height - player_icon_h) / 2.0,
+                    player_icon_w,
+                    player_icon_h,
+                    player_icon,
+                    draw_data,
+                    .{ .rotation = -camera.angle, .ui_quad = true, .force_glow_off = true, .shadow_texel_mult = 1.0 / scale },
                 );
             }
         },

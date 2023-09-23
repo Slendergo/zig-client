@@ -13,10 +13,10 @@ const zglfw = @import("zglfw");
 
 pub const padding = 2;
 
-pub const atlas_width: u32 = 2048;
-pub const atlas_height: u32 = 2048;
-pub const base_texel_w: f32 = 1.0 / 2048.0;
-pub const base_texel_h: f32 = 1.0 / 2048.0;
+pub const atlas_width: u32 = 4096;
+pub const atlas_height: u32 = 4096;
+pub const base_texel_w: f32 = 1.0 / 4096.0;
+pub const base_texel_h: f32 = 1.0 / 4096.0;
 
 // todo turn into enum in future
 pub const stand_action: u8 = 0;
@@ -864,6 +864,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addUiImage("uncheckedBoxPress", "ui/screens/uncheckedBoxPress.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("containerView", "ui/containerView.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("minimap", "ui/minimap.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("minimapIcons", "ui/minimapIcons.png", 8, 8, &ui_ctx, allocator);
     try addUiImage("playerInventory", "ui/playerInventory.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("playerStatusBarFame", "ui/playerStatusBarFame.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("playerStatusBarHealth", "ui/playerStatusBarHealth.png", imply_size, imply_size, &ui_ctx, allocator);
@@ -943,6 +944,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
     }
 }
 
-pub inline fn getUiSingle(comptime name: []const u8) AtlasData {
-    return (ui_atlas_data.get(name) orelse @panic("Could not find " ++ name ++ " in ui atlas"))[0];
+pub inline fn getUi(comptime name: []const u8, idx: usize) AtlasData {
+    return (ui_atlas_data.get(name) orelse @panic("Could not find " ++ name ++ " in ui atlas"))[idx];
 }

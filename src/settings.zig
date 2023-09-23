@@ -48,7 +48,7 @@ pub const build_version = "0.5";
 pub const app_engine_url = "http://127.0.0.1:8080/";
 pub const log_packets = LogType.off;
 pub const print_atlas = false;
-pub const print_ui_atlas = false;
+pub const print_ui_atlas = true;
 pub const rotate_speed = 0.002;
 pub const enable_tracy = false;
 
@@ -88,7 +88,7 @@ pub var sfx_volume: f32 = 0.0; // 0.33;
 pub var music_volume: f32 = 0.0; // 0.1;
 pub var enable_glow = true;
 pub var enable_lights = true;
-pub var enable_vsync = false;
+pub var enable_vsync = true;
 pub var always_show_xp_gain = true;
 pub var fps_cap: f32 = 360.0;
 pub var selected_cursor = CursorType.aztec;

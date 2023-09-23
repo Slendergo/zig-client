@@ -30,9 +30,9 @@ pub const AccountScreen = struct {
         const input_h = 50;
 
         screen.email_input = try allocator.create(ui.InputField);
-        const input_data_base = assets.getUiSingle("textInputBase");
-        const input_data_hover = assets.getUiSingle("textInputHover");
-        const input_data_press = assets.getUiSingle("textInputPress");
+        const input_data_base = assets.getUi("textInputBase", 0);
+        const input_data_hover = assets.getUi("textInputHover", 0);
+        const input_data_press = assets.getUi("textInputPress", 0);
         screen.email_input.* = ui.InputField{
             .x = (camera.screen_width - input_w) / 2,
             .y = 200,
@@ -164,9 +164,9 @@ pub const AccountScreen = struct {
         try ui.elements.add(.{ .text = screen.password_text });
 
         screen.login_button = try allocator.create(ui.Button);
-        const button_data_base = assets.getUiSingle("buttonBase");
-        const button_data_hover = assets.getUiSingle("buttonHover");
-        const button_data_press = assets.getUiSingle("buttonPress");
+        const button_data_base = assets.getUi("buttonBase", 0);
+        const button_data_hover = assets.getUi("buttonHover", 0);
+        const button_data_press = assets.getUi("buttonPress", 0);
         screen.login_button.* = ui.Button{
             .x = screen.password_input.x + (input_w - 100) / 2,
             .y = 450,
