@@ -154,9 +154,16 @@ fn networkTick(allocator: std.mem.Allocator) void {
 fn renderTick(allocator: std.mem.Allocator) !void {
     var time_start = std.time.nanoTimestamp();
     while (tick_render) {
-        const magic = 1.03; // we have to guess, can only adjust for rendering time the next frame and negative values are "lost"
-        std.time.sleep(@intCast(@max(0, @divFloor(1000 * std.time.ns_per_ms, @as(i64, @intFromFloat(settings.fps_cap * magic)))
-            - (std.time.nanoTimestamp() - time_start))));
+        // Sleep is unreliable, the fps cap would be slightly lower than the actual cap.
+        // So we have to sleep 1.1x shorter and just loop for the rest of the time remaining 
+        const sleep_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap / 1.1);
+        const time_offset = std.time.nanoTimestamp() - time_start;
+        if (time_offset < sleep_time)
+            std.time.sleep(@intCast(sleep_time - time_offset));
+
+        const cap_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap);
+        if (std.time.nanoTimestamp() - time_start < cap_time)
+            continue;
 
         time_start = std.time.nanoTimestamp();
 
