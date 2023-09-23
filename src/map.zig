@@ -12,15 +12,15 @@ const ui = @import("ui/ui.zig");
 const zstbi = @import("zstbi");
 const particles = @import("particles.zig");
 
-pub const move_threshold: f32 = 0.4;
-pub const min_move_speed: f32 = 0.004;
-pub const max_move_speed: f32 = 0.0096;
-pub const min_attack_freq: f32 = 0.0015;
-pub const max_attack_freq: f32 = 0.008;
-pub const min_attack_mult: f32 = 0.5;
-pub const max_attack_mult: f32 = 2;
-pub const max_sink_level: u32 = 18;
-const object_attack_period: u32 = 300 * std.time.us_per_ms;
+pub const move_threshold = 0.4;
+pub const min_move_speed = 0.004;
+pub const max_move_speed = 0.0096;
+pub const min_attack_freq = 0.0015;
+pub const max_attack_freq = 0.008;
+pub const min_attack_mult = 0.5;
+pub const max_attack_mult = 2.0;
+pub const max_sink_level = 18.0;
+const object_attack_period = 300 * std.time.us_per_ms;
 
 pub const Square = struct {
     tile_type: u16 = 0xFFFF,
@@ -633,7 +633,7 @@ pub const Player = struct {
     last_ground_damage_time: i64 = -1,
     anim_data: assets.AnimPlayerData = undefined,
     move_multiplier: f32 = 1.0,
-    sink_level: u16 = 0,
+    sink_level: f32 = 0,
     hit_sound: []const u8 = &[0]u8{},
     death_sound: []const u8 = &[0]u8{},
     action: u8 = 0,
@@ -646,8 +646,8 @@ pub const Player = struct {
             return;
 
         if (square.props.?.sinking) {
-            self.sink_level = @as(u16, @min((self.sink_level + 1), max_sink_level));
-            self.move_multiplier = (0.1 + ((1 - (@as(f32, @floatFromInt(self.sink_level)) / @as(f32, @floatFromInt(max_sink_level)))) * (square.props.?.speed - 0.1)));
+            self.sink_level = @min(self.sink_level + 1, max_sink_level);
+            self.move_multiplier = 0.1 + (1 - self.sink_level / max_sink_level) * (square.props.?.speed - 0.1);
         } else {
             self.sink_level = 0;
             self.move_multiplier = square.props.?.speed;
@@ -655,26 +655,25 @@ pub const Player = struct {
     }
 
     pub fn attackMultiplier(self: Player) f32 {
-        if (self.condition.weak) {
+        if (self.condition.weak)
             return min_attack_mult;
-        }
 
-        var mult: f32 = min_attack_mult + @as(f32, @floatFromInt(self.attack)) / 75.0 * (max_attack_mult - min_attack_mult);
-        if (self.condition.damaging) {
+        const float_attack: f32 = @floatFromInt(self.attack);
+        var mult = min_attack_mult + float_attack / 75.0 * (max_attack_mult - min_attack_mult);
+        if (self.condition.damaging)
             mult *= 1.5;
-        }
+        
         return mult;
     }
 
     pub fn moveSpeedMultiplier(self: Player) f32 {
-        if (self.condition.slowed) {
+        if (self.condition.slowed)
             return min_move_speed * self.move_multiplier * self.walk_speed_multiplier;
-        }
 
-        var move_speed: f32 = min_move_speed + @as(f32, @floatFromInt(self.speed)) / 75.0 * (max_move_speed - min_move_speed);
-        if (self.condition.speedy or self.condition.ninja_speedy) {
+        const float_speed: f32 = @floatFromInt(self.speed);
+        var move_speed = min_move_speed + float_speed / 75.0 * (max_move_speed - min_move_speed);
+        if (self.condition.speedy or self.condition.ninja_speedy)
             move_speed *= 1.5;
-        }
 
         return move_speed * self.move_multiplier * self.walk_speed_multiplier;
     }
@@ -1620,7 +1619,7 @@ pub fn damageWithDefense(orig_damage: f32, target_defense: f32, armor_piercing: 
         return 0;
     }
 
-    const min = orig_damage * 3.0 / 20.0;
+    const min = orig_damage * 0.25;
     return @intFromFloat(@max(min, orig_damage - def));
 }
 

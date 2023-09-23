@@ -1082,7 +1082,7 @@ fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: 
         },
         .fame_goal => plr.fame_goal = reader.read(i32),
         .glow => plr.glow = reader.read(i32),
-        .sink_level => plr.sink_level = reader.read(u16),
+        .sink_level => plr.sink_level = @floatFromInt(reader.read(u16)),
         .guild => plr.guild = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
         .guild_rank => plr.guild_rank = reader.read(i32),
         .oxygen_bar => plr.oxygen_bar = reader.read(i32),
