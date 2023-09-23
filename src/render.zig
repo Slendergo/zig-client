@@ -1487,12 +1487,248 @@ fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: u32, intensity: f3
     return idx_new + 4;
 }
 
-inline fn endDraw(
-    draw_data: DrawData,
-    verts: u64,
-    indices: u32,
-    offsets: ?[]const u32,
-) void {
+fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, cam_y: f32, x_offset: f32, y_offset: f32) u16 {
+    var ui_idx = idx;
+    switch (elem) {
+        .status => |text| {
+            if (!text.visible)
+                return ui_idx;
+
+            ui_idx = drawText(ui_idx, text._screen_x + x_offset, text._screen_y + y_offset, text.text_data, draw_data);
+        },
+        .balloon => |balloon| {
+            if (!balloon.visible)
+                return ui_idx;
+
+            const image_data = balloon.image_data.normal; // assume no 9 slice
+            const w = image_data.width();
+            const h = image_data.height();
+
+            const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true };
+            ui_idx = drawQuad(ui_idx, balloon._screen_x + x_offset, balloon._screen_y + y_offset, w, h, image_data.atlas_data, draw_data, opts);
+
+            const decor_offset = h / 10;
+            ui_idx = drawText(
+                ui_idx,
+                balloon._screen_x + ((w - assets.padding * image_data.scale_x) - balloon.text_data.width()) / 2 + x_offset,
+                balloon._screen_y + (h - balloon.text_data.height()) / 2 - decor_offset + y_offset,
+                balloon.text_data,
+                draw_data,
+            );
+        },
+        .image => |image| {
+            if (!image.visible)
+                return ui_idx;
+
+            switch (image.image_data) {
+                .nine_slice => |nine_slice| ui_idx = drawNineSlice(ui_idx, image.x + x_offset, image.y + y_offset, nine_slice, draw_data),
+                .normal => |image_data| {
+                    var atlas_data = image_data.atlas_data;
+                    var w = image_data.width();
+                    if (w > image.max_width) {
+                        const scale = image.max_width / w;
+                        atlas_data.tex_w *= scale;
+                        w *= scale;
+                    }
+
+                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true };
+                    ui_idx = drawQuad(ui_idx, image.x + x_offset, image.y + y_offset, w, image_data.height(), atlas_data, draw_data, opts);
+                },
+            }
+
+            if (image.is_minimap_decor) {
+                const float_w: f32 = @floatFromInt(map.width);
+                const float_h: f32 = @floatFromInt(map.height);
+                const zoom = camera.minimap_zoom;
+                ui_idx = drawMinimap(
+                    ui_idx,
+                    image.x + image.minimap_offset_x + x_offset,
+                    image.y + image.minimap_offset_y + y_offset,
+                    image.minimap_width,
+                    image.minimap_height,
+                    cam_x,
+                    cam_y,
+                    float_w / zoom,
+                    float_h / zoom,
+                    0,
+                    draw_data,
+                );
+            }
+        },
+        .menu_bg => |menu_bg| {
+            if (!menu_bg.visible)
+                return ui_idx;
+
+            ui_idx = drawMenuBackground(ui_idx, menu_bg.x + x_offset, menu_bg.y + y_offset, menu_bg.w, menu_bg.h, 0, draw_data);
+        },
+        .item => |item| {
+            if (!item.visible)
+                return ui_idx;
+
+            switch (item.image_data) {
+                .nine_slice => |nine_slice| {
+                    ui_idx = drawNineSlice(ui_idx, item.x + x_offset, item.y + y_offset, nine_slice, draw_data);
+                },
+                .normal => |image_data| {
+                    const opts = QuadOptions{ .shadow_texel_mult = 2.0 / image_data.scale_x, .alpha_mult = image_data.alpha, .ui_quad = true };
+                    ui_idx = drawQuad(ui_idx, item.x + x_offset, item.y + y_offset, image_data.width(), image_data.height(), image_data.atlas_data, draw_data, opts);
+                },
+            }
+
+            if (item.tier_text) |tier_text| {
+                const text_len = tier_text.text_data.text.len;
+                if (text_len > 0)
+                    ui_idx = drawText(ui_idx, item.x + tier_text.x + x_offset, item.y + tier_text.y + y_offset, tier_text.text_data, draw_data);
+            }
+        },
+        .bar => |bar| {
+            if (!bar.visible)
+                return ui_idx;
+
+            var w: f32 = 0;
+            var h: f32 = 0;
+            switch (bar.image_data) {
+                .nine_slice => |nine_slice| {
+                    w = nine_slice.w;
+                    h = nine_slice.h;
+                    ui_idx = drawNineSlice(ui_idx, bar.x + x_offset, bar.y + y_offset, nine_slice, draw_data);
+                },
+                .normal => |image_data| {
+                    w = image_data.width();
+                    h = image_data.height();
+                    var atlas_data = image_data.atlas_data;
+                    var scale: f32 = 1.0;
+                    if (w > bar.max_width) {
+                        scale = bar.max_width / w;
+                        atlas_data.tex_w *= scale;
+                    }
+
+                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true };
+                    ui_idx = drawQuad(ui_idx, bar.x + x_offset, bar.y + y_offset, w * scale, image_data.height(), atlas_data, draw_data, opts);
+                },
+            }
+
+            ui_idx = drawText(
+                ui_idx,
+                bar.x + (w - bar.text_data.width()) / 2 + x_offset,
+                bar.y + (h - bar.text_data.height()) / 2 + y_offset,
+                bar.text_data,
+                draw_data,
+            );
+        },
+        .button => |button| {
+            if (!button.visible)
+                return ui_idx;
+
+            var w: f32 = 0;
+            var h: f32 = 0;
+
+            switch (button.imageData()) {
+                .nine_slice => |nine_slice| {
+                    w = nine_slice.w;
+                    h = nine_slice.h;
+                    ui_idx = drawNineSlice(ui_idx, button.x + x_offset, button.y + y_offset, nine_slice, draw_data);
+                },
+                .normal => |image_data| {
+                    w = image_data.width();
+                    h = image_data.height();
+                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true };
+                    ui_idx = drawQuad(ui_idx, button.x + x_offset, button.y + y_offset, w, h, image_data.atlas_data, draw_data, opts);
+                },
+            }
+
+            if (button.text_data) |text_data| {
+                ui_idx = drawText(
+                    ui_idx,
+                    button.x + (w - text_data.width()) / 2 + x_offset,
+                    button.y + (h - text_data.height()) / 2 + y_offset,
+                    text_data,
+                    draw_data,
+                );
+            }
+        },
+        .char_box => |char_box| {
+            if (!char_box.visible)
+                return ui_idx;
+
+            var w: f32 = 0;
+            var h: f32 = 0;
+
+            switch (char_box.imageData()) {
+                .nine_slice => |nine_slice| {
+                    w = nine_slice.w;
+                    h = nine_slice.h;
+                    ui_idx = drawNineSlice(ui_idx, char_box.x + x_offset, char_box.y + y_offset, nine_slice, draw_data);
+                },
+                .normal => |image_data| {
+                    w = image_data.width();
+                    h = image_data.height();
+                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true };
+                    ui_idx = drawQuad(
+                        ui_idx,
+                        char_box.x + x_offset,
+                        char_box.y + y_offset,
+                        image_data.width(),
+                        image_data.height(),
+                        image_data.atlas_data,
+                        draw_data,
+                        opts,
+                    );
+                },
+            }
+
+            if (char_box.text_data) |text_data| {
+                ui_idx = drawText(
+                    ui_idx,
+                    char_box.x + (w - text_data.width()) / 2 + x_offset,
+                    char_box.y + (h - text_data.height()) / 2 + y_offset,
+                    text_data,
+                    draw_data,
+                );
+            }
+        },
+        .text => |text| {
+            if (!text.visible)
+                return ui_idx;
+
+            ui_idx = drawText(ui_idx, text.x + x_offset, text.y + y_offset, text.text_data, draw_data);
+        },
+        .input_field => |input_field| {
+            if (!input_field.visible)
+                return ui_idx;
+
+            var w: f32 = 0;
+            var h: f32 = 0;
+
+            switch (input_field.imageData()) {
+                .nine_slice => |nine_slice| {
+                    w = nine_slice.w;
+                    h = nine_slice.h;
+                    ui_idx = drawNineSlice(ui_idx, input_field.x + x_offset, input_field.y + y_offset, nine_slice, draw_data);
+                },
+                .normal => |image_data| {
+                    w = image_data.width();
+                    h = image_data.height();
+                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true };
+                    ui_idx = drawQuad(ui_idx, input_field.x + x_offset, input_field.y + y_offset, w, h, image_data.atlas_data, draw_data, opts);
+                },
+            }
+
+            ui_idx = drawText(
+                ui_idx,
+                input_field.x + input_field.text_inlay_x + x_offset,
+                input_field.y + input_field.text_inlay_y + y_offset,
+                input_field.text_data,
+                draw_data,
+            );
+        },
+        else => {},
+    }
+
+    return ui_idx;
+}
+
+inline fn endDraw(draw_data: DrawData, verts: u64, indices: u32, offsets: ?[]const u32) void {
     const pass = draw_data.encoder.beginRenderPass(draw_data.pass_info);
     pass.setVertexBuffer(0, draw_data.buffer, 0, verts);
     pass.setIndexBuffer(index_buffer, .uint16, 0, indices * @sizeOf(u16));
@@ -2292,355 +2528,23 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             .bind_group = bind_group,
         };
 
+        while (!ui.dispose_lock.tryLock()) {}
+        defer ui.dispose_lock.unlock();
+
         var ui_idx: u16 = 0;
         for (ui.elements.items()) |elem| {
             switch (elem) {
-                .status => |text| {
-                    if (!text.visible)
-                        return;
-
-                    ui_idx = drawText(
-                        ui_idx,
-                        text._screen_x,
-                        text._screen_y,
-                        text.text_data,
-                        draw_data,
-                    );
-                },
-                .balloon => |balloon| {
-                    if (!balloon.visible)
+                .container => |container| {
+                    if (!container.visible)
                         continue;
 
-                    const image_data = balloon.image_data.normal; // assume no 9 slice
-                    const w = image_data.width();
-                    const h = image_data.height();
-
-                    ui_idx = drawQuad(
-                        ui_idx,
-                        balloon._screen_x,
-                        balloon._screen_y,
-                        w,
-                        h,
-                        image_data.atlas_data,
-                        draw_data,
-                        .{ .alpha_mult = image_data.alpha, .ui_quad = true },
-                    );
-
-                    const decor_offset = h / 10;
-                    ui_idx = drawText(
-                        ui_idx,
-                        balloon._screen_x + ((w - assets.padding * image_data.scale_x) - balloon.text_data.width()) / 2,
-                        balloon._screen_y + (h - balloon.text_data.height()) / 2 - decor_offset,
-                        balloon.text_data,
-                        draw_data,
-                    );
-                },
-                .image => |image| {
-                    if (!image.visible)
-                        continue;
-
-                    switch (image.image_data) {
-                        .nine_slice => |nine_slice| {
-                            ui_idx = drawNineSlice(
-                                ui_idx,
-                                image.x,
-                                image.y,
-                                nine_slice,
-                                draw_data,
-                            );
-                        },
-                        .normal => |image_data| {
-                            var atlas_data = image_data.atlas_data;
-                            var w = image_data.width();
-                            if (w > image.max_width) {
-                                const scale = image.max_width / w;
-                                atlas_data.tex_w *= scale;
-                                w *= scale;
-                            }
-                            ui_idx = drawQuad(
-                                ui_idx,
-                                image.x,
-                                image.y,
-                                w,
-                                image_data.height(),
-                                atlas_data,
-                                draw_data,
-                                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
-                            );
-                        },
-                    }
-
-                    if (image.is_minimap_decor) {
-                        const float_w: f32 = @floatFromInt(map.width);
-                        const float_h: f32 = @floatFromInt(map.height);
-                        const zoom = camera.minimap_zoom;
-                        ui_idx = drawMinimap(
-                            ui_idx,
-                            image.x + image.minimap_offset_x,
-                            image.y + image.minimap_offset_y,
-                            image.minimap_width,
-                            image.minimap_height,
-                            cam_x,
-                            cam_y,
-                            float_w / zoom,
-                            float_h / zoom,
-                            0,
-                            draw_data,
-                        );
+                    for (container.elements.items()) |cont_elem| {
+                        ui_idx = drawElement(ui_idx, cont_elem.*, draw_data, cam_x, cam_y, container.x, container.y);
                     }
                 },
-                .menu_bg => |menu_bg| {
-                    if (!menu_bg.visible)
-                        continue;
-
-                    ui_idx = drawMenuBackground(
-                        ui_idx,
-                        menu_bg.x,
-                        menu_bg.y,
-                        menu_bg.w,
-                        menu_bg.h,
-                        0,
-                        draw_data,
-                    );
+                else => {
+                    ui_idx = drawElement(ui_idx, elem, draw_data, cam_x, cam_y, 0, 0);
                 },
-                .item => |item| {
-                    if (!item.visible)
-                        continue;
-
-                    switch (item.image_data) {
-                        .nine_slice => |nine_slice| {
-                            ui_idx = drawNineSlice(
-                                ui_idx,
-                                item.x,
-                                item.y,
-                                nine_slice,
-                                draw_data,
-                            );
-                        },
-                        .normal => |image_data| {
-                            ui_idx = drawQuad(
-                                ui_idx,
-                                item.x,
-                                item.y,
-                                image_data.width(),
-                                image_data.height(),
-                                image_data.atlas_data,
-                                draw_data,
-                                .{ .shadow_texel_mult = 2.0 / image_data.scale_x, .alpha_mult = image_data.alpha, .ui_quad = true },
-                            );
-                        },
-                    }
-
-                    textDraw: {
-                        if (item.tier_text) |tier_text| {
-                            const text_len = tier_text.text_data.text.len;
-                            if (text_len <= 0)
-                                break :textDraw;
-
-                            ui_idx = drawText(
-                                ui_idx,
-                                item.x + tier_text.x,
-                                item.y + tier_text.y,
-                                tier_text.text_data,
-                                draw_data,
-                            );
-                        }
-                    }
-                },
-                .bar => |bar| {
-                    if (!bar.visible)
-                        continue;
-
-                    var w: f32 = 0;
-                    var h: f32 = 0;
-                    switch (bar.image_data) {
-                        .nine_slice => |nine_slice| {
-                            w = nine_slice.w;
-                            h = nine_slice.h;
-                            ui_idx = drawNineSlice(
-                                ui_idx,
-                                bar.x,
-                                bar.y,
-                                nine_slice,
-                                draw_data,
-                            );
-                        },
-                        .normal => |image_data| {
-                            w = image_data.width();
-                            h = image_data.height();
-                            var atlas_data = image_data.atlas_data;
-                            var scale: f32 = 1.0;
-                            if (w > bar.max_width) {
-                                scale = bar.max_width / w;
-                                atlas_data.tex_w *= scale;
-                            }
-                            ui_idx = drawQuad(
-                                ui_idx,
-                                bar.x,
-                                bar.y,
-                                w * scale,
-                                image_data.height(),
-                                atlas_data,
-                                draw_data,
-                                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
-                            );
-                        },
-                    }
-
-                    ui_idx = drawText(
-                        ui_idx,
-                        bar.x + (w - bar.text_data.width()) / 2,
-                        bar.y + (h - bar.text_data.height()) / 2,
-                        bar.text_data,
-                        draw_data,
-                    );
-                },
-                .button => |button| {
-                    if (!button.visible)
-                        continue;
-
-                    var w: f32 = 0;
-                    var h: f32 = 0;
-
-                    switch (button.imageData()) {
-                        .nine_slice => |nine_slice| {
-                            w = nine_slice.w;
-                            h = nine_slice.h;
-                            ui_idx = drawNineSlice(
-                                ui_idx,
-                                button.x,
-                                button.y,
-                                nine_slice,
-                                draw_data,
-                            );
-                        },
-                        .normal => |image_data| {
-                            w = image_data.width();
-                            h = image_data.height();
-                            ui_idx = drawQuad(
-                                ui_idx,
-                                button.x,
-                                button.y,
-                                image_data.width(),
-                                image_data.height(),
-                                image_data.atlas_data,
-                                draw_data,
-                                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
-                            );
-                        },
-                    }
-
-                    if (button.text_data) |text_data| {
-                        ui_idx = drawText(
-                            ui_idx,
-                            button.x + (w - text_data.width()) / 2,
-                            button.y + (h - text_data.height()) / 2,
-                            text_data,
-                            draw_data,
-                        );
-                    }
-                },
-                .char_box => |char_box| {
-                    if (!char_box.visible)
-                        continue;
-
-                    var w: f32 = 0;
-                    var h: f32 = 0;
-
-                    switch (char_box.imageData()) {
-                        .nine_slice => |nine_slice| {
-                            w = nine_slice.w;
-                            h = nine_slice.h;
-                            ui_idx = drawNineSlice(
-                                ui_idx,
-                                char_box.x,
-                                char_box.y,
-                                nine_slice,
-                                draw_data,
-                            );
-                        },
-                        .normal => |image_data| {
-                            w = image_data.width();
-                            h = image_data.height();
-                            ui_idx = drawQuad(
-                                ui_idx,
-                                char_box.x,
-                                char_box.y,
-                                image_data.width(),
-                                image_data.height(),
-                                image_data.atlas_data,
-                                draw_data,
-                                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
-                            );
-                        },
-                    }
-
-                    if (char_box.text_data) |text_data| {
-                        ui_idx = drawText(
-                            ui_idx,
-                            char_box.x + (w - text_data.width()) / 2,
-                            char_box.y + (h - text_data.height()) / 2,
-                            text_data,
-                            draw_data,
-                        );
-                    }
-                },
-                .text => |text| {
-                    if (!text.visible)
-                        continue;
-
-                    ui_idx = drawText(
-                        ui_idx,
-                        text.x,
-                        text.y,
-                        text.text_data,
-                        draw_data,
-                    );
-                },
-                .input_field => |input_field| {
-                    if (!input_field.visible)
-                        continue;
-
-                    var w: f32 = 0;
-                    var h: f32 = 0;
-
-                    switch (input_field.imageData()) {
-                        .nine_slice => |nine_slice| {
-                            w = nine_slice.w;
-                            h = nine_slice.h;
-                            ui_idx = drawNineSlice(
-                                ui_idx,
-                                input_field.x,
-                                input_field.y,
-                                nine_slice,
-                                draw_data,
-                            );
-                        },
-                        .normal => |image_data| {
-                            w = image_data.width();
-                            h = image_data.height();
-                            ui_idx = drawQuad(
-                                ui_idx,
-                                input_field.x,
-                                input_field.y,
-                                image_data.width(),
-                                image_data.height(),
-                                image_data.atlas_data,
-                                draw_data,
-                                .{ .alpha_mult = image_data.alpha, .ui_quad = true },
-                            );
-                        },
-                    }
-
-                    ui_idx = drawText(
-                        ui_idx,
-                        input_field.x + input_field.text_inlay_x,
-                        input_field.y + input_field.text_inlay_y,
-                        input_field.text_data,
-                        draw_data,
-                    );
-                },
-                else => {},
             }
         }
 

@@ -789,21 +789,25 @@ pub const InGameScreen = struct {
                 self.container_items[idx].y = base_y + (pos_h - self.container_items[idx].height() + assets.padding * 2) / 2;
 
                 if (self.container_items[idx].tier_text) |*tier_text| {
-                    var tier_base: []u8 = &[0]u8{};
-                    if (std.mem.eql(u8, props.tier, "UT")) {
-                        tier_base = @constCast(props.tier);
-                        tier_text.text_data.color = 0x8A2BE2;
+                    if (props.consumable) {
+                        tier_text.visible = false;
                     } else {
-                        tier_base = std.fmt.bufPrint(tier_text.text_data.backing_buffer, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
-                        tier_text.text_data.color = 0xFFFFFF;
+                        var tier_base: []u8 = &[0]u8{};
+                        if (std.mem.eql(u8, props.tier, "UT")) {
+                            tier_base = @constCast(props.tier);
+                            tier_text.text_data.color = 0x8A2BE2;
+                        } else {
+                            tier_base = std.fmt.bufPrint(tier_text.text_data.backing_buffer, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
+                            tier_text.text_data.color = 0xFFFFFF;
+                        }
+
+                        tier_text.text_data.text = tier_base;
+
+                        // the positioning is relative to parent
+                        tier_text.x = pos_w - tier_text.text_data.width();
+                        tier_text.y = pos_h - tier_text.text_data.height() + 4;
+                        tier_text.visible = true;
                     }
-
-                    tier_text.text_data.text = tier_base;
-
-                    // the positioning is relative to parent
-                    tier_text.x = pos_w - tier_text.text_data.width();
-                    tier_text.y = pos_h - tier_text.text_data.height() + 4;
-                    tier_text.visible = true;
                 }
 
                 return;
@@ -844,21 +848,25 @@ pub const InGameScreen = struct {
                 self.inventory_items[idx].y = base_y + (pos_h - self.inventory_items[idx].height() + assets.padding * 2) / 2;
 
                 if (self.inventory_items[idx].tier_text) |*tier_text| {
-                    var tier_base: []u8 = &[0]u8{};
-                    if (std.mem.eql(u8, props.tier, "UT")) {
-                        tier_base = @constCast(props.tier);
-                        tier_text.text_data.color = 0x8A2BE2;
+                    if (props.consumable) {
+                        tier_text.visible = false;
                     } else {
-                        tier_base = std.fmt.bufPrint(tier_text.text_data.backing_buffer, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
-                        tier_text.text_data.color = 0xFFFFFF;
+                        var tier_base: []u8 = &[0]u8{};
+                        if (std.mem.eql(u8, props.tier, "UT")) {
+                            tier_base = @constCast(props.tier);
+                            tier_text.text_data.color = 0x8A2BE2;
+                        } else {
+                            tier_base = std.fmt.bufPrint(tier_text.text_data.backing_buffer, "T{s}", .{props.tier}) catch @panic("Out of memory, tier alloc failed");
+                            tier_text.text_data.color = 0xFFFFFF;
+                        }
+
+                        tier_text.text_data.text = tier_base;
+
+                        // the positioning is relative to parent
+                        tier_text.x = pos_w - tier_text.text_data.width();
+                        tier_text.y = pos_h - tier_text.text_data.height() + 4;
+                        tier_text.visible = true;
                     }
-
-                    tier_text.text_data.text = tier_base;
-
-                    // the positioning is relative to parent
-                    tier_text.x = pos_w - tier_text.text_data.width();
-                    tier_text.y = pos_h - tier_text.text_data.height() + 4;
-                    tier_text.visible = true;
                 }
                 return;
             } else {

@@ -639,6 +639,7 @@ pub const DisplayContainer = struct {
     x: f32,
     y: f32,
     elements: utils.DynSlice(*UiElement) = undefined,
+    visible: bool = true,
     _disposed: bool = false,
 };
 
@@ -665,8 +666,7 @@ pub const UiElement = union(enum) {
     status: StatusText,
 };
 
-pub var status_dispose_lock: std.Thread.Mutex = .{};
-pub var balloon_dispose_lock: std.Thread.Mutex = .{};
+pub var dispose_lock: std.Thread.Mutex = .{};
 pub var elements: utils.DynSlice(UiElement) = undefined;
 pub var elements_to_remove: utils.DynSlice(usize) = undefined;
 pub var current_screen = ScreenType.main_menu;
@@ -699,6 +699,16 @@ pub fn init(allocator: std.mem.Allocator) !void {
 
 pub fn disposeElement(elem: *UiElement, allocator: std.mem.Allocator) void {
     switch (elem.*) {
+        .container => |container| {
+            if (container._disposed)
+                return;
+
+            for (container.elements.items()) |cont_elem| {
+                disposeElement(cont_elem, allocator);
+            }
+
+            container._disposed = true;
+        },
         .bar => |bar| {
             if (bar._disposed)
                 return;
@@ -771,6 +781,9 @@ pub fn disposeElement(elem: *UiElement, allocator: std.mem.Allocator) void {
 pub fn deinit(allocator: std.mem.Allocator) void {
     char_select_screen.deinit(allocator); // hack todo
 
+    while (!dispose_lock.tryLock()) {}
+    defer dispose_lock.unlock();
+
     for (elements.items()) |*elem| {
         disposeElement(elem, allocator);
     }
@@ -806,6 +819,9 @@ pub fn switchScreen(screen_type: ScreenType) void {
 }
 
 pub fn removeAttachedUi(obj_id: i32, allocator: std.mem.Allocator) void {
+    while (!dispose_lock.tryLock()) {}
+    defer dispose_lock.unlock();
+
     for (elements.items()) |*elem| {
         switch (elem.*) {
             .status => |text| if (text.obj_id == obj_id) {
@@ -913,6 +929,7 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                 if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
                     box.state = .pressed;
                     box.press_callback(box);
+                    assets.playSfx("button_click");
                     return true;
                 }
             },
@@ -1050,6 +1067,9 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
             else => {},
         }
     }
+
+    while (!dispose_lock.tryLock()) {}
+    defer dispose_lock.unlock();
 
     const removed_elements = elements_to_remove.items();
     const elements_len = removed_elements.len;
