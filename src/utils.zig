@@ -68,11 +68,8 @@ pub const PacketWriter = struct {
     index: u16 = 0,
     length_index: u16 = 0,
     buffer: [65535]u8 = undefined,
-    write_lock: std.Thread.Mutex = .{},
 
     pub fn writeLength(self: *PacketWriter) void {
-        while (!self.write_lock.tryLock()) {}
-
         self.length_index = self.index;
         self.index += 2;
     }
@@ -90,6 +87,12 @@ pub const PacketWriter = struct {
                 @memcpy(buf, len_buf[0..2]);
             },
         }
+    }
+
+    pub fn writeDirect(self: *PacketWriter, value: []const u8) void {
+        const buf = self.buffer[self.index .. self.index + value.len];
+        self.index += @intCast(value.len);
+        @memcpy(buf, value);
     }
 
     pub fn write(self: *PacketWriter, value: anytype) void {

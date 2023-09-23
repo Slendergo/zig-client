@@ -8,6 +8,7 @@ const ui = @import("ui/ui.zig");
 const camera = @import("camera.zig");
 const assets = @import("assets.zig");
 const particles = @import("particles.zig");
+const Queue = @import("spsc.zig").UnboundedQueue(C2SPacket);
 
 pub const ObjectSlot = extern struct {
     object_id: i32 align(1),
@@ -45,6 +46,210 @@ pub const ARGB = packed struct(u32) {
     b: u8,
 };
 
+pub const AcceptTrade = struct {
+    my_offer: []bool,
+    your_offer: []bool,
+};
+
+pub const AoeAck = struct {
+    time: u32,
+    position: Position,
+};
+
+pub const Buy = struct {
+    obj_id: i32,
+};
+
+pub const CancelTrade = struct {};
+
+pub const ChangeGuildRank = struct {
+    name: []const u8,
+    rank: i32,
+};
+
+pub const ChangeTrade = struct {
+    offer: []bool,
+};
+
+pub const ChooseName = struct {
+    name: []const u8,
+};
+
+pub const CreateGuild = struct {
+    guild_name: []const u8,
+};
+
+pub const EditAccountList = struct {
+    list_id: i32,
+    add: bool,
+    obj_id: i32,
+};
+
+pub const EnemyHit = struct {
+    time: i64,
+    bullet_id: u8,
+    target_id: i32,
+    killed: bool,
+};
+
+pub const Escape = struct {};
+
+pub const GotoAck = struct {
+    time: i64,
+};
+
+pub const GroundDamage = struct {
+    time: i64,
+    position: Position,
+};
+
+pub const GuildInvite = struct {
+    name: []const u8,
+};
+
+pub const GuildRemove = struct {
+    name: []const u8,
+};
+
+pub const Hello = struct {
+    build_ver: []const u8,
+    game_id: i32,
+    email: []const u8,
+    password: []const u8,
+    char_id: i16,
+    create_char: bool,
+    class_type: u16,
+    skin_type: u16,
+};
+
+pub const InvDrop = struct {
+    slot_object: ObjectSlot,
+};
+
+pub const InvSwap = struct {
+    time: i64,
+    position: Position,
+    from_slot: ObjectSlot,
+    to_slot: ObjectSlot,
+};
+
+pub const JoinGuild = struct {
+    name: []const u8,
+};
+
+pub const Move = struct {
+    tick_id: i32,
+    time: i64,
+    pos_x: f32,
+    pos_y: f32,
+    records: []const TimedPosition,
+};
+
+pub const OtherHit = struct {
+    time: i64,
+    bullet_id: u8,
+    object_id: i32,
+    target_id: i32,
+};
+
+pub const PlayerHit = struct {
+    bullet_id: u8,
+    object_id: i32,
+};
+
+pub const PlayerShoot = struct {
+    time: i64,
+    bullet_id: u8,
+    container_type: u16,
+    starting_pos: Position,
+    angle: f32,
+};
+
+pub const PlayerText = struct {
+    text: []const u8,
+};
+
+pub const Pong = struct {
+    serial: i32,
+    time: i64,
+};
+
+pub const RequestTrade = struct {
+    name: []const u8,
+};
+
+pub const Reskin = struct {
+    skin_id: i32,
+};
+
+pub const ShootAck = struct {
+    time: i64,
+};
+
+pub const SquareHit = struct {
+    time: i64,
+    bullet_id: u8,
+    obj_id: i32,
+};
+
+pub const Teleport = struct {
+    obj_id: i32,
+};
+
+pub const UpdateAck = struct {};
+
+pub const UseItem = struct {
+    time: i64,
+    slot_object: ObjectSlot,
+    use_position: Position,
+    use_type: u8,
+};
+
+pub const UsePortal = struct {
+    obj_id: i32,
+};
+
+pub const C2SPacketData = union(enum) {
+    accept_trade: AcceptTrade,
+    aoe_ack: AoeAck,
+    buy: Buy,
+    cancel_trade: CancelTrade,
+    change_guild_rank: ChangeGuildRank,
+    change_trade: ChangeTrade,
+    choose_name: ChooseName,
+    create_guild: CreateGuild,
+    edit_account_list: EditAccountList,
+    enemy_hit: EnemyHit,
+    escape: Escape,
+    goto_ack: GotoAck,
+    ground_damage: GroundDamage,
+    guild_invite: GuildInvite,
+    guild_remove: GuildRemove,
+    hello: Hello,
+    inv_drop: InvDrop,
+    inv_swap: InvSwap,
+    join_guild: JoinGuild,
+    move: Move,
+    other_hit: OtherHit,
+    player_hit: PlayerHit,
+    player_shoot: PlayerShoot,
+    player_text: PlayerText,
+    pong: Pong,
+    request_trade: RequestTrade,
+    reskin: Reskin,
+    shoot_ack: ShootAck,
+    square_hit: SquareHit,
+    teleport: Teleport,
+    update_ack: UpdateAck,
+    use_item: UseItem,
+    use_portal: UsePortal,
+};
+
+pub const C2SPacket = struct {
+    id: C2SPacketId,
+    data: C2SPacketData,
+};
+
 const EffectType = enum(u8) {
     unknown = 0,
     potion = 1,
@@ -73,9 +278,7 @@ const C2SPacketId = enum(u8) {
     cancel_trade = 4,
     change_guild_rank = 5,
     change_trade = 6,
-    check_credits = 7,
     choose_name = 8,
-    create = 9,
     create_guild = 10,
     edit_account_list = 11,
     enemy_hit = 12,
@@ -88,7 +291,6 @@ const C2SPacketId = enum(u8) {
     inv_drop = 19,
     inv_swap = 20,
     join_guild = 21,
-    load = 22,
     move = 23,
     other_hit = 24,
     player_hit = 25,
@@ -97,7 +299,6 @@ const C2SPacketId = enum(u8) {
     pong = 28,
     request_trade = 29,
     reskin = 30,
-    set_condition = 31,
     shoot_ack = 32,
     square_hit = 33,
     teleport = 34,
@@ -145,13 +346,16 @@ const S2CPacketId = enum(u8) {
 };
 
 pub var connected = false;
+pub var queue: Queue = undefined;
+
+var queue_lock: std.Thread.Mutex = .{};
 var message_len: u16 = 65535;
 var buffer_idx: usize = 0;
 var stream: std.net.Stream = undefined;
 var reader = utils.PacketReader{};
 var writer = utils.PacketWriter{};
 
-pub fn init(ip: []const u8, port: u16) void {
+pub fn init(ip: []const u8, port: u16, allocator: *std.mem.Allocator) void {
     stream = std.net.tcpConnectToAddress(std.net.Address.parseIp(ip, port) catch |address_error| {
         std.log.err("Could not parse address {s}:{d}: {any}", .{ ip, port, address_error });
         return;
@@ -160,14 +364,21 @@ pub fn init(ip: []const u8, port: u16) void {
         return;
     };
 
-    std.os.setsockopt(stream.handle, std.os.IPPROTO.TCP, std.os.TCP.NODELAY, &std.mem.toBytes(@as(c_int, 1))) catch |e| {
+    const off = &std.mem.toBytes(@as(c_int, 0));
+    std.os.setsockopt(stream.handle, std.os.IPPROTO.TCP, std.os.TCP.NODELAY, off) catch |e| {
         std.log.err("Setting socket option failed: {any}", .{e});
+    };
+
+    queue = Queue.init(allocator) catch |e| {
+        std.log.err("Queue init failed: {any}", .{e});
+        return;
     };
 
     connected = true;
 }
 
-pub fn deinit() void {
+pub fn deinit(allocator: *std.mem.Allocator) void {
+    queue.deinit(allocator);
     stream.close();
     connected = false;
 }
@@ -178,6 +389,10 @@ pub fn onError(e: anytype) void {
 }
 
 pub fn accept(allocator: std.mem.Allocator) void {
+    while (queue.pop()) |packet| {
+        sendPacket(packet);
+    }
+
     const size = stream.read(reader.buffer[buffer_idx..]) catch |e| {
         onError(e);
         return;
@@ -412,7 +627,12 @@ fn handleEnemyShoot() void {
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
         std.log.debug("Recv - EnemyShoot: bullet_id={d}, owner_id={d}, bullet_type={d}, x={e}, y={e}, angle={e}, damage={d}, num_shots={d}, angle_inc={e}", .{ bullet_id, owner_id, bullet_type, starting_pos.x, starting_pos.y, angle, damage, num_shots, angle_inc });
 
-    sendShootAck(main.current_time);
+    sendPacket(.{
+        .id = .shoot_ack,
+        .data = .{ .shoot_ack = .{
+            .time = main.current_time,
+        } },
+    });
 }
 
 fn handleFailure() void {
@@ -454,7 +674,12 @@ fn handleGoto() void {
         std.log.err("Object id {d} not found while attempting to goto to pos {any}", .{ object_id, position });
     }
 
-    sendGotoAck(main.last_update);
+    sendPacket(.{
+        .id = .goto_ack,
+        .data = .{ .goto_ack = .{
+            .time = main.current_time,
+        } },
+    });
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - Goto: object_id={d}, x={e}, y={e}", .{ object_id, position.x, position.y });
@@ -529,9 +754,27 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
     defer {
         if (main.tick_frame) {
             if (map.localPlayerConst()) |local_player| {
-                sendMove(tick_id, main.last_update, local_player.x, local_player.y, map.move_records.items());
+                sendPacket(.{
+                    .id = .move,
+                    .data = .{ .move = .{
+                        .tick_id = tick_id,
+                        .time = main.current_time,
+                        .pos_x = local_player.x,
+                        .pos_y = local_player.y,
+                        .records = map.move_records.items(),
+                    } },
+                });
             } else {
-                sendMove(tick_id, main.last_update, -1, -1, &[0]TimedPosition{});
+                sendPacket(.{
+                    .id = .move,
+                    .data = .{ .move = .{
+                        .tick_id = tick_id,
+                        .time = main.current_time,
+                        .pos_x = -1,
+                        .pos_y = -1,
+                        .records = &[0]TimedPosition{},
+                    } },
+                });
             }
         }
     }
@@ -654,7 +897,13 @@ fn handleNotification(allocator: std.mem.Allocator) void {
 fn handlePing() void {
     const serial = reader.read(i32);
 
-    sendPong(serial, main.current_time);
+    sendPacket(.{
+        .id = .pong,
+        .data = .{ .pong = .{
+            .serial = serial,
+            .time = main.current_time,
+        } },
+    });
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
         std.log.debug("Recv - Ping: serial={d}", .{serial});
@@ -715,11 +964,21 @@ fn handleServerPlayerShoot() void {
             }
 
             if (needs_ack) {
-                sendShootAck(main.current_time);
+                sendPacket(.{
+                    .id = .shoot_ack,
+                    .data = .{ .shoot_ack = .{
+                        .time = main.current_time,
+                    } },
+                });
             }
         } else {
             if (needs_ack) {
-                sendShootAck(-1);
+                sendPacket(.{
+                    .id = .shoot_ack,
+                    .data = .{ .shoot_ack = .{
+                        .time = -1,
+                    } },
+                });
             }
         }
     }
@@ -898,7 +1157,10 @@ fn handleTradeStart() void {
 fn handleUpdate(allocator: std.mem.Allocator) void {
     defer {
         if (main.tick_frame)
-            sendUpdateAck();
+            sendPacket(.{
+                .id = .update_ack,
+                .data = .{ .update_ack = .{} },
+            });
     }
 
     const tiles = reader.read([]TileData);
@@ -1155,658 +1417,48 @@ fn parseObjStatData(obj: *map.GameObject, stat_type: game_data.StatType, allocat
     return true;
 }
 
-fn writeBuffer() void {
+pub fn queuePacket(packet: C2SPacket) void {
+    if (packet.id == .use_portal or packet.id == .escape) {
+        while (queue.pop()) |_| {} // not ideal...
+        main.clear();
+        main.tick_frame = false;
+    }
+
+    queue.push(&main._allocator, packet) catch |e| {
+        std.log.err("Packet enqueue failed: {any}", .{e});
+        return;
+    };
+}
+
+fn sendPacket(packet: C2SPacket) void {
+    if (!connected) {
+        std.log.err("Could not send {any}, client is not connected", .{packet.id});
+    }
+
+    writer.writeLength();
+    writer.write(@intFromEnum(packet.id));
+    var data_bytes = std.mem.asBytes(&packet.data);
+    switch (packet.data) {
+        inline else => |data| {
+            const data_type = @TypeOf(data);
+            inline for (@typeInfo(data_type).Struct.fields) |field| {
+                const base_offset = @offsetOf(data_type, field.name);
+                const type_info = @typeInfo(field.type);
+                if (type_info == .Pointer and (type_info.Pointer.size == .Slice or type_info.Pointer.size == .Many)) {
+                    const ptr = std.mem.bytesAsValue([*]type_info.Pointer.child, data_bytes[base_offset .. base_offset + 8]).*;
+                    const len = std.mem.bytesAsValue(usize, data_bytes[base_offset + 8 .. base_offset + 16]).*;
+                    writer.write(ptr[0..len]);
+                } else {
+                    const field_len = (@bitSizeOf(field.type) + 7) / 8;
+                    writer.writeDirect(data_bytes[base_offset .. base_offset + field_len]);
+                }
+            }
+        },
+    }
+    writer.updateLength();
     stream.writer().writeAll(writer.buffer[0..writer.index]) catch |e| {
         onError(e);
         return;
     };
     writer.index = 0;
-    writer.write_lock.unlock();
-}
-
-pub fn sendAcceptTrade(my_offer: []bool, your_offer: []bool) void {
-    if (!connected) {
-        std.log.err("Could not send AcceptTrade, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - AcceptTrade: my_offer={any} your_offer={any}", .{ my_offer, your_offer });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.accept_trade));
-    writer.write(my_offer);
-    writer.write(your_offer);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendAoeAck(time: u32, position: Position) void {
-    if (!connected) {
-        std.log.err("Could not send AoeAck, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - AoeAck: time={d} position={any}", .{ time, position });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.aoe_ack));
-    writer.write(time);
-    writer.write(position);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendBuy(object_id: i32) void {
-    if (!connected) {
-        std.log.err("Could not send Buy, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - Buy: object_id={d}", .{object_id});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.buy));
-    writer.write(object_id);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendCancelTrade() void {
-    if (!connected) {
-        std.log.err("Could not send CancelTrade, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - CancelTrade", .{});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.cancel_trade));
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendChangeGuildRank(name: []const u8, guild_rank: i32) void {
-    if (!connected) {
-        std.log.err("Could not send ChangeGuildRank, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - ChangeGuildRank: name={s} guild_rank={}", .{ name, guild_rank });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.change_guild_rank));
-    writer.write(name);
-    writer.write(guild_rank);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendChangeTrade(offer: []bool) void {
-    if (!connected) {
-        std.log.err("Could not send ChangeTrade, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - ChangeTrade: offer={any}", .{offer});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.change_trade));
-    writer.write(offer);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendCheckCredits() void {
-    if (!connected) {
-        std.log.err("Could not send CheckCredits, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - CheckCredits", .{});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.check_credits));
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendChooseName(name: []const u8) void {
-    if (!connected) {
-        std.log.err("Could not send ChooseName, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - ChooseName: name={s}", .{name});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.choose_name));
-    writer.write(name);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendCreate(class_type: u16, skin_type: u16) void {
-    if (!connected) {
-        std.log.err("Could not send Create, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - Create: class_type={d} skin_type={d}", .{ class_type, skin_type });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.create));
-    writer.write(class_type);
-    writer.write(skin_type);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendCreateGuild(name: []const u8) void {
-    if (!connected) {
-        std.log.err("Could not send CreateGuild, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - CreateGuild: name={s}", .{name});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.create_guild));
-    writer.write(name);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendEditAccountList(account_list_id: i32, add: bool, object_id: i32) void {
-    if (!connected) {
-        std.log.err("Could not send EditAccountList, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - EditAccountList: account_list_id={d} add={any} object_id={d}", .{ account_list_id, add, object_id });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.edit_account_list));
-    writer.write(account_list_id);
-    writer.write(add);
-    writer.write(object_id);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendEnemyHit(time: i64, bullet_id: u8, target_id: i32, killed: bool) void {
-    if (!connected) {
-        std.log.err("Could not send EnemyHit, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - EnemyHit: time={d} bullet_id={d} target_id={d} killed={any}", .{ time, bullet_id, target_id, killed });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.enemy_hit));
-    writer.write(time);
-    writer.write(bullet_id);
-    writer.write(target_id);
-    writer.write(killed);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendEscape() void {
-    if (!connected) {
-        std.log.err("Could not send Escape, client is not connected", .{});
-    }
-
-    if (std.mem.eql(u8, map.name, "Nexus")) {
-        return;
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - Escape", .{});
-
-    main.clear();
-    main.tick_frame = false;
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.escape));
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendGotoAck(time: i64) void {
-    if (!connected) {
-        std.log.err("Could not send GotoAck, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - GotoAck: time={d}", .{time});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.goto_ack));
-    writer.write(time);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendGroundDamage(time: i64, position: Position) void {
-    if (!connected) {
-        std.log.err("Could not send GroundDamage, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - GroundDamage: time={d} position={any}", .{ time, position });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.ground_damage));
-    writer.write(time);
-    writer.write(position);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendGuildInvite(name: []const u8) void {
-    if (!connected) {
-        std.log.err("Could not send GuildInvite, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - GuildInvite: name={s}", .{name});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.guild_invite));
-    writer.write(name);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendGuildRemove(name: []const u8) void {
-    if (!connected) {
-        std.log.err("Could not send GuildRemove, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - GuildRemove: name={s}", .{name});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.guild_remove));
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendHello(build_ver: []const u8, gameId: i32, email: []const u8, password: []const u8, char_id: i16, create_char: bool, class_type: u16, skin_type: u16) void {
-    if (!connected) {
-        std.log.err("Could not send Hello, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - Hello: build_ver={s}, game_id={d}, email={s}, password={s}, char_id={d}, create_char={any}, class_type={d}, skin_type={d}", .{ build_ver, gameId, email, password, char_id, create_char, class_type, skin_type });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.hello));
-    writer.write(build_ver);
-    writer.write(gameId);
-    writer.write(email);
-    writer.write(password);
-    writer.write(char_id);
-    writer.write(create_char);
-    if (create_char) {
-        writer.write(class_type);
-        writer.write(skin_type);
-    }
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendInvDrop(slot_object: ObjectSlot) void {
-    if (!connected) {
-        std.log.err("Could not send InvDrop, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - InvDrop: slot_object={any}", .{slot_object});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.inv_drop));
-    writer.write(slot_object);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendInvSwap(time: i64, position: Position, from_slot: ObjectSlot, to_slot: ObjectSlot) void {
-    if (!connected) {
-        std.log.err("Could not send InvSwap, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - InvSwap: time={d} position={any} from_slot={any} to_slot={any}", .{ time, position, from_slot, to_slot });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.inv_swap));
-    writer.write(time);
-    writer.write(position);
-    writer.write(from_slot);
-    writer.write(to_slot);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendJoinGuild(name: []const u8) void {
-    if (!connected) {
-        std.log.err("Could not send JoinGuild, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - JoinGuild: name={s}", .{name});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.join_guild));
-    writer.write(name);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendLoad(char_id: i32) void {
-    if (!connected) {
-        std.log.err("Could not send Load, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - Load: char_id={d}", .{char_id});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.load));
-    writer.write(char_id);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendMove(tick_id: i32, time: i64, pos_x: f32, pos_y: f32, records: []const TimedPosition) void {
-    if (!connected) {
-        std.log.err("Could not send Move, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s)
-        std.log.debug("Send - Move: tick_id={d} time={d} pos_x={d} pos_y={d} records={any}", .{ tick_id, time, pos_x, pos_y, records });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.move));
-    writer.write(tick_id);
-    writer.write(time);
-    writer.write(pos_x);
-    writer.write(pos_y);
-    writer.write(records);
-    writer.updateLength();
-
-    writeBuffer();
-
-    if (map.localPlayerRef()) |local_player| {
-        local_player.onMove();
-    }
-}
-
-pub fn sendOtherHit(time: i64, bullet_id: u8, object_id: i32, target_id: i32) void {
-    if (!connected) {
-        std.log.err("Could not send OtherHit, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - OtherHit: time={d} bullet_id={d} object_id={d} target_id={d}", .{ time, bullet_id, object_id, target_id });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.other_hit));
-    writer.write(time);
-    writer.write(bullet_id);
-    writer.write(object_id);
-    writer.write(target_id);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendPlayerHit(bullet_id: u8, object_id: i32) void {
-    if (!connected) {
-        std.log.err("Could not send PlayerHit, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - PlayerHit: bullet_id={d} object_id={d}", .{ bullet_id, object_id });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.player_hit));
-    writer.write(bullet_id);
-    writer.write(object_id);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendPlayerShoot(time: i64, bullet_id: u8, container_type: u16, starting_pos: Position, angle: f32) void {
-    if (!connected) {
-        std.log.err("Could not send PlayerShoot, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - PlayerShoot: time={d} bullet_id={d} container_type={d} staring_pos={any} angle={d}", .{ time, bullet_id, container_type, starting_pos, angle });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.player_shoot));
-    writer.write(time);
-    writer.write(bullet_id);
-    writer.write(container_type);
-    writer.write(starting_pos);
-    writer.write(angle);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendPlayerText(text: []const u8) void {
-    if (!connected) {
-        std.log.err("Could not send PlayerText, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - PlayerText: text={s}", .{text});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.player_text));
-    writer.write(text);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendPong(serial: i32, time: i64) void {
-    if (!connected) {
-        std.log.err("Could not send Pong, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - Pong: serial={d} time={d}", .{ serial, time });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.pong));
-    writer.write(serial);
-    writer.write(time);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendRequestTrade(name: []const u8) void {
-    if (!connected) {
-        std.log.err("Could not send RequestTrade, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - RequestTrade: name={s}", .{name});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.request_trade));
-    writer.write(name);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendReskin(skin_id: i32) void {
-    if (!connected) {
-        std.log.err("Could not send Reskin, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - Reskin: skin_id={d}", .{skin_id});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.reskin));
-    writer.write(skin_id);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendSetCondition(condition_effect: i32, condition_duration: i32) void {
-    if (!connected) {
-        std.log.err("Could not send SetCondition, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - SetCondition: condition_effect={d} condition_duration={d}", .{ condition_effect, condition_duration });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.set_condition));
-    writer.write(condition_effect);
-    writer.write(condition_duration);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendShootAck(time: i64) void {
-    if (!connected) {
-        std.log.err("Could not send ShootAck, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - ShootAck: time={d}", .{time});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.shoot_ack));
-    writer.write(time);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendSquareHit(time: i64, bullet_id: u8, object_id: i32) void {
-    if (!connected) {
-        std.log.err("Could not send SquareHit, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - SquareHit: time={d} bullet_id={d} object_id={d}", .{ time, bullet_id, object_id });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.square_hit));
-    writer.write(time);
-    writer.write(bullet_id);
-    writer.write(object_id);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendTeleport(object_id: i32) void {
-    if (!connected) {
-        std.log.err("Could not send Teleport, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - Teleport: object_id={d}", .{object_id});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.teleport));
-    writer.write(object_id);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendUpdateAck() void {
-    if (!connected) {
-        std.log.err("Could not send UpdateAck, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s)
-        std.log.debug("Send - UpdateAck", .{});
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.update_ack));
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendUseItem(
-    time: i64,
-    slot_object: ObjectSlot,
-    use_position: Position,
-    use_type: u8,
-) void {
-    if (!connected) {
-        std.log.err("Could not send UseItem, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - UseItem: time={d} slot_object={any} use_position={any} use_type={d} ", .{ time, slot_object, use_position, use_type });
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.use_item));
-    writer.write(time);
-    writer.write(slot_object);
-    writer.write(use_position);
-    writer.write(use_type);
-    writer.updateLength();
-
-    writeBuffer();
-}
-
-pub fn sendUsePortal(object_id: i32) void {
-    if (!connected) {
-        std.log.err("Could not send UsePortal, client is not connected", .{});
-    }
-
-    if (settings.log_packets == .all or settings.log_packets == .c2s or settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Send - UsePortal: object_id={d}", .{object_id});
-
-    main.clear();
-    main.tick_frame = false;
-
-    writer.writeLength();
-    writer.write(@intFromEnum(C2SPacketId.use_portal));
-    writer.write(object_id);
-    writer.updateLength();
-
-    writeBuffer();
 }

@@ -128,20 +128,23 @@ fn networkTick(allocator: std.mem.Allocator) void {
 
         if (selected_server) |sel_srv| {
             if (!network.connected)
-                network.init(sel_srv.dns, sel_srv.port);
+                network.init(sel_srv.dns, sel_srv.port, &_allocator);
 
             if (network.connected) {
                 if (selected_char_id != 65535 and !sent_hello) {
-                    network.sendHello(
-                        settings.build_version,
-                        -2,
-                        current_account.email,
-                        current_account.password,
-                        @as(i16, @intCast(selected_char_id)),
-                        char_create_type != 0,
-                        char_create_type,
-                        char_create_skin_type,
-                    );
+                    network.queuePacket(.{
+                        .id = .hello,
+                        .data = .{ .hello = .{
+                            .build_ver = settings.build_version,
+                            .game_id = -2,
+                            .email = current_account.email,
+                            .password = current_account.password,
+                            .char_id = @intCast(selected_char_id),
+                            .create_char = char_create_type != 0,
+                            .class_type = char_create_type,
+                            .skin_type = char_create_skin_type,
+                        } },
+                    });
                     sent_hello = true;
                 }
 
@@ -155,7 +158,7 @@ fn renderTick(allocator: std.mem.Allocator) !void {
     var time_start = std.time.nanoTimestamp();
     while (tick_render) {
         // Sleep is unreliable, the fps cap would be slightly lower than the actual cap.
-        // So we have to sleep 1.1x shorter and just loop for the rest of the time remaining 
+        // So we have to sleep 1.1x shorter and just loop for the rest of the time remaining
         const sleep_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap / 1.1);
         const time_offset = std.time.nanoTimestamp() - time_start;
         if (time_offset < sleep_time)
@@ -253,7 +256,7 @@ pub fn clear() void {
 
 pub fn disconnect() void {
     if (network.connected) {
-        network.deinit();
+        network.deinit(&_allocator);
         selected_server = null;
         sent_hello = false;
     }
@@ -393,7 +396,7 @@ pub fn main() !void {
     }
 
     if (network.connected) {
-        defer network.deinit();
+        defer network.deinit(&_allocator);
     }
 
     if (character_list.len > 0) {
