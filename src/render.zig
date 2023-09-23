@@ -1041,9 +1041,11 @@ fn drawSquare(
     bottom_blend_u: f32,
     bottom_blend_v: f32,
 ) void {
+    const pad_w = assets.base_texel_w / 8.0;
+    const pad_h = assets.base_texel_h / 8.0;
     ground_vert_data[idx] = GroundVertexData{
         .pos = [2]f32{ x1, y1 },
-        .uv = [2]f32{ atlas_data.tex_w, atlas_data.tex_h },
+        .uv = [2]f32{ atlas_data.tex_w - pad_w, atlas_data.tex_h - pad_h },
         .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
         .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
@@ -1054,7 +1056,7 @@ fn drawSquare(
 
     ground_vert_data[idx + 1] = GroundVertexData{
         .pos = [2]f32{ x2, y2 },
-        .uv = [2]f32{ 0, atlas_data.tex_h },
+        .uv = [2]f32{ pad_w, atlas_data.tex_h - pad_h },
         .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
         .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
@@ -1065,7 +1067,7 @@ fn drawSquare(
 
     ground_vert_data[idx + 2] = GroundVertexData{
         .pos = [2]f32{ x3, y3 },
-        .uv = [2]f32{ 0, 0 },
+        .uv = [2]f32{ pad_w, pad_h },
         .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
         .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
@@ -1076,7 +1078,7 @@ fn drawSquare(
 
     ground_vert_data[idx + 3] = GroundVertexData{
         .pos = [2]f32{ x4, y4 },
-        .uv = [2]f32{ atlas_data.tex_w, 0 },
+        .uv = [2]f32{ atlas_data.tex_w - pad_w, pad_h },
         .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
         .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
         .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
@@ -1853,7 +1855,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         }
                     }
 
-                    const radius = @sqrt(@as(f32, camera.px_per_tile * camera.px_per_tile / 2));
+                    const radius = @sqrt(@as(f32, camera.px_per_tile * camera.px_per_tile / 2)) + 1;
                     const top_right_angle = std.math.pi / 4.0;
                     const bottom_right_angle = 3.0 * std.math.pi / 4.0;
                     const bottom_left_angle = 5.0 * std.math.pi / 4.0;
