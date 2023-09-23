@@ -160,6 +160,10 @@ pub fn init(ip: []const u8, port: u16) void {
         return;
     };
 
+    std.os.setsockopt(stream.handle, std.os.IPPROTO.TCP, std.os.TCP.NODELAY, &std.mem.toBytes(@as(c_int, 1))) catch |e| {
+        std.log.err("Setting socket option failed: {any}", .{e});
+    };
+
     connected = true;
 }
 
