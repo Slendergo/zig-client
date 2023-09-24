@@ -367,8 +367,14 @@ pub const GameObject = struct {
         if (game_data.obj_type_to_class.get(self.obj_type)) |class_props| {
             self.is_wall = class_props == .wall;
             if (self.is_wall and validPos(floor_x, floor_y)) {
-                squares[floor_y * @as(u32, @intCast(width)) + floor_x].has_wall = true;
-                squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = true;
+                self.x = @floor(self.x) + 0.5;
+                self.y = @floor(self.y) + 0.5;
+                self.target_x = -1;
+                self.target_y = -1;
+
+                const w: u32 = @intCast(width);
+                squares[floor_y * w + floor_x].has_wall = true;
+                squares[floor_y * w + floor_x].blocking = true;
             }
 
             if (class_props == .container)
@@ -511,6 +517,9 @@ pub const GameObject = struct {
         self.screen_x = screen_pos.x;
 
         moveBlock: {
+            if (self.is_wall)
+                break :moveBlock;
+
             if (self.target_x > 0 and self.target_y > 0) {
                 if (last_tick_time <= 0 or self.x <= 0 or self.y <= 0) {
                     self.x = self.target_x;
@@ -1759,14 +1768,12 @@ pub fn init(allocator: std.mem.Allocator) !void {
 pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
     switch (en) {
         .object => |obj| {
-            if (game_data.obj_type_to_class.get(obj.obj_type)) |class_props| {
-                if (class_props == .wall) {
-                    var square = map.getSquare(obj.x, obj.y);
-                    square.occupy_square = false;
-                    square.full_occupy = false;
-                    square.has_wall = false;
-                    square.blocking = false;
-                }
+            if (obj.is_wall) {
+                var square = map.getSquarePtr(obj.x, obj.y);
+                square.occupy_square = false;
+                square.full_occupy = false;
+                square.has_wall = false;
+                square.blocking = false;
             }
 
             ui.removeAttachedUi(obj.obj_id, allocator);
@@ -2082,6 +2089,12 @@ pub inline fn getSquare(x: f32, y: f32) Square {
     const floor_x: u32 = @intFromFloat(@floor(x));
     const floor_y: u32 = @intFromFloat(@floor(y));
     return squares[floor_y * @as(u32, @intCast(width)) + floor_x];
+}
+
+pub inline fn getSquarePtr(x: f32, y: f32) *Square {
+    const floor_x: u32 = @intFromFloat(@floor(x));
+    const floor_y: u32 = @intFromFloat(@floor(y));
+    return &squares[floor_y * @as(u32, @intCast(width)) + floor_x];
 }
 
 pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
