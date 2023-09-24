@@ -8,6 +8,7 @@ const ui = @import("ui/ui.zig");
 const camera = @import("camera.zig");
 const assets = @import("assets.zig");
 const particles = @import("particles.zig");
+const builtin = @import("builtin");
 const Queue = @import("spsc.zig").UnboundedQueue(C2SPacket);
 
 pub const ObjectSlot = extern struct {
@@ -205,12 +206,7 @@ pub fn init(ip: []const u8, port: u16, allocator: *std.mem.Allocator) void {
         std.log.err("Could not connect to address {s}:{d}: {any}", .{ ip, port, connect_error });
         return;
     };
-
-    const off = &std.mem.toBytes(@as(c_int, 0));
-    std.os.setsockopt(stream.handle, std.os.IPPROTO.TCP, std.os.TCP.NODELAY, off) catch |e| {
-        std.log.err("Setting socket option failed: {any}", .{e});
-    };
-
+    
     queue = Queue.init(allocator) catch |e| {
         std.log.err("Queue init failed: {any}", .{e});
         return;
