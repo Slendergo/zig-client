@@ -37,9 +37,11 @@ pub const Square = struct {
     bottom_blend_v: f32 = -1.0,
     props: ?*const game_data.GroundProps = null,
     sinking: bool = false,
-    blocking: bool = false,
     full_occupy: bool = false,
     occupy_square: bool = false,
+    enemy_occupy_square: bool = false,
+    is_enemy: bool = false,
+    obj_id: i32 = -1,
     has_wall: bool = false,
     u_offset: f32 = 0,
     v_offset: f32 = 0,
@@ -249,9 +251,11 @@ pub const GameObject = struct {
 
             if (props.full_occupy or props.static and props.occupy_square) {
                 if (validPos(floor_x, floor_y)) {
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].obj_id = self.obj_id;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].enemy_occupy_square = props.enemy_occupy_square;
                     squares[floor_y * @as(u32, @intCast(width)) + floor_x].occupy_square = props.occupy_square;
                     squares[floor_y * @as(u32, @intCast(width)) + floor_x].full_occupy = props.full_occupy;
-                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].blocking = true;
+                    squares[floor_y * @as(u32, @intCast(width)) + floor_x].is_enemy = props.is_enemy;
                 }
             }
         }
@@ -374,7 +378,6 @@ pub const GameObject = struct {
 
                 const w: u32 = @intCast(width);
                 squares[floor_y * w + floor_x].has_wall = true;
-                squares[floor_y * w + floor_x].blocking = true;
             }
 
             if (class_props == .container)
@@ -648,6 +651,8 @@ pub const Player = struct {
     action: u8 = 0,
     float_period: f32 = 0.0,
     colors: []u32 = &[0]u32{},
+    next_ability_attack_time: i64 = -1,
+    mp_zeroed: bool = false,
 
     pub fn onMove(self: *Player) void {
         const square = getSquare(self.x, self.y);
@@ -776,41 +781,128 @@ pub const Player = struct {
         return frequency;
     }
 
-    pub fn shoot(self: *Player, angle: f32, time: i64, useMult: bool) void {
-        if (self.condition.stunned or self.condition.stasis)
+    // todo change use_type to be enum?
+    pub fn useAbility(self: *Player, screen_x: f32, screen_y: f32, use_type: game_data.UseType) void {
+        if (self.condition.paused) {
+            assets.playSfx("error");
             return;
+        }
 
-        const weapon = self.inventory[0];
-        if (weapon == -1)
+        const item_type: i32 = self.inventory[1];
+        if (item_type == -1) {
+            assets.playSfx("error");
             return;
+        }
 
-        const item_props = game_data.item_type_to_props.getPtr(@intCast(weapon));
-        if (item_props == null or item_props.?.projectile == null)
+        const item_props = game_data.item_type_to_props.getPtr(@intCast(item_type));
+        if (item_props == null or !item_props.?.usable) {
+            // doesnt actually error on original but it hink it makes sense
+            assets.playSfx("error");
             return;
+        }
 
-        const attack_delay: i64 = @intFromFloat((1.0 / attackFrequency(self)) * (1.0 / item_props.?.rate_of_fire) * std.time.us_per_ms);
-        if (time < self.attack_start + attack_delay)
+        const angle = camera.angle + std.math.atan2(f32, screen_y - camera.screen_height / 2.0, screen_x - camera.screen_width / 2.0);
+
+        var is_shoot = false;
+        var needs_walkable = false;
+
+        if (use_type == game_data.UseType.start) {
+            if (item_props.?.activations) |activate| {
+                for (activate) |data| {
+                    if (data.activation_type == game_data.ActivationType.teleport or
+                        data.activation_type == game_data.ActivationType.object_toss)
+                    {
+                        needs_walkable = true;
+                    }
+
+                    if (data.activation_type == game_data.ActivationType.shoot) {
+                        is_shoot = true;
+                    }
+                }
+            }
+        }
+
+        var position = camera.screenToWorld(screen_x, screen_y);
+        if (needs_walkable and !isValidPosition(position.x, position.y)) {
+            assets.playSfx("error");
             return;
+        }
 
-        assets.playSfx(item_props.?.old_sound);
+        const now = main.current_time;
+        if (use_type == game_data.UseType.start) {
+            if (now < self.next_ability_attack_time) {
+                assets.playSfx("error");
+                return;
+            }
 
+            const mana_cost: i32 = @intFromFloat(item_props.?.mp_cost);
+            if (mana_cost > self.mp) {
+                assets.playSfx("no_mana");
+                return;
+            }
+
+            const cooldown = @as(i64, @intFromFloat(item_props.?.cooldown * 1000.0)) * std.time.us_per_ms;
+            self.next_ability_attack_time = now + cooldown;
+
+            self.mp_zeroed = false;
+
+            network.queuePacket(.{ .use_item = .{
+                .slot_object = .{
+                    .object_id = self.obj_id,
+                    .slot_id = 1,
+                    .object_type = item_type,
+                },
+                .use_position = .{
+                    .x = position.x,
+                    .y = position.y,
+                },
+                .time = main.current_time,
+                .use_type = use_type,
+            } });
+
+            if (is_shoot)
+                self.doShoot(now, item_type, item_props, angle, false);
+        } else {
+            if (item_props.?.multi_phase) {
+                network.queuePacket(.{ .use_item = .{
+                    .slot_object = .{
+                        .object_id = self.obj_id,
+                        .slot_id = 1,
+                        .object_type = item_type,
+                    },
+                    .use_position = .{
+                        .x = position.x,
+                        .y = position.y,
+                    },
+                    .time = main.current_time,
+                    .use_type = use_type,
+                } });
+
+                // todo
+                // if (@as(i32, @intFromFloat(item_props.?.mp_end_cost)) <= self.mp && !self.mp_zeroed) {
+                //     self.doShoot(now, itemType, objectXML, angle, false);
+                // }
+            }
+        }
+    }
+
+    pub fn doShoot(self: *Player, time: i64, weapon_type: i32, item_props: ?*game_data.ItemProps, attack_angle: f32, use_mult: bool) void {
         const projs_len = item_props.?.num_projectiles;
         const arc_gap = item_props.?.arc_gap;
         const total_angle = arc_gap * @as(f32, @floatFromInt(projs_len - 1));
-        var current_angle = angle - total_angle / 2.0;
+        var angle = attack_angle - total_angle / 2.0;
         const proj_props = &item_props.?.projectile.?;
+
+        const container_type = if (weapon_type == -1) std.math.maxInt(u16) else @as(u16, @intCast(weapon_type));
 
         for (0..projs_len) |_| {
             const bullet_id = @mod(self.next_bullet_id + 1, 128);
             self.next_bullet_id = bullet_id;
-            const x = self.x + @cos(current_angle) * 0.25;
-            const y = self.y + @sin(current_angle) * 0.25;
+            const x = self.x + @cos(attack_angle) * 0.25;
+            const y = self.y + @sin(attack_angle) * 0.25;
 
-            const att_mult = if (useMult) self.attackMultiplier() else 1.0;
-            const damage_raw: f32 = @floatFromInt(random.nextIntRange(
-                @intCast(proj_props.min_damage),
-                @intCast(proj_props.max_damage),
-            ));
+            const att_mult = if (use_mult) self.attackMultiplier() else 1.0;
+            const damage_raw: f32 = @floatFromInt(random.nextIntRange(@intCast(proj_props.min_damage), @intCast(proj_props.max_damage)));
             const damage: i32 = @intFromFloat(damage_raw * att_mult);
 
             // todo add once move records are added
@@ -823,7 +915,7 @@ pub const Player = struct {
                 .x = x,
                 .y = y,
                 .props = proj_props,
-                .angle = current_angle,
+                .angle = angle,
                 .start_time = @divFloor(time, std.time.us_per_ms),
                 .bullet_id = bullet_id,
                 .owner_id = self.obj_id,
@@ -831,21 +923,45 @@ pub const Player = struct {
             };
             proj.addToMap(false);
 
-            network.queuePacket(.{ .player_shoot = .{
-                .time = time,
-                .bullet_id = bullet_id,
-                .container_type = @intCast(weapon),
-                .starting_pos = .{ .x = x, .y = y },
-                .angle = current_angle,
-            } });
+            network.queuePacket(.{
+                .player_shoot = .{
+                    .time = time,
+                    .bullet_id = bullet_id,
+                    .container_type = container_type, // todo mabye convert to a i32 for packet or convert client into u16?
+                    .starting_pos = .{ .x = x, .y = y },
+                    .angle = angle,
+                },
+            });
 
-            current_angle += arc_gap;
+            angle += arc_gap;
         }
+    }
+
+    pub fn weaponShoot(self: *Player, angle: f32, time: i64, useMult: bool) void {
+        _ = useMult;
+        if (self.condition.stunned or self.condition.stasis)
+            return;
+
+        const weapon_type: i32 = self.inventory[0];
+        if (weapon_type == -1)
+            return;
+
+        const item_props = game_data.item_type_to_props.getPtr(@intCast(weapon_type));
+        if (item_props == null or item_props.?.projectile == null)
+            return;
+
+        const attack_delay: i64 = @intFromFloat((1.0 / attackFrequency(self)) * (1.0 / item_props.?.rate_of_fire) * std.time.us_per_ms);
+        if (time < self.attack_start + attack_delay)
+            return;
+
+        assets.playSfx(item_props.?.old_sound);
 
         self.attack_period = attack_delay;
         self.attack_angle = angle - camera.angle;
         self.attack_angle_raw = angle;
         self.attack_start = time;
+
+        self.doShoot(self.attack_start, weapon_type, item_props, self.attack_angle_raw, true);
     }
 
     pub fn takeDamage(
@@ -1491,14 +1607,39 @@ pub const Projectile = struct {
         if (validPos(floor_x, floor_y)) {
             const square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
             if (square.tile_type == 0xFF or square.tile_type == 0xFFFF) {
-                network.queuePacket(.{ .square_hit = .{
-                    .time = time,
-                    .bullet_id = self.bullet_id,
-                    .obj_id = self.owner_id,
-                } });
+                if (self.damage_players) {
+                    network.queuePacket(.{ .square_hit = .{
+                        .time = time,
+                        .bullet_id = self.bullet_id,
+                        .obj_id = self.owner_id,
+                    } });
+                } else {
+                    // equivilant to square.obj != null)
+                    if (square.obj_id != -1) {
+                        var effect = particles.HitEffect{
+                            .x = self.x,
+                            .y = self.y,
+                            .colors = self.colors,
+                            .angle = self.angle,
+                            .speed = self.props.speed,
+                            .size = 1.0,
+                            .amount = 3,
+                        };
+                        effect.addToMap();
+                    }
+                }
+                return false;
+            }
 
-                // equivilant to square.obj != null)
-                if (square.occupy_square or square.has_wall or square.full_occupy) {
+            if (square.obj_id != -1 and (!square.is_enemy or self.damage_players) and (square.enemy_occupy_square or (!self.props.passes_cover and square.occupy_square))) {
+                if (self.damage_players) {
+                    network.queuePacket(.{ .other_hit = .{
+                        .time = time,
+                        .bullet_id = self.bullet_id,
+                        .object_id = self.owner_id,
+                        .target_id = square.obj_id,
+                    } });
+                } else {
                     var effect = particles.HitEffect{
                         .x = self.x,
                         .y = self.y,
@@ -1512,21 +1653,6 @@ pub const Projectile = struct {
                 }
                 return false;
             }
-
-            // todo recreate this
-
-            // if (square_.obj_ != null && (!square_.obj_.props_.isEnemy_ || !damagesEnemies_) && (square_.obj_.props_.enemyOccupySquare_ || (!projProps_.passesCover_ && square_.obj_.props_.occupySquare_))) {
-            //     if (damagesPlayers_) {
-            //         map_.gs_.gsc_.otherHit(time, bulletId_, ownerId_, square_.obj_.objectId_);
-            //     }
-            //     else {
-            //         if (!Parameters.data_.noParticlesMaster) {
-            //             colors = BloodComposition.getColors(texture_);
-            //             map_.addObj(new HitEffect(colors, 100, 3, angle_, projProps_.speed_), p.x, p.y);
-            //         }
-            //     }
-            //     return false;
-            // }
         }
 
         if (time - self.last_hit_check > 16) {
@@ -1804,12 +1930,13 @@ pub fn init(allocator: std.mem.Allocator) !void {
 pub fn disposeEntity(allocator: std.mem.Allocator, en: *map.Entity) void {
     switch (en.*) {
         .object => |obj| {
-            if (obj.is_wall) {
-                var square = map.getSquarePtr(obj.x, obj.y);
+            var square = map.getSquarePtr(obj.x, obj.y);
+            if (square.obj_id == obj.obj_id) {
+                square.obj_id = -1;
+                square.enemy_occupy_square = false;
                 square.occupy_square = false;
                 square.full_occupy = false;
                 square.has_wall = false;
-                square.blocking = false;
             }
 
             ui.removeAttachedUi(obj.obj_id, allocator);
@@ -2039,7 +2166,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                         const y: f32 = @floatCast(input.mouse_y);
                         const x: f32 = @floatCast(input.mouse_x);
                         const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-                        player.shoot(shoot_angle, time, true);
+                        player.weaponShoot(shoot_angle, time, true);
                     }
                 }
             },

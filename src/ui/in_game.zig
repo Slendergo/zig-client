@@ -661,7 +661,7 @@ pub const InGameScreen = struct {
                         },
                         .use_position = .{ .x = local_player.x, .y = local_player.y },
                         .time = main.current_time,
-                        .use_type = 0,
+                        .use_type = game_data.UseType.default,
                     } });
                     assets.playSfx("use_potion");
                 }
@@ -746,7 +746,7 @@ pub const InGameScreen = struct {
                         },
                         .use_position = .{ .x = local_player.x, .y = local_player.y },
                         .time = main.current_time,
-                        .use_type = 0,
+                        .use_type = game_data.UseType.default,
                     } });
                     assets.playSfx("use_potion");
                 }

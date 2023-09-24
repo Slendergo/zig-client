@@ -125,7 +125,7 @@ pub const C2SPacket = union(C2SPacketId) {
     square_hit: struct { time: i64, bullet_id: u8, obj_id: i32 },
     teleport: struct { obj_id: i32 },
     update_ack: struct {},
-    use_item: struct { time: i64, slot_object: ObjectSlot, use_position: Position, use_type: u8 },
+    use_item: struct { time: i64, slot_object: ObjectSlot, use_position: Position, use_type: game_data.UseType },
     use_portal: struct { obj_id: i32 },
 };
 

@@ -637,6 +637,8 @@ pub const ActivationType = enum(u8) {
     unlock_portal,
     shuriken_ability,
     backpack,
+    object_toss,
+    unknown = std.math.maxInt(u8),
 
     const map = std.ComptimeStringMap(ActivationType, .{
         .{ "IncrementStat", .increment_stat },
@@ -665,10 +667,15 @@ pub const ActivationType = enum(u8) {
         .{ "UnlockPortal", .unlock_portal },
         .{ "ShurikenAbility", .shuriken_ability },
         .{ "Backpack", .backpack },
+        .{ "ObjectToss", .object_toss },
     });
 
     pub fn fromString(str: []const u8) ActivationType {
-        return map.get(str) orelse .increment_stat;
+        const ret = map.get(str) orelse .unknown;
+        if (ret == .unknown) {
+            std.log.warn("Unknown ActivateType: {s} Defaulted to 'unknown'", .{str});
+        }
+        return ret;
     }
 };
 
@@ -752,7 +759,7 @@ pub const ItemProps = struct {
     cooldown: f32,
     sound: []const u8,
     old_sound: []const u8,
-    mp_end_cost: u32,
+    mp_end_cost: f32,
     timer: f32,
     extra_tooltip_data: ?[]EffectInfo,
 
@@ -797,8 +804,8 @@ pub const ItemProps = struct {
             .sound = try node.getValueAlloc("Sound", allocator, ""),
             .old_sound = try node.getValueAlloc("OldSound", allocator, ""),
             .is_potion = node.elementExists("Potion"),
-            .cooldown = try node.getValueFloat("Cooldown", f32, 0.0),
-            .mp_end_cost = try node.getValueInt("MpEndCost", u32, 0),
+            .cooldown = try node.getValueFloat("Cooldown", f32, 0.5), // 500 ms
+            .mp_end_cost = try node.getValueFloat("MpEndCost", f32, 0.0),
             .timer = try node.getValueFloat("Timer", f32, 0.0),
             .multi_phase = node.elementExists("MultiPhase"),
             .xp_boost = node.elementExists("XpBoost"),
@@ -808,6 +815,12 @@ pub const ItemProps = struct {
             .extra_tooltip_data = if (node.elementExists("ExtraTooltipData")) try allocator.dupe(EffectInfo, extra_tooltip_list.items()) else null,
         };
     }
+};
+
+pub const UseType = enum(u8) {
+    default = 0,
+    start = 1,
+    end = 2,
 };
 
 pub const ItemType = enum(i8) {

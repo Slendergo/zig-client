@@ -8,6 +8,7 @@ const camera = @import("camera.zig");
 const ui = @import("ui/ui.zig");
 const assets = @import("assets.zig");
 const network = @import("network.zig");
+const game_data = @import("game_data.zig");
 
 var move_up: f32 = 0.0;
 var move_down: f32 = 0.0;
@@ -383,7 +384,7 @@ pub fn updateState() void {
             const y: f32 = @floatCast(mouse_y);
             const x: f32 = @floatCast(mouse_x);
             const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-            local_player.shoot(shoot_angle, main.current_time, true);
+            local_player.weaponShoot(shoot_angle, main.current_time, true);
         }
     }
 }
@@ -408,18 +409,30 @@ fn useAbility() void {
     while (!map.object_lock.tryLockShared()) {}
     defer map.object_lock.unlockShared();
 
-    if (map.localPlayerConst()) |local_player| {
-        const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
-
-        network.queuePacket(.{ .use_item = .{
-            .slot_object = .{
-                .object_id = local_player.obj_id,
-                .slot_id = 1,
-                .object_type = local_player.inventory[1],
-            },
-            .use_position = .{ .x = world_pos.x, .y = world_pos.y },
-            .time = main.current_time,
-            .use_type = 0,
-        } });
+    if (map.localPlayerRef()) |local_player| {
+        const x: f32 = @floatCast(mouse_x);
+        const y: f32 = @floatCast(mouse_y);
+        local_player.useAbility(x, y, game_data.UseType.start); // todo multi phase part with usetype checks
     }
 }
+
+// old code
+// fn useAbility() void {
+//     while (!map.object_lock.tryLockShared()) {}
+//     defer map.object_lock.unlockShared();
+
+//     if (map.localPlayerConst()) |local_player| {
+//         const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
+
+//         network.queuePacket(.{ .use_item = .{
+//             .slot_object = .{
+//                 .object_id = local_player.obj_id,
+//                 .slot_id = 1,
+//                 .object_type = local_player.inventory[1],
+//             },
+//             .use_position = .{ .x = world_pos.x, .y = world_pos.y },
+//             .time = main.current_time,
+//             .use_type = 0,
+//         } });
+//     }
+// }
