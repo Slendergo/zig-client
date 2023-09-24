@@ -638,6 +638,11 @@ pub const ActivationType = enum(u8) {
     shuriken_ability,
     backpack,
     object_toss,
+    dye,
+    stat_boost_self,
+    clear_condition_effect_self,
+    clear_condition_effect_aura,
+    remove_negative_conditions_self,
     unknown = std.math.maxInt(u8),
 
     const map = std.ComptimeStringMap(ActivationType, .{
@@ -668,6 +673,11 @@ pub const ActivationType = enum(u8) {
         .{ "ShurikenAbility", .shuriken_ability },
         .{ "Backpack", .backpack },
         .{ "ObjectToss", .object_toss },
+        .{ "Dye", .dye },
+        .{ "StatBoostSelf", .stat_boost_self },
+        .{ "ClearConditionEffectSelf", .clear_condition_effect_self },
+        .{ "ClearConditionEffectAura", .clear_condition_effect_aura },
+        .{ "RemoveNegativeConditionsSelf", .remove_negative_conditions_self },
     });
 
     pub fn fromString(str: []const u8) ActivationType {

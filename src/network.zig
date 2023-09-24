@@ -206,7 +206,7 @@ pub fn init(ip: []const u8, port: u16, allocator: *std.mem.Allocator) void {
         std.log.err("Could not connect to address {s}:{d}: {any}", .{ ip, port, connect_error });
         return;
     };
-    
+
     queue = Queue.init(allocator) catch |e| {
         std.log.err("Queue init failed: {any}", .{e});
         return;
@@ -581,7 +581,7 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
 
     defer {
         if (main.tick_frame) {
-            if (map.localPlayerConst()) |local_player| {
+            if (map.localPlayerRef()) |local_player| {
                 sendPacket(.{ .move = .{
                     .tick_id = tick_id,
                     .time = main.current_time,
@@ -589,6 +589,8 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
                     .pos_y = local_player.y,
                     .records = map.move_records.items(),
                 } });
+
+                local_player.onMove();
             } else {
                 sendPacket(.{ .move = .{
                     .tick_id = tick_id,

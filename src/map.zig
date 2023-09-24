@@ -653,6 +653,8 @@ pub const Player = struct {
     colors: []u32 = &[0]u32{},
     next_ability_attack_time: i64 = -1,
     mp_zeroed: bool = false,
+    move_vec_x: f32 = 0.0,
+    move_vec_y: f32 = 0.0,
 
     pub fn onMove(self: *Player) void {
         const square = getSquare(self.x, self.y);
@@ -1087,51 +1089,54 @@ pub const Player = struct {
 
         const is_self = self.obj_id == local_player_id;
         if (is_self) {
-            var move_vec_x: f32 = 0.0;
-            var move_vec_y: f32 = 0.0;
-
-            if (!std.math.isNan(self.move_angle)) {
-                const move_angle = camera.angle_unbound + self.move_angle;
-                self.move_angle_camera_included = move_angle;
-
-                const move_speed = self.moveSpeedMultiplier();
-                move_vec_x = move_speed * @cos(move_angle) * dt;
-                move_vec_y = move_speed * @sin(move_angle) * dt;
-            }
-
             const floor_x: u32 = @intFromFloat(@floor(self.x));
             const floor_y: u32 = @intFromFloat(@floor(self.y));
             if (validPos(floor_x, floor_y)) {
                 const current_square = squares[floor_y * @as(u32, @intCast(width)) + floor_x];
                 if (current_square.props) |props| {
-                    if (props.slide_amount > 0) {
-                        // todo
-                        // reset the move_vec_s
-                        // var moveVecTemp:Vector3D = new Vector3D();
-                        // moveVecTemp.x = moveSpeed * Math.cos(playerAngle + moveVecAngle);
-                        // moveVecTemp.y = moveSpeed * Math.sin(playerAngle + moveVecAngle);
-                        // moveVecTemp.z = 0;
-                        // var maxMoveLength:Number = moveVecTemp.length;
-                        // moveVecTemp.scaleBy(-1 * (square_.props_.slideAmount_ - 1));
-                        // moveVec_.scaleBy(square_.props_.slideAmount_);
-                        // if (moveVec_.length < maxMoveLength) {
-                        //     moveVec_ = moveVec_.add(moveVecTemp);
-                        // }
+                    const slide_amount = props.slide_amount;
+                    if (!std.math.isNan(self.move_angle)) {
+                        const move_angle = camera.angle_unbound + self.move_angle;
+                        const move_speed = self.moveSpeedMultiplier();
+                        self.move_angle_camera_included = move_angle;
+
+                        var vec_x = move_speed * @cos(move_angle);
+                        var vec_y = move_speed * @sin(move_angle);
+
+                        if (slide_amount > 0.0) {
+                            var max_move_length = std.math.sqrt(vec_x * vec_x + vec_y * vec_y);
+
+                            var temp_move_vec_x = vec_x * -1.0 * (slide_amount - 1.0);
+                            var temp_move_vec_y = vec_y * -1.0 * (slide_amount - 1.0);
+
+                            self.move_vec_x *= slide_amount;
+                            self.move_vec_y *= slide_amount;
+
+                            var move_length = std.math.sqrt(self.move_vec_x * self.move_vec_x + self.move_vec_y * self.move_vec_y);
+                            if (move_length < max_move_length) {
+                                self.move_vec_x += temp_move_vec_x;
+                                self.move_vec_y += temp_move_vec_y;
+                            }
+                        } else {
+                            self.move_vec_x = vec_x;
+                            self.move_vec_y = vec_y;
+                        }
+                    } else if (std.math.sqrt(self.move_vec_x * self.move_vec_x + self.move_vec_y * self.move_vec_y) > 0.00012 and slide_amount > 0.0) {
+                        self.move_vec_x *= slide_amount;
+                        self.move_vec_y *= slide_amount;
+                    } else {
+                        self.move_vec_x = 0.0;
+                        self.move_vec_y = 0.0;
                     }
 
                     if (props.push) {
-                        move_vec_x -= props.anim_dx * dt / 1000.0;
-                        move_vec_y -= props.anim_dy * dt / 1000.0;
+                        self.move_vec_x -= props.anim_dx / 1000.0;
+                        self.move_vec_y -= props.anim_dy / 1000.0;
                     }
-                } else {
-                    move_vec_x = 0.0;
-                    move_vec_y = 0.0;
                 }
-            }
 
-            if (!std.math.isNan(move_vec_x) and !std.math.isNan(move_vec_y)) {
-                const next_x = self.x + move_vec_x;
-                const next_y = self.y + move_vec_y;
+                const next_x = self.x + self.move_vec_x * dt;
+                const next_y = self.y + self.move_vec_y * dt;
                 modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
 
@@ -1143,7 +1148,7 @@ pub const Player = struct {
             //     const move_angle = camera.angle_unbound + self.move_angle;
             //     self.move_angle_camera_included = move_angle;
 
-            //     // if (props.slide_amount > 0.0) {
+            //     // if (slide_amount > 0.0) {
             //     //     // todo may need to store move_vec for player to recreate a version of this
             //     // } else {
             //     //     move_vec_x = move_speed * @cos(move_angle);
@@ -1155,7 +1160,7 @@ pub const Player = struct {
             //     move_vec_y = move_speed * @sin(move_angle);
 
             //     if (square.props) |props| {
-            //         if (props.slide_amount > 0) {
+            //         if (slide_amount > 0) {
             //             // todo
             //         }
 
