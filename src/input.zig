@@ -384,7 +384,7 @@ pub fn updateState() void {
             const y: f32 = @floatCast(mouse_y);
             const x: f32 = @floatCast(mouse_x);
             const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-            local_player.weaponShoot(shoot_angle, main.current_time, true);
+            local_player.weaponShoot(shoot_angle, main.current_time);
         }
     }
 }
