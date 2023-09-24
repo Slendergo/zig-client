@@ -46,226 +46,6 @@ pub const ARGB = packed struct(u32) {
     b: u8,
 };
 
-pub const AcceptTrade = struct {
-    my_offer: []bool,
-    your_offer: []bool,
-};
-
-pub const AoeAck = struct {
-    time: u32,
-    position: Position,
-};
-
-pub const Buy = struct {
-    obj_id: i32,
-};
-
-pub const CancelTrade = struct {};
-
-pub const ChangeGuildRank = struct {
-    name: []const u8,
-    rank: i32,
-};
-
-pub const ChangeTrade = struct {
-    offer: []bool,
-};
-
-pub const ChooseName = struct {
-    name: []const u8,
-};
-
-pub const CreateGuild = struct {
-    guild_name: []const u8,
-};
-
-pub const EditAccountList = struct {
-    list_id: i32,
-    add: bool,
-    obj_id: i32,
-};
-
-pub const EnemyHit = struct {
-    time: i64,
-    bullet_id: u8,
-    target_id: i32,
-    killed: bool,
-};
-
-pub const Escape = struct {};
-
-pub const GotoAck = struct {
-    time: i64,
-};
-
-pub const GroundDamage = struct {
-    time: i64,
-    position: Position,
-};
-
-pub const GuildInvite = struct {
-    name: []const u8,
-};
-
-pub const GuildRemove = struct {
-    name: []const u8,
-};
-
-pub const Hello = struct {
-    build_ver: []const u8,
-    game_id: i32,
-    email: []const u8,
-    password: []const u8,
-    char_id: i16,
-    create_char: bool,
-    class_type: u16,
-    skin_type: u16,
-};
-
-pub const InvDrop = struct {
-    slot_object: ObjectSlot,
-};
-
-pub const InvSwap = struct {
-    time: i64,
-    position: Position,
-    from_slot: ObjectSlot,
-    to_slot: ObjectSlot,
-};
-
-pub const JoinGuild = struct {
-    name: []const u8,
-};
-
-pub const Move = struct {
-    tick_id: i32,
-    time: i64,
-    pos_x: f32,
-    pos_y: f32,
-    records: []const TimedPosition,
-};
-
-pub const OtherHit = struct {
-    time: i64,
-    bullet_id: u8,
-    object_id: i32,
-    target_id: i32,
-};
-
-pub const PlayerHit = struct {
-    bullet_id: u8,
-    object_id: i32,
-};
-
-pub const PlayerShoot = struct {
-    time: i64,
-    bullet_id: u8,
-    container_type: u16,
-    starting_pos: Position,
-    angle: f32,
-};
-
-pub const PlayerText = struct {
-    text: []const u8,
-};
-
-pub const Pong = struct {
-    serial: i32,
-    time: i64,
-};
-
-pub const RequestTrade = struct {
-    name: []const u8,
-};
-
-pub const Reskin = struct {
-    skin_id: i32,
-};
-
-pub const ShootAck = struct {
-    time: i64,
-};
-
-pub const SquareHit = struct {
-    time: i64,
-    bullet_id: u8,
-    obj_id: i32,
-};
-
-pub const Teleport = struct {
-    obj_id: i32,
-};
-
-pub const UpdateAck = struct {};
-
-pub const UseItem = struct {
-    time: i64,
-    slot_object: ObjectSlot,
-    use_position: Position,
-    use_type: u8,
-};
-
-pub const UsePortal = struct {
-    obj_id: i32,
-};
-
-pub const C2SPacket = union(C2SPacketId) {
-    unknown: struct {},
-    accept_trade: AcceptTrade,
-    aoe_ack: AoeAck,
-    buy: Buy,
-    cancel_trade: CancelTrade,
-    change_guild_rank: ChangeGuildRank,
-    change_trade: ChangeTrade,
-    choose_name: ChooseName,
-    create_guild: CreateGuild,
-    edit_account_list: EditAccountList,
-    enemy_hit: EnemyHit,
-    escape: Escape,
-    goto_ack: GotoAck,
-    ground_damage: GroundDamage,
-    guild_invite: GuildInvite,
-    guild_remove: GuildRemove,
-    hello: Hello,
-    inv_drop: InvDrop,
-    inv_swap: InvSwap,
-    join_guild: JoinGuild,
-    move: Move,
-    other_hit: OtherHit,
-    player_hit: PlayerHit,
-    player_shoot: PlayerShoot,
-    player_text: PlayerText,
-    pong: Pong,
-    request_trade: RequestTrade,
-    reskin: Reskin,
-    shoot_ack: ShootAck,
-    square_hit: SquareHit,
-    teleport: Teleport,
-    update_ack: UpdateAck,
-    use_item: UseItem,
-    use_portal: UsePortal,
-};
-
-const EffectType = enum(u8) {
-    unknown = 0,
-    potion = 1,
-    teleport = 2,
-    stream = 3,
-    throw = 4,
-    area_blast = 5,
-    dead = 6,
-    trail = 7,
-    diffuse = 8,
-    flow = 9,
-    trap = 10,
-    lightning = 11,
-    concentrate = 12,
-    blast_wave = 13,
-    earthquake = 14,
-    flashing = 15,
-    beach_ball = 16,
-};
-
 const C2SPacketId = enum(u8) {
     unknown = 0,
     accept_trade = 1,
@@ -301,6 +81,52 @@ const C2SPacketId = enum(u8) {
     update_ack = 35,
     use_item = 36,
     use_portal = 37,
+};
+
+pub const C2SPacket = union(C2SPacketId) {
+    unknown: struct {},
+    accept_trade: struct { my_offer: []bool, your_offer: []bool },
+    aoe_ack: struct { time: u32, position: Position },
+    buy: struct { obj_id: i32 },
+    cancel_trade: struct {},
+    change_guild_rank: struct { name: []const u8, rank: i32 },
+    change_trade: struct { offer: []bool },
+    choose_name: struct { name: []const u8 },
+    create_guild: struct { guild_name: []const u8 },
+    edit_account_list: struct { list_id: i32, add: bool, obj_id: i32 },
+    enemy_hit: struct { time: i64, bullet_id: u8, target_id: i32, killed: bool },
+    escape: struct {},
+    goto_ack: struct { time: i64 },
+    ground_damage: struct { time: i64, position: Position },
+    guild_invite: struct { name: []const u8 },
+    guild_remove: struct { name: []const u8 },
+    hello: struct {
+        build_ver: []const u8,
+        game_id: i32,
+        email: []const u8,
+        password: []const u8,
+        char_id: i16,
+        create_char: bool,
+        class_type: u16,
+        skin_type: u16,
+    },
+    inv_drop: struct { slot_object: ObjectSlot },
+    inv_swap: struct { time: i64, position: Position, from_slot: ObjectSlot, to_slot: ObjectSlot },
+    join_guild: struct { name: []const u8 },
+    move: struct { tick_id: i32, time: i64, pos_x: f32, pos_y: f32, records: []const TimedPosition },
+    other_hit: struct { time: i64, bullet_id: u8, object_id: i32, target_id: i32 },
+    player_hit: struct { bullet_id: u8, object_id: i32 },
+    player_shoot: struct { time: i64, bullet_id: u8, container_type: u16, starting_pos: Position, angle: f32 },
+    player_text: struct { text: []const u8 },
+    pong: struct { serial: i32, time: i64 },
+    request_trade: struct { name: []const u8 },
+    reskin: struct { skin_id: i32 },
+    shoot_ack: struct { time: i64 },
+    square_hit: struct { time: i64, bullet_id: u8, obj_id: i32 },
+    teleport: struct { obj_id: i32 },
+    update_ack: struct {},
+    use_item: struct { time: i64, slot_object: ObjectSlot, use_position: Position, use_type: u8 },
+    use_portal: struct { obj_id: i32 },
 };
 
 const S2CPacketId = enum(u8) {
@@ -339,6 +165,26 @@ const S2CPacketId = enum(u8) {
     trade_requested = 32,
     trade_start = 33,
     update = 34,
+};
+
+const EffectType = enum(u8) {
+    unknown = 0,
+    potion = 1,
+    teleport = 2,
+    stream = 3,
+    throw = 4,
+    area_blast = 5,
+    dead = 6,
+    trail = 7,
+    diffuse = 8,
+    flow = 9,
+    trap = 10,
+    lightning = 11,
+    concentrate = 12,
+    blast_wave = 13,
+    earthquake = 14,
+    flashing = 15,
+    beach_ball = 16,
 };
 
 pub var connected = false;
