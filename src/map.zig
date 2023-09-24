@@ -937,8 +937,7 @@ pub const Player = struct {
         }
     }
 
-    pub fn weaponShoot(self: *Player, angle: f32, time: i64, useMult: bool) void {
-        _ = useMult;
+    pub fn weaponShoot(self: *Player, angle: f32, time: i64) void {
         if (self.condition.stunned or self.condition.stasis)
             return;
 
@@ -1704,11 +1703,11 @@ pub const Projectile = struct {
                         network.queuePacket(.{ .other_hit = .{
                             .time = time,
                             .bullet_id = self.bullet_id,
-                            .object_id = player.obj_id,
+                            .object_id = self.owner_id,
                             .target_id = player.obj_id,
                         } });
                     } else {
-                        std.log.err("Unknown logic for player side of hit logic unexpected branch", .{});
+                        std.log.err("Unknown logic for player side of hit logic unexpected branch, todo figure out how to fix this mabye implement send_message check: {s}", .{player.name});
                     }
 
                     if (self.props.multi_hit) {
@@ -1772,11 +1771,11 @@ pub const Projectile = struct {
                         network.queuePacket(.{ .other_hit = .{
                             .time = time,
                             .bullet_id = self.bullet_id,
-                            .object_id = object.obj_id,
+                            .object_id = self.owner_id,
                             .target_id = object.obj_id,
                         } });
                     } else {
-                        std.log.err("Unknown logic for object side of hit logic unexpected branch", .{});
+                        std.log.err("Unknown logic for object side of hit logic unexpected branch, todo figure out how to fix this mabye implement send_message check: {s}", .{object.name});
                     }
 
                     if (self.props.multi_hit) {
@@ -2166,7 +2165,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                         const y: f32 = @floatCast(input.mouse_y);
                         const x: f32 = @floatCast(input.mouse_x);
                         const shoot_angle = std.math.atan2(f32, y - camera.screen_height / 2.0, x - camera.screen_width / 2.0) + camera.angle;
-                        player.weaponShoot(shoot_angle, time, true);
+                        player.weaponShoot(shoot_angle, time);
                     }
                 }
             },
