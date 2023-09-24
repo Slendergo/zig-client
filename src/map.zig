@@ -1293,6 +1293,7 @@ pub const Projectile = struct {
     props: *const game_data.ProjProps,
     last_hit_check: i64 = 0,
     colors: []u32 = &[0]u32{},
+    hit_list: std.AutoHashMap(i32, void) = undefined,
 
     pub fn addToMap(self: *Projectile, needs_lock: bool) void {
         const should_lock = needs_lock and entities.isFull();
@@ -1300,6 +1301,8 @@ pub const Projectile = struct {
             while (!object_lock.tryLock()) {}
         }
         defer if (should_lock) object_lock.unlock();
+
+        self.hit_list = std.AutoHashMap(i32, void).init(main._allocator);
 
         const tex_list = self.props.texture_data;
         const tex = tex_list[@as(usize, @intCast(self.obj_id)) % tex_list.len];
@@ -1493,18 +1496,47 @@ pub const Projectile = struct {
                     .bullet_id = self.bullet_id,
                     .obj_id = self.owner_id,
                 } });
+
+                // equivilant to square.obj != null)
+                if (square.occupy_square or square.has_wall or square.full_occupy) {
+                    var effect = particles.HitEffect{
+                        .x = self.x,
+                        .y = self.y,
+                        .colors = self.colors,
+                        .angle = self.angle,
+                        .speed = self.props.speed,
+                        .size = 1.0,
+                        .amount = 3,
+                    };
+                    effect.addToMap();
+                }
                 return false;
             }
+
+            // todo recreate this
+
+            // if (square_.obj_ != null && (!square_.obj_.props_.isEnemy_ || !damagesEnemies_) && (square_.obj_.props_.enemyOccupySquare_ || (!projProps_.passesCover_ && square_.obj_.props_.occupySquare_))) {
+            //     if (damagesPlayers_) {
+            //         map_.gs_.gsc_.otherHit(time, bulletId_, ownerId_, square_.obj_.objectId_);
+            //     }
+            //     else {
+            //         if (!Parameters.data_.noParticlesMaster) {
+            //             colors = BloodComposition.getColors(texture_);
+            //             map_.addObj(new HitEffect(colors, 100, 3, angle_, projProps_.speed_), p.x, p.y);
+            //         }
+            //     }
+            //     return false;
+            // }
         }
 
         if (time - self.last_hit_check > 16) {
             // todo other hit from multi projectiles
             if (self.damage_players) {
                 if (findTargetPlayer(self.x, self.y, 0.33)) |player| {
-                    if (player.condition.invincible)
+                    if (player.condition.invincible or player.condition.stasis or self.hit_list.contains(player.obj_id))
                         return true;
 
-                    if (player.condition.invulnerable or player.condition.stasis) {
+                    if (player.condition.invulnerable) {
                         assets.playSfx(player.hit_sound);
                         return false;
                     }
@@ -1554,17 +1586,19 @@ pub const Projectile = struct {
                     }
 
                     if (self.props.multi_hit) {
-                        // todo container addition
+                        self.hit_list.put(player.obj_id, {}) catch |e| {
+                            std.log.err("failed to add player to hit_list: {any}", .{e});
+                        };
                     } else {
                         return false;
                     }
                 }
             } else {
                 if (findTargetObject(self.x, self.y, 0.33)) |object| {
-                    if (object.condition.invincible)
+                    if (object.condition.invincible or object.condition.stasis or self.hit_list.contains(object.obj_id))
                         return true;
 
-                    if (object.condition.invulnerable or object.condition.stasis) {
+                    if (object.condition.invulnerable) {
                         assets.playSfx(object.hit_sound);
                         return false;
                     }
@@ -1620,7 +1654,9 @@ pub const Projectile = struct {
                     }
 
                     if (self.props.multi_hit) {
-                        // todo container addition
+                        self.hit_list.put(object.obj_id, {}) catch |e| {
+                            std.log.err("failed to add object to hit_list: {any}", .{e});
+                        };
                     } else {
                         return false;
                     }
@@ -1765,8 +1801,8 @@ pub fn init(allocator: std.mem.Allocator) !void {
     minimap = try zstbi.Image.createEmpty(4096, 4096, 4, .{});
 }
 
-pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
-    switch (en) {
+pub fn disposeEntity(allocator: std.mem.Allocator, en: *map.Entity) void {
+    switch (en.*) {
         .object => |obj| {
             if (obj.is_wall) {
                 var square = map.getSquarePtr(obj.x, obj.y);
@@ -1778,6 +1814,9 @@ pub fn disposeEntity(allocator: std.mem.Allocator, en: Entity) void {
 
             ui.removeAttachedUi(obj.obj_id, allocator);
             allocator.free(obj.name_override);
+        },
+        .projectile => |*projectile| {
+            projectile.hit_list.deinit();
         },
         .player => |player| {
             ui.removeAttachedUi(player.obj_id, allocator);
@@ -1796,7 +1835,7 @@ pub fn dispose(allocator: std.mem.Allocator) void {
     height = 0;
     seed = 0;
 
-    for (entities.items()) |en| {
+    for (entities.items()) |*en| {
         disposeEntity(allocator, en);
     }
 
@@ -1948,14 +1987,14 @@ pub fn findEntityRef(obj_id: i32) ?*Entity {
     return null;
 }
 
-pub fn removeEntity(obj_id: i32) ?Entity {
+pub fn removeEntity(obj_id: i32) ?*Entity {
     for (entities.items(), 0..) |en, i| {
         switch (en) {
             .particle => |*pt| {
                 switch (pt.*) {
                     inline else => |*particle| {
                         if (particle.obj_id == obj_id)
-                            return entities.remove(i);
+                            return entities.removePtr(i);
                     },
                 }
             },
@@ -1963,13 +2002,13 @@ pub fn removeEntity(obj_id: i32) ?Entity {
                 switch (pt_eff.*) {
                     inline else => |*effect| {
                         if (effect.obj_id == obj_id)
-                            return entities.remove(i);
+                            return entities.removePtr(i);
                     },
                 }
             },
             inline else => |obj| {
                 if (obj.obj_id == obj_id)
-                    return entities.remove(i);
+                    return entities.removePtr(i);
             },
         }
     }
@@ -2073,7 +2112,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     std.mem.reverse(usize, entity_indices_to_remove.items());
 
     for (entity_indices_to_remove.items()) |idx| {
-        disposeEntity(allocator, entities.remove(idx));
+        disposeEntity(allocator, entities.removePtr(idx));
     }
 
     entity_indices_to_remove.clear();
