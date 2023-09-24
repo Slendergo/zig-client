@@ -463,27 +463,33 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     var idx_new: u16 = idx;
     var atlas_data_new = atlas_data;
 
-    const x_base = (x * camera.cos + y * camera.sin + camera.clip_x) * camera.clip_scale_x;
-    const y_base = -(x * -camera.sin + y * camera.cos + camera.clip_y) * camera.clip_scale_y;
-    const y_base_top = -(x * -camera.sin + y * camera.cos + camera.clip_y - camera.px_per_tile * camera.scale) * camera.clip_scale_y;
+    const screen_pos = camera.rotateAroundCameraClip(x, y);
+    const screen_x = screen_pos.x;
+    const screen_y = -screen_pos.y;
+    const screen_y_top = screen_y + camera.px_per_tile;
 
-    const x1 = camera.pad_x_cos + camera.pad_x_sin + x_base;
-    const x2 = -camera.pad_x_cos + camera.pad_x_sin + x_base;
-    const x3 = -camera.pad_x_cos - camera.pad_x_sin + x_base;
-    const x4 = camera.pad_x_cos - camera.pad_x_sin + x_base;
+    const radius = @sqrt(@as(f32, camera.px_per_tile * camera.px_per_tile / 2)) + 1;
+    const top_right_angle = std.math.pi / 4.0;
+    const bottom_right_angle = 3.0 * std.math.pi / 4.0;
+    const bottom_left_angle = 5.0 * std.math.pi / 4.0;
+    const top_left_angle = 7.0 * std.math.pi / 4.0;
 
-    const y1 = camera.pad_y_sin - camera.pad_y_cos + y_base;
-    const y2 = -camera.pad_y_sin - camera.pad_y_cos + y_base;
-    const y3 = -camera.pad_y_sin + camera.pad_y_cos + y_base;
-    const y4 = camera.pad_y_sin + camera.pad_y_cos + y_base;
+    const x1 = (screen_x + radius * @cos(top_left_angle + camera.angle)) * camera.clip_scale_x;
+    const y1 = (screen_y + radius * @sin(top_left_angle + camera.angle)) * camera.clip_scale_y;
+    const x2 = (screen_x + radius * @cos(bottom_left_angle + camera.angle)) * camera.clip_scale_x;
+    const y2 = (screen_y + radius * @sin(bottom_left_angle + camera.angle)) * camera.clip_scale_y;
+    const x3 = (screen_x + radius * @cos(bottom_right_angle + camera.angle)) * camera.clip_scale_x;
+    const y3 = (screen_y + radius * @sin(bottom_right_angle + camera.angle)) * camera.clip_scale_y;
+    const x4 = (screen_x + radius * @cos(top_right_angle + camera.angle)) * camera.clip_scale_x;
+    const y4 = (screen_y + radius * @sin(top_right_angle + camera.angle)) * camera.clip_scale_y;
 
-    const top_y1 = camera.pad_y_sin - camera.pad_y_cos + y_base_top;
-    const top_y2 = -camera.pad_y_sin - camera.pad_y_cos + y_base_top;
-    const top_y3 = -camera.pad_y_sin + camera.pad_y_cos + y_base_top;
-    const top_y4 = camera.pad_y_sin + camera.pad_y_cos + y_base_top;
+    const top_y1 = (screen_y_top + radius * @sin(top_left_angle + camera.angle)) * camera.clip_scale_y;
+    const top_y2 = (screen_y_top + radius * @sin(bottom_left_angle + camera.angle)) * camera.clip_scale_y;
+    const top_y3 = (screen_y_top + radius * @sin(bottom_right_angle + camera.angle)) * camera.clip_scale_y;
+    const top_y4 = (screen_y_top + radius * @sin(top_right_angle + camera.angle)) * camera.clip_scale_y;
 
-    const floor_y: u32 = @intFromFloat(@floor(y));
     const floor_x: u32 = @intFromFloat(@floor(x));
+    const floor_y: u32 = @intFromFloat(@floor(y));
 
     const bound_angle = utils.halfBound(camera.angle);
     const pi_div_2 = std.math.pi / 2.0;
@@ -964,9 +970,12 @@ fn drawQuadVerts(
     else
         quad_glow_off_render_type;
 
+    const pad_w = assets.base_texel_w / 8.0;
+    const pad_h = assets.base_texel_h / 8.0;
+
     base_vert_data[idx_new] = BaseVertexData{
         .pos = [2]f32{ x1, y1 },
-        .uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
+        .uv = [2]f32{ atlas_data.tex_u + pad_w, atlas_data.tex_v + pad_h },
         .base_color = base_rgb,
         .base_color_intensity = opts.base_color_intensity,
         .alpha_mult = opts.alpha_mult,
@@ -979,7 +988,7 @@ fn drawQuadVerts(
 
     base_vert_data[idx_new + 1] = BaseVertexData{
         .pos = [2]f32{ x2, y2 },
-        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w, atlas_data.tex_v },
+        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w - pad_w, atlas_data.tex_v + pad_h },
         .base_color = base_rgb,
         .base_color_intensity = opts.base_color_intensity,
         .alpha_mult = opts.alpha_mult,
@@ -992,7 +1001,7 @@ fn drawQuadVerts(
 
     base_vert_data[idx_new + 2] = BaseVertexData{
         .pos = [2]f32{ x3, y3 },
-        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w, atlas_data.tex_v + atlas_data.tex_h },
+        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w - pad_w, atlas_data.tex_v + atlas_data.tex_h - pad_h },
         .base_color = base_rgb,
         .base_color_intensity = opts.base_color_intensity,
         .alpha_mult = opts.alpha_mult,
@@ -1005,7 +1014,7 @@ fn drawQuadVerts(
 
     base_vert_data[idx_new + 3] = BaseVertexData{
         .pos = [2]f32{ x4, y4 },
-        .uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v + atlas_data.tex_h },
+        .uv = [2]f32{ atlas_data.tex_u + pad_w, atlas_data.tex_v + atlas_data.tex_h - pad_h },
         .base_color = base_rgb,
         .base_color_intensity = opts.base_color_intensity,
         .alpha_mult = opts.alpha_mult,
@@ -1043,6 +1052,7 @@ fn drawSquare(
 ) void {
     const pad_w = assets.base_texel_w / 8.0;
     const pad_h = assets.base_texel_h / 8.0;
+
     ground_vert_data[idx] = GroundVertexData{
         .pos = [2]f32{ x1, y1 },
         .uv = [2]f32{ atlas_data.tex_w - pad_w, atlas_data.tex_h - pad_h },

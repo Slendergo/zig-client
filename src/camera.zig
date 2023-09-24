@@ -16,16 +16,8 @@ pub var minimap_zoom: f32 = 4.0;
 pub var quake = false;
 pub var quake_amount: f32 = 0.0;
 
-pub var pad_x_cos: f32 = 0.0;
-pub var pad_y_cos: f32 = 0.0;
-pub var pad_x_sin: f32 = 0.0;
-pub var pad_y_sin: f32 = 0.0;
 pub var cos: f32 = 0.0;
 pub var sin: f32 = 0.0;
-pub var x_cos: f32 = 0.0;
-pub var y_cos: f32 = 0.0;
-pub var x_sin: f32 = 0.0;
-pub var y_sin: f32 = 0.0;
 pub var clip_x: f32 = 0.0;
 pub var clip_y: f32 = 0.0;
 
@@ -69,19 +61,8 @@ pub fn update(target_x: f32, target_y: f32, dt: f32, rotate: i8) void {
     const cos_angle = @cos(angle);
     const sin_angle = @sin(angle);
 
-    const pad_cos = cos_angle * (px_per_tile + 1) * scale;
-    const pad_sin = sin_angle * (px_per_tile + 1) * scale;
-    pad_x_cos = pad_cos * clip_scale_x * 0.5;
-    pad_y_cos = pad_cos * clip_scale_y * 0.5;
-    pad_x_sin = pad_sin * clip_scale_x * 0.5;
-    pad_y_sin = pad_sin * clip_scale_y * 0.5;
-
     cos = cos_angle * px_per_tile * scale;
     sin = sin_angle * px_per_tile * scale;
-    x_cos = cos * clip_scale_x * 0.5;
-    y_cos = cos * clip_scale_y * 0.5;
-    x_sin = sin * clip_scale_x * 0.5;
-    y_sin = sin * clip_scale_y * 0.5;
     clip_x = (tx * cos_angle + ty * sin_angle) * -px_per_tile * scale;
     clip_y = (tx * -sin_angle + ty * cos_angle) * -px_per_tile * scale;
 
