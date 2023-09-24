@@ -435,7 +435,7 @@ pub fn currentMemoryUse() !f32 {
                 std.log.err("Could not get windows memory information: {any}", .{rc});
             }
         },
-        else => {
+        .linux => {
             const file = try std.fs.cwd().openFile("/proc/self/statm", .{});
             defer file.close();
 
@@ -447,6 +447,7 @@ pub fn currentMemoryUse() !f32 {
             const rss: f32 = @floatFromInt(try std.fmt.parseInt(u32, split_iter.next().?, 0));
             memory_value = rss / 1024.0;
         },
+        else => memory_value = 0,
     }
 
     last_memory_access = main.current_time;
