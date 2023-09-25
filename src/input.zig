@@ -415,24 +415,3 @@ fn useAbility() void {
         local_player.useAbility(x, y, game_data.UseType.start); // todo multi phase part with usetype checks
     }
 }
-
-// old code
-// fn useAbility() void {
-//     while (!map.object_lock.tryLockShared()) {}
-//     defer map.object_lock.unlockShared();
-
-//     if (map.localPlayerConst()) |local_player| {
-//         const world_pos = camera.screenToWorld(@floatCast(mouse_x), @floatCast(mouse_y));
-
-//         network.queuePacket(.{ .use_item = .{
-//             .slot_object = .{
-//                 .object_id = local_player.obj_id,
-//                 .slot_id = 1,
-//                 .object_type = local_player.inventory[1],
-//             },
-//             .use_position = .{ .x = world_pos.x, .y = world_pos.y },
-//             .time = main.current_time,
-//             .use_type = 0,
-//         } });
-//     }
-// }

@@ -11,20 +11,10 @@ const particles = @import("particles.zig");
 const builtin = @import("builtin");
 const Queue = @import("spsc.zig").UnboundedQueue(C2SPacket);
 
-pub const ObjectSlot = extern struct {
-    object_id: i32 align(1),
-    slot_id: u8 align(1),
-    object_type: i32 align(1),
-};
-
-pub const Position = extern struct {
+pub const TimedPosition = packed struct {
+    time: i64,
     x: f32,
     y: f32,
-};
-
-pub const TimedPosition = extern struct {
-    time: i64,
-    position: Position,
 };
 
 pub const TileData = extern struct {
@@ -40,7 +30,7 @@ pub const TradeItem = extern struct {
     included: bool align(1),
 };
 
-pub const ARGB = packed struct(u32) {
+pub const ARGB = packed struct {
     a: u8,
     r: u8,
     g: u8,
@@ -84,21 +74,23 @@ const C2SPacketId = enum(u8) {
     use_portal = 37,
 };
 
+// All packets without variable length fields (like slices) should be packed.
+// This allows us to directly copy the struct into the buffer
 pub const C2SPacket = union(C2SPacketId) {
-    unknown: struct {},
+    unknown: packed struct {},
     accept_trade: struct { my_offer: []bool, your_offer: []bool },
-    aoe_ack: struct { time: u32, position: Position },
-    buy: struct { obj_id: i32 },
-    cancel_trade: struct {},
+    aoe_ack: packed struct { time: u32, x: f32, y: f32 },
+    buy: packed struct { obj_id: i32 },
+    cancel_trade: packed struct {},
     change_guild_rank: struct { name: []const u8, rank: i32 },
     change_trade: struct { offer: []bool },
     choose_name: struct { name: []const u8 },
     create_guild: struct { guild_name: []const u8 },
-    edit_account_list: struct { list_id: i32, add: bool, obj_id: i32 },
-    enemy_hit: struct { time: i64, bullet_id: u8, target_id: i32, killed: bool },
-    escape: struct {},
-    goto_ack: struct { time: i64 },
-    ground_damage: struct { time: i64, position: Position },
+    edit_account_list: packed struct { list_id: i32, add: bool, obj_id: i32 },
+    enemy_hit: packed struct { time: i64, bullet_id: u8, target_id: i32, killed: bool },
+    escape: packed struct {},
+    goto_ack: packed struct { time: i64 },
+    ground_damage: packed struct { time: i64, x: f32, y: f32 },
     guild_invite: struct { name: []const u8 },
     guild_remove: struct { name: []const u8 },
     hello: struct {
@@ -111,23 +103,33 @@ pub const C2SPacket = union(C2SPacketId) {
         class_type: u16,
         skin_type: u16,
     },
-    inv_drop: struct { slot_object: ObjectSlot },
-    inv_swap: struct { time: i64, position: Position, from_slot: ObjectSlot, to_slot: ObjectSlot },
+    inv_drop: packed struct { obj_id: i32, slot_id: u8, obj_type: i32 },
+    inv_swap: packed struct {
+        time: i64,
+        x: f32,
+        y: f32,
+        from_obj_id: i32,
+        from_slot_id: u8,
+        from_obj_type: i32,
+        to_obj_id: i32,
+        to_slot_id: u8,
+        to_obj_type: i32,
+    },
     join_guild: struct { name: []const u8 },
     move: struct { tick_id: i32, time: i64, pos_x: f32, pos_y: f32, records: []const TimedPosition },
-    other_hit: struct { time: i64, bullet_id: u8, object_id: i32, target_id: i32 },
-    player_hit: struct { bullet_id: u8, object_id: i32 },
-    player_shoot: struct { time: i64, bullet_id: u8, container_type: u16, starting_pos: Position, angle: f32 },
+    other_hit: packed struct { time: i64, bullet_id: u8, object_id: i32, target_id: i32 },
+    player_hit: packed struct { bullet_id: u8, object_id: i32 },
+    player_shoot: packed struct { time: i64, bullet_id: u8, container_type: u16, start_x: f32, start_y: f32, angle: f32 },
     player_text: struct { text: []const u8 },
-    pong: struct { serial: i32, time: i64 },
+    pong: packed struct { serial: i32, time: i64 },
     request_trade: struct { name: []const u8 },
-    reskin: struct { skin_id: i32 },
-    shoot_ack: struct { time: i64 },
-    square_hit: struct { time: i64, bullet_id: u8, obj_id: i32 },
-    teleport: struct { obj_id: i32 },
-    update_ack: struct {},
-    use_item: struct { time: i64, slot_object: ObjectSlot, use_position: Position, use_type: game_data.UseType },
-    use_portal: struct { obj_id: i32 },
+    reskin: packed struct { skin_id: i32 },
+    shoot_ack: packed struct { time: i64 },
+    square_hit: packed struct { time: i64, bullet_id: u8, obj_id: i32 },
+    teleport: packed struct { obj_id: i32 },
+    update_ack: packed struct {},
+    use_item: packed struct { time: i64, obj_id: i32, slot_id: u8, obj_type: i32, x: f32, y: f32, use_type: game_data.UseType },
+    use_portal: packed struct { obj_id: i32 },
 };
 
 const S2CPacketId = enum(u8) {
@@ -351,7 +353,8 @@ fn handleAllyShoot() void {
 }
 
 fn handleAoe() void {
-    const position = reader.read(Position);
+    const x = reader.read(f32);
+    const y = reader.read(f32);
     const radius = reader.read(f32);
     const damage = reader.read(i16);
     const condition_effect = reader.read(utils.Condition);
@@ -359,15 +362,15 @@ fn handleAoe() void {
     const orig_type = reader.read(u8);
 
     var effect = particles.AoeEffect{
-        .x = position.x,
-        .y = position.y,
+        .x = x,
+        .y = y,
         .color = 0xFF0000,
         .radius = radius,
     };
     effect.addToMap();
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Recv - Aoe: x={e}, y={e}, radius={e}, damage={d}, condition_effect={d}, duration={e}, orig_type={d}", .{ position.x, position.y, radius, damage, condition_effect, duration, orig_type });
+        std.log.debug("Recv - Aoe: x={e}, y={e}, radius={e}, damage={d}, condition_effect={any}, duration={e}, orig_type={d}", .{ x, y, radius, damage, condition_effect, duration, orig_type });
 }
 
 fn handleBuyResult() void {
@@ -415,7 +418,8 @@ fn handleEnemyShoot() void {
     const bullet_id = reader.read(u8);
     const owner_id = reader.read(i32);
     const bullet_type = reader.read(u8);
-    const starting_pos = reader.read(Position);
+    const start_x = reader.read(f32);
+    const start_y = reader.read(f32);
     const angle = reader.read(f32);
     const damage = reader.read(i16);
     const num_shots = reader.read(u8);
@@ -444,8 +448,8 @@ fn handleEnemyShoot() void {
     const proj_props = &owner_props.?.projectiles[bullet_type];
     for (0..num_shots) |i| {
         var proj = map.Projectile{
-            .x = starting_pos.x,
-            .y = starting_pos.y,
+            .x = start_x,
+            .y = start_y,
             .damage = damage,
             .props = proj_props,
             .angle = current_angle,
@@ -463,7 +467,7 @@ fn handleEnemyShoot() void {
     owner.?.attack_start = main.current_time;
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Recv - EnemyShoot: bullet_id={d}, owner_id={d}, bullet_type={d}, x={e}, y={e}, angle={e}, damage={d}, num_shots={d}, angle_inc={e}", .{ bullet_id, owner_id, bullet_type, starting_pos.x, starting_pos.y, angle, damage, num_shots, angle_inc });
+        std.log.debug("Recv - EnemyShoot: bullet_id={d}, owner_id={d}, bullet_type={d}, x={e}, y={e}, angle={e}, damage={d}, num_shots={d}, angle_inc={e}", .{ bullet_id, owner_id, bullet_type, start_x, start_y, angle, damage, num_shots, angle_inc });
 
     sendPacket(.{ .shoot_ack = .{ .time = main.current_time } });
 }
@@ -488,29 +492,30 @@ fn handleGlobalNotification() void {
 
 fn handleGoto() void {
     const object_id = reader.read(i32);
-    const position = reader.read(Position);
+    const x = reader.read(f32);
+    const y = reader.read(f32);
 
     if (map.findEntityRef(object_id)) |en| {
         if (en.* == .player) {
             const player = &en.player;
             if (object_id == map.local_player_id) {
-                player.x = position.x;
-                player.y = position.y;
+                player.x = x;
+                player.y = y;
             } else {
-                player.target_x = position.x;
-                player.target_y = position.y;
+                player.target_x = x;
+                player.target_y = y;
                 player.tick_x = player.x;
                 player.tick_y = player.y;
             }
         }
     } else {
-        std.log.err("Object id {d} not found while attempting to goto to pos {any}", .{ object_id, position });
+        std.log.err("Object id {d} not found while attempting to goto to pos x={d}, y={d}", .{ object_id, x, y });
     }
 
     sendPacket(.{ .goto_ack = .{ .time = main.current_time } });
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-        std.log.debug("Recv - Goto: object_id={d}, x={e}, y={e}", .{ object_id, position.x, position.y });
+        std.log.debug("Recv - Goto: object_id={d}, x={e}, y={e}", .{ object_id, x, y });
 }
 
 fn handleGuildResult() void {
@@ -606,7 +611,8 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
     const statuses_len = reader.read(u16);
     for (0..statuses_len) |_| {
         const obj_id = reader.read(i32);
-        const position = reader.read(Position);
+        const x = reader.read(f32);
+        const y = reader.read(f32);
 
         const stats_len = reader.read(u16);
         const stats_byte_len = reader.read(u16);
@@ -616,12 +622,12 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
             switch (en.*) {
                 .player => |*player| {
                     if (player.obj_id != map.local_player_id) {
-                        player.target_x = position.x;
-                        player.target_y = position.y;
+                        player.target_x = x;
+                        player.target_y = y;
                         player.tick_x = player.x;
                         player.tick_y = player.y;
-                        const y_dt = position.y - player.y;
-                        const x_dt = position.x - player.x;
+                        const y_dt = y - player.y;
+                        const x_dt = x - player.x;
                         player.move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
                         player.move_angle_camera_included = camera.angle_unbound + player.move_angle;
                     }
@@ -643,12 +649,12 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
                     continue;
                 },
                 .object => |*object| {
-                    object.target_x = position.x;
-                    object.target_y = position.y;
+                    object.target_x = x;
+                    object.target_y = y;
                     object.tick_x = object.x;
                     object.tick_y = object.y;
-                    const y_dt = position.y - object.y;
-                    const x_dt = position.x - object.x;
+                    const y_dt = y - object.y;
+                    const x_dt = x - object.x;
                     object.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
                     for (0..stats_len) |_| {
                         const stat_id = reader.read(u8);
@@ -671,7 +677,7 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
         }
 
         reader.index = next_obj_idx;
-        std.log.err("Could not find object in NewTick (obj_id={d}, x={d}, y={d})", .{ obj_id, position.x, position.y });
+        std.log.err("Could not find object in NewTick (obj_id={d}, x={d}, y={d})", .{ obj_id, x, y });
     }
 
     map.last_tick_time = @divFloor(main.current_time, std.time.us_per_ms);
@@ -746,14 +752,15 @@ fn handleServerPlayerShoot() void {
     const bullet_id = reader.read(u8);
     const owner_id = reader.read(i32);
     const container_type = reader.read(u16);
-    const starting_pos = reader.read(Position);
+    const start_x = reader.read(f32);
+    const start_y = reader.read(f32);
     const angle = reader.read(f32);
     const damage = reader.read(i16);
     const num_shots = 1; // todo
     const angle_inc = 0.0;
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-        std.log.debug("Recv - ServerPlayerShoot: bullet_id={d}, owner_id={d}, container_type={d}, x={e}, y={e}, angle={e}, damage={d}", .{ bullet_id, owner_id, container_type, starting_pos.x, starting_pos.y, angle, damage });
+        std.log.debug("Recv - ServerPlayerShoot: bullet_id={d}, owner_id={d}, container_type={d}, x={e}, y={e}, angle={e}, damage={d}", .{ bullet_id, owner_id, container_type, start_x, start_y, angle, damage });
 
     const needs_ack = owner_id == map.local_player_id;
     if (map.findEntityConst(owner_id)) |en| {
@@ -767,8 +774,8 @@ fn handleServerPlayerShoot() void {
             var current_angle = angle - total_angle / 2.0;
             for (0..num_shots) |i| {
                 var proj = map.Projectile{
-                    .x = starting_pos.x,
-                    .y = starting_pos.y,
+                    .x = start_x,
+                    .y = start_y,
                     .damage = damage,
                     .props = proj_props,
                     .angle = current_angle,
@@ -795,14 +802,16 @@ fn handleServerPlayerShoot() void {
 fn handleShowEffect() void {
     const effect_type: EffectType = @enumFromInt(reader.read(u8));
     const target_object_id = reader.read(i32);
-    const pos1 = reader.read(Position);
-    const pos2 = reader.read(Position);
+    const x1 = reader.read(f32);
+    const y1 = reader.read(f32);
+    const x2 = reader.read(f32);
+    const y2 = reader.read(f32);
     const color = @byteSwap(@as(u32, @bitCast(reader.read(ARGB))));
 
     switch (effect_type) {
         .throw => {
-            var start_x = pos2.x;
-            var start_y = pos2.y;
+            var start_x = x2;
+            var start_y = y2;
 
             if (map.findEntityConst(target_object_id)) |en| {
                 switch (en) {
@@ -821,8 +830,8 @@ fn handleShowEffect() void {
             var effect = particles.ThrowEffect{
                 .start_x = start_x,
                 .start_y = start_y,
-                .end_x = pos1.x,
-                .end_y = pos1.y,
+                .end_x = x1,
+                .end_y = y1,
                 .color = color,
                 .duration = 1000,
             };
@@ -830,14 +839,14 @@ fn handleShowEffect() void {
         },
         .teleport => {
             var effect = particles.TeleportEffect{
-                .x = pos1.x,
-                .y = pos1.y,
+                .x = x1,
+                .y = y1,
             };
             effect.addToMap();
         },
         .trail => {
-            var start_x = pos2.x;
-            var start_y = pos2.y;
+            var start_x = x2;
+            var start_y = y2;
 
             if (map.findEntityConst(target_object_id)) |en| {
                 switch (en) {
@@ -856,8 +865,8 @@ fn handleShowEffect() void {
             var effect = particles.LineEffect{
                 .start_x = start_x,
                 .start_y = start_y,
-                .end_x = pos1.x,
-                .end_y = pos1.y,
+                .end_x = x1,
+                .end_y = y1,
                 .color = color,
             };
             effect.addToMap();
@@ -870,7 +879,7 @@ fn handleShowEffect() void {
     }
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
-        std.log.debug("Recv - ShowEffect: effect_type={any}, target_object_id={d}, x1={e}, y1={e}, x2={e}, y2={e}, color={any}", .{ effect_type, target_object_id, pos1.x, pos1.y, pos2.x, pos2.y, color });
+        std.log.debug("Recv - ShowEffect: effect_type={any}, target_object_id={d}, x1={e}, y1={e}, x2={e}, y2={e}, color={any}", .{ effect_type, target_object_id, x1, y1, x2, y2, color });
 }
 
 fn handleText(allocator: std.mem.Allocator) void {
@@ -994,7 +1003,8 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
     for (0..new_objs_len) |_| {
         const obj_type = reader.read(u16);
         const obj_id = reader.read(i32);
-        const position = reader.read(Position);
+        const x = reader.read(f32);
+        const y = reader.read(f32);
 
         const stats_len = reader.read(u16);
         const stats_byte_len = reader.read(u16);
@@ -1003,7 +1013,7 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
 
         switch (class) {
             .player => {
-                var player = map.Player{ .x = position.x, .y = position.y, .obj_id = obj_id, .obj_type = obj_type };
+                var player = map.Player{ .x = x, .y = y, .obj_id = obj_id, .obj_type = obj_type };
                 for (0..stats_len) |_| {
                     const stat_id = reader.read(u8);
                     const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
@@ -1021,7 +1031,7 @@ fn handleUpdate(allocator: std.mem.Allocator) void {
                 player.addToMap(allocator);
             },
             inline else => {
-                var obj = map.GameObject{ .x = position.x, .y = position.y, .obj_id = obj_id, .obj_type = obj_type };
+                var obj = map.GameObject{ .x = x, .y = y, .obj_id = obj_id, .obj_type = obj_type };
                 for (0..stats_len) |_| {
                     const stat_id = reader.read(u8);
                     const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
@@ -1241,22 +1251,35 @@ fn sendPacket(packet: C2SPacket) void {
         std.log.err("Could not send {any}, client is not connected", .{tag});
     }
 
+    if (settings.log_packets == .all or
+        settings.log_packets == .c2s or
+        (settings.log_packets == .c2s_non_tick or settings.log_packets == .all_non_tick) and packet != .move and packet != .update_ack)
+    {
+        std.log.info("Send: {any}", .{packet}); // todo custom formatting
+    }
+
     writer.writeLength();
     writer.write(@intFromEnum(tag));
     switch (packet) {
         inline else => |data| {
             var data_bytes = std.mem.asBytes(&data);
             const data_type = @TypeOf(data);
-            inline for (@typeInfo(data_type).Struct.fields) |field| {
-                const base_offset = @offsetOf(data_type, field.name);
-                const type_info = @typeInfo(field.type);
-                if (type_info == .Pointer and (type_info.Pointer.size == .Slice or type_info.Pointer.size == .Many)) {
-                    const ptr = std.mem.bytesAsValue([*]type_info.Pointer.child, data_bytes[base_offset .. base_offset + 8]).*;
-                    const len = std.mem.bytesAsValue(usize, data_bytes[base_offset + 8 .. base_offset + 16]).*;
-                    writer.write(ptr[0..len]);
-                } else {
-                    const field_len = (@bitSizeOf(field.type) + 7) / 8;
-                    writer.writeDirect(data_bytes[base_offset .. base_offset + field_len]);
+            const data_info = @typeInfo(data_type);
+            if (data_info.Struct.layout == .Packed) {
+                const field_len = (@bitSizeOf(data_info.Struct.backing_integer.?) + 7) / 8;
+                if (field_len > 0)
+                    writer.writeDirect(data_bytes[0..field_len]);
+            } else {
+                inline for (data_info.Struct.fields) |field| {
+                    const base_offset = @offsetOf(data_type, field.name);
+                    const type_info = @typeInfo(field.type);
+                    if (type_info == .Pointer and (type_info.Pointer.size == .Slice or type_info.Pointer.size == .Many)) {
+                        writer.write(std.mem.bytesAsValue([]type_info.Pointer.child, data_bytes[base_offset .. base_offset + 16]).*);
+                    } else {
+                        const field_len = (@bitSizeOf(field.type) + 7) / 8;
+                        if (field_len > 0)
+                            writer.writeDirect(data_bytes[base_offset .. base_offset + field_len]);
+                    }
                 }
             }
         },

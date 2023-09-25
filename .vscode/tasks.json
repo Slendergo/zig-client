@@ -6,7 +6,7 @@
         {
             "label": "Debug",
             "type": "shell",
-            "command": "zig build -Doptimize=Debug",
+            "command": "zig build -Doptimize=Debug -freference-trace",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

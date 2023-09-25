@@ -849,15 +849,11 @@ pub const Player = struct {
             self.mp_zeroed = false;
 
             network.queuePacket(.{ .use_item = .{
-                .slot_object = .{
-                    .object_id = self.obj_id,
-                    .slot_id = 1,
-                    .object_type = item_type,
-                },
-                .use_position = .{
-                    .x = position.x,
-                    .y = position.y,
-                },
+                .obj_id = self.obj_id,
+                .slot_id = 1,
+                .obj_type = item_type,
+                .x = position.x,
+                .y = position.y,
                 .time = main.current_time,
                 .use_type = use_type,
             } });
@@ -867,15 +863,11 @@ pub const Player = struct {
         } else {
             if (item_props.?.multi_phase) {
                 network.queuePacket(.{ .use_item = .{
-                    .slot_object = .{
-                        .object_id = self.obj_id,
-                        .slot_id = 1,
-                        .object_type = item_type,
-                    },
-                    .use_position = .{
-                        .x = position.x,
-                        .y = position.y,
-                    },
+                    .obj_id = self.obj_id,
+                    .slot_id = 1,
+                    .obj_type = item_type,
+                    .x = position.x,
+                    .y = position.y,
                     .time = main.current_time,
                     .use_type = use_type,
                 } });
@@ -930,7 +922,8 @@ pub const Player = struct {
                     .time = time,
                     .bullet_id = bullet_id,
                     .container_type = container_type, // todo mabye convert to a i32 for packet or convert client into u16?
-                    .starting_pos = .{ .x = x, .y = y },
+                    .start_x = x,
+                    .start_y = y,
                     .angle = angle,
                 },
             });
@@ -1183,7 +1176,7 @@ pub const Player = struct {
                     const square = squares[floor_ground_y * @as(u32, @intCast(width)) + floor_ground_x];
                     if (square.tile_type != 0xFFFF and square.tile_type != 0xFF and square.props != null and square.props.?.min_damage > 0) {
                         const dmg = random.nextIntRange(square.props.?.min_damage, square.props.?.max_damage);
-                        network.queuePacket(.{ .ground_damage = .{ .time = time, .position = .{ .x = self.x, .y = self.y } } });
+                        network.queuePacket(.{ .ground_damage = .{ .time = time, .x = self.x, .y = self.y } });
                         self.takeDamage(
                             @intCast(dmg),
                             dmg >= self.hp,
@@ -2329,7 +2322,7 @@ pub fn setSquare(x: isize, y: isize, tile_type: u16) void {
     squares[idx] = square;
 }
 
-pub fn addMoveRecord(time: i64, position: network.Position) void {
+pub fn addMoveRecord(time: i64, x: f32, y: f32) void {
     if (last_records_clear_time < 0) {
         return;
     }
@@ -2340,14 +2333,14 @@ pub fn addMoveRecord(time: i64, position: network.Position) void {
     }
 
     if (move_records.capacity == 0) {
-        move_records.add(.{ .time = time, .position = position });
+        move_records.add(.{ .time = time, .x = x, .y = y });
         return;
     }
 
     const curr_record = move_records.items()[move_records.capacity - 1];
     const curr_id = getId(curr_record.time);
     if (id != curr_id) {
-        move_records.add(.{ .time = time, .position = position });
+        move_records.add(.{ .time = time, .x = x, .y = y });
         return;
     }
 
@@ -2355,7 +2348,8 @@ pub fn addMoveRecord(time: i64, position: network.Position) void {
     const curr_score = getScore(id, curr_record.time);
     if (score < curr_score) {
         curr_record.time = time;
-        curr_record.position = position;
+        curr_record.x = x;
+        curr_record.y = y;
     }
 }
 
