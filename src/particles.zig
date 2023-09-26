@@ -23,13 +23,7 @@ pub const ThrowParticle = struct {
 
     pub fn addToMap(self: *ThrowParticle) void {
         self.obj_id = Particle.getNextObjId();
-
-        if (assets.atlas_data.get("particles")) |data| {
-            self.atlas_data = data[0];
-        } else {
-            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
-            self.atlas_data = assets.error_data;
-        }
+        Particle.setTexture(&self.atlas_data, 0);
 
         map.entities.add(.{ .particle = .{ .throw = self.* } }) catch |e| {
             std.log.err("Out of memory: {any}", .{e});
@@ -87,13 +81,7 @@ pub const SparkerParticle = struct {
 
     pub fn addToMap(self: *SparkerParticle) void {
         self.obj_id = Particle.getNextObjId();
-
-        if (assets.atlas_data.get("particles")) |data| {
-            self.atlas_data = data[0];
-        } else {
-            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
-            self.atlas_data = assets.error_data;
-        }
+        Particle.setTexture(&self.atlas_data, 0);
 
         map.entities.add(.{ .particle = .{ .sparker = self.* } }) catch |e| {
             std.log.err("Out of memory: {any}", .{e});
@@ -149,13 +137,7 @@ pub const SparkParticle = struct {
 
     pub fn addToMap(self: *SparkParticle) void {
         self.obj_id = Particle.getNextObjId();
-
-        if (assets.atlas_data.get("particles")) |data| {
-            self.atlas_data = data[0];
-        } else {
-            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
-            self.atlas_data = assets.error_data;
-        }
+        Particle.setTexture(&self.atlas_data, 0);
 
         map.entities.add(.{ .particle = .{ .spark = self.* } }) catch |e| {
             std.log.err("Out of memory: {any}", .{e});
@@ -189,13 +171,7 @@ pub const TeleportParticle = struct {
 
     pub fn addToMap(self: *TeleportParticle) void {
         self.obj_id = Particle.getNextObjId();
-
-        if (assets.atlas_data.get("particles")) |data| {
-            self.atlas_data = data[0];
-        } else {
-            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
-            self.atlas_data = assets.error_data;
-        }
+        Particle.setTexture(&self.atlas_data, 0);
 
         map.entities.add(.{ .particle = .{ .teleport = self.* } }) catch |e| {
             std.log.err("Out of memory: {any}", .{e});
@@ -230,13 +206,7 @@ pub const ExplosionParticle = struct {
 
     pub fn addToMap(self: *ExplosionParticle) void {
         self.obj_id = Particle.getNextObjId();
-
-        if (assets.atlas_data.get("particles")) |data| {
-            self.atlas_data = data[0];
-        } else {
-            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
-            self.atlas_data = assets.error_data;
-        }
+        Particle.setTexture(&self.atlas_data, 0);
 
         map.entities.add(.{ .particle = .{ .explosion = self.* } }) catch |e| {
             std.log.err("Out of memory: {any}", .{e});
@@ -273,13 +243,7 @@ pub const HitParticle = struct {
 
     pub fn addToMap(self: *HitParticle) void {
         self.obj_id = Particle.getNextObjId();
-
-        if (assets.atlas_data.get("particles")) |data| {
-            self.atlas_data = data[0];
-        } else {
-            std.log.err("Could not find sheet for particle with id {d}. Using error texture", .{self.obj_id});
-            self.atlas_data = assets.error_data;
-        }
+        Particle.setTexture(&self.atlas_data, 0);
 
         map.entities.add(.{ .particle = .{ .hit = self.* } }) catch |e| {
             std.log.err("Out of memory: {any}", .{e});
@@ -316,6 +280,15 @@ pub const Particle = union(enum) {
         if (next_obj_id == obj_id_max)
             next_obj_id = obj_id_base;
         return obj_id;
+    }
+
+    pub inline fn setTexture(atlas_data: *assets.AtlasData, id: u32) void {
+        if (assets.atlas_data.get("particles")) |data| {
+            atlas_data.* = data[id];
+        } else {
+            std.log.err("Could not find sheet for particle. Using error texture", .{});
+            atlas_data.* = assets.error_data;
+        }
     }
 };
 
