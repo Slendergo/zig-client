@@ -223,6 +223,8 @@ pub const GroundProps = struct {
     anim_dx: f32,
     anim_dy: f32,
     slide_amount: f32,
+    protect_from_ground_damage: bool,
+    protect_from_sink: bool,
 
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !GroundProps {
         var anim_type: GroundAnimType = .none;
@@ -256,6 +258,8 @@ pub const GroundProps = struct {
             .anim_type = anim_type,
             .anim_dx = dx,
             .anim_dy = dy,
+            .protect_from_ground_damage = node.elementExists("ProtectFromGroundDamage"),
+            .protect_from_sink = node.elementExists("ProtectFromSend"),
         };
     }
 };

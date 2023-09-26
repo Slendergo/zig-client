@@ -2083,6 +2083,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             .{ .shadow_texel_mult = 2.0 / size, .alpha_mult = alpha_mult, .base_color = color, .base_color_intensity = color_intensity },
                         );
 
+                        // implement sink protection square.props.?.protect_from_sink
                         // todo make sink calculate actual values based on h, pad, etc
                         var y_pos: f32 = 5.0 + if (sink != 1.0) @as(f32, 15.0) else @as(f32, 0.0);
 
