@@ -58,7 +58,8 @@ pub fn package(
                 enable_fibers,
                 // MinGW doesn't have all the newfangled windows features,
                 // so we need to pretend to have an older windows version.
-                "-D_WIN32_WINNT=0x601",
+                // "-D_WIN32_WINNT=0x601",
+                "-std=c++17",
                 "-fno-sanitize=undefined",
             },
         });
