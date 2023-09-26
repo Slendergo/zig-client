@@ -491,7 +491,7 @@ pub const GameObject = struct {
                         },
                         else => {
                             // any other type then we do this
-                            self.condition.set(eff, true);
+                            self.condition.set(eff.condition, true);
                         },
                     }
 
@@ -1117,7 +1117,7 @@ pub const Player = struct {
                         },
                         else => {
                             // any other type then we do this
-                            self.condition.set(eff, true);
+                            self.condition.set(eff.condition, true);
                         },
                     }
 
