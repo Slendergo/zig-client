@@ -211,6 +211,14 @@ pub fn deinit() void {
 }
 
 pub fn resetToDefault() void {
+    inv_0 = .{ .key = .one };
+    inv_1 = .{ .key = .two };
+    inv_2 = .{ .key = .three };
+    inv_3 = .{ .key = .four };
+    inv_4 = .{ .key = .five };
+    inv_5 = .{ .key = .six };
+    inv_6 = .{ .key = .seven };
+    inv_7 = .{ .key = .eight };
     move_left = .{ .key = .a };
     move_right = .{ .key = .d };
     move_up = .{ .key = .w };
@@ -236,5 +244,7 @@ pub fn resetToDefault() void {
     enable_glow = true;
     enable_lights = true;
     enable_vsync = true;
+    always_show_xp_gain = false;
+    fps_cap = 360.0;
     selected_cursor = CursorType.aztec;
 }
