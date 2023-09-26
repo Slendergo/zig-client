@@ -324,6 +324,7 @@ pub fn main() !void {
 
     ui.switchScreen(.main_menu);
 
+    zglfw.WindowHint.set(.client_api, @intFromEnum(zglfw.ClientApi.no_api));
     const window = zglfw.Window.create(1280, 720, "Client", null) catch |e| {
         std.log.err("Failed to create window: {any}", .{e});
         return;
@@ -339,9 +340,6 @@ pub fn main() !void {
         .target_enemy => assets.target_enemy_cursor,
         .target_ally => assets.target_ally_cursor,
     });
-
-    zglfw.WindowHint.set(.refresh_rate, @intFromFloat(settings.fps_cap));
-    zglfw.WindowHint.set(.doublebuffer, if (settings.enable_vsync) 1 else 0);
 
     gctx = zgpu.GraphicsContext.create(
         allocator,
