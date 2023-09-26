@@ -440,31 +440,6 @@ pub const GameObject = struct {
                         continue;
 
                     switch (eff.condition) {
-                        .dead => self.condition.dead = true,
-                        .quiet => self.condition.quiet = true,
-                        .weak => self.condition.weak = true,
-                        .slowed => self.condition.slowed = true,
-                        .sick => self.condition.sick = true,
-                        .dazed => self.condition.dazed = true,
-                        .blind => self.condition.blind = true,
-                        .hallucinating => self.condition.hallucinating = true,
-                        .drunk => self.condition.drunk = true,
-                        .confused => self.condition.confused = true,
-                        .invisible => self.condition.invisible = true,
-                        .paralyzed => self.condition.paralyzed = true,
-                        .speedy => self.condition.speedy = true,
-                        .bleeding => self.condition.bleeding = true,
-                        .healing => self.condition.healing = true,
-                        .damaging => self.condition.damaging = true,
-                        .berserk => self.condition.berserk = true,
-                        .paused => self.condition.paused = true,
-                        .invincible => self.condition.invincible = true,
-                        .invulnerable => self.condition.invulnerable = true,
-                        .armored => self.condition.armored = true,
-                        .armor_broken => self.condition.armor_broken = true,
-                        .hexed => self.condition.hexed = true,
-                        .ninja_speedy => self.condition.ninja_speedy = true,
-
                         // immune cases
                         // only have two cases in this version so just doing them
 
@@ -510,11 +485,13 @@ pub const GameObject = struct {
                                     std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
                                 };
                             } else {
-                                // apply stasis effect
+                                // apply stunned effect
                                 self.condition.stunned = true;
                             }
                         },
                         else => {
+                            // any other type then we do this
+                            self.condition.set(eff, true);
                             std.log.err("Unknown ConditionEffect: {s} inside gameobject.takeDamage();", .{cond_str});
                         },
                     }
@@ -1090,35 +1067,10 @@ pub const Player = struct {
                         continue;
 
                     switch (eff.condition) {
-                        utils.ConditionEnum.dead => self.condition.dead = true,
-                        utils.ConditionEnum.quiet => self.condition.quiet = true,
-                        utils.ConditionEnum.weak => self.condition.weak = true,
-                        utils.ConditionEnum.slowed => self.condition.slowed = true,
-                        utils.ConditionEnum.sick => self.condition.sick = true,
-                        utils.ConditionEnum.dazed => self.condition.dazed = true,
-                        utils.ConditionEnum.blind => self.condition.blind = true,
-                        utils.ConditionEnum.hallucinating => self.condition.hallucinating = true,
-                        utils.ConditionEnum.drunk => self.condition.drunk = true,
-                        utils.ConditionEnum.confused => self.condition.confused = true,
-                        utils.ConditionEnum.invisible => self.condition.invisible = true,
-                        utils.ConditionEnum.paralyzed => self.condition.paralyzed = true,
-                        utils.ConditionEnum.speedy => self.condition.speedy = true,
-                        utils.ConditionEnum.bleeding => self.condition.bleeding = true,
-                        utils.ConditionEnum.healing => self.condition.healing = true,
-                        utils.ConditionEnum.damaging => self.condition.damaging = true,
-                        utils.ConditionEnum.berserk => self.condition.berserk = true,
-                        utils.ConditionEnum.paused => self.condition.paused = true,
-                        utils.ConditionEnum.invincible => self.condition.invincible = true,
-                        utils.ConditionEnum.invulnerable => self.condition.invulnerable = true,
-                        utils.ConditionEnum.armored => self.condition.armored = true,
-                        utils.ConditionEnum.armor_broken => self.condition.armor_broken = true,
-                        utils.ConditionEnum.hexed => self.condition.hexed = true,
-                        utils.ConditionEnum.ninja_speedy => self.condition.ninja_speedy = true,
-
                         // immune cases
                         // only have two cases in this version so just doing them
 
-                        utils.ConditionEnum.stasis => {
+                        .stasis => {
                             if (self.condition.stasis_immune) {
                                 const immune_text_data = ui.TextData{
                                     .text = std.fmt.allocPrint(allocator, "Immune", .{}) catch unreachable,
@@ -1141,7 +1093,7 @@ pub const Player = struct {
                                 self.condition.stasis = true;
                             }
                         },
-                        utils.ConditionEnum.stunned => {
+                        .stunned => {
                             if (self.condition.stun_immune) {
                                 const immune_text_data = ui.TextData{
                                     .text = std.fmt.allocPrint(allocator, "Immune", .{}) catch unreachable,
@@ -1160,12 +1112,14 @@ pub const Player = struct {
                                     std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
                                 };
                             } else {
-                                // apply stasis effect
+                                // apply stunned effect
                                 self.condition.stunned = true;
                             }
                         },
                         else => {
-                            std.log.err("Unknown ConditionEffect: {s} inside player.takeDamage();", .{cond_str});
+                            // any other type then we do this
+                            self.condition.set(eff, true);
+                            std.log.err("Unknown ConditionEffect: {s} inside gameobject.takeDamage();", .{cond_str});
                         },
                     }
 
