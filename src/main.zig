@@ -339,7 +339,9 @@ pub fn main() !void {
         .target_enemy => assets.target_enemy_cursor,
         .target_ally => assets.target_ally_cursor,
     });
-    window.setInputMode(zglfw.InputMode.lock_key_mods, true);
+
+    zglfw.WindowHint.set(.refresh_rate, @intFromFloat(settings.fps_cap));
+    zglfw.WindowHint.set(.doublebuffer, if (settings.enable_vsync) 1 else 0);
 
     gctx = zgpu.GraphicsContext.create(
         allocator,
