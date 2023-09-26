@@ -492,7 +492,6 @@ pub const GameObject = struct {
                         else => {
                             // any other type then we do this
                             self.condition.set(eff, true);
-                            std.log.err("Unknown ConditionEffect: {s} inside gameobject.takeDamage();", .{cond_str});
                         },
                     }
 
@@ -1119,7 +1118,6 @@ pub const Player = struct {
                         else => {
                             // any other type then we do this
                             self.condition.set(eff, true);
-                            std.log.err("Unknown ConditionEffect: {s} inside gameobject.takeDamage();", .{cond_str});
                         },
                     }
 
