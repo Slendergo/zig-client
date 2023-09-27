@@ -1262,7 +1262,7 @@ pub const Player = struct {
                             true,
                             time,
                             &[0]game_data.ConditionEffect{},
-                            self.color,
+                            self.colors,
                             0.0,
                             0.0,
                             true,
