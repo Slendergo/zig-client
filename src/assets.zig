@@ -176,10 +176,10 @@ const AudioState = struct {
 };
 
 const RGBA = packed struct(u32) {
-    r: u8 = 255,
-    g: u8 = 255,
-    b: u8 = 255,
-    a: u8 = 255,
+    r: u8 = 0,
+    g: u8 = 0,
+    b: u8 = 0,
+    a: u8 = 0,
 };
 
 pub var audio_state: *AudioState = undefined;
@@ -318,6 +318,7 @@ fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, co
 
     if (zstbrp.packRects(ctx, current_rects)) {
         var dominant_colors = try allocator.alloc(RGBA, len);
+        @memset(dominant_colors, RGBA{});
 
         for (0..len) |i| {
             const rect = current_rects[i];
@@ -344,6 +345,7 @@ fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, co
                         .r = img.data[src_idx],
                         .g = img.data[src_idx + 1],
                         .b = img.data[src_idx + 2],
+                        .a = 255,
                     };
                     if (color_counts.get(rgba)) |count| {
                         try color_counts.put(rgba, count + 1);
