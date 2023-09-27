@@ -400,10 +400,11 @@ pub const GameObject = struct {
         kill: bool,
         armor_pierce: bool,
         time: i64,
-        effects: []game_data.ConditionEffect,
+        conditions: []game_data.ConditionEffect,
         proj_colors: []u32,
         proj_angle: f32,
         proj_speed: f32,
+        ground_damage: bool,
         allocator: std.mem.Allocator,
     ) void {
         if (self.dead)
@@ -435,32 +436,90 @@ pub const GameObject = struct {
             };
             effect.addToMap();
 
-            for (effects) |eff| {
-                const cond_str = eff.condition.toString();
-                if (cond_str.len == 0)
-                    continue;
+            if (conditions.len > 0) {
+                for (conditions) |eff| {
+                    const cond_str = eff.condition.toString();
+                    if (cond_str.len == 0)
+                        continue;
 
-                const text_data = ui.TextData{
-                    .text = std.fmt.allocPrint(allocator, "{s}", .{cond_str}) catch unreachable,
-                    .text_type = .bold,
-                    .size = 22,
-                    .color = 0xB02020,
-                    .backing_buffer = &[0]u8{},
-                };
+                    switch (eff.condition) {
+                        // immune cases
+                        // only have two cases in this version so just doing them
 
-                ui.elements.add(.{ .status = ui.StatusText{
-                    .obj_id = self.obj_id,
-                    .start_time = time,
-                    .text_data = text_data,
-                    .initial_size = 22,
-                } }) catch |e| {
-                    std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
-                };
+                        .stasis => {
+                            if (self.condition.stasis_immune) {
+                                const immune_text_data = ui.TextData{
+                                    .text = std.fmt.allocPrint(allocator, "Immune", .{}) catch unreachable,
+                                    .text_type = .bold,
+                                    .size = 22,
+                                    .color = 0xFF0000,
+                                    .backing_buffer = &[0]u8{},
+                                };
+
+                                ui.elements.add(.{ .status = ui.StatusText{
+                                    .obj_id = self.obj_id,
+                                    .start_time = time,
+                                    .text_data = immune_text_data,
+                                    .initial_size = 22,
+                                } }) catch |e| {
+                                    std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
+                                };
+                            } else {
+                                // apply stasis effect
+                                self.condition.stasis = true;
+                            }
+                        },
+                        .stunned => {
+                            if (self.condition.stun_immune) {
+                                const immune_text_data = ui.TextData{
+                                    .text = std.fmt.allocPrint(allocator, "Immune", .{}) catch unreachable,
+                                    .text_type = .bold,
+                                    .size = 22,
+                                    .color = 0xFF0000,
+                                    .backing_buffer = &[0]u8{},
+                                };
+
+                                ui.elements.add(.{ .status = ui.StatusText{
+                                    .obj_id = self.obj_id,
+                                    .start_time = time,
+                                    .text_data = immune_text_data,
+                                    .initial_size = 22,
+                                } }) catch |e| {
+                                    std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
+                                };
+                            } else {
+                                // apply stunned effect
+                                self.condition.stunned = true;
+                            }
+                        },
+                        else => {
+                            // any other type then we do this
+                            self.condition.set(eff.condition, true);
+                        },
+                    }
+
+                    const text_data = ui.TextData{
+                        .text = std.fmt.allocPrint(allocator, "{s}", .{cond_str}) catch unreachable,
+                        .text_type = .bold,
+                        .size = 22,
+                        .color = 0xB02020,
+                        .backing_buffer = &[0]u8{},
+                    };
+
+                    ui.elements.add(.{ .status = ui.StatusText{
+                        .obj_id = self.obj_id,
+                        .start_time = time,
+                        .text_data = text_data,
+                        .initial_size = 22,
+                    } }) catch |e| {
+                        std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
+                    };
+                }
             }
         }
 
         if (damage_amount > 0) {
-            const pierced = self.condition.armor_broken or armor_pierce;
+            const pierced = self.condition.armor_broken or armor_pierce or ground_damage;
             showDamageText(time, damage_amount, pierced, self.obj_id, allocator);
         }
     }
@@ -967,10 +1026,11 @@ pub const Player = struct {
         kill: bool,
         armor_pierce: bool,
         time: i64,
-        effects: []game_data.ConditionEffect,
-        hit_colors: []u32,
-        hit_angle: f32,
-        hit_speed: f32,
+        conditions: []game_data.ConditionEffect,
+        proj_colors: []u32,
+        proj_angle: f32,
+        proj_speed: f32,
+        ground_damage: bool,
         allocator: std.mem.Allocator,
     ) void {
         if (self.dead)
@@ -994,40 +1054,98 @@ pub const Player = struct {
             var effect = particles.HitEffect{
                 .x = self.x,
                 .y = self.y,
-                .colors = hit_colors,
-                .angle = hit_angle,
-                .speed = hit_speed,
+                .colors = proj_colors,
+                .angle = proj_angle,
+                .speed = proj_speed,
                 .size = 1.0,
                 .amount = 3,
             };
             effect.addToMap();
 
-            for (effects) |eff| {
-                const cond_str = eff.condition.toString();
-                if (cond_str.len == 0)
-                    continue;
+            if (conditions.len > 0) {
+                for (conditions) |eff| {
+                    const cond_str = eff.condition.toString();
+                    if (cond_str.len == 0)
+                        continue;
 
-                const text_data = ui.TextData{
-                    .text = std.fmt.allocPrint(allocator, "{s}", .{cond_str}) catch unreachable,
-                    .text_type = .bold,
-                    .size = 22,
-                    .color = 0xB02020,
-                    .backing_buffer = &[0]u8{},
-                };
+                    switch (eff.condition) {
+                        // immune cases
+                        // only have two cases in this version so just doing them
 
-                ui.elements.add(.{ .status = ui.StatusText{
-                    .obj_id = self.obj_id,
-                    .start_time = time,
-                    .text_data = text_data,
-                    .initial_size = 22,
-                } }) catch |e| {
-                    std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
-                };
+                        .stasis => {
+                            if (self.condition.stasis_immune) {
+                                const immune_text_data = ui.TextData{
+                                    .text = std.fmt.allocPrint(allocator, "Immune", .{}) catch unreachable,
+                                    .text_type = .bold,
+                                    .size = 22,
+                                    .color = 0xFF0000,
+                                    .backing_buffer = &[0]u8{},
+                                };
+
+                                ui.elements.add(.{ .status = ui.StatusText{
+                                    .obj_id = self.obj_id,
+                                    .start_time = time,
+                                    .text_data = immune_text_data,
+                                    .initial_size = 22,
+                                } }) catch |e| {
+                                    std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
+                                };
+                            } else {
+                                // apply stasis effect
+                                self.condition.stasis = true;
+                            }
+                        },
+                        .stunned => {
+                            if (self.condition.stun_immune) {
+                                const immune_text_data = ui.TextData{
+                                    .text = std.fmt.allocPrint(allocator, "Immune", .{}) catch unreachable,
+                                    .text_type = .bold,
+                                    .size = 22,
+                                    .color = 0xFF0000,
+                                    .backing_buffer = &[0]u8{},
+                                };
+
+                                ui.elements.add(.{ .status = ui.StatusText{
+                                    .obj_id = self.obj_id,
+                                    .start_time = time,
+                                    .text_data = immune_text_data,
+                                    .initial_size = 22,
+                                } }) catch |e| {
+                                    std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
+                                };
+                            } else {
+                                // apply stunned effect
+                                self.condition.stunned = true;
+                            }
+                        },
+                        else => {
+                            // any other type then we do this
+                            self.condition.set(eff.condition, true);
+                        },
+                    }
+
+                    const text_data = ui.TextData{
+                        .text = std.fmt.allocPrint(allocator, "{s}", .{cond_str}) catch unreachable,
+                        .text_type = .bold,
+                        .size = 22,
+                        .color = 0xB02020,
+                        .backing_buffer = &[0]u8{},
+                    };
+
+                    ui.elements.add(.{ .status = ui.StatusText{
+                        .obj_id = self.obj_id,
+                        .start_time = time,
+                        .text_data = text_data,
+                        .initial_size = 22,
+                    } }) catch |e| {
+                        std.log.err("Allocation for condition text \"{s}\" failed: {any}", .{ cond_str, e });
+                    };
+                }
             }
         }
 
         if (damage_amount > 0) {
-            const pierced = self.condition.armor_broken or armor_pierce;
+            const pierced = self.condition.armor_broken or armor_pierce or ground_damage;
             showDamageText(time, damage_amount, pierced, self.obj_id, allocator);
         }
     }
@@ -1136,48 +1254,12 @@ pub const Player = struct {
                 modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
 
-            // if (!std.math.isNan(self.move_angle)) {
-
-            //     // current square player is on
-            //     const square = getSquare(self.x, self.y);
-
-            //     const move_angle = camera.angle_unbound + self.move_angle;
-            //     self.move_angle_camera_included = move_angle;
-
-            //     // if (slide_amount > 0.0) {
-            //     //     // todo may need to store move_vec for player to recreate a version of this
-            //     // } else {
-            //     //     move_vec_x = move_speed * @cos(move_angle);
-            //     //     move_vec_y = move_speed * @sin(move_angle);
-            //     // }
-
-            //     const move_speed = self.moveSpeedMultiplier();
-            //     move_vec_x = move_speed * @cos(move_angle);
-            //     move_vec_y = move_speed * @sin(move_angle);
-
-            //     if (square.props) |props| {
-            //         if (slide_amount > 0) {
-            //             // todo
-            //         }
-
-            //         if (props.push) {
-            //             move_vec_x -= props.anim_dx / 1000.0;
-            //             move_vec_y -= props.anim_dy / 1000.0;
-            //         }
-            //     } else {}
-
-            //     const next_x = self.x + move_vec_x * dt;
-            //     const next_y = self.y + move_vec_y * dt;
-            //     modifyMove(self, next_x, next_y, &self.x, &self.y);
-            // }
-
-            //todo add protectFromGroundDamage_
             if (!self.condition.invulnerable and !self.condition.invincible and !self.condition.stasis and time - self.last_ground_damage_time >= 500) {
                 const floor_ground_x: u32 = @intFromFloat(@floor(self.x));
                 const floor_ground_y: u32 = @intFromFloat(@floor(self.y));
                 if (validPos(floor_ground_x, floor_ground_y)) {
                     const square = squares[floor_ground_y * @as(u32, @intCast(width)) + floor_ground_x];
-                    if (square.tile_type != 0xFFFF and square.tile_type != 0xFF and square.props != null and square.props.?.min_damage > 0) {
+                    if (square.tile_type != 0xFFFF and square.tile_type != 0xFF and square.props != null and square.props.?.min_damage > 0 and !square.props.?.protect_from_ground_damage) {
                         const dmg = random.nextIntRange(square.props.?.min_damage, square.props.?.max_damage);
                         network.queuePacket(.{ .ground_damage = .{ .time = time, .x = self.x, .y = self.y } });
                         self.takeDamage(
@@ -1187,8 +1269,9 @@ pub const Player = struct {
                             time,
                             &[0]game_data.ConditionEffect{},
                             &[0]u32{},
-                            0,
-                            0,
+                            0.0,
+                            0.0,
+                            true,
                             allocator,
                         );
                         self.last_ground_damage_time = time;
@@ -1686,6 +1769,7 @@ pub const Projectile = struct {
                             self.colors,
                             self.angle,
                             self.props.speed,
+                            false,
                             allocator,
                         );
                         network.queuePacket(.{ .player_hit = .{ .bullet_id = self.bullet_id, .object_id = self.owner_id } });
@@ -1748,6 +1832,7 @@ pub const Projectile = struct {
                             self.colors,
                             self.angle,
                             self.props.speed,
+                            false,
                             allocator,
                         );
 
