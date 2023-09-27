@@ -217,7 +217,6 @@ pub const GameObject = struct {
     full_occupy: bool = false,
     occupy_square: bool = false,
     enemy_occupy_square: bool = false,
-    played_sound: bool = false,
     colors: []u32 = &[0]u32{},
 
     pub fn addToMap(self: *GameObject, allocator: std.mem.Allocator) void {
@@ -381,9 +380,8 @@ pub const GameObject = struct {
                 squares[floor_y * w + floor_x].has_wall = true;
             }
 
-            if (class_props == .container and !self.played_sound) {
+            if (class_props == .container) {
                 assets.playSfx("loot_appears");
-                self.played_sound = true;
             }
         }
 
