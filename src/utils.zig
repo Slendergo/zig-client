@@ -318,7 +318,6 @@ pub const Condition = packed struct(u64) {
 
     pub fn set(self: *Condition, cond: ConditionEnum, value: bool) void {
         switch (cond) {
-            .dead => self.dead = value,
             .quiet => self.quiet = value,
             .weak => self.weak = value,
             .slowed => self.slowed = value,
@@ -334,7 +333,6 @@ pub const Condition = packed struct(u64) {
             .paralyzed => self.paralyzed = value,
             .speedy => self.speedy = value,
             .bleeding => self.bleeding = value,
-            .not_used => self.not_used = value,
             .healing => self.healing = value,
             .damaging => self.damaging = value,
             .berserk => self.berserk = value,
@@ -347,13 +345,12 @@ pub const Condition = packed struct(u64) {
             .armor_broken => self.armor_broken = value,
             .hexed => self.hexed = value,
             .ninja_speedy => self.ninja_speedy = value,
-            inline else => std.log.err("Invalid enum specified for condition {any}", .{@errorReturnTrace() orelse return}),
+            else => std.log.err("Invalid enum specified for condition {any}", .{@errorReturnTrace() orelse return}),
         }
     }
 
     pub fn toggle(self: *Condition, cond: ConditionEnum) void {
         switch (cond) {
-            .dead => self.dead = !self.dead,
             .quiet => self.quiet = !self.quiet,
             .weak => self.weak = !self.weak,
             .slowed => self.slowed = !self.slowed,
@@ -369,7 +366,6 @@ pub const Condition = packed struct(u64) {
             .paralyzed => self.paralyzed = !self.paralyzed,
             .speedy => self.speedy = !self.speedy,
             .bleeding => self.bleeding = !self.bleeding,
-            .not_used => self.not_used = !self.not_used,
             .healing => self.healing = !self.healing,
             .damaging => self.damaging = !self.damaging,
             .berserk => self.berserk = !self.berserk,
@@ -382,7 +378,7 @@ pub const Condition = packed struct(u64) {
             .armor_broken => self.armor_broken = !self.armor_broken,
             .hexed => self.hexed = !self.hexed,
             .ninja_speedy => self.ninja_speedy = !self.ninja_speedy,
-            inline else => std.log.err("Invalid enum specified for condition {any}", .{@errorReturnTrace() orelse return}),
+            else => std.log.err("Invalid enum specified for condition {any}", .{@errorReturnTrace() orelse return}),
         }
     }
 };
@@ -405,18 +401,19 @@ pub const Random = struct {
     seed: u32 = 1,
 
     pub fn init(seed: u32) Random {
-        return Random{ .seed = seed };
+        return .{ .seed = seed };
     }
 
     pub fn nextIntRange(self: *Random, min: u32, max: u32) u32 {
         if (min == max)
             return min;
+
         return min + (self.gen() % (max - min));
     }
 
     fn gen(self: *Random) u32 {
-        var lo: u32 = 16807 * (self.seed & 0xFFFF);
-        var hi: u32 = 16807 * (self.seed >> 16);
+        var lo = 16807 * (self.seed & 0xFFFF);
+        const hi = 16807 * (self.seed >> 16);
 
         lo += (hi & 0x7FFF) << 16;
         lo += hi >> 15;

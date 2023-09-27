@@ -215,6 +215,7 @@ pub var target_enemy_cursor: *zglfw.Cursor = undefined;
 pub var target_ally_cursor_pressed: *zglfw.Cursor = undefined;
 pub var target_ally_cursor: *zglfw.Cursor = undefined;
 
+pub var sfx_copy_map: std.AutoHashMap(*zaudio.Sound, std.ArrayList(*zaudio.Sound)) = undefined;
 pub var sfx_map: std.StringHashMap(*zaudio.Sound) = undefined;
 pub var dominant_color_data: std.StringHashMap([]RGBA) = undefined;
 pub var atlas_data: std.StringHashMap([]AtlasData) = undefined;
@@ -604,8 +605,29 @@ pub fn playSfx(name: []const u8) void {
         return;
 
     if (sfx_map.get(name)) |audio| {
-        audio.setVolume(settings.sfx_volume);
-        audio.start() catch return;
+        if (!audio.isPlaying()) {
+            audio.setVolume(settings.sfx_volume);
+            audio.start() catch return;
+            return;
+        }
+
+        var audio_copies = sfx_copy_map.get(audio);
+        if (audio_copies == null)
+            audio_copies = std.ArrayList(*zaudio.Sound).init(main._allocator);
+
+        for (audio_copies.?.items) |copy_audio| {
+            if (!copy_audio.isPlaying()) {
+                copy_audio.setVolume(settings.sfx_volume);
+                copy_audio.start() catch return;
+                return;
+            }
+        }
+
+        var new_copy_audio = audio_state.engine.createSoundCopy(audio, .{}, null) catch return;
+        new_copy_audio.setVolume(settings.sfx_volume);
+        new_copy_audio.start() catch return;
+        audio_copies.?.append(new_copy_audio) catch return;
+        sfx_copy_map.put(audio, audio_copies.?) catch return;
         return;
     }
 
@@ -621,6 +643,16 @@ pub fn playSfx(name: []const u8) void {
 
 pub fn deinit(allocator: std.mem.Allocator) void {
     main_music.destroy();
+
+    var copy_audio_iter = sfx_copy_map.valueIterator();
+    while (copy_audio_iter.next()) |copy_audio_list| {
+        for (copy_audio_list.items) |copy_audio| {
+            copy_audio.*.destroy();
+        }
+        copy_audio_list.deinit();
+    }
+    sfx_copy_map.deinit();
+
     var audio_iter = sfx_map.valueIterator();
     while (audio_iter.next()) |audio| {
         audio.*.destroy();
@@ -693,6 +725,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 }
 
 pub fn init(allocator: std.mem.Allocator) !void {
+    sfx_copy_map = std.AutoHashMap(*zaudio.Sound, std.ArrayList(*zaudio.Sound)).init(allocator);
     sfx_map = std.StringHashMap(*zaudio.Sound).init(allocator);
     dominant_color_data = std.StringHashMap([]RGBA).init(allocator);
     atlas_data = std.StringHashMap([]AtlasData).init(allocator);

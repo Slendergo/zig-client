@@ -1999,12 +1999,12 @@ pub var night_light_intensity: f32 = 0.0;
 pub var server_time_offset: i64 = 0;
 pub var move_records: utils.DynSlice(network.TimedPosition) = undefined;
 pub var last_records_clear_time: i64 = 0;
-pub var random: utils.Random = utils.Random{};
+pub var random = utils.Random{};
 pub var minimap: zstbi.Image = undefined;
 var last_sort: i64 = -1;
 
 pub fn init(allocator: std.mem.Allocator) !void {
-    entities = try utils.DynSlice(Entity).init(16384, allocator);
+    entities = try utils.DynSlice(Entity).init(65536, allocator);
     entity_indices_to_remove = try utils.DynSlice(usize).init(256, allocator);
     move_records = try utils.DynSlice(network.TimedPosition).init(10, allocator);
     atlas_to_color_data = std.AutoHashMap(AtlasHashHack, []u32).init(allocator);
