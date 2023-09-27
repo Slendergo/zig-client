@@ -37,7 +37,7 @@ pub const CharSelectScreen = struct {
     }
 
     pub fn toggle(self: *CharSelectScreen, state: bool) void {
-        while (!ui.dispose_lock.tryLock()) {}
+        while (!ui.ui_lock.tryLock()) {}
         for (self.boxes.items) |box| {
             for (ui.elements.items(), 0..) |element, i| {
                 if (element == .char_box and element.char_box == box) {
@@ -46,53 +46,25 @@ pub const CharSelectScreen = struct {
             }
             self._allocator.destroy(box);
         }
-        ui.dispose_lock.unlock();
+        ui.ui_lock.unlock();
 
         self.boxes.clearAndFree();
 
         if (!state)
             return;
 
-        const button_data_base = assets.getUi("buttonBase", 0);
-        const button_data_hover = assets.getUi("buttonHover", 0);
-        const button_data_press = assets.getUi("buttonPress", 0);
+        const button_data_base = assets.getUiData("buttonBase", 0);
+        const button_data_hover = assets.getUiData("buttonHover", 0);
+        const button_data_press = assets.getUiData("buttonPress", 0);
 
         for (main.character_list, 0..) |char, i| {
-            const box = self._allocator.create(ui.CharacterBox) catch return;
-            box.* = ui.CharacterBox{
+            const box = ui.CharacterBox.create(self._allocator, .{
                 .x = (camera.screen_width - button_data_base.texWRaw()) / 2,
                 .y = @floatFromInt(50 * i),
                 .id = char.id,
-                .base_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                    button_data_base,
-                    100,
-                    40,
-                    6,
-                    6,
-                    7,
-                    7,
-                    1.0,
-                ) },
-                .hover_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                    button_data_hover,
-                    100,
-                    40,
-                    6,
-                    6,
-                    7,
-                    7,
-                    1.0,
-                ) },
-                .press_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                    button_data_press,
-                    100,
-                    40,
-                    6,
-                    6,
-                    7,
-                    7,
-                    1.0,
-                ) },
+                .base_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_base, 100, 40, 6, 6, 7, 7, 1.0) },
+                .hover_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_hover, 100, 40, 6, 6, 7, 7, 1.0) },
+                .press_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_press, 100, 40, 6, 6, 7, 7, 1.0) },
                 .text_data = ui.TextData{
                     .text = @constCast(char.name[0..]),
                     .backing_buffer = self._allocator.alloc(u8, 1) catch return,
@@ -100,9 +72,8 @@ pub const CharSelectScreen = struct {
                     .text_type = .bold,
                 },
                 .press_callback = boxClickCallback,
-            };
+            }) catch return;
             self.boxes.append(box) catch return;
-            ui.elements.add(.{ .char_box = box }) catch return;
         }
     }
 

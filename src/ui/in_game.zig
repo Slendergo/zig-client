@@ -130,9 +130,8 @@ pub const InGameScreen = struct {
 
         screen.parseItemRects();
 
-        screen.minimap_decor = try allocator.create(ui.Image);
-        const minimap_data = assets.getUi("minimap", 0);
-        screen.minimap_decor.* = ui.Image{
+        const minimap_data = assets.getUiData("minimap", 0);
+        screen.minimap_decor = try ui.Image.create(allocator, .{
             .x = camera.screen_width - minimap_data.texWRaw() - 10,
             .y = 10,
             .image_data = .{ .normal = .{ .atlas_data = minimap_data } },
@@ -141,28 +140,20 @@ pub const InGameScreen = struct {
             .minimap_offset_y = 10.0,
             .minimap_width = 172.0,
             .minimap_height = 172.0,
-        };
-        try ui.elements.add(.{ .image = screen.minimap_decor });
+        });
 
-        screen.inventory_decor = try allocator.create(ui.Image);
-        const inventory_data = assets.getUi("playerInventory", 0);
-        screen.inventory_decor.* = ui.Image{
+        const inventory_data = assets.getUiData("playerInventory", 0);
+        screen.inventory_decor = try ui.Image.create(allocator, .{
             .x = camera.screen_width - inventory_data.texWRaw() - 10,
             .y = camera.screen_height - inventory_data.texHRaw() - 10,
             .image_data = .{ .normal = .{ .atlas_data = inventory_data } },
-        };
-        try ui.elements.add(.{ .image = screen.inventory_decor });
+        });
 
         for (0..20) |i| {
-            screen.inventory_items[i] = try allocator.create(ui.Item);
-            screen.inventory_items[i].* = ui.Item{
+            screen.inventory_items[i] = try ui.Item.create(allocator, .{
                 .x = screen.inventory_decor.x + screen.inventory_pos_data[i].x + (screen.inventory_pos_data[i].w - assets.ui_error_data.texWRaw() * 4.0 + assets.padding * 2) / 2,
                 .y = screen.inventory_decor.y + screen.inventory_pos_data[i].y + (screen.inventory_pos_data[i].h - assets.ui_error_data.texHRaw() * 4.0 + assets.padding * 2) / 2,
-                .image_data = .{ .normal = .{
-                    .scale_x = 4.0,
-                    .scale_y = 4.0,
-                    .atlas_data = assets.ui_error_data,
-                } },
+                .image_data = .{ .normal = .{ .scale_x = 4.0, .scale_y = 4.0, .atlas_data = assets.ui_error_data } },
                 .tier_text = .{
                     .text_data = .{
                         .text = "",
@@ -179,23 +170,19 @@ pub const InGameScreen = struct {
                 .drag_end_callback = itemDragEndCallback,
                 .double_click_callback = itemDoubleClickCallback,
                 .shift_click_callback = itemShiftClickCallback,
-            };
-            try ui.elements.add(.{ .item = screen.inventory_items[i] });
+            });
         }
 
-        screen.container_decor = try allocator.create(ui.Image);
-        const container_data = assets.getUi("containerView", 0);
-        screen.container_decor.* = ui.Image{
+        const container_data = assets.getUiData("containerView", 0);
+        screen.container_decor = try ui.Image.create(allocator, .{
             .x = screen.inventory_decor.x - container_data.texWRaw() - 10,
             .y = camera.screen_height - container_data.texHRaw() - 10,
             .image_data = .{ .normal = .{ .atlas_data = container_data } },
             .visible = false,
-        };
-        try ui.elements.add(.{ .image = screen.container_decor });
+        });
 
         for (0..8) |i| {
-            screen.container_items[i] = try allocator.create(ui.Item);
-            screen.container_items[i].* = ui.Item{
+            screen.container_items[i] = try ui.Item.create(allocator, .{
                 .x = screen.container_decor.x + screen.container_pos_data[i].x + (screen.container_pos_data[i].w - assets.ui_error_data.texWRaw() * 4.0 + assets.padding * 2) / 2,
                 .y = screen.container_decor.y + screen.container_pos_data[i].y + (screen.container_pos_data[i].h - assets.ui_error_data.texHRaw() * 4.0 + assets.padding * 2) / 2,
                 .image_data = .{ .normal = .{
@@ -219,50 +206,41 @@ pub const InGameScreen = struct {
                 .drag_end_callback = itemDragEndCallback,
                 .double_click_callback = itemDoubleClickCallback,
                 .shift_click_callback = itemShiftClickCallback,
-            };
-            try ui.elements.add(.{ .item = screen.container_items[i] });
+            });
         }
 
-        screen.bars_decor = try allocator.create(ui.Image);
-        const bars_data = assets.getUi("playerStatusBarsDecor", 0);
-        screen.bars_decor.* = ui.Image{
+        const bars_data = assets.getUiData("playerStatusBarsDecor", 0);
+        screen.bars_decor = try ui.Image.create(allocator, .{
             .x = (camera.screen_width - bars_data.texWRaw()) / 2,
             .y = camera.screen_height - bars_data.texHRaw() - 10,
             .image_data = .{ .normal = .{ .atlas_data = bars_data } },
-        };
-        try ui.elements.add(.{ .image = screen.bars_decor });
+        });
 
-        screen.stats_button = try allocator.create(ui.Button);
-        const stats_data = assets.getUi("playerStatusBarStatIcon", 0);
-        screen.stats_button.* = ui.Button{
+        const stats_data = assets.getUiData("playerStatusBarStatIcon", 0);
+        screen.stats_button = try ui.Button.create(allocator, .{
             .x = screen.bars_decor.x + 7,
             .y = screen.bars_decor.y + 8,
             .base_image_data = .{ .normal = .{ .atlas_data = stats_data } },
             .press_callback = statsCallback,
-        };
-        try ui.elements.add(.{ .button = screen.stats_button });
+        });
 
-        screen.level_text = try allocator.create(ui.UiText);
-        const level_text_data = ui.TextData{
-            .text = "",
-            .size = 12,
-            .text_type = .bold,
-            .backing_buffer = try allocator.alloc(u8, 8),
-            .max_width = 24,
-            .max_height = 24,
-            .vert_align = .middle,
-            .hori_align = .middle,
-        };
-        screen.level_text.* = ui.UiText{
+        screen.level_text = try ui.UiText.create(allocator, .{
             .x = screen.bars_decor.x + 178,
             .y = screen.bars_decor.y + 9,
-            .text_data = level_text_data,
-        };
-        try ui.elements.add(.{ .text = screen.level_text });
+            .text_data = .{
+                .text = "",
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+                .max_width = 24,
+                .max_height = 24,
+                .vert_align = .middle,
+                .hori_align = .middle,
+            },
+        });
 
-        screen.xp_bar = try allocator.create(ui.Bar);
-        const xp_bar_data = assets.getUi("playerStatusBarXp", 0);
-        screen.xp_bar.* = ui.Bar{
+        const xp_bar_data = assets.getUiData("playerStatusBarXp", 0);
+        screen.xp_bar = try ui.Bar.create(allocator, .{
             .x = screen.bars_decor.x + 42,
             .y = screen.bars_decor.y + 12,
             .image_data = .{ .normal = .{ .atlas_data = xp_bar_data } },
@@ -272,12 +250,10 @@ pub const InGameScreen = struct {
                 .text_type = .bold_italic,
                 .backing_buffer = try allocator.alloc(u8, 64),
             },
-        };
-        try ui.elements.add(.{ .bar = screen.xp_bar });
+        });
 
-        screen.fame_bar = try allocator.create(ui.Bar);
-        const fame_bar_data = assets.getUi("playerStatusBarFame", 0);
-        screen.fame_bar.* = ui.Bar{
+        const fame_bar_data = assets.getUiData("playerStatusBarFame", 0);
+        screen.fame_bar = try ui.Bar.create(allocator, .{
             .x = screen.bars_decor.x + 42,
             .y = screen.bars_decor.y + 12,
             .image_data = .{ .normal = .{ .atlas_data = fame_bar_data } },
@@ -287,12 +263,10 @@ pub const InGameScreen = struct {
                 .text_type = .bold_italic,
                 .backing_buffer = try allocator.alloc(u8, 64),
             },
-        };
-        try ui.elements.add(.{ .bar = screen.fame_bar });
+        });
 
-        screen.health_bar = try allocator.create(ui.Bar);
-        const health_bar_data = assets.getUi("playerStatusBarHealth", 0);
-        screen.health_bar.* = ui.Bar{
+        const health_bar_data = assets.getUiData("playerStatusBarHealth", 0);
+        screen.health_bar = try ui.Bar.create(allocator, .{
             .x = screen.bars_decor.x + 8,
             .y = screen.bars_decor.y + 47,
             .image_data = .{ .normal = .{ .atlas_data = health_bar_data } },
@@ -302,12 +276,10 @@ pub const InGameScreen = struct {
                 .text_type = .bold_italic,
                 .backing_buffer = try allocator.alloc(u8, 32),
             },
-        };
-        try ui.elements.add(.{ .bar = screen.health_bar });
+        });
 
-        screen.mana_bar = try allocator.create(ui.Bar);
-        const mana_bar_data = assets.getUi("playerStatusBarMana", 0);
-        screen.mana_bar.* = ui.Bar{
+        const mana_bar_data = assets.getUiData("playerStatusBarMana", 0);
+        screen.mana_bar = try ui.Bar.create(allocator, .{
             .x = screen.bars_decor.x + 8,
             .y = screen.bars_decor.y + 73,
             .image_data = .{ .normal = .{ .atlas_data = mana_bar_data } },
@@ -317,21 +289,17 @@ pub const InGameScreen = struct {
                 .text_type = .bold_italic,
                 .backing_buffer = try allocator.alloc(u8, 32),
             },
-        };
-        try ui.elements.add(.{ .bar = screen.mana_bar });
+        });
 
-        screen.chat_decor = try allocator.create(ui.Image);
-        const chat_data = assets.getUi("chatboxBackground", 0);
-        const input_data = assets.getUi("chatboxInput", 0);
-        screen.chat_decor.* = ui.Image{
+        const chat_data = assets.getUiData("chatboxBackground", 0);
+        const input_data = assets.getUiData("chatboxInput", 0);
+        screen.chat_decor = try ui.Image.create(allocator, .{
             .x = 10,
             .y = camera.screen_height - chat_data.texHRaw() - input_data.texHRaw() - 10,
             .image_data = .{ .normal = .{ .atlas_data = chat_data } },
-        };
-        try ui.elements.add(.{ .image = screen.chat_decor });
+        });
 
-        screen.chat_input = try allocator.create(ui.InputField);
-        screen.chat_input.* = ui.InputField{
+        screen.chat_input = try ui.InputField.create(allocator, .{
             .x = screen.chat_decor.x,
             .y = screen.chat_decor.y + screen.chat_decor.height(),
             .text_inlay_x = 9,
@@ -347,22 +315,19 @@ pub const InGameScreen = struct {
             .allocator = allocator,
             .enter_callback = chatCallback,
             .allow_chat_history = true,
-        };
-        try ui.elements.add(.{ .input_field = screen.chat_input });
+        });
 
-        screen.fps_text = try allocator.create(ui.UiText);
         const fps_text_data = ui.TextData{
             .text = "",
             .size = 12,
             .text_type = .bold,
             .backing_buffer = try allocator.alloc(u8, 32),
         };
-        screen.fps_text.* = ui.UiText{
+        screen.fps_text = try ui.UiText.create(allocator, .{
             .x = camera.screen_width - fps_text_data.width() - 10,
             .y = screen.minimap_decor.y + screen.minimap_decor.height() + 10,
             .text_data = fps_text_data,
-        };
-        try ui.elements.add(.{ .text = screen.fps_text });
+        });
 
         return screen;
     }

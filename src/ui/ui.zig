@@ -54,6 +54,19 @@ pub const InputField = struct {
     _index: u32 = 0,
     _disposed: bool = false,
 
+    pub inline fn create(allocator: std.mem.Allocator, data: InputField) !*InputField {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(InputField);
+        elem.* = data;
+        try elements.add(.{ .input_field = elem });
+        return elem;
+    }
+
     pub inline fn imageData(self: InputField) ImageData {
         switch (self.state) {
             .none => return self.base_decor_data,
@@ -93,6 +106,19 @@ pub const Button = struct {
     text_data: ?TextData = null,
     visible: bool = true,
     _disposed: bool = false,
+
+    pub inline fn create(allocator: std.mem.Allocator, data: Button) !*Button {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(Button);
+        elem.* = data;
+        try elements.add(.{ .button = elem });
+        return elem;
+    }
 
     pub inline fn imageData(self: Button) ImageData {
         switch (self.state) {
@@ -143,6 +169,19 @@ pub const CharacterBox = struct {
     text_data: ?TextData = null,
     visible: bool = true,
     _disposed: bool = false,
+
+    pub inline fn create(allocator: std.mem.Allocator, data: CharacterBox) !*CharacterBox {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(CharacterBox);
+        elem.* = data;
+        try elements.add(.{ .char_box = elem });
+        return elem;
+    }
 
     pub inline fn imageData(self: CharacterBox) ImageData {
         switch (self.state) {
@@ -291,6 +330,19 @@ pub const Image = struct {
     minimap_height: f32 = 0.0,
     _disposed: bool = false,
 
+    pub inline fn create(allocator: std.mem.Allocator, data: Image) !*Image {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(Image);
+        elem.* = data;
+        try elements.add(.{ .image = elem });
+        return elem;
+    }
+
     pub inline fn width(self: Image) f32 {
         switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.w,
@@ -313,6 +365,19 @@ pub const MenuBackground = struct {
     h: f32,
     visible: bool = true,
     _disposed: bool = false,
+
+    pub inline fn create(allocator: std.mem.Allocator, data: MenuBackground) !*MenuBackground {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(MenuBackground);
+        elem.* = data;
+        try elements.add(.{ .menu_bg = elem });
+        return elem;
+    }
 };
 
 pub const Item = struct {
@@ -333,6 +398,19 @@ pub const Item = struct {
     _last_click_time: i64 = 0,
     _item: i32 = -1,
     _disposed: bool = false,
+
+    pub inline fn create(allocator: std.mem.Allocator, data: Item) !*Item {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(Item);
+        elem.* = data;
+        try elements.add(.{ .item = elem });
+        return elem;
+    }
 
     pub inline fn width(self: Item) f32 {
         switch (self.image_data) {
@@ -357,6 +435,19 @@ pub const Bar = struct {
     visible: bool = true,
     text_data: TextData,
     _disposed: bool = false,
+
+    pub inline fn create(allocator: std.mem.Allocator, data: Bar) !*Bar {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(Bar);
+        elem.* = data;
+        try elements.add(.{ .bar = elem });
+        return elem;
+    }
 
     pub inline fn width(self: Bar) f32 {
         switch (self.image_data) {
@@ -384,6 +475,16 @@ pub const SpeechBalloon = struct {
     _screen_y: f32 = 0.0,
     _disposed: bool = false,
 
+    pub inline fn add(data: SpeechBalloon) !void {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        try elements.add(.{ .balloon = data });
+    }
+
     pub inline fn width(self: SpeechBalloon) f32 {
         return @max(self.text_data.width(), switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.w,
@@ -405,6 +506,19 @@ pub const UiText = struct {
     text_data: TextData,
     visible: bool = true,
     _disposed: bool = false,
+
+    pub inline fn create(allocator: std.mem.Allocator, data: UiText) !*UiText {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(UiText);
+        elem.* = data;
+        try elements.add(.{ .text = elem });
+        return elem;
+    }
 };
 
 pub const StatusText = struct {
@@ -418,6 +532,16 @@ pub const StatusText = struct {
     _screen_x: f32 = 0.0,
     _screen_y: f32 = 0.0,
     _disposed: bool = false,
+
+    pub inline fn add(data: StatusText) !void {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        try elements.add(.{ .status = data });
+    }
 
     pub inline fn width(self: StatusText) f32 {
         return self.text_data.width();
@@ -641,6 +765,19 @@ pub const DisplayContainer = struct {
     elements: utils.DynSlice(*UiElement) = undefined,
     visible: bool = true,
     _disposed: bool = false,
+
+    pub inline fn create(allocator: std.mem.Allocator, data: DisplayContainer) !*DisplayContainer {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(DisplayContainer);
+        elem.* = data;
+        try elements.add(.{ .container = elem });
+        return elem;
+    }
 };
 
 pub const ScreenType = enum(u8) {
@@ -666,7 +803,7 @@ pub const UiElement = union(enum) {
     status: StatusText,
 };
 
-pub var dispose_lock: std.Thread.Mutex = .{};
+pub var ui_lock: std.Thread.Mutex = .{};
 pub var elements: utils.DynSlice(UiElement) = undefined;
 pub var elements_to_remove: utils.DynSlice(usize) = undefined;
 pub var current_screen = ScreenType.main_menu;
@@ -682,14 +819,12 @@ pub fn init(allocator: std.mem.Allocator) !void {
     elements = try utils.DynSlice(UiElement).init(1024, allocator);
     elements_to_remove = try utils.DynSlice(usize).init(256, allocator);
 
-    menu_background = try allocator.create(MenuBackground);
-    menu_background.* = MenuBackground{
+    menu_background = try MenuBackground.create(allocator, .{
         .x = 0,
         .y = 0,
         .w = camera.screen_width,
         .h = camera.screen_height,
-    };
-    try elements.add(.{ .menu_bg = menu_background });
+    });
 
     account_screen = try AccountScreen.init(allocator);
     char_select_screen = try CharSelectScreen.init(allocator);
@@ -781,11 +916,11 @@ pub fn disposeElement(elem: *UiElement, allocator: std.mem.Allocator) void {
 pub fn deinit(allocator: std.mem.Allocator) void {
     char_select_screen.deinit(allocator); // hack todo
 
-    while (!dispose_lock.tryLock()) {}
+    while (!ui_lock.tryLock()) {}
     for (elements.items()) |*elem| {
         disposeElement(elem, allocator);
     }
-    dispose_lock.unlock();
+    ui_lock.unlock();
     elements.deinit();
 
     account_screen.deinit(allocator);
@@ -818,8 +953,8 @@ pub fn switchScreen(screen_type: ScreenType) void {
 }
 
 pub fn removeAttachedUi(obj_id: i32, allocator: std.mem.Allocator) void {
-    while (!dispose_lock.tryLock()) {}
-    defer dispose_lock.unlock();
+    while (!ui_lock.tryLock()) {}
+    defer ui_lock.unlock();
 
     for (elements.items()) |*elem| {
         switch (elem.*) {
@@ -1069,12 +1204,12 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
 
     const removed_elements = elements_to_remove.items();
     const elements_len = removed_elements.len;
-    
-    while (!dispose_lock.tryLock()) {}
+
+    while (!ui_lock.tryLock()) {}
     for (0..elements_len) |i| {
         disposeElement(elements.removePtr(removed_elements[elements_len - 1 - i]), allocator);
     }
-    dispose_lock.unlock();
+    ui_lock.unlock();
 
     elements_to_remove.clear();
 }

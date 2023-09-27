@@ -704,21 +704,21 @@ fn handleNotification(allocator: std.mem.Allocator) void {
         };
 
         if (en == .player) {
-            ui.elements.add(.{ .status = ui.StatusText{
+            ui.StatusText.add(.{
                 .obj_id = en.player.obj_id,
                 .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                 .lifetime = 2000,
                 .text_data = text_data,
                 .initial_size = 22,
-            } }) catch unreachable;
+            }) catch unreachable;
         } else if (en == .object) {
-            ui.elements.add(.{ .status = ui.StatusText{
+            ui.StatusText.add(.{
                 .obj_id = en.object.obj_id,
                 .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                 .lifetime = 2000,
                 .text_data = text_data,
                 .initial_size = 22,
-            } }) catch unreachable;
+            }) catch unreachable;
         }
     }
 
@@ -919,7 +919,7 @@ fn handleText(allocator: std.mem.Allocator) void {
             }
         }
 
-        ui.elements.add(.{ .balloon = ui.SpeechBalloon{
+        ui.SpeechBalloon.add(.{
             .image_data = .{ .normal = .{
                 .scale_x = 3.0,
                 .scale_y = 3.0,
@@ -935,7 +935,7 @@ fn handleText(allocator: std.mem.Allocator) void {
             },
             .target_id = object_id,
             .start_time = @divFloor(main.current_time, std.time.us_per_ms),
-        } }) catch unreachable;
+        }) catch unreachable;
     }
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
@@ -1082,42 +1082,38 @@ fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: 
             const last_xp = plr.exp;
             plr.exp = reader.read(i32);
             if (last_xp != 0 and last_xp < plr.exp and (settings.always_show_xp_gain or plr.level < 20)) {
-                const text_data = ui.TextData{
-                    .text = std.fmt.allocPrint(allocator, "+{d} XP", .{plr.exp - last_xp}) catch return false,
-                    .text_type = .bold,
-                    .size = 22,
-                    .color = 0x0D5936,
-                    .backing_buffer = &[0]u8{},
-                };
-
-                ui.elements.add(.{ .status = ui.StatusText{
+                ui.StatusText.add(.{
                     .obj_id = plr.obj_id,
                     .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                     .lifetime = 2000,
-                    .text_data = text_data,
+                    .text_data = .{
+                        .text = std.fmt.allocPrint(allocator, "+{d} XP", .{plr.exp - last_xp}) catch return false,
+                        .text_type = .bold,
+                        .size = 22,
+                        .color = 0x0D5936,
+                        .backing_buffer = &[0]u8{},
+                    },
                     .initial_size = 22,
-                } }) catch return false;
+                }) catch return false;
             }
         },
         .level => {
             const last_level = plr.level;
             plr.level = reader.read(i32);
             if (last_level != 0 and last_level < plr.level) {
-                const text_data = ui.TextData{
-                    .text = std.fmt.allocPrint(allocator, "Level Up!", .{}) catch return false,
-                    .text_type = .bold,
-                    .size = 22,
-                    .color = 0x0D5936,
-                    .backing_buffer = &[0]u8{},
-                };
-
-                ui.elements.add(.{ .status = ui.StatusText{
+                ui.StatusText.add(.{
                     .obj_id = plr.obj_id,
                     .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                     .lifetime = 2000,
-                    .text_data = text_data,
+                    .text_data = .{
+                        .text = std.fmt.allocPrint(allocator, "Level Up!", .{}) catch return false,
+                        .text_type = .bold,
+                        .size = 22,
+                        .color = 0x0D5936,
+                        .backing_buffer = &[0]u8{},
+                    },
                     .initial_size = 22,
-                } }) catch return false;
+                }) catch return false;
             }
         },
         .attack => plr.attack = reader.read(i32),
@@ -1154,21 +1150,19 @@ fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: 
             const last_fame = plr.fame;
             plr.fame = reader.read(i32);
             if (last_fame != 0 and last_fame < plr.fame and plr.level >= 20) {
-                const text_data = ui.TextData{
-                    .text = std.fmt.allocPrint(allocator, "+{d} Fame", .{plr.fame - last_fame}) catch return false,
-                    .text_type = .bold,
-                    .size = 22,
-                    .color = 0xE64F2A,
-                    .backing_buffer = &[0]u8{},
-                };
-
-                ui.elements.add(.{ .status = ui.StatusText{
+                ui.StatusText.add(.{
                     .obj_id = plr.obj_id,
                     .start_time = @divFloor(main.current_time, std.time.us_per_ms),
                     .lifetime = 2000,
-                    .text_data = text_data,
+                    .text_data = .{
+                        .text = std.fmt.allocPrint(allocator, "+{d} Fame", .{plr.fame - last_fame}) catch return false,
+                        .text_type = .bold,
+                        .size = 22,
+                        .color = 0xE64F2A,
+                        .backing_buffer = &[0]u8{},
+                    },
                     .initial_size = 22,
-                } }) catch return false;
+                }) catch return false;
             }
         },
         .fame_goal => plr.fame_goal = reader.read(i32),

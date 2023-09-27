@@ -1934,7 +1934,7 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                     draw_data,
                 );
 
-                const player_icon = assets.getUi("minimapIcons", 0); // doing a hashmap lookup every frame is not wise. todo
+                const player_icon = assets.getUiData("minimapIcons", 0); // doing a hashmap lookup every frame is not wise. todo
                 const scale = 2.0;
                 const player_icon_w = player_icon.texWRaw() * scale;
                 const player_icon_h = player_icon.texHRaw() * scale;
@@ -2924,8 +2924,8 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             .bind_group = bind_group,
         };
 
-        while (!ui.dispose_lock.tryLock()) {}
-        defer ui.dispose_lock.unlock();
+        while (!ui.ui_lock.tryLock()) {}
+        defer ui.ui_lock.unlock();
 
         var ui_idx: u16 = 0;
         for (ui.elements.items()) |elem| {

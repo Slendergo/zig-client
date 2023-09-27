@@ -28,46 +28,20 @@ pub const AccountScreen = struct {
 
         const input_w = 200;
         const input_h = 50;
+        const input_data_base = assets.getUiData("textInputBase", 0);
+        const input_data_hover = assets.getUiData("textInputHover", 0);
+        const input_data_press = assets.getUiData("textInputPress", 0);
 
-        screen.email_input = try allocator.create(ui.InputField);
-        const input_data_base = assets.getUi("textInputBase", 0);
-        const input_data_hover = assets.getUi("textInputHover", 0);
-        const input_data_press = assets.getUi("textInputPress", 0);
-        screen.email_input.* = ui.InputField{
+        const NineSlice = ui.NineSliceImageData;
+
+        screen.email_input = try ui.InputField.create(allocator, .{
             .x = (camera.screen_width - input_w) / 2,
             .y = 200,
             .text_inlay_x = 9,
             .text_inlay_y = 8,
-            .base_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                input_data_base,
-                input_w,
-                input_h,
-                8,
-                8,
-                32,
-                32,
-                1.0,
-            ) },
-            .hover_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                input_data_hover,
-                input_w,
-                input_h,
-                8,
-                8,
-                32,
-                32,
-                1.0,
-            ) },
-            .press_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                input_data_press,
-                input_w,
-                input_h,
-                8,
-                8,
-                32,
-                32,
-                1.0,
-            ) },
+            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -76,63 +50,31 @@ pub const AccountScreen = struct {
                 .handle_special_chars = false,
             },
             .allocator = allocator,
-        };
-        try ui.elements.add(.{ .input_field = screen.email_input });
+        });
 
-        screen.email_text = try allocator.create(ui.UiText);
-        const email_text_data = ui.TextData{
-            .text = @constCast("E-mail"),
-            .size = 20,
-            .text_type = .bold,
-            .backing_buffer = try allocator.alloc(u8, 8),
-            .hori_align = .middle,
-            .vert_align = .middle,
-            .max_width = input_w,
-            .max_height = input_h,
-        };
-        screen.email_text.* = ui.UiText{
+        screen.email_text = try ui.UiText.create(allocator, .{
             .x = screen.email_input.x,
             .y = 150,
-            .text_data = email_text_data,
-        };
-        try ui.elements.add(.{ .text = screen.email_text });
+            .text_data = .{
+                .text = @constCast("E-mail"),
+                .size = 20,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+                .hori_align = .middle,
+                .vert_align = .middle,
+                .max_width = input_w,
+                .max_height = input_h,
+            },
+        });
 
-        screen.password_input = try allocator.create(ui.InputField);
-        screen.password_input.* = ui.InputField{
+        screen.password_input = try ui.InputField.create(allocator, .{
             .x = (camera.screen_width - input_w) / 2,
             .y = 350,
             .text_inlay_x = 9,
             .text_inlay_y = 8,
-            .base_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                input_data_base,
-                input_w,
-                input_h,
-                8,
-                8,
-                32,
-                32,
-                1.0,
-            ) },
-            .hover_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                input_data_hover,
-                input_w,
-                input_h,
-                8,
-                8,
-                32,
-                32,
-                1.0,
-            ) },
-            .press_decor_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                input_data_press,
-                input_w,
-                input_h,
-                8,
-                8,
-                32,
-                32,
-                1.0,
-            ) },
+            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -142,73 +84,41 @@ pub const AccountScreen = struct {
                 .handle_special_chars = false,
             },
             .allocator = allocator,
-        };
-        try ui.elements.add(.{ .input_field = screen.password_input });
+        });
 
-        screen.password_text = try allocator.create(ui.UiText);
-        const password_text_data = ui.TextData{
-            .text = @constCast("Password"),
-            .size = 20,
-            .text_type = .bold,
-            .backing_buffer = try allocator.alloc(u8, 8),
-            .hori_align = .middle,
-            .vert_align = .middle,
-            .max_width = input_w,
-            .max_height = input_h,
-        };
-        screen.password_text.* = ui.UiText{
+        screen.password_text = try ui.UiText.create(allocator, .{
             .x = screen.password_input.x,
             .y = 300,
-            .text_data = password_text_data,
-        };
-        try ui.elements.add(.{ .text = screen.password_text });
+            .text_data = .{
+                .text = @constCast("Password"),
+                .size = 20,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+                .hori_align = .middle,
+                .vert_align = .middle,
+                .max_width = input_w,
+                .max_height = input_h,
+            },
+        });
 
-        screen.login_button = try allocator.create(ui.Button);
-        const button_data_base = assets.getUi("buttonBase", 0);
-        const button_data_hover = assets.getUi("buttonHover", 0);
-        const button_data_press = assets.getUi("buttonPress", 0);
-        screen.login_button.* = ui.Button{
+        const button_data_base = assets.getUiData("buttonBase", 0);
+        const button_data_hover = assets.getUiData("buttonHover", 0);
+        const button_data_press = assets.getUiData("buttonPress", 0);
+
+        screen.login_button = try ui.Button.create(allocator, .{
             .x = screen.password_input.x + (input_w - 100) / 2,
             .y = 450,
-            .base_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                button_data_base,
-                100,
-                35,
-                6,
-                6,
-                7,
-                7,
-                1.0,
-            ) },
-            .hover_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                button_data_hover,
-                100,
-                35,
-                6,
-                6,
-                7,
-                7,
-                1.0,
-            ) },
-            .press_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(
-                button_data_press,
-                100,
-                35,
-                6,
-                6,
-                7,
-                7,
-                1.0,
-            ) },
-            .text_data = ui.TextData{
+            .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, 100, 35, 6, 6, 7, 7, 1.0) },
+            .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, 100, 35, 6, 6, 7, 7, 1.0) },
+            .press_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, 100, 35, 6, 6, 7, 7, 1.0) },
+            .text_data = .{
                 .text = @constCast("Login"),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
             .press_callback = loginCallback,
-        };
-        try ui.elements.add(.{ .button = screen.login_button });
+        });
 
         return screen;
     }

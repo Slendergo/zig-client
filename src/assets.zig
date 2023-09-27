@@ -979,6 +979,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
     }
 }
 
-pub inline fn getUi(comptime name: []const u8, idx: usize) AtlasData {
+pub inline fn getUiData(comptime name: []const u8, idx: usize) AtlasData {
     return (ui_atlas_data.get(name) orelse @panic("Could not find " ++ name ++ " in ui atlas"))[idx];
 }
