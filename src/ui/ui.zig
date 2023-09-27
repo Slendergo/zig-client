@@ -679,8 +679,8 @@ pub var char_create_screen: CharCreateScreen = undefined;
 pub var in_game_screen: InGameScreen = undefined;
 
 pub fn init(allocator: std.mem.Allocator) !void {
-    elements = try utils.DynSlice(UiElement).init(64, allocator);
-    elements_to_remove = try utils.DynSlice(usize).init(64, allocator);
+    elements = try utils.DynSlice(UiElement).init(1024, allocator);
+    elements_to_remove = try utils.DynSlice(usize).init(256, allocator);
 
     menu_background = try allocator.create(MenuBackground);
     menu_background.* = MenuBackground{
@@ -782,11 +782,10 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     char_select_screen.deinit(allocator); // hack todo
 
     while (!dispose_lock.tryLock()) {}
-    defer dispose_lock.unlock();
-
     for (elements.items()) |*elem| {
         disposeElement(elem, allocator);
     }
+    dispose_lock.unlock();
     elements.deinit();
 
     account_screen.deinit(allocator);
@@ -1068,14 +1067,14 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
         }
     }
 
-    while (!dispose_lock.tryLock()) {}
-    defer dispose_lock.unlock();
-
     const removed_elements = elements_to_remove.items();
     const elements_len = removed_elements.len;
+    
+    while (!dispose_lock.tryLock()) {}
     for (0..elements_len) |i| {
         disposeElement(elements.removePtr(removed_elements[elements_len - 1 - i]), allocator);
     }
+    dispose_lock.unlock();
 
     elements_to_remove.clear();
 }

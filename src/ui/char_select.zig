@@ -37,6 +37,7 @@ pub const CharSelectScreen = struct {
     }
 
     pub fn toggle(self: *CharSelectScreen, state: bool) void {
+        while (!ui.dispose_lock.tryLock()) {}
         for (self.boxes.items) |box| {
             for (ui.elements.items(), 0..) |element, i| {
                 if (element == .char_box and element.char_box == box) {
@@ -45,6 +46,7 @@ pub const CharSelectScreen = struct {
             }
             self._allocator.destroy(box);
         }
+        ui.dispose_lock.unlock();
 
         self.boxes.clearAndFree();
 

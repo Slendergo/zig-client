@@ -585,6 +585,9 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
 
     defer {
         if (main.tick_frame) {
+            while (!map.object_lock.tryLock()) {}
+            defer map.object_lock.unlock();
+
             if (map.localPlayerRef()) |local_player| {
                 sendPacket(.{ .move = .{
                     .tick_id = tick_id,
