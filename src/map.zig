@@ -423,16 +423,27 @@ pub const GameObject = struct {
         } else {
             assets.playSfx(self.hit_sound);
 
-            var effect = particles.HitEffect{
-                .x = self.x,
-                .y = self.y,
-                .colors = proj_colors,
-                .angle = proj_angle,
-                .speed = proj_speed,
-                .size = 1.0,
-                .amount = 3,
-            };
-            effect.addToMap();
+            if (proj_angle == 0.0 and proj_speed == 0.0) {
+                var effect = particles.ExplosionEffect{
+                    .x = self.x,
+                    .y = self.y,
+                    .colors = self.colors,
+                    .size = self.size,
+                    .amount = 30,
+                };
+                effect.addToMap();
+            } else {
+                var effect = particles.HitEffect{
+                    .x = self.x,
+                    .y = self.y,
+                    .colors = proj_colors,
+                    .angle = proj_angle,
+                    .speed = proj_speed,
+                    .size = 1.0,
+                    .amount = 3,
+                };
+                effect.addToMap();
+            }
 
             if (conditions.len > 0) {
                 for (conditions) |eff| {
@@ -1035,16 +1046,27 @@ pub const Player = struct {
         } else {
             assets.playSfx(self.hit_sound);
 
-            var effect = particles.HitEffect{
-                .x = self.x,
-                .y = self.y,
-                .colors = proj_colors,
-                .angle = proj_angle,
-                .speed = proj_speed,
-                .size = 1.0,
-                .amount = 3,
-            };
-            effect.addToMap();
+            if (proj_angle == 0.0 and proj_speed == 0.0) {
+                var effect = particles.ExplosionEffect{
+                    .x = self.x,
+                    .y = self.y,
+                    .colors = self.colors,
+                    .size = self.size,
+                    .amount = 30,
+                };
+                effect.addToMap();
+            } else {
+                var effect = particles.HitEffect{
+                    .x = self.x,
+                    .y = self.y,
+                    .colors = proj_colors,
+                    .angle = proj_angle,
+                    .speed = proj_speed,
+                    .size = 1.0,
+                    .amount = 3,
+                };
+                effect.addToMap();
+            }
 
             if (conditions.len > 0) {
                 for (conditions) |eff| {
@@ -1240,7 +1262,7 @@ pub const Player = struct {
                             true,
                             time,
                             &[0]game_data.ConditionEffect{},
-                            &[0]u32{},
+                            self.color,
                             0.0,
                             0.0,
                             true,

@@ -390,16 +390,49 @@ fn handleCreateSuccess() void {
 
 fn handleDamage() void {
     const target_id = reader.read(i32);
-    const effects = reader.read(u64);
+    const effects = reader.read(utils.Condition);
     const damage_amount = reader.read(u16);
     const kill = reader.read(bool);
-    const bullet_id = reader.read(i8);
-    const object_id = reader.read(i32);
 
-    // todo find entity and call object.takeDamage();
+    // todo figure out how to convert game_data.conditioneffect into utils.condition for this function
+    // utils.Condition is a bit mask 0000 0000 0000 0000 0000 0000 0000 0000 64 individual values mapped to a condition effect value
+
+    if (map.findEntityRef(target_id)) |en| {
+        switch (en.*) {
+            .player => |*player| {
+                player.takeDamage(
+                    damage_amount,
+                    player.hp <= damage_amount,
+                    false,
+                    main.current_time,
+                    &[0]game_data.ConditionEffect{},
+                    player.colors,
+                    0.0,
+                    0.0,
+                    false,
+                    main._allocator,
+                );
+            },
+            .object => |*object| {
+                object.takeDamage(
+                    damage_amount,
+                    object.hp <= damage_amount,
+                    false,
+                    main.current_time,
+                    &[0]game_data.ConditionEffect{},
+                    object.colors,
+                    0.0,
+                    0.0,
+                    false,
+                    main._allocator,
+                );
+            },
+            else => {},
+        }
+    }
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Recv - Damage: target_id={d}, effects={d}, damage_amount={d}, kill={any}, bullet_id={d}, object_id={d}", .{ target_id, effects, damage_amount, kill, bullet_id, object_id });
+        std.log.debug("Recv - Damage: target_id={d}, effects={d}, damage_amount={d}, kill={any}", .{ target_id, effects, damage_amount, kill });
 }
 
 fn handleDeath() void {
