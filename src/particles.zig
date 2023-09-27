@@ -262,6 +262,52 @@ pub const HitParticle = struct {
     }
 };
 
+pub const HealParticle = struct {
+    obj_id: i32 = 0,
+    x: f32 = 0.0,
+    y: f32 = 0.0,
+    z: f32 = 0.0,
+    color: u32 = 0,
+    size: f32 = 1.0,
+    alpha_mult: f32 = 1.0,
+    atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
+
+    target_id: i32,
+    angle: f32,
+    dist: f32,
+    time_left: f32,
+    z_dir: f32,
+
+    pub fn addToMap(self: *HealParticle) void {
+        self.obj_id = Particle.getNextObjId();
+        Particle.setTexture(&self.atlas_data, 0);
+
+        map.entities.add(.{ .particle = .{ .heal = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
+    }
+
+    pub fn update(self: *HealParticle, _: i64, dt: f32) bool {
+        self.time_left -= dt;
+        if (self.time_left <= 0)
+            return false;
+
+        if (map.findEntityConst(self.target_id)) |en| {
+            switch (en) {
+                .particle_effect, .particle, .projectile => {},
+                inline else => |entity| {
+                    self.x += entity.x * self.dist * @cos(self.angle);
+                    self.y += entity.y * self.dist * @sin(self.angle);
+                    self.z += self.z_dir * dt * 0.008;
+                    return true;
+                },
+            }
+        }
+
+        return true;
+    }
+};
+
 pub const Particle = union(enum) {
     const obj_id_max = 0x7F000000;
     const obj_id_base = 0x7E000000;
@@ -273,6 +319,7 @@ pub const Particle = union(enum) {
     teleport: TeleportParticle,
     explosion: ExplosionParticle,
     hit: HitParticle,
+    heal: HealParticle,
 
     pub inline fn getNextObjId() i32 {
         const obj_id = next_obj_id + 1;
@@ -523,6 +570,52 @@ pub const HitEffect = struct {
     }
 };
 
+pub const HealEffect = struct {
+    obj_id: i32 = 0,
+    target_id: i32,
+    color: u32,
+
+    pub fn addToMap(self: *HealEffect) void {
+        self.obj_id = ParticleEffect.getNextObjId();
+        map.entities.add(.{ .particle_effect = .{ .heal = self.* } }) catch |e| {
+            std.log.err("Out of memory: {any}", .{e});
+        };
+    }
+
+    pub fn update(self: *HealEffect, _: i64, _: f32) bool {
+        if (map.findEntityConst(self.target_id)) |en| {
+            switch (en) {
+                .particle_effect, .particle, .projectile => {},
+                inline else => |entity| {
+                    for (0..10) |i| {
+                        const float_i: f32 = @floatFromInt(i);
+                        const angle = 2.0 * std.math.pi * (float_i / 10.0);
+                        const radius = 0.3 + 0.4 * utils.rng.random().float(f32);
+                        var particle = HealParticle{
+                            .size = 0.3 + @floor(utils.rng.random().float(f32) * 0.5) * 2.0,
+                            .color = self.color,
+                            .time_left = 1000.0,
+                            .angle = angle,
+                            .dist = radius,
+                            .target_id = self.target_id,
+                            .z_dir = 0.1 + utils.rng.random().float(f32) * 0.1,
+                            .x = entity.x + radius * @cos(angle),
+                            .y = entity.y + radius * @sin(angle),
+                            .z = utils.rng.random().float(f32) * 0.3,
+                        };
+                        particle.addToMap();
+                    }
+
+                    return false;
+                },
+            }
+        }
+
+        std.log.err("Target with id {d} not found for HealEffect", .{self.target_id});
+        return false;
+    }
+};
+
 pub const ParticleEffect = union(enum) {
     const obj_id_max = 0x7E000000;
     const obj_id_base = 0x7D000000;
@@ -534,6 +627,7 @@ pub const ParticleEffect = union(enum) {
     line: LineEffect,
     explosion: ExplosionEffect,
     hit: HitEffect,
+    heal: HealEffect,
 
     pub inline fn getNextObjId() i32 {
         const obj_id = next_obj_id + 1;

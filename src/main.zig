@@ -183,65 +183,82 @@ fn renderTick(allocator: std.mem.Allocator) !void {
         // this has to be updated on render thread to avoid headaches (gctx sharing)
         try ui.in_game_screen.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
 
-        if (need_minimap_update) {
-            const w = minimap_update_max_x - minimap_update_min_x;
-            const h = minimap_update_max_y - minimap_update_min_y;
-            const comp_len = map.minimap.num_components * map.minimap.bytes_per_component;
-            var copy = allocator.alloc(u8, w * h * comp_len) catch @panic("Minimap alloc failed");
-            defer allocator.free(copy);
+        minimapUpdate: {
+            if (need_minimap_update) {
+                // we need to make copies of these, other threads can change them mid execution
+                // this is a hack though. should be handled double buffered or else chunks of minimap can be lost
+                const min_x = minimap_update_min_x;
+                const max_x = minimap_update_max_x;
+                const min_y = minimap_update_min_y;
+                const max_y = minimap_update_max_y;
 
-            var idx: u32 = 0;
-            for (minimap_update_min_y..minimap_update_max_y) |y| {
-                const base_map_idx = y * map.minimap.width * comp_len + minimap_update_min_x * comp_len;
-                @memcpy(
-                    copy[idx * w * comp_len .. (idx + 1) * w * comp_len],
-                    map.minimap.data[base_map_idx .. base_map_idx + w * comp_len],
-                );
-                idx += 1;
-            }
+                const w = max_x - min_x;
+                const h = max_y - min_y;
+                const comp_len = map.minimap.num_components * map.minimap.bytes_per_component;
+                const copy = allocator.alloc(u8, w * h * comp_len) catch |e| {
+                    std.log.err("Minimap alloc failed: {any}", .{e});
+                    need_minimap_update = false;
+                    minimap_update_min_x = 4096;
+                    minimap_update_max_x = 0;
+                    minimap_update_min_y = 4096;
+                    minimap_update_max_y = 0;
+                    break :minimapUpdate;
+                };
+                defer allocator.free(copy);
 
-            gctx.queue.writeTexture(
-                .{
-                    .texture = gctx.lookupResource(render.minimap_texture).?,
-                    .origin = .{
-                        .x = minimap_update_min_x,
-                        .y = minimap_update_min_y,
+                var idx: u32 = 0;
+                for (min_y..max_y) |y| {
+                    const base_map_idx = y * map.minimap.width * comp_len + min_x * comp_len;
+                    @memcpy(
+                        copy[idx * w * comp_len .. (idx + 1) * w * comp_len],
+                        map.minimap.data[base_map_idx .. base_map_idx + w * comp_len],
+                    );
+                    idx += 1;
+                }
+
+                gctx.queue.writeTexture(
+                    .{
+                        .texture = gctx.lookupResource(render.minimap_texture).?,
+                        .origin = .{
+                            .x = min_x,
+                            .y = min_y,
+                        },
                     },
-                },
-                .{
-                    .bytes_per_row = comp_len * w,
-                    .rows_per_image = h,
-                },
-                .{
-                    .width = w,
-                    .height = h,
-                },
-                u8,
-                copy,
-            );
+                    .{
+                        .bytes_per_row = comp_len * w,
+                        .rows_per_image = h,
+                    },
+                    .{
+                        .width = w,
+                        .height = h,
+                    },
+                    u8,
+                    copy,
+                );
 
-            need_minimap_update = false;
-            minimap_update_min_x = 4096;
-            minimap_update_max_x = 0;
-            minimap_update_min_y = 4096;
-            minimap_update_max_y = 0;
-        } else if (need_force_update) {
-            gctx.queue.writeTexture(
-                .{
-                    .texture = gctx.lookupResource(render.minimap_texture).?,
-                },
-                .{
-                    .bytes_per_row = map.minimap.bytes_per_row,
-                    .rows_per_image = map.minimap.height,
-                },
-                .{
-                    .width = map.minimap.width,
-                    .height = map.minimap.height,
-                },
-                u8,
-                map.minimap.data,
-            );
-            need_force_update = false;
+                need_minimap_update = false;
+                minimap_update_min_x = 4096;
+                minimap_update_max_x = 0;
+                minimap_update_min_y = 4096;
+                minimap_update_max_y = 0;
+            } else if (need_force_update) {
+                gctx.queue.writeTexture(
+                    .{
+                        .texture = gctx.lookupResource(render.minimap_texture).?,
+                    },
+                    .{
+                        .bytes_per_row = map.minimap.bytes_per_row,
+                        .rows_per_image = map.minimap.height,
+                    },
+                    .{
+                        .width = map.minimap.width,
+                        .height = map.minimap.height,
+                    },
+                    u8,
+                    map.minimap.data,
+                );
+                need_force_update = false;
+            }
         }
     }
 }

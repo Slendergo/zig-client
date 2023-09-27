@@ -600,7 +600,7 @@ fn parseFontData(allocator: std.mem.Allocator, comptime atlas_w: f32, comptime a
 }
 
 pub fn playSfx(name: []const u8) void {
-    if (settings.sfx_volume <= 0.0)
+    if (settings.sfx_volume <= 0.0 or std.mem.eql(u8, name, "Unknown"))
         return;
 
     if (sfx_map.get(name)) |audio| {

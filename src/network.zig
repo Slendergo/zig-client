@@ -9,7 +9,7 @@ const camera = @import("camera.zig");
 const assets = @import("assets.zig");
 const particles = @import("particles.zig");
 const builtin = @import("builtin");
-const Queue = @import("spsc.zig").UnboundedQueue(C2SPacket);
+const C2SQueue = @import("spsc.zig").UnboundedQueue(C2SPacket);
 
 pub const TimedPosition = packed struct {
     time: i64,
@@ -191,7 +191,7 @@ const EffectType = enum(u8) {
 };
 
 pub var connected = false;
-pub var queue: Queue = undefined;
+pub var queue: C2SQueue = undefined;
 
 var queue_lock: std.Thread.Mutex = .{};
 var message_len: u16 = 65535;
@@ -209,7 +209,7 @@ pub fn init(ip: []const u8, port: u16, allocator: *std.mem.Allocator) void {
         return;
     };
 
-    queue = Queue.init(allocator) catch |e| {
+    queue = C2SQueue.init(allocator) catch |e| {
         std.log.err("Queue init failed: {any}", .{e});
         return;
     };
@@ -867,6 +867,14 @@ fn handleShowEffect() void {
                 .start_y = start_y,
                 .end_x = x1,
                 .end_y = y1,
+                .color = color,
+            };
+            effect.addToMap();
+        },
+        .potion => {
+            // the effect itself handles checks for invalid entity
+            var effect = particles.HealEffect{
+                .target_id = target_object_id,
                 .color = color,
             };
             effect.addToMap();

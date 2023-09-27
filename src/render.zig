@@ -12,37 +12,53 @@ const ui = @import("ui/ui.zig");
 const main = @import("main.zig");
 const zgui = @import("zgui");
 
+// because packed structs can't have [4]f32
+const VertexField = packed struct {
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+};
+
 pub const BaseVertexData = extern struct {
-    pos: [2]f32,
-    uv: [2]f32,
-    base_color: ui.RGBF32 = ui.RGBF32.fromInt(0),
-    base_color_intensity: f32 = 0.0,
-    alpha_mult: f32 = 1.0,
-    shadow_color: ui.RGBF32 = ui.RGBF32.fromInt(0),
-    shadow_texel: [2]f32 = [2]f32{ 0.0, 0.0 },
-    text_type: f32 = 0.0,
-    distance_factor: f32 = 0.0,
+    pos_uv: VertexField,
+    base_color_and_intensity: VertexField = .{
+        .x = 0.0,
+        .y = 0.0,
+        .z = 0.0,
+        .w = 0.0,
+    },
+    alpha_and_shadow_color: VertexField = .{
+        .x = 1.0,
+        .y = 0.0,
+        .z = 0.0,
+        .w = 0.0,
+    },
+    texel_and_text_data: VertexField = .{
+        .x = 0.0,
+        .y = 0.0,
+        .z = 0.0,
+        .w = 0.0,
+    },
+    outline_color_and_w: VertexField = .{
+        .x = 0.0,
+        .y = 0.0,
+        .z = 0.0,
+        .w = 0.0,
+    },
     render_type: f32,
-    outline_color: ui.RGBF32 = ui.RGBF32.fromInt(0),
-    outline_width: f32 = 0.0,
 };
 
-pub const GroundVertexData = extern struct {
-    pos: [2]f32,
-    uv: [2]f32,
-    left_blend_uv: [2]f32,
-    top_blend_uv: [2]f32,
-    right_blend_uv: [2]f32,
-    bottom_blend_uv: [2]f32,
-    base_uv: [2]f32,
-    uv_offsets: [2]f32,
+pub const GroundVertexData = packed struct {
+    pos_uv: VertexField,
+    left_top_blend_uv: VertexField,
+    right_bottom_blend_uv: VertexField,
+    base_and_offset_uv: VertexField,
 };
 
-pub const LightVertexData = extern struct {
-    pos: [2]f32,
-    uv: [2]f32,
-    color: ui.RGBF32,
-    intensity: f32,
+pub const LightVertexData = packed struct {
+    pos_uv: VertexField,
+    color_and_intensity: VertexField,
 };
 
 // must be multiples of 16 bytes. be mindful
@@ -307,18 +323,12 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         }};
 
         const vertex_attributes = [_]zgpu.wgpu.VertexAttribute{
-            .{ .format = .float32x2, .offset = @offsetOf(BaseVertexData, "pos"), .shader_location = 0 },
-            .{ .format = .float32x2, .offset = @offsetOf(BaseVertexData, "uv"), .shader_location = 1 },
-            .{ .format = .float32x3, .offset = @offsetOf(BaseVertexData, "base_color"), .shader_location = 2 },
-            .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "base_color_intensity"), .shader_location = 3 },
-            .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "alpha_mult"), .shader_location = 4 },
-            .{ .format = .float32x3, .offset = @offsetOf(BaseVertexData, "shadow_color"), .shader_location = 5 },
-            .{ .format = .float32x2, .offset = @offsetOf(BaseVertexData, "shadow_texel"), .shader_location = 6 },
-            .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "text_type"), .shader_location = 7 },
-            .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "distance_factor"), .shader_location = 8 },
-            .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "render_type"), .shader_location = 9 },
-            .{ .format = .float32x3, .offset = @offsetOf(BaseVertexData, "outline_color"), .shader_location = 10 },
-            .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "outline_width"), .shader_location = 11 },
+            .{ .format = .float32x4, .offset = @offsetOf(BaseVertexData, "pos_uv"), .shader_location = 0 },
+            .{ .format = .float32x4, .offset = @offsetOf(BaseVertexData, "base_color_and_intensity"), .shader_location = 1 },
+            .{ .format = .float32x4, .offset = @offsetOf(BaseVertexData, "alpha_and_shadow_color"), .shader_location = 2 },
+            .{ .format = .float32x4, .offset = @offsetOf(BaseVertexData, "texel_and_text_data"), .shader_location = 3 },
+            .{ .format = .float32x4, .offset = @offsetOf(BaseVertexData, "outline_color_and_w"), .shader_location = 4 },
+            .{ .format = .float32, .offset = @offsetOf(BaseVertexData, "render_type"), .shader_location = 5 },
         };
         const vertex_buffers = [_]zgpu.wgpu.VertexBufferLayout{.{
             .array_stride = @sizeOf(BaseVertexData),
@@ -362,14 +372,10 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         }};
 
         const vertex_attributes = [_]zgpu.wgpu.VertexAttribute{
-            .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "base_uv"), .shader_location = 0 },
-            .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "uv"), .shader_location = 1 },
-            .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "left_blend_uv"), .shader_location = 2 },
-            .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "top_blend_uv"), .shader_location = 3 },
-            .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "right_blend_uv"), .shader_location = 4 },
-            .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "bottom_blend_uv"), .shader_location = 5 },
-            .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "pos"), .shader_location = 6 },
-            .{ .format = .float32x2, .offset = @offsetOf(GroundVertexData, "uv_offsets"), .shader_location = 7 },
+            .{ .format = .float32x4, .offset = @offsetOf(GroundVertexData, "pos_uv"), .shader_location = 0 },
+            .{ .format = .float32x4, .offset = @offsetOf(GroundVertexData, "left_top_blend_uv"), .shader_location = 1 },
+            .{ .format = .float32x4, .offset = @offsetOf(GroundVertexData, "right_bottom_blend_uv"), .shader_location = 2 },
+            .{ .format = .float32x4, .offset = @offsetOf(GroundVertexData, "base_and_offset_uv"), .shader_location = 3 },
         };
         const vertex_buffers = [_]zgpu.wgpu.VertexBufferLayout{.{
             .array_stride = @sizeOf(GroundVertexData),
@@ -417,10 +423,8 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         }};
 
         const vertex_attributes = [_]zgpu.wgpu.VertexAttribute{
-            .{ .format = .float32x2, .offset = @offsetOf(LightVertexData, "pos"), .shader_location = 0 },
-            .{ .format = .float32x2, .offset = @offsetOf(LightVertexData, "uv"), .shader_location = 1 },
-            .{ .format = .float32x3, .offset = @offsetOf(LightVertexData, "color"), .shader_location = 2 },
-            .{ .format = .float32, .offset = @offsetOf(LightVertexData, "intensity"), .shader_location = 3 },
+            .{ .format = .float32x4, .offset = @offsetOf(LightVertexData, "pos_uv"), .shader_location = 0 },
+            .{ .format = .float32x4, .offset = @offsetOf(LightVertexData, "color_and_intensity"), .shader_location = 1 },
         };
         const vertex_buffers = [_]zgpu.wgpu.VertexBufferLayout{.{
             .array_stride = @sizeOf(LightVertexData),
@@ -703,26 +707,42 @@ fn drawMinimap(
     const tex_h_half = tex_h / 2.0 / 4096.0;
 
     base_vert_data[idx_new] = BaseVertexData{
-        .pos = [2]f32{ -x_cos + x_sin + scaled_x, -y_sin - y_cos + scaled_y },
-        .uv = [2]f32{ tex_u - tex_w_half, tex_v + tex_h_half },
+        .pos_uv = .{
+            .x = -x_cos + x_sin + scaled_x,
+            .y = -y_sin - y_cos + scaled_y,
+            .z = tex_u - tex_w_half,
+            .w = tex_v + tex_h_half,
+        },
         .render_type = minimap_render_type,
     };
 
     base_vert_data[idx_new + 1] = BaseVertexData{
-        .pos = [2]f32{ x_cos + x_sin + scaled_x, y_sin - y_cos + scaled_y },
-        .uv = [2]f32{ tex_u + tex_w_half, tex_v + tex_h_half },
+        .pos_uv = .{
+            .x = x_cos + x_sin + scaled_x,
+            .y = y_sin - y_cos + scaled_y,
+            .z = tex_u + tex_w_half,
+            .w = tex_v + tex_h_half,
+        },
         .render_type = minimap_render_type,
     };
 
     base_vert_data[idx_new + 2] = BaseVertexData{
-        .pos = [2]f32{ x_cos - x_sin + scaled_x, y_sin + y_cos + scaled_y },
-        .uv = [2]f32{ tex_u + tex_w_half, tex_v - tex_h_half },
+        .pos_uv = .{
+            .x = x_cos - x_sin + scaled_x,
+            .y = y_sin + y_cos + scaled_y,
+            .z = tex_u + tex_w_half,
+            .w = tex_v - tex_h_half,
+        },
         .render_type = minimap_render_type,
     };
 
     base_vert_data[idx_new + 3] = BaseVertexData{
-        .pos = [2]f32{ -x_cos - x_sin + scaled_x, -y_sin + y_cos + scaled_y },
-        .uv = [2]f32{ tex_u - tex_w_half, tex_v - tex_h_half },
+        .pos_uv = .{
+            .x = -x_cos - x_sin + scaled_x,
+            .y = -y_sin + y_cos + scaled_y,
+            .z = tex_u - tex_w_half,
+            .w = tex_v - tex_h_half,
+        },
         .render_type = minimap_render_type,
     };
 
@@ -769,26 +789,42 @@ fn drawMenuBackground(
     const y_sin = sin_angle * scaled_h * 0.5;
 
     base_vert_data[idx_new] = BaseVertexData{
-        .pos = [2]f32{ -x_cos + x_sin + scaled_x, -y_sin - y_cos + scaled_y },
-        .uv = [2]f32{ 0, 1 },
+        .pos_uv = .{
+            .x = -x_cos + x_sin + scaled_x,
+            .y = -y_sin - y_cos + scaled_y,
+            .z = 0,
+            .w = 1,
+        },
         .render_type = menu_bg_render_type,
     };
 
     base_vert_data[idx_new + 1] = BaseVertexData{
-        .pos = [2]f32{ x_cos + x_sin + scaled_x, y_sin - y_cos + scaled_y },
-        .uv = [2]f32{ 1, 1 },
+        .pos_uv = .{
+            .x = x_cos + x_sin + scaled_x,
+            .y = y_sin - y_cos + scaled_y,
+            .z = 1,
+            .w = 1,
+        },
         .render_type = menu_bg_render_type,
     };
 
     base_vert_data[idx_new + 2] = BaseVertexData{
-        .pos = [2]f32{ x_cos - x_sin + scaled_x, y_sin + y_cos + scaled_y },
-        .uv = [2]f32{ 1, 0 },
+        .pos_uv = .{
+            .x = x_cos - x_sin + scaled_x,
+            .y = y_sin + y_cos + scaled_y,
+            .z = 1,
+            .w = 0,
+        },
         .render_type = menu_bg_render_type,
     };
 
     base_vert_data[idx_new + 3] = BaseVertexData{
-        .pos = [2]f32{ -x_cos - x_sin + scaled_x, -y_sin + y_cos + scaled_y },
-        .uv = [2]f32{ 0, 0 },
+        .pos_uv = .{
+            .x = -x_cos - x_sin + scaled_x,
+            .y = -y_sin + y_cos + scaled_y,
+            .z = 0,
+            .w = 0,
+        },
         .render_type = menu_bg_render_type,
     };
 
@@ -844,7 +880,6 @@ fn drawQuad(
 
     const texel_w = assets.base_texel_w * opts.shadow_texel_mult;
     const texel_h = assets.base_texel_h * opts.shadow_texel_mult;
-    const shadow_texel = [2]f32{ texel_w, texel_h };
 
     const scaled_w = w * camera.clip_scale_x;
     const scaled_h = h * camera.clip_scale_y;
@@ -867,55 +902,139 @@ fn drawQuad(
     }
 
     base_vert_data[idx_new] = BaseVertexData{
-        .pos = [2]f32{ -x_cos + x_sin + scaled_x, -y_sin - y_cos + scaled_y },
-        .uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v + atlas_data.tex_h },
-        .base_color = base_rgb,
-        .base_color_intensity = opts.base_color_intensity,
-        .alpha_mult = opts.alpha_mult,
-        .shadow_color = shadow_rgb,
-        .shadow_texel = shadow_texel,
+        .pos_uv = .{
+            .x = -x_cos + x_sin + scaled_x,
+            .y = -y_sin - y_cos + scaled_y,
+            .z = atlas_data.tex_u,
+            .w = atlas_data.tex_v + atlas_data.tex_h,
+        },
+        .base_color_and_intensity = .{
+            .x = base_rgb.r,
+            .y = base_rgb.g,
+            .z = base_rgb.b,
+            .w = opts.base_color_intensity,
+        },
+        .alpha_and_shadow_color = .{
+            .x = opts.alpha_mult,
+            .y = shadow_rgb.r,
+            .z = shadow_rgb.g,
+            .w = shadow_rgb.b,
+        },
+        .texel_and_text_data = .{
+            .x = texel_w,
+            .y = texel_h,
+            .z = 0.0,
+            .w = 0.0,
+        },
+        .outline_color_and_w = .{
+            .x = shadow_rgb.r,
+            .y = shadow_rgb.g,
+            .z = shadow_rgb.b,
+            .w = 0.5,
+        },
         .render_type = render_type,
-        .outline_color = shadow_rgb,
-        .outline_width = 0.5,
     };
 
     base_vert_data[idx_new + 1] = BaseVertexData{
-        .pos = [2]f32{ x_cos + x_sin + scaled_x, y_sin - y_cos + scaled_y },
-        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w, atlas_data.tex_v + atlas_data.tex_h },
-        .base_color = base_rgb,
-        .base_color_intensity = opts.base_color_intensity,
-        .alpha_mult = opts.alpha_mult,
-        .shadow_color = shadow_rgb,
-        .shadow_texel = shadow_texel,
+        .pos_uv = .{
+            .x = x_cos + x_sin + scaled_x,
+            .y = y_sin - y_cos + scaled_y,
+            .z = atlas_data.tex_u + atlas_data.tex_w,
+            .w = atlas_data.tex_v + atlas_data.tex_h,
+        },
+        .base_color_and_intensity = .{
+            .x = base_rgb.r,
+            .y = base_rgb.g,
+            .z = base_rgb.b,
+            .w = opts.base_color_intensity,
+        },
+        .alpha_and_shadow_color = .{
+            .x = opts.alpha_mult,
+            .y = shadow_rgb.r,
+            .z = shadow_rgb.g,
+            .w = shadow_rgb.b,
+        },
+        .texel_and_text_data = .{
+            .x = texel_w,
+            .y = texel_h,
+            .z = 0.0,
+            .w = 0.0,
+        },
+        .outline_color_and_w = .{
+            .x = shadow_rgb.r,
+            .y = shadow_rgb.g,
+            .z = shadow_rgb.b,
+            .w = 0.5,
+        },
         .render_type = render_type,
-        .outline_color = shadow_rgb,
-        .outline_width = 0.5,
     };
 
     base_vert_data[idx_new + 2] = BaseVertexData{
-        .pos = [2]f32{ x_cos - x_sin + scaled_x, y_sin + y_cos + scaled_y },
-        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w, atlas_data.tex_v },
-        .base_color = base_rgb,
-        .base_color_intensity = opts.base_color_intensity,
-        .alpha_mult = opts.alpha_mult,
-        .shadow_color = shadow_rgb,
-        .shadow_texel = shadow_texel,
+        .pos_uv = .{
+            .x = x_cos - x_sin + scaled_x,
+            .y = y_sin + y_cos + scaled_y,
+            .z = atlas_data.tex_u + atlas_data.tex_w,
+            .w = atlas_data.tex_v,
+        },
+        .base_color_and_intensity = .{
+            .x = base_rgb.r,
+            .y = base_rgb.g,
+            .z = base_rgb.b,
+            .w = opts.base_color_intensity,
+        },
+        .alpha_and_shadow_color = .{
+            .x = opts.alpha_mult,
+            .y = shadow_rgb.r,
+            .z = shadow_rgb.g,
+            .w = shadow_rgb.b,
+        },
+        .texel_and_text_data = .{
+            .x = texel_w,
+            .y = texel_h,
+            .z = 0.0,
+            .w = 0.0,
+        },
+        .outline_color_and_w = .{
+            .x = shadow_rgb.r,
+            .y = shadow_rgb.g,
+            .z = shadow_rgb.b,
+            .w = 0.5,
+        },
         .render_type = render_type,
-        .outline_color = shadow_rgb,
-        .outline_width = 0.5,
     };
 
     base_vert_data[idx_new + 3] = BaseVertexData{
-        .pos = [2]f32{ -x_cos - x_sin + scaled_x, -y_sin + y_cos + scaled_y },
-        .uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
-        .base_color = base_rgb,
-        .base_color_intensity = opts.base_color_intensity,
-        .alpha_mult = opts.alpha_mult,
-        .shadow_color = shadow_rgb,
-        .shadow_texel = shadow_texel,
+        .pos_uv = .{
+            .x = -x_cos - x_sin + scaled_x,
+            .y = -y_sin + y_cos + scaled_y,
+            .z = atlas_data.tex_u,
+            .w = atlas_data.tex_v,
+        },
+        .base_color_and_intensity = .{
+            .x = base_rgb.r,
+            .y = base_rgb.g,
+            .z = base_rgb.b,
+            .w = opts.base_color_intensity,
+        },
+        .alpha_and_shadow_color = .{
+            .x = opts.alpha_mult,
+            .y = shadow_rgb.r,
+            .z = shadow_rgb.g,
+            .w = shadow_rgb.b,
+        },
+        .texel_and_text_data = .{
+            .x = texel_w,
+            .y = texel_h,
+            .z = 0.0,
+            .w = 0.0,
+        },
+        .outline_color_and_w = .{
+            .x = shadow_rgb.r,
+            .y = shadow_rgb.g,
+            .z = shadow_rgb.b,
+            .w = 0.5,
+        },
         .render_type = render_type,
-        .outline_color = shadow_rgb,
-        .outline_width = 0.5,
     };
 
     return idx_new + 4;
@@ -963,7 +1082,6 @@ fn drawQuadVerts(
 
     const texel_w = assets.base_texel_w * opts.shadow_texel_mult;
     const texel_h = assets.base_texel_h * opts.shadow_texel_mult;
-    const shadow_texel = [2]f32{ texel_w, texel_h };
 
     const render_type: f32 = if (settings.enable_glow)
         quad_render_type
@@ -974,55 +1092,139 @@ fn drawQuadVerts(
     const pad_h = assets.base_texel_h / 8.0;
 
     base_vert_data[idx_new] = BaseVertexData{
-        .pos = [2]f32{ x1, y1 },
-        .uv = [2]f32{ atlas_data.tex_u + pad_w, atlas_data.tex_v + pad_h },
-        .base_color = base_rgb,
-        .base_color_intensity = opts.base_color_intensity,
-        .alpha_mult = opts.alpha_mult,
-        .shadow_color = shadow_rgb,
-        .shadow_texel = shadow_texel,
+        .pos_uv = .{
+            .x = x1,
+            .y = y1,
+            .z = atlas_data.tex_u + pad_w,
+            .w = atlas_data.tex_v + pad_h,
+        },
+        .base_color_and_intensity = .{
+            .x = base_rgb.r,
+            .y = base_rgb.g,
+            .z = base_rgb.b,
+            .w = opts.base_color_intensity,
+        },
+        .alpha_and_shadow_color = .{
+            .x = opts.alpha_mult,
+            .y = shadow_rgb.r,
+            .z = shadow_rgb.g,
+            .w = shadow_rgb.b,
+        },
+        .texel_and_text_data = .{
+            .x = texel_w,
+            .y = texel_h,
+            .z = 0.0,
+            .w = 0.0,
+        },
+        .outline_color_and_w = .{
+            .x = shadow_rgb.r,
+            .y = shadow_rgb.g,
+            .z = shadow_rgb.b,
+            .w = 0.5,
+        },
         .render_type = render_type,
-        .outline_color = shadow_rgb,
-        .outline_width = 0.5,
     };
 
     base_vert_data[idx_new + 1] = BaseVertexData{
-        .pos = [2]f32{ x2, y2 },
-        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w - pad_w, atlas_data.tex_v + pad_h },
-        .base_color = base_rgb,
-        .base_color_intensity = opts.base_color_intensity,
-        .alpha_mult = opts.alpha_mult,
-        .shadow_color = shadow_rgb,
-        .shadow_texel = shadow_texel,
+        .pos_uv = .{
+            .x = x2,
+            .y = y2,
+            .z = atlas_data.tex_u + atlas_data.tex_w - pad_w,
+            .w = atlas_data.tex_v + pad_h,
+        },
+        .base_color_and_intensity = .{
+            .x = base_rgb.r,
+            .y = base_rgb.g,
+            .z = base_rgb.b,
+            .w = opts.base_color_intensity,
+        },
+        .alpha_and_shadow_color = .{
+            .x = opts.alpha_mult,
+            .y = shadow_rgb.r,
+            .z = shadow_rgb.g,
+            .w = shadow_rgb.b,
+        },
+        .texel_and_text_data = .{
+            .x = texel_w,
+            .y = texel_h,
+            .z = 0.0,
+            .w = 0.0,
+        },
+        .outline_color_and_w = .{
+            .x = shadow_rgb.r,
+            .y = shadow_rgb.g,
+            .z = shadow_rgb.b,
+            .w = 0.5,
+        },
         .render_type = render_type,
-        .outline_color = shadow_rgb,
-        .outline_width = 0.5,
     };
 
     base_vert_data[idx_new + 2] = BaseVertexData{
-        .pos = [2]f32{ x3, y3 },
-        .uv = [2]f32{ atlas_data.tex_u + atlas_data.tex_w - pad_w, atlas_data.tex_v + atlas_data.tex_h - pad_h },
-        .base_color = base_rgb,
-        .base_color_intensity = opts.base_color_intensity,
-        .alpha_mult = opts.alpha_mult,
-        .shadow_color = shadow_rgb,
-        .shadow_texel = shadow_texel,
+        .pos_uv = .{
+            .x = x3,
+            .y = y3,
+            .z = atlas_data.tex_u + atlas_data.tex_w - pad_w,
+            .w = atlas_data.tex_v + atlas_data.tex_h - pad_h,
+        },
+        .base_color_and_intensity = .{
+            .x = base_rgb.r,
+            .y = base_rgb.g,
+            .z = base_rgb.b,
+            .w = opts.base_color_intensity,
+        },
+        .alpha_and_shadow_color = .{
+            .x = opts.alpha_mult,
+            .y = shadow_rgb.r,
+            .z = shadow_rgb.g,
+            .w = shadow_rgb.b,
+        },
+        .texel_and_text_data = .{
+            .x = texel_w,
+            .y = texel_h,
+            .z = 0.0,
+            .w = 0.0,
+        },
+        .outline_color_and_w = .{
+            .x = shadow_rgb.r,
+            .y = shadow_rgb.g,
+            .z = shadow_rgb.b,
+            .w = 0.5,
+        },
         .render_type = render_type,
-        .outline_color = shadow_rgb,
-        .outline_width = 0.5,
     };
 
     base_vert_data[idx_new + 3] = BaseVertexData{
-        .pos = [2]f32{ x4, y4 },
-        .uv = [2]f32{ atlas_data.tex_u + pad_w, atlas_data.tex_v + atlas_data.tex_h - pad_h },
-        .base_color = base_rgb,
-        .base_color_intensity = opts.base_color_intensity,
-        .alpha_mult = opts.alpha_mult,
-        .shadow_color = shadow_rgb,
-        .shadow_texel = shadow_texel,
+        .pos_uv = .{
+            .x = x4,
+            .y = y4,
+            .z = atlas_data.tex_u + pad_w,
+            .w = atlas_data.tex_v + atlas_data.tex_h - pad_h,
+        },
+        .base_color_and_intensity = .{
+            .x = base_rgb.r,
+            .y = base_rgb.g,
+            .z = base_rgb.b,
+            .w = opts.base_color_intensity,
+        },
+        .alpha_and_shadow_color = .{
+            .x = opts.alpha_mult,
+            .y = shadow_rgb.r,
+            .z = shadow_rgb.g,
+            .w = shadow_rgb.b,
+        },
+        .texel_and_text_data = .{
+            .x = texel_w,
+            .y = texel_h,
+            .z = 0.0,
+            .w = 0.0,
+        },
+        .outline_color_and_w = .{
+            .x = shadow_rgb.r,
+            .y = shadow_rgb.g,
+            .z = shadow_rgb.b,
+            .w = 0.5,
+        },
         .render_type = render_type,
-        .outline_color = shadow_rgb,
-        .outline_width = 0.5,
     };
 
     return idx_new + 4;
@@ -1054,47 +1256,111 @@ fn drawSquare(
     const pad_h = assets.base_texel_h / 8.0;
 
     ground_vert_data[idx] = GroundVertexData{
-        .pos = [2]f32{ x1, y1 },
-        .uv = [2]f32{ atlas_data.tex_w - pad_w, atlas_data.tex_h - pad_h },
-        .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
-        .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
-        .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
-        .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
-        .base_uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
-        .uv_offsets = [2]f32{ u_offset, v_offset },
+        .pos_uv = .{
+            .x = x1,
+            .y = y1,
+            .z = atlas_data.tex_w - pad_w,
+            .w = atlas_data.tex_h - pad_h,
+        },
+        .left_top_blend_uv = .{
+            .x = left_blend_u,
+            .y = left_blend_v,
+            .z = top_blend_u,
+            .w = top_blend_v,
+        },
+        .right_bottom_blend_uv = .{
+            .x = right_blend_u,
+            .y = right_blend_v,
+            .z = bottom_blend_u,
+            .w = bottom_blend_v,
+        },
+        .base_and_offset_uv = .{
+            .x = atlas_data.tex_u,
+            .y = atlas_data.tex_v,
+            .z = u_offset,
+            .w = v_offset,
+        },
     };
 
     ground_vert_data[idx + 1] = GroundVertexData{
-        .pos = [2]f32{ x2, y2 },
-        .uv = [2]f32{ pad_w, atlas_data.tex_h - pad_h },
-        .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
-        .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
-        .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
-        .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
-        .base_uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
-        .uv_offsets = [2]f32{ u_offset, v_offset },
+        .pos_uv = .{
+            .x = x2,
+            .y = y2,
+            .z = pad_w,
+            .w = atlas_data.tex_h - pad_h,
+        },
+        .left_top_blend_uv = .{
+            .x = left_blend_u,
+            .y = left_blend_v,
+            .z = top_blend_u,
+            .w = top_blend_v,
+        },
+        .right_bottom_blend_uv = .{
+            .x = right_blend_u,
+            .y = right_blend_v,
+            .z = bottom_blend_u,
+            .w = bottom_blend_v,
+        },
+        .base_and_offset_uv = .{
+            .x = atlas_data.tex_u,
+            .y = atlas_data.tex_v,
+            .z = u_offset,
+            .w = v_offset,
+        },
     };
 
     ground_vert_data[idx + 2] = GroundVertexData{
-        .pos = [2]f32{ x3, y3 },
-        .uv = [2]f32{ pad_w, pad_h },
-        .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
-        .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
-        .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
-        .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
-        .base_uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
-        .uv_offsets = [2]f32{ u_offset, v_offset },
+        .pos_uv = .{
+            .x = x3,
+            .y = y3,
+            .z = pad_w,
+            .w = pad_h,
+        },
+        .left_top_blend_uv = .{
+            .x = left_blend_u,
+            .y = left_blend_v,
+            .z = top_blend_u,
+            .w = top_blend_v,
+        },
+        .right_bottom_blend_uv = .{
+            .x = right_blend_u,
+            .y = right_blend_v,
+            .z = bottom_blend_u,
+            .w = bottom_blend_v,
+        },
+        .base_and_offset_uv = .{
+            .x = atlas_data.tex_u,
+            .y = atlas_data.tex_v,
+            .z = u_offset,
+            .w = v_offset,
+        },
     };
 
     ground_vert_data[idx + 3] = GroundVertexData{
-        .pos = [2]f32{ x4, y4 },
-        .uv = [2]f32{ atlas_data.tex_w - pad_w, pad_h },
-        .left_blend_uv = [2]f32{ left_blend_u, left_blend_v },
-        .top_blend_uv = [2]f32{ top_blend_u, top_blend_v },
-        .right_blend_uv = [2]f32{ right_blend_u, right_blend_v },
-        .bottom_blend_uv = [2]f32{ bottom_blend_u, bottom_blend_v },
-        .base_uv = [2]f32{ atlas_data.tex_u, atlas_data.tex_v },
-        .uv_offsets = [2]f32{ u_offset, v_offset },
+        .pos_uv = .{
+            .x = x4,
+            .y = y4,
+            .z = atlas_data.tex_w - pad_w,
+            .w = pad_h,
+        },
+        .left_top_blend_uv = .{
+            .x = left_blend_u,
+            .y = left_blend_v,
+            .z = top_blend_u,
+            .w = top_blend_v,
+        },
+        .right_bottom_blend_uv = .{
+            .x = right_blend_u,
+            .y = right_blend_v,
+            .z = bottom_blend_u,
+            .w = bottom_blend_v,
+        },
+        .base_and_offset_uv = .{
+            .x = atlas_data.tex_u,
+            .y = atlas_data.tex_v,
+            .z = u_offset,
+            .w = v_offset,
+        },
     };
 }
 
@@ -1205,10 +1471,8 @@ fn drawText(
             .bold_italic => assets.bold_italic_chars[mod_char],
         };
 
-        const shadow_texel_size = [2]f32{
-            text_data.shadow_texel_offset_mult / char_data.atlas_w,
-            text_data.shadow_texel_offset_mult / char_data.atlas_h,
-        };
+        const shadow_texel_w = text_data.shadow_texel_offset_mult / char_data.atlas_w;
+        const shadow_texel_h = text_data.shadow_texel_offset_mult / char_data.atlas_h;
 
         const next_x_pointer = x_pointer + char_data.x_advance * current_size;
         if (char == '\n' or next_x_pointer - x_base > text_data.max_width) {
@@ -1232,69 +1496,149 @@ fn drawText(
         const scaled_w = w * camera.clip_scale_x;
         const scaled_h = h * camera.clip_scale_y;
         const px_range = assets.CharacterData.px_range / camera.scale;
+
+        // text type could be incorporated into render type, would save us another vertex block and reduce branches
+        // would be hell to maintain and extend though...
         const text_type: f32 = @floatFromInt(@intFromEnum(current_type));
 
         x_pointer = next_x_pointer;
 
         base_vert_data[idx_new] = BaseVertexData{
-            .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
-            .uv = [2]f32{ char_data.tex_u, char_data.tex_v },
-            .base_color = current_color,
-            .base_color_intensity = 1.0,
-            .alpha_mult = text_data.alpha,
-            .shadow_color = shadow_rgb,
-            .shadow_texel = shadow_texel_size,
-            .text_type = text_type,
-            .distance_factor = current_size * px_range,
+            .pos_uv = .{
+                .x = scaled_w * -0.5 + scaled_x,
+                .y = scaled_h * 0.5 + scaled_y,
+                .z = char_data.tex_u,
+                .w = char_data.tex_v,
+            },
+            .base_color_and_intensity = .{
+                .x = current_color.r,
+                .y = current_color.g,
+                .z = current_color.b,
+                .w = 1.0,
+            },
+            .alpha_and_shadow_color = .{
+                .x = text_data.alpha,
+                .y = shadow_rgb.r,
+                .z = shadow_rgb.g,
+                .w = shadow_rgb.b,
+            },
+            .texel_and_text_data = .{
+                .x = shadow_texel_w,
+                .y = shadow_texel_h,
+                .z = current_size * px_range,
+                .w = text_type,
+            },
+            .outline_color_and_w = .{
+                .x = outline_rgb.r,
+                .y = outline_rgb.g,
+                .z = outline_rgb.b,
+                .w = text_data.outline_width,
+            },
             .render_type = render_type,
-            .outline_color = outline_rgb,
-            .outline_width = text_data.outline_width,
         };
 
         base_vert_data[idx_new + 1] = BaseVertexData{
-            .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
-            .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v },
-            .base_color = current_color,
-            .base_color_intensity = 1.0,
-            .alpha_mult = text_data.alpha,
-            .shadow_color = shadow_rgb,
-            .shadow_texel = shadow_texel_size,
-            .text_type = text_type,
-            .distance_factor = current_size * px_range,
+            .pos_uv = .{
+                .x = scaled_w * 0.5 + scaled_x,
+                .y = scaled_h * 0.5 + scaled_y,
+                .z = char_data.tex_u + char_data.tex_w,
+                .w = char_data.tex_v,
+            },
+            .base_color_and_intensity = .{
+                .x = current_color.r,
+                .y = current_color.g,
+                .z = current_color.b,
+                .w = 1.0,
+            },
+            .alpha_and_shadow_color = .{
+                .x = text_data.alpha,
+                .y = shadow_rgb.r,
+                .z = shadow_rgb.g,
+                .w = shadow_rgb.b,
+            },
+            .texel_and_text_data = .{
+                .x = shadow_texel_w,
+                .y = shadow_texel_h,
+                .z = current_size * px_range,
+                .w = text_type,
+            },
+            .outline_color_and_w = .{
+                .x = outline_rgb.r,
+                .y = outline_rgb.g,
+                .z = outline_rgb.b,
+                .w = text_data.outline_width,
+            },
             .render_type = render_type,
-            .outline_color = outline_rgb,
-            .outline_width = text_data.outline_width,
         };
 
         base_vert_data[idx_new + 2] = BaseVertexData{
-            .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
-            .uv = [2]f32{ char_data.tex_u + char_data.tex_w, char_data.tex_v + char_data.tex_h },
-            .base_color = current_color,
-            .base_color_intensity = 1.0,
-            .alpha_mult = text_data.alpha,
-            .shadow_color = shadow_rgb,
-            .shadow_texel = shadow_texel_size,
-            .text_type = text_type,
-            .distance_factor = current_size * px_range,
+            .pos_uv = .{
+                .x = scaled_w * 0.5 + scaled_x,
+                .y = scaled_h * -0.5 + scaled_y,
+                .z = char_data.tex_u + char_data.tex_w,
+                .w = char_data.tex_v + char_data.tex_h,
+            },
+            .base_color_and_intensity = .{
+                .x = current_color.r,
+                .y = current_color.g,
+                .z = current_color.b,
+                .w = 1.0,
+            },
+            .alpha_and_shadow_color = .{
+                .x = text_data.alpha,
+                .y = shadow_rgb.r,
+                .z = shadow_rgb.g,
+                .w = shadow_rgb.b,
+            },
+            .texel_and_text_data = .{
+                .x = shadow_texel_w,
+                .y = shadow_texel_h,
+                .z = current_size * px_range,
+                .w = text_type,
+            },
+            .outline_color_and_w = .{
+                .x = outline_rgb.r,
+                .y = outline_rgb.g,
+                .z = outline_rgb.b,
+                .w = text_data.outline_width,
+            },
             .render_type = render_type,
-            .outline_color = outline_rgb,
-            .outline_width = text_data.outline_width,
         };
 
         base_vert_data[idx_new + 3] = BaseVertexData{
-            .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
-            .uv = [2]f32{ char_data.tex_u, char_data.tex_v + char_data.tex_h },
-            .base_color = current_color,
-            .base_color_intensity = 1.0,
-            .alpha_mult = text_data.alpha,
-            .shadow_color = shadow_rgb,
-            .shadow_texel = shadow_texel_size,
-            .text_type = text_type,
-            .distance_factor = current_size * px_range,
+            .pos_uv = .{
+                .x = scaled_w * -0.5 + scaled_x,
+                .y = scaled_h * -0.5 + scaled_y,
+                .z = char_data.tex_u,
+                .w = char_data.tex_v + char_data.tex_h,
+            },
+            .base_color_and_intensity = .{
+                .x = current_color.r,
+                .y = current_color.g,
+                .z = current_color.b,
+                .w = 1.0,
+            },
+            .alpha_and_shadow_color = .{
+                .x = text_data.alpha,
+                .y = shadow_rgb.r,
+                .z = shadow_rgb.g,
+                .w = shadow_rgb.b,
+            },
+            .texel_and_text_data = .{
+                .x = shadow_texel_w,
+                .y = shadow_texel_h,
+                .z = current_size * px_range,
+                .w = text_type,
+            },
+            .outline_color_and_w = .{
+                .x = outline_rgb.r,
+                .y = outline_rgb.g,
+                .z = outline_rgb.b,
+                .w = text_data.outline_width,
+            },
             .render_type = render_type,
-            .outline_color = outline_rgb,
-            .outline_width = text_data.outline_width,
         };
+
         idx_new += 4;
 
         if (idx == base_batch_vert_size) {
@@ -1458,34 +1802,66 @@ fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: u32, intensity: f3
     const scaled_w = w * 4 * camera.clip_scale_x * camera.scale;
     const scaled_h = h * 4 * camera.clip_scale_y * camera.scale;
     const scaled_x = (x - camera.screen_width / 2.0) * camera.clip_scale_x;
-    const scaled_y = -(y - camera.screen_height / 2.0) * camera.clip_scale_y; // todo
+    const scaled_y = -(y - camera.screen_height / 2.0) * camera.clip_scale_y;
 
     light_vert_data[idx_new] = LightVertexData{
-        .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_w * 0.5 + scaled_y },
-        .uv = [2]f32{ 1, 1 },
-        .color = rgb,
-        .intensity = intensity,
+        .pos_uv = .{
+            .x = scaled_w * -0.5 + scaled_x,
+            .y = scaled_h * 0.5 + scaled_y,
+            .z = 1,
+            .w = 1,
+        },
+        .color_and_intensity = .{
+            .x = rgb.r,
+            .y = rgb.g,
+            .z = rgb.b,
+            .w = intensity,
+        },
     };
 
     light_vert_data[idx_new + 1] = LightVertexData{
-        .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
-        .uv = [2]f32{ 0, 1 },
-        .color = rgb,
-        .intensity = intensity,
+        .pos_uv = .{
+            .x = scaled_w * 0.5 + scaled_x,
+            .y = scaled_h * 0.5 + scaled_y,
+            .z = 0,
+            .w = 1,
+        },
+        .color_and_intensity = .{
+            .x = rgb.r,
+            .y = rgb.g,
+            .z = rgb.b,
+            .w = intensity,
+        },
     };
 
     light_vert_data[idx_new + 2] = LightVertexData{
-        .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
-        .uv = [2]f32{ 0, 0 },
-        .color = rgb,
-        .intensity = intensity,
+        .pos_uv = .{
+            .x = scaled_w * 0.5 + scaled_x,
+            .y = scaled_h * -0.5 + scaled_y,
+            .z = 0,
+            .w = 0,
+        },
+        .color_and_intensity = .{
+            .x = rgb.r,
+            .y = rgb.g,
+            .z = rgb.b,
+            .w = intensity,
+        },
     };
 
     light_vert_data[idx_new + 3] = LightVertexData{
-        .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
-        .uv = [2]f32{ 1, 0 },
-        .color = rgb,
-        .intensity = intensity,
+        .pos_uv = .{
+            .x = scaled_w * -0.5 + scaled_x,
+            .y = scaled_h * -0.5 + scaled_y,
+            .z = 1,
+            .w = 0,
+        },
+        .color_and_intensity = .{
+            .x = rgb.r,
+            .y = rgb.g,
+            .z = rgb.b,
+            .w = intensity,
+        },
     };
 
     return idx_new + 4;
