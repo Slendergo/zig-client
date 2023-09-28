@@ -391,17 +391,17 @@ fn handleCreateSuccess() void {
 fn handleDamage() void {
     const target_id = reader.read(i32);
     const effects = reader.read(utils.Condition);
-    const damage_amount = reader.read(u16);
+    const amount = reader.read(u16);
     const kill = reader.read(bool);
 
     if (map.findEntityRef(target_id)) |en| {
         switch (en.*) {
             .player => |*player| {
                 player.takeDamage(
-                    damage_amount,
-                    player.hp <= damage_amount,
+                    amount,
+                    kill,
                     false,
-                    main.current_time,
+                    @divFloor(main.current_time, std.time.us_per_ms),
                     effects,
                     player.colors,
                     0.0,
@@ -412,10 +412,10 @@ fn handleDamage() void {
             },
             .object => |*object| {
                 object.takeDamage(
-                    damage_amount,
-                    object.hp <= damage_amount,
+                    amount,
+                    kill,
                     false,
-                    main.current_time,
+                    @divFloor(main.current_time, std.time.us_per_ms),
                     effects,
                     object.colors,
                     0.0,
@@ -429,7 +429,7 @@ fn handleDamage() void {
     }
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Recv - Damage: target_id={d}, effects={any}, damage_amount={d}, kill={any}", .{ target_id, effects, damage_amount, kill });
+        std.log.debug("Recv - Damage: target_id={d}, effects={any}, damage_amount={d}, kill={any}", .{ target_id, effects, amount, kill });
 }
 
 fn handleDeath() void {
