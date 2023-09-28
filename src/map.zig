@@ -1893,10 +1893,7 @@ pub fn damageWithDefense(orig_damage: f32, target_defense: f32, armor_piercing: 
 }
 
 pub fn showDamageText(time: i64, damage: i32, pierced: bool, object_id: i32, allocator: std.mem.Allocator) void {
-    var damage_color: u32 = 0xB02020;
-    if (pierced)
-        damage_color = 0x890AFF;
-
+    const damage_color: u32 = if (pierced) 0x890AFF else 0xB02020;
     ui.StatusText.add(.{
         .obj_id = object_id,
         .start_time = time,
