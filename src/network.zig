@@ -865,7 +865,7 @@ fn handleShowEffect() void {
                 .end_x = x1,
                 .end_y = y1,
                 .color = color,
-                .duration = 1000,
+                .duration = 1500,
             };
             effect.addToMap();
         },
