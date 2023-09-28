@@ -1,6 +1,7 @@
 const std = @import("std");
 const main = @import("main.zig");
 const builtin = @import("builtin");
+const game_data = @import("game_data.zig");
 
 pub fn DynSlice(comptime T: type) type {
     return struct {
@@ -316,6 +317,14 @@ pub const Condition = packed struct(u64) {
     ninja_speedy: bool = false,
     _padding: u35 = 0,
 
+    pub inline fn fromCondSlice(slice: []game_data.ConditionEffect) Condition {
+        var ret = Condition{};
+        for (slice) |cond| {
+            ret.set(cond.condition, true);
+        }
+        return ret;
+    }
+
     pub fn set(self: *Condition, cond: ConditionEnum, value: bool) void {
         switch (cond) {
             .quiet => self.quiet = value,
@@ -345,7 +354,7 @@ pub const Condition = packed struct(u64) {
             .armor_broken => self.armor_broken = value,
             .hexed => self.hexed = value,
             .ninja_speedy => self.ninja_speedy = value,
-            else => std.log.err("Invalid enum specified for condition {any}", .{@errorReturnTrace() orelse return}),
+            else => std.log.err("Invalid enum specified for condition set: {any}", .{@errorReturnTrace() orelse return}),
         }
     }
 
@@ -378,7 +387,7 @@ pub const Condition = packed struct(u64) {
             .armor_broken => self.armor_broken = !self.armor_broken,
             .hexed => self.hexed = !self.hexed,
             .ninja_speedy => self.ninja_speedy = !self.ninja_speedy,
-            else => std.log.err("Invalid enum specified for condition {any}", .{@errorReturnTrace() orelse return}),
+            else => std.log.err("Invalid enum specified for condition toggle: {any}", .{@errorReturnTrace() orelse return}),
         }
     }
 };

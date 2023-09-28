@@ -394,9 +394,6 @@ fn handleDamage() void {
     const damage_amount = reader.read(u16);
     const kill = reader.read(bool);
 
-    // todo figure out how to convert game_data.conditioneffect into utils.condition for this function
-    // utils.Condition is a bit mask 0000 0000 0000 0000 0000 0000 0000 0000 64 individual values mapped to a condition effect value
-
     if (map.findEntityRef(target_id)) |en| {
         switch (en.*) {
             .player => |*player| {
@@ -405,10 +402,10 @@ fn handleDamage() void {
                     player.hp <= damage_amount,
                     false,
                     main.current_time,
-                    &[0]game_data.ConditionEffect{},
+                    effects,
                     player.colors,
                     0.0,
-                    0.0,
+                    100.0 / 10000.0,
                     false,
                     main._allocator,
                 );
@@ -419,10 +416,10 @@ fn handleDamage() void {
                     object.hp <= damage_amount,
                     false,
                     main.current_time,
-                    &[0]game_data.ConditionEffect{},
+                    effects,
                     object.colors,
                     0.0,
-                    0.0,
+                    100.0 / 10000.0,
                     false,
                     main._allocator,
                 );

@@ -398,7 +398,7 @@ pub const GameObject = struct {
         kill: bool,
         armor_pierce: bool,
         time: i64,
-        conditions: []game_data.ConditionEffect,
+        conditions: utils.Condition,
         proj_colors: []u32,
         proj_angle: f32,
         proj_speed: f32,
@@ -445,13 +445,15 @@ pub const GameObject = struct {
                 effect.addToMap();
             }
 
-            if (conditions.len > 0) {
-                for (conditions) |eff| {
-                    const cond_str = eff.condition.toString();
+            const cond_int: u64 = @bitCast(conditions);
+            for (0..@bitSizeOf(utils.Condition)) |i| {
+                if (cond_int & (@as(usize, 1) << @intCast(i)) != 0) {
+                    const eff: utils.ConditionEnum = @enumFromInt(i + 1);
+                    const cond_str = eff.toString();
                     if (cond_str.len == 0)
                         continue;
 
-                    switch (eff.condition) {
+                    switch (eff) {
                         .stasis => {
                             if (self.condition.stasis_immune) {
                                 ui.StatusText.add(.{
@@ -491,7 +493,7 @@ pub const GameObject = struct {
                             } else self.condition.stunned = true;
                         },
                         else => {
-                            self.condition.set(eff.condition, true);
+                            self.condition.set(eff, true);
                         },
                     }
 
@@ -1021,7 +1023,7 @@ pub const Player = struct {
         kill: bool,
         armor_pierce: bool,
         time: i64,
-        conditions: []game_data.ConditionEffect,
+        conditions: utils.Condition,
         proj_colors: []u32,
         proj_angle: f32,
         proj_speed: f32,
@@ -1068,13 +1070,15 @@ pub const Player = struct {
                 effect.addToMap();
             }
 
-            if (conditions.len > 0) {
-                for (conditions) |eff| {
-                    const cond_str = eff.condition.toString();
+            const cond_int: u64 = @bitCast(conditions);
+            for (0..@bitSizeOf(utils.Condition)) |i| {
+                if (cond_int & (@as(usize, 1) << @intCast(i)) != 0) {
+                    const eff: utils.ConditionEnum = @enumFromInt(i + 1);
+                    const cond_str = eff.toString();
                     if (cond_str.len == 0)
                         continue;
 
-                    switch (eff.condition) {
+                    switch (eff) {
                         .stasis => {
                             if (self.condition.stasis_immune) {
                                 ui.StatusText.add(.{
@@ -1114,7 +1118,7 @@ pub const Player = struct {
                             } else self.condition.stunned = true;
                         },
                         else => {
-                            self.condition.set(eff.condition, true);
+                            self.condition.set(eff, true);
                         },
                     }
 
@@ -1261,10 +1265,10 @@ pub const Player = struct {
                             dmg >= self.hp,
                             true,
                             time,
-                            &[0]game_data.ConditionEffect{},
+                            utils.Condition{},
                             self.colors,
                             0.0,
-                            0.0,
+                            100.0 / 10000.0,
                             true,
                             allocator,
                         );
@@ -1758,7 +1762,7 @@ pub const Projectile = struct {
                             dead,
                             pierced,
                             time,
-                            self.props.effects,
+                            utils.Condition.fromCondSlice(self.props.effects),
                             self.colors,
                             self.angle,
                             self.props.speed,
@@ -1821,7 +1825,7 @@ pub const Projectile = struct {
                             dead,
                             pierced,
                             time,
-                            self.props.effects,
+                            utils.Condition.fromCondSlice(self.props.effects),
                             self.colors,
                             self.angle,
                             self.props.speed,
