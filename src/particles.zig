@@ -296,15 +296,15 @@ pub const HealParticle = struct {
             switch (en) {
                 .particle_effect, .particle, .projectile => {},
                 inline else => |entity| {
-                    self.x += entity.x * self.dist * @cos(self.angle);
-                    self.y += entity.y * self.dist * @sin(self.angle);
+                    self.x = entity.x + self.dist * @cos(self.angle);
+                    self.y = entity.y + self.dist * @sin(self.angle);
                     self.z += self.z_dir * dt * 0.008;
                     return true;
                 },
             }
         }
 
-        return true;
+        return false;
     }
 };
 
@@ -592,12 +592,12 @@ pub const HealEffect = struct {
                         const angle = 2.0 * std.math.pi * (float_i / 10.0);
                         const radius = 0.3 + 0.4 * utils.rng.random().float(f32);
                         var particle = HealParticle{
-                            .size = 0.3 + @floor(utils.rng.random().float(f32) * 0.5) * 2.0,
+                            .size = 0.5 + utils.rng.random().float(f32),
                             .color = self.color,
                             .time_left = 1000.0,
                             .angle = angle,
                             .dist = radius,
-                            .target_id = self.target_id,
+                            .target_id = entity.obj_id,
                             .z_dir = 0.1 + utils.rng.random().float(f32) * 0.1,
                             .x = entity.x + radius * @cos(angle),
                             .y = entity.y + radius * @sin(angle),

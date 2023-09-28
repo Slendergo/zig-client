@@ -429,7 +429,7 @@ fn handleDamage() void {
     }
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick or settings.log_packets == .all_non_tick)
-        std.log.debug("Recv - Damage: target_id={d}, effects={d}, damage_amount={d}, kill={any}", .{ target_id, effects, damage_amount, kill });
+        std.log.debug("Recv - Damage: target_id={d}, effects={any}, damage_amount={d}, kill={any}", .{ target_id, effects, damage_amount, kill });
 }
 
 fn handleDeath() void {
