@@ -1210,19 +1210,19 @@ pub const Player = struct {
                         const move_speed = self.moveSpeedMultiplier();
                         self.move_angle_camera_included = move_angle;
 
-                        var vec_x = move_speed * @cos(move_angle);
-                        var vec_y = move_speed * @sin(move_angle);
+                        const vec_x = move_speed * @cos(move_angle);
+                        const vec_y = move_speed * @sin(move_angle);
 
                         if (slide_amount > 0.0) {
-                            var max_move_length = std.math.sqrt(vec_x * vec_x + vec_y * vec_y);
+                            const max_move_length = std.math.sqrt(vec_x * vec_x + vec_y * vec_y);
 
-                            var temp_move_vec_x = vec_x * -1.0 * (slide_amount - 1.0);
-                            var temp_move_vec_y = vec_y * -1.0 * (slide_amount - 1.0);
+                            const temp_move_vec_x = vec_x * -1.0 * (slide_amount - 1.0);
+                            const temp_move_vec_y = vec_y * -1.0 * (slide_amount - 1.0);
 
                             self.move_vec_x *= slide_amount;
                             self.move_vec_y *= slide_amount;
 
-                            var move_length = std.math.sqrt(self.move_vec_x * self.move_vec_x + self.move_vec_y * self.move_vec_y);
+                            const move_length = std.math.sqrt(self.move_vec_x * self.move_vec_x + self.move_vec_y * self.move_vec_y);
                             if (move_length < max_move_length) {
                                 self.move_vec_x += temp_move_vec_x;
                                 self.move_vec_y += temp_move_vec_y;
