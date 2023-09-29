@@ -54,7 +54,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         return textureSampleGrad(tex, default_sampler, in.right_bottom_blend_uv.zw + in.pos_uv.zw, dx, dy);
     }
 
-    const dims = vec2<f32>(8.0 / 4096.0, 8.0 / 4096.0);
+    const atlas_w = 4096.0;
+    const atlas_h = 4096.0;
+    const pad_w = 1.0 / atlas_w / 8.0;
+    const pad_h = 1.0 / atlas_h / 8.0;
+    const dims = vec2<f32>(8.0 / atlas_w - pad_w, 8.0 / atlas_h - pad_h);
     let uv = abs((in.pos_uv.zw + in.base_and_offset_uv.zw + dims) % dims);
     return textureSampleGrad(tex, default_sampler, uv + in.base_and_offset_uv.xy, dx, dy);
 }
