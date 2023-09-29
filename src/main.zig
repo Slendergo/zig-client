@@ -152,20 +152,20 @@ fn networkTick(allocator: std.mem.Allocator) void {
 }
 
 fn renderTick(allocator: std.mem.Allocator) !void {
-    var time_start = std.time.nanoTimestamp();
+    // var time_start = std.time.nanoTimestamp();
     while (tick_render) {
-        // Sleep is unreliable, the fps cap would be slightly lower than the actual cap.
-        // So we have to sleep 1.3x shorter and just loop for the rest of the time remaining
-        const sleep_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap / 1.3);
-        const time_offset = std.time.nanoTimestamp() - time_start;
-        if (time_offset < sleep_time)
-            std.time.sleep(@intCast(sleep_time - time_offset));
+        // // Sleep is unreliable, the fps cap would be slightly lower than the actual cap.
+        // // So we have to sleep 1.3x shorter and just loop for the rest of the time remaining
+        // const sleep_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap / 1.3);
+        // const time_offset = std.time.nanoTimestamp() - time_start;
+        // if (time_offset < sleep_time)
+        //     std.time.sleep(@intCast(sleep_time - time_offset));
 
-        const cap_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap);
-        if (std.time.nanoTimestamp() - time_start < cap_time)
-            continue;
+        // const cap_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap);
+        // if (std.time.nanoTimestamp() - time_start < cap_time)
+        //     continue;
 
-        time_start = std.time.nanoTimestamp();
+        // time_start = std.time.nanoTimestamp();
 
         const back_buffer = gctx.swapchain.getCurrentTextureView();
         const encoder = gctx.device.createCommandEncoder(null);

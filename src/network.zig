@@ -712,8 +712,9 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
         std.log.err("Could not find object in NewTick (obj_id={d}, x={d}, y={d})", .{ obj_id, x, y });
     }
 
-    map.last_tick_time = @divFloor(main.current_time, std.time.us_per_ms);
-    map.last_tick_ms = @floatFromInt(tick_time);
+    const ms_time = @divFloor(main.current_time, std.time.us_per_ms);
+    map.last_tick_ms = @floatFromInt(if (map.last_tick_time == 0) tick_time else ms_time - map.last_tick_time);
+    map.last_tick_time = ms_time;
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
         std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });
