@@ -246,9 +246,6 @@ pub const GameObject = struct {
             self.occupy_square = props.occupy_square;
             self.enemy_occupy_square = props.enemy_occupy_square;
 
-            if (props.draw_on_ground)
-                self.atlas_data.removePadding();
-
             if (props.full_occupy or props.static and props.occupy_square) {
                 if (validPos(floor_x, floor_y)) {
                     squares[floor_y * @as(u32, @intCast(width)) + floor_x].obj_id = self.obj_id;
@@ -304,6 +301,9 @@ pub const GameObject = struct {
                         self.atlas_data.removePadding();
                     }
                 }
+
+                if (self.draw_on_ground)
+                    self.atlas_data.removePadding();
 
                 colorParse: {
                     const atlas_data = if (tex.animated) self.anim_data.?.walk_anims[0][0] else self.atlas_data;
