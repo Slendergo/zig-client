@@ -95,7 +95,6 @@ pub var selected_server: ?ServerData = null;
 pub var next_char_id: u32 = 0;
 pub var max_chars: u32 = 0;
 pub var current_time: i64 = 0;
-pub var last_update: i64 = 0;
 pub var network_thread: std.Thread = undefined;
 pub var tick_network = true;
 pub var render_thread: std.Thread = undefined;
@@ -152,20 +151,23 @@ fn networkTick(allocator: std.mem.Allocator) void {
 }
 
 fn renderTick(allocator: std.mem.Allocator) !void {
-    // var time_start = std.time.nanoTimestamp();
+    var time_start = std.time.nanoTimestamp();
     while (tick_render) {
-        // // Sleep is unreliable, the fps cap would be slightly lower than the actual cap.
-        // // So we have to sleep 1.3x shorter and just loop for the rest of the time remaining
-        // const sleep_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap / 1.3);
-        // const time_offset = std.time.nanoTimestamp() - time_start;
-        // if (time_offset < sleep_time)
-        //     std.time.sleep(@intCast(sleep_time - time_offset));
+        if (settings.fps_cap > 0) {
+            // Sleep is unreliable, the fps cap would be slightly lower than the actual cap.
+            // So we have to sleep 1.3x shorter and just loop for the rest of the time remaining
+            const sleep_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap / 1.3);
+            const time_offset = std.time.nanoTimestamp() - time_start;
+            if (time_offset < sleep_time)
+                std.time.sleep(@intCast(sleep_time - time_offset));
 
-        // const cap_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap);
-        // if (std.time.nanoTimestamp() - time_start < cap_time)
-        //     continue;
+            const cap_time: i64 = @intFromFloat(1000 * std.time.ns_per_ms / settings.fps_cap);
+            const time = std.time.nanoTimestamp();
+            if (time - time_start < cap_time)
+                continue;
 
-        // time_start = std.time.nanoTimestamp();
+            time_start = time;
+        }
 
         const back_buffer = gctx.swapchain.getCurrentTextureView();
         const encoder = gctx.device.createCommandEncoder(null);
@@ -390,19 +392,22 @@ pub fn main() !void {
         render_thread.join();
     }
 
+    var last_update: i64 = 0;
     while (!window.shouldClose()) {
-        current_time = std.time.microTimestamp() - start_time;
-        if (current_time - last_update >= 7 * std.time.us_per_ms) {
-            zglfw.pollEvents();
+        const time = std.time.microTimestamp() - start_time;
+        current_time = time;
 
-            if (tick_frame) {
-                const dt = current_time - last_update;
-                map.update(current_time, dt, allocator);
-                try ui.update(current_time, dt, allocator);
-            }
+        zglfw.pollEvents();
 
-            last_update = current_time;
+        if (tick_frame) {
+            const dt = time - last_update;
+            map.update(time, dt, allocator);
+            try ui.update(time, dt, allocator);
         }
+
+        last_update = time;
+
+        std.time.sleep(6.5 * std.time.ns_per_ms);
     }
 
     if (!std.mem.eql(u8, current_account.name, "")) {

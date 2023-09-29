@@ -50,7 +50,7 @@ pub const log_packets = LogType.off;
 pub const print_atlas = false;
 pub const print_ui_atlas = false;
 pub const rotate_speed = 0.002;
-pub const enable_tracy = false;
+pub const enable_tracy = true;
 
 pub const unset_key_tex: u16 = 0x68;
 pub var key_tex_map: std.AutoHashMap(Button, u16) = undefined;
@@ -84,13 +84,13 @@ pub var respond: Button = .{ .key = .F2 };
 pub var toggle_centering: Button = .{ .key = .x };
 pub var shoot: Button = .{ .mouse = .left };
 pub var ability: Button = .{ .mouse = .right };
-pub var sfx_volume: f32 = 0.33; //0.0; // 0.33;
+pub var sfx_volume: f32 = 0.0; // 0.33;
 pub var music_volume: f32 = 0.0; // 0.1;
 pub var enable_glow = false;
 pub var enable_lights = false;
 pub var enable_vsync = false;
 pub var always_show_xp_gain = true;
-pub var fps_cap: f32 = 4000.0;
+pub var fps_cap: f32 = 0.0; // 0 to disable
 pub var selected_cursor = CursorType.aztec;
 
 pub fn init(allocator: std.mem.Allocator) !void {

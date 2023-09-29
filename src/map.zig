@@ -297,13 +297,10 @@ pub const GameObject = struct {
                         }
                     }
 
-                    if (game_data.obj_type_to_class.get(self.obj_type) == .wall) {
+                    if (self.draw_on_ground or game_data.obj_type_to_class.get(self.obj_type) == .wall) {
                         self.atlas_data.removePadding();
                     }
                 }
-
-                if (self.draw_on_ground)
-                    self.atlas_data.removePadding();
 
                 colorParse: {
                     const atlas_data = if (tex.animated) self.anim_data.?.walk_anims[0][0] else self.atlas_data;
