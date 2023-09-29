@@ -2310,8 +2310,8 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                 .bind_group = bind_group,
             };
 
-            while (!map.object_lock.tryLockShared()) {}
-            defer map.object_lock.unlockShared();
+            while (!map.object_lock.tryLock()) {}
+            defer map.object_lock.unlock();
 
             var idx: u16 = 0;
             for (map.entities.items()) |en| {

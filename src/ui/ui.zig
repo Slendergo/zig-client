@@ -1124,8 +1124,8 @@ pub fn mouseRelease(x: f32, y: f32) void {
 }
 
 pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
-    while (!map.object_lock.tryLockShared()) {}
-    defer map.object_lock.unlockShared();
+    while (!map.object_lock.tryLock()) {}
+    defer map.object_lock.unlock();
 
     const ms_time = @divFloor(time, std.time.us_per_ms);
     const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;

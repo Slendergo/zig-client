@@ -1968,7 +1968,7 @@ const AtlasHashHack = [4]u32;
 const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
 const day_cycle_ms_half: f32 = @as(f32, day_cycle_ms) / 2;
 
-pub var object_lock: std.Thread.RwLock = .{};
+pub var object_lock: std.Thread.Mutex = .{};
 pub var entities: utils.DynSlice(Entity) = undefined;
 pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
 pub var atlas_to_color_data: std.AutoHashMap(AtlasHashHack, []u32) = undefined;

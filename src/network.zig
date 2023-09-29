@@ -931,8 +931,8 @@ fn handleText(allocator: std.mem.Allocator) void {
     const recipient = reader.read([]u8);
     const text = reader.read([]u8);
 
-    while (!map.object_lock.tryLockShared()) {}
-    defer map.object_lock.unlockShared();
+    while (!map.object_lock.tryLock()) {}
+    defer map.object_lock.unlock();
 
     if (map.findEntityConst(object_id)) |en| {
         var atlas_data = assets.error_data;
