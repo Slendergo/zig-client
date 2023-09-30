@@ -7,15 +7,290 @@ const xml = @import("../xml.zig");
 const main = @import("../main.zig");
 const utils = @import("../utils.zig");
 
+pub const AccountRegisterScreen = struct {
+    username_text: *ui.UiText = undefined,
+    username_input: *ui.InputField = undefined,
+
+    email_text: *ui.UiText = undefined,
+    email_input: *ui.InputField = undefined,
+
+    password_text: *ui.UiText = undefined,
+    password_input: *ui.InputField = undefined,
+
+    password_repeat_text: *ui.UiText = undefined,
+    password_repeat_input: *ui.InputField = undefined,
+
+    register_button: *ui.Button = undefined,
+    return_button: *ui.Button = undefined,
+
+    _allocator: std.mem.Allocator = undefined,
+
+    pub fn init(allocator: std.mem.Allocator) !AccountRegisterScreen {
+        var screen = AccountRegisterScreen{
+            ._allocator = allocator,
+        };
+
+        const input_w = 300;
+        const input_h = 50;
+
+        const input_data_base = assets.getUiData("textInputBase", 0);
+        const input_data_hover = assets.getUiData("textInputHover", 0);
+        const input_data_press = assets.getUiData("textInputPress", 0);
+
+        const NineSlice = ui.NineSliceImageData;
+
+        const x_offset: f32 = (camera.screen_width - input_w) / 2;
+        var y_offset: f32 = 100.0;
+
+        screen.username_text = try ui.UiText.create(allocator, .{
+            .x = x_offset,
+            .y = y_offset,
+            .text_data = .{
+                .text = @constCast("Username"),
+                .size = 20,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+                .hori_align = .middle,
+                .vert_align = .middle,
+                .max_width = input_w,
+                .max_height = input_h,
+            },
+        });
+
+        y_offset += 50;
+
+        screen.username_input = try ui.InputField.create(allocator, .{
+            .x = x_offset,
+            .y = y_offset,
+            .text_inlay_x = 9,
+            .text_inlay_y = 8,
+            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .text_data = .{
+                .text = "",
+                .size = 20,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 256),
+                .handle_special_chars = false,
+            },
+            .allocator = allocator,
+        });
+
+        y_offset += 50;
+
+        screen.email_text = try ui.UiText.create(allocator, .{
+            .x = x_offset,
+            .y = y_offset,
+            .text_data = .{
+                .text = @constCast("E-mail"),
+                .size = 20,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+                .hori_align = .middle,
+                .vert_align = .middle,
+                .max_width = input_w,
+                .max_height = input_h,
+            },
+        });
+
+        y_offset += 50;
+
+        screen.email_input = try ui.InputField.create(allocator, .{
+            .x = x_offset,
+            .y = y_offset,
+            .text_inlay_x = 9,
+            .text_inlay_y = 8,
+            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .text_data = .{
+                .text = "",
+                .size = 20,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 256),
+                .handle_special_chars = false,
+            },
+            .allocator = allocator,
+        });
+
+        y_offset += 50;
+
+        screen.password_text = try ui.UiText.create(allocator, .{
+            .x = x_offset,
+            .y = y_offset,
+            .text_data = .{
+                .text = @constCast("Password"),
+                .size = 20,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+                .hori_align = .middle,
+                .vert_align = .middle,
+                .max_width = input_w,
+                .max_height = input_h,
+            },
+        });
+
+        y_offset += 50;
+
+        screen.password_input = try ui.InputField.create(allocator, .{
+            .x = x_offset,
+            .y = y_offset,
+            .text_inlay_x = 9,
+            .text_inlay_y = 8,
+            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .text_data = .{
+                .text = "",
+                .size = 20,
+                .text_type = .bold,
+                .password = true,
+                .backing_buffer = try allocator.alloc(u8, 256),
+                .handle_special_chars = false,
+            },
+            .allocator = allocator,
+        });
+
+        y_offset += 50;
+
+        screen.password_repeat_text = try ui.UiText.create(allocator, .{
+            .x = x_offset,
+            .y = y_offset,
+            .text_data = .{
+                .text = @constCast("Confirm Password"),
+                .size = 20,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+                .hori_align = .middle,
+                .vert_align = .middle,
+                .max_width = input_w,
+                .max_height = input_h,
+            },
+        });
+
+        y_offset += 50;
+
+        screen.password_repeat_input = try ui.InputField.create(allocator, .{
+            .x = x_offset,
+            .y = y_offset,
+            .text_inlay_x = 9,
+            .text_inlay_y = 8,
+            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .text_data = .{
+                .text = "",
+                .size = 20,
+                .text_type = .bold,
+                .password = true,
+                .backing_buffer = try allocator.alloc(u8, 256),
+                .handle_special_chars = false,
+            },
+            .allocator = allocator,
+        });
+
+        y_offset += 75;
+
+        const button_data_base = assets.getUiData("buttonBase", 0);
+        const button_data_hover = assets.getUiData("buttonHover", 0);
+        const button_data_press = assets.getUiData("buttonPress", 0);
+        const button_width = 100;
+        const button_height = 35;
+
+        screen.register_button = try ui.Button.create(allocator, .{
+            .x = x_offset + (input_w - (button_width * 2)) / 2 - 12.5,
+            .y = y_offset,
+            .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            .press_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            .text_data = .{
+                .text = @constCast("Register"),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .press_callback = registerCallback,
+        });
+
+        screen.return_button = try ui.Button.create(allocator, .{
+            .x = screen.register_button.x + button_width + 25,
+            .y = y_offset,
+            .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            .press_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            .text_data = .{
+                .text = @constCast("Return"),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .press_callback = backCallback,
+        });
+
+        return screen;
+    }
+
+    pub fn deinit(self: *AccountRegisterScreen, allocator: std.mem.Allocator) void {
+        allocator.destroy(self.email_text);
+        allocator.destroy(self.email_input);
+
+        allocator.destroy(self.username_text);
+        allocator.destroy(self.username_input);
+
+        allocator.destroy(self.password_text);
+        allocator.destroy(self.password_input);
+
+        allocator.destroy(self.password_repeat_input);
+        allocator.destroy(self.password_repeat_text);
+
+        allocator.destroy(self.register_button);
+        allocator.destroy(self.return_button);
+    }
+
+    pub fn toggle(self: *AccountRegisterScreen, state: bool) void {
+        self.email_text.visible = state;
+        self.email_input.visible = state;
+
+        self.username_text.visible = state;
+        self.username_input.visible = state;
+
+        self.password_text.visible = state;
+        self.password_input.visible = state;
+
+        self.password_repeat_input.visible = state;
+        self.password_repeat_text.visible = state;
+
+        self.register_button.visible = state;
+        self.return_button.visible = state;
+    }
+
+    pub fn resize(self: *AccountRegisterScreen, w: f32, h: f32) void {
+        _ = h;
+        _ = w;
+        _ = self;
+    }
+
+    pub fn update(self: *AccountRegisterScreen, ms_time: i64, ms_dt: f32) !void {
+        _ = self;
+        _ = ms_dt;
+        _ = ms_time;
+    }
+
+    fn registerCallback() void {
+        ui.switchScreen(.register);
+    }
+
+    fn backCallback() void {
+        ui.switchScreen(.main_menu);
+    }
+};
+
 pub const AccountScreen = struct {
     email_text: *ui.UiText = undefined,
     email_input: *ui.InputField = undefined,
     password_text: *ui.UiText = undefined,
     password_input: *ui.InputField = undefined,
-    username_text: *ui.UiText = undefined,
-    username_input: *ui.InputField = undefined,
-    password_repeat_text: *ui.UiText = undefined,
-    password_repeat_input: *ui.InputField = undefined,
     login_button: *ui.Button = undefined,
     register_button: *ui.Button = undefined,
 
@@ -26,7 +301,7 @@ pub const AccountScreen = struct {
             ._allocator = allocator,
         };
 
-        const input_w = 200;
+        const input_w = 300;
         const input_h = 50;
         const input_data_base = assets.getUiData("textInputBase", 0);
         const input_data_hover = assets.getUiData("textInputHover", 0);
@@ -106,7 +381,7 @@ pub const AccountScreen = struct {
         const button_data_press = assets.getUiData("buttonPress", 0);
 
         screen.login_button = try ui.Button.create(allocator, .{
-            .x = screen.password_input.x + (input_w - 100) / 2,
+            .x = screen.password_input.x + (input_w - 200) / 2 - 12.5,
             .y = 450,
             .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, 100, 35, 6, 6, 7, 7, 1.0) },
             .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, 100, 35, 6, 6, 7, 7, 1.0) },
@@ -120,6 +395,21 @@ pub const AccountScreen = struct {
             .press_callback = loginCallback,
         });
 
+        screen.register_button = try ui.Button.create(allocator, .{
+            .x = screen.login_button.x + (input_w - 100) / 2 + 25,
+            .y = 450,
+            .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, 100, 35, 6, 6, 7, 7, 1.0) },
+            .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, 100, 35, 6, 6, 7, 7, 1.0) },
+            .press_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, 100, 35, 6, 6, 7, 7, 1.0) },
+            .text_data = .{
+                .text = @constCast("Register"),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .press_callback = registerCallback,
+        });
+
         return screen;
     }
 
@@ -128,10 +418,8 @@ pub const AccountScreen = struct {
         allocator.destroy(self.email_input);
         allocator.destroy(self.password_text);
         allocator.destroy(self.password_input);
-        // allocator.destroy(self.password_repeat_input);
-        // allocator.destroy(self.password_repeat_text);
         allocator.destroy(self.login_button);
-        // allocator.destroy(self.register_button);
+        allocator.destroy(self.register_button);
     }
 
     pub fn toggle(self: *AccountScreen, state: bool) void {
@@ -139,10 +427,8 @@ pub const AccountScreen = struct {
         self.email_input.visible = state;
         self.password_text.visible = state;
         self.password_input.visible = state;
-        // self.password_repeat_input.visible = state;
-        // self.password_repeat_text.visible = state;
         self.login_button.visible = state;
-        // self.register_button.visible = state;
+        self.register_button.visible = state;
     }
 
     pub fn resize(self: *AccountScreen, w: f32, h: f32) void {
@@ -165,6 +451,10 @@ pub const AccountScreen = struct {
         ) catch |e| {
             std.log.err("Login failed: {any}", .{e});
         };
+    }
+
+    fn registerCallback() void {
+        ui.switchScreen(.register);
     }
 
     fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) !bool {
