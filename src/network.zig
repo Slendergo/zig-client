@@ -342,7 +342,6 @@ fn handleAllyShoot() void {
             const attack_period: i32 = @intFromFloat((1.0 / player.attackFrequency()) * (1.0 / item_props.?.rate_of_fire));
             player.attack_period = attack_period;
             player.attack_angle = angle - camera.angle;
-            player.attack_angle_raw = angle;
             player.attack_start = main.current_time;
         }
     }

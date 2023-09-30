@@ -20,7 +20,6 @@ pub const max_attack_freq = 0.008;
 pub const min_attack_mult = 0.5;
 pub const max_attack_mult = 2.0;
 pub const max_sink_level = 18.0;
-const object_attack_period = 300 * std.time.us_per_ms;
 
 pub const Square = struct {
     tile_type: u16 = 0xFFFF,
@@ -523,16 +522,16 @@ pub const GameObject = struct {
 
     pub fn update(self: *GameObject, time: i64, _: f32) void {
         // todo: clean this up, reuse
-        const normal_time = main.current_time;
-        if (normal_time < self.attack_start + object_attack_period) {
+        const attack_period = 300 * std.time.us_per_ms;
+        if (main.current_time < self.attack_start + attack_period) {
+            const time_dt: f32 = @floatFromInt(main.current_time - self.attack_start);
+            self.float_period = @mod(time_dt, attack_period) / attack_period;
             self.facing = self.attack_angle;
-            const time_dt: f32 = @floatFromInt(normal_time - self.attack_start);
-            self.float_period = @mod(time_dt, object_attack_period) / object_attack_period;
             self.action = assets.attack_action;
         } else if (!std.math.isNan(self.move_angle)) {
-            var move_period = 0.5 / utils.distSqr(self.tick_x, self.tick_y, self.target_x, self.target_y);
-            move_period += 400 - @mod(move_period, 400);
-            const float_time = @as(f32, @floatFromInt(normal_time)) / std.time.us_per_ms;
+            const inv_dist = 0.5 / utils.distSqr(self.tick_x, self.tick_y, self.target_x, self.target_y);
+            const move_period = (400 - @mod(inv_dist, 400)) * std.time.us_per_ms;
+            const float_time: f32 = @floatFromInt(main.current_time);
             self.float_period = @mod(float_time, move_period) / move_period;
             self.facing = self.move_angle;
             self.action = assets.walk_action;
@@ -681,7 +680,6 @@ pub const Player = struct {
     attack_start: i64 = 0,
     attack_period: i64 = 0,
     attack_angle: f32 = 0,
-    attack_angle_raw: f32 = 0,
     next_bullet_id: u8 = 0,
     move_angle: f32 = std.math.nan(f32),
     facing: f32 = std.math.nan(f32),
@@ -999,10 +997,9 @@ pub const Player = struct {
 
         self.attack_period = attack_delay;
         self.attack_angle = angle - camera.angle;
-        self.attack_angle_raw = angle;
         self.attack_start = time;
 
-        self.doShoot(self.attack_start, weapon_type, item_props, self.attack_angle_raw, true);
+        self.doShoot(self.attack_start, weapon_type, item_props, angle, true);
     }
 
     pub fn takeDamage(
@@ -1135,16 +1132,15 @@ pub const Player = struct {
     }
 
     pub fn update(self: *Player, time: i64, dt: f32, allocator: std.mem.Allocator) void {
-        const normal_time = main.current_time;
-        if (normal_time < self.attack_start + self.attack_period) {
-            self.facing = self.attack_angle_raw;
-            const time_dt: f32 = @floatFromInt(normal_time - self.attack_start);
-            self.float_period = @floatFromInt(self.attack_period);
-            self.float_period = @mod(time_dt, self.float_period) / self.float_period;
+        if (main.current_time < self.attack_start + self.attack_period) {
+            const time_dt: f32 = @floatFromInt(main.current_time - self.attack_start);
+            const float_period: f32 = @floatFromInt(self.attack_period);
+            self.float_period = @mod(time_dt, float_period) / float_period;
+            self.facing = self.attack_angle + camera.angle;
             self.action = assets.attack_action;
         } else if (!std.math.isNan(self.move_angle)) {
             const walk_period = 3.5 * std.time.us_per_ms / self.moveSpeedMultiplier();
-            const float_time: f32 = @floatFromInt(normal_time);
+            const float_time: f32 = @floatFromInt(main.current_time);
             self.float_period = @mod(float_time, walk_period) / walk_period;
             self.facing = self.move_angle + camera.angle;
             self.action = assets.walk_action;
