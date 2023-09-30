@@ -589,7 +589,7 @@ pub const HealEffect = struct {
                 inline else => |entity| {
                     for (0..10) |i| {
                         const float_i: f32 = @floatFromInt(i);
-                        const angle = 2.0 * std.math.pi * (float_i / 10.0);
+                        const angle = std.math.tau * (float_i / 10.0);
                         const radius = 0.3 + 0.4 * utils.rng.random().float(f32);
                         var particle = HealParticle{
                             .size = 0.5 + utils.rng.random().float(f32),

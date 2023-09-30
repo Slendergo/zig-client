@@ -199,7 +199,7 @@ pub const GameObject = struct {
     atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     top_atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     move_angle: f32 = std.math.nan(f32),
-    facing: f32 = std.math.nan(f32),
+    facing: f32 = 0.0, //std.math.nan(f32),
     attack_start: i64 = 0,
     attack_angle: f32 = 0.0,
     dir: u8 = assets.left_dir,
@@ -219,6 +219,8 @@ pub const GameObject = struct {
     occupy_square: bool = false,
     enemy_occupy_square: bool = false,
     colors: []u32 = &[0]u32{},
+    anim_sector: u8 = 0,
+    anim_index: u8 = 0,
 
     pub fn addToMap(self: *GameObject, allocator: std.mem.Allocator) void {
         const should_lock = entities.isFull();
@@ -543,14 +545,20 @@ pub const GameObject = struct {
         var screen_pos = camera.rotateAroundCamera(self.x, self.y);
         const size = camera.size_mult * camera.scale * self.size;
 
-        const angle = if (std.math.isNan(self.facing)) 0.0 else utils.halfBound(self.facing) / (std.math.pi / 4.0);
+        const angle = if (std.math.isNan(self.facing))
+            0.0
+        else
+            utils.animBoundToPI(self.facing) / utils.pi_over_four;
+
         const sec = switch (@as(u8, @intFromFloat(angle + 4)) % 8) {
             0, 1, 6, 7 => assets.left_dir,
             2, 3, 4, 5 => assets.right_dir,
             else => unreachable,
         };
-
         const anim_idx: u8 = @intFromFloat(@max(0, @min(0.99999, self.float_period)) * 2.0);
+
+        self.anim_sector = sec;
+        self.anim_index = anim_idx;
 
         var atlas_data = self.atlas_data;
         if (self.anim_data) |anim_data| {
@@ -700,6 +708,8 @@ pub const Player = struct {
     mp_zeroed: bool = false,
     x_dir: f32 = 0.0,
     y_dir: f32 = 0.0,
+    anim_sector: u8 = 0,
+    anim_index: u8 = 0,
 
     pub fn onMove(self: *Player) void {
         const square = getSquare(self.x, self.y);
@@ -996,7 +1006,7 @@ pub const Player = struct {
         assets.playSfx(item_props.?.old_sound);
 
         self.attack_period = attack_delay;
-        self.attack_angle = angle - camera.angle;
+        self.attack_angle = angle - camera.angle; // - angle + angle later is to prevent std check need
         self.attack_start = time;
 
         self.doShoot(self.attack_start, weapon_type, item_props, angle, true);
@@ -1138,11 +1148,11 @@ pub const Player = struct {
             self.float_period = @mod(time_dt, float_period) / float_period;
             self.facing = self.attack_angle + camera.angle;
             self.action = assets.attack_action;
-        } else if (!std.math.isNan(self.move_angle)) {
+        } else if (self.x_dir != 0.0 or self.y_dir != 0.0) { // now works with sliding and pushing
             const walk_period = 3.5 * std.time.us_per_ms / self.moveSpeedMultiplier();
             const float_time: f32 = @floatFromInt(main.current_time);
             self.float_period = @mod(float_time, walk_period) / walk_period;
-            self.facing = self.move_angle + camera.angle;
+            self.facing = std.math.atan2(f32, self.y_dir, self.x_dir);
             self.action = assets.walk_action;
         } else {
             self.float_period = 0.0;
@@ -1152,9 +1162,10 @@ pub const Player = struct {
         const size = camera.size_mult * camera.scale * self.size;
 
         const angle = if (std.math.isNan(self.facing))
-            0.0
+            utils.animBoundToPI(camera.angle) / utils.pi_over_four
         else
-            utils.halfBound(self.facing - camera.angle) / (std.math.pi / 4.0);
+            utils.animBoundToPI(self.facing - camera.angle) / utils.pi_over_four;
+
         const sec = switch (@as(u8, @intFromFloat(angle + 4)) % 8) {
             0, 7 => assets.left_dir,
             1, 2 => assets.up_dir,
@@ -1164,7 +1175,6 @@ pub const Player = struct {
         };
 
         const anim_idx: u8 = @intFromFloat(@max(0, @min(0.99999, self.float_period)) * 2.0);
-
         var atlas_data = switch (self.action) {
             assets.walk_action => self.anim_data.walk_anims[sec][1 + anim_idx],
             assets.attack_action => self.anim_data.attack_anims[sec][anim_idx],
@@ -1172,11 +1182,14 @@ pub const Player = struct {
             else => unreachable,
         };
 
-        var screen_pos = camera.rotateAroundCamera(self.x, self.y);
+        self.anim_sector = sec;
+        self.anim_index = anim_idx;
+
+        const screen_pos = camera.rotateAroundCamera(self.x, self.y);
         const h = atlas_data.texHRaw() * size;
 
-        self.screen_y = screen_pos.y + self.z * -camera.px_per_tile - (h - size * assets.padding) - 30; // account for name
         self.screen_x = screen_pos.x;
+        self.screen_y = screen_pos.y + self.z * -camera.px_per_tile - (h - size * assets.padding) - 30; // account for name
 
         if (self.obj_id == local_player_id) {
             const floor_x: u32 = @intFromFloat(@floor(self.x));
@@ -1624,7 +1637,7 @@ pub const Projectile = struct {
         }
 
         if (self.props.parametric) {
-            const t = @as(f32, @floatFromInt(@divTrunc(elapsed, self.props.lifetime_ms))) * 2.0 * std.math.pi;
+            const t = @as(f32, @floatFromInt(@divTrunc(elapsed, self.props.lifetime_ms))) * std.math.tau;
             const x = @sin(t) * if (self.bullet_id % 2 == 0) @as(f32, 1.0) else @as(f32, -1.0);
             const y = @sin(2 * t) * if (self.bullet_id % 4 < 2) @as(f32, 1.0) else @as(f32, -1.0);
             self.x += (x * @cos(self.angle) - y * @sin(self.angle)) * self.props.magnitude;
@@ -1638,9 +1651,9 @@ pub const Projectile = struct {
             if (self.props.amplitude != 0) {
                 const phase: f32 = if (self.bullet_id % 2 == 0) 0.0 else std.math.pi;
                 const time_ratio: f32 = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(self.props.lifetime_ms));
-                const deflection_target = self.props.amplitude * @sin(phase + time_ratio * self.props.frequency * 2.0 * std.math.pi);
-                self.x += (deflection_target - self.last_deflect) * @cos(self.angle + std.math.pi / 2.0);
-                self.y += (deflection_target - self.last_deflect) * @sin(self.angle + std.math.pi / 2.0);
+                const deflection_target = self.props.amplitude * @sin(phase + time_ratio * self.props.frequency * std.math.tau);
+                self.x += (deflection_target - self.last_deflect) * @cos(self.angle + utils.pi_over_two);
+                self.y += (deflection_target - self.last_deflect) * @sin(self.angle + utils.pi_over_two);
                 self.last_deflect = deflection_target;
             }
         }

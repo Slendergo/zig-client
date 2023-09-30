@@ -345,7 +345,7 @@ pub const ObjProps = struct {
             .min_size = min_size,
             .max_size = max_size,
             .size_step = try node.getValueFloat("SizeStep", f32, 0.0) / 100.0,
-            .angle_correction = try node.getValueFloat("AngleCorrection", f32, 0.0) * (std.math.pi / 4.0),
+            .angle_correction = try node.getValueFloat("AngleCorrection", f32, 0.0) * utils.pi_over_four,
             .rotation = try node.getValueFloat("Rotation", f32, 0.0),
             .light_color = try node.getValueInt("LightColor", u32, 0),
             .light_intensity = try node.getValueFloat("LightIntensity", f32, 0.1),
@@ -430,7 +430,7 @@ pub const ProjProps = struct {
 
         return ProjProps{
             .texture_data = try parseTexture(node, allocator),
-            .angle_correction = try node.getValueFloat("AngleCorrection", f32, 0.0) * (std.math.pi / 4.0),
+            .angle_correction = try node.getValueFloat("AngleCorrection", f32, 0.0) * utils.pi_over_four,
             .rotation = try node.getValueFloat("Rotation", f32, 0.0),
             .light_color = try node.getValueInt("LightColor", i32, -1),
             .light_intensity = try node.getValueFloat("LightIntensity", f32, 0.1),

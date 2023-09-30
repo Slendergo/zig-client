@@ -518,6 +518,25 @@ pub fn halfBound(angle: f32) f32 {
     return new_angle;
 }
 
+pub const pi_over_two = std.math.pi / 2.0;
+pub const pi_over_four = std.math.pi / 4.0;
+
+// this works better for animations and fixes the sector problem where it doesnt like certain angles
+// if we remove this anims will break player animations
+pub fn animBoundToPI(x: f32) f32 {
+    var new = x;
+    if (x < -std.math.pi) {
+        var a: i32 = @as(i32, @intFromFloat(x / -std.math.pi)) + 1;
+        var v: i32 = @divFloor(a, 2);
+        new += @as(f32, @floatFromInt(v)) * std.math.tau;
+    } else if (x > std.math.pi) {
+        var a: i32 = @as(i32, @intFromFloat(x / std.math.pi)) + 1;
+        var v: i32 = @divFloor(a, 2);
+        new -= @as(f32, @floatFromInt(v)) * std.math.tau;
+    }
+    return x;
+}
+
 pub inline fn distSqr(x1: f32, y1: f32, x2: f32, y2: f32) f32 {
     const x_dt = x2 - x1;
     const y_dt = y2 - y1;

@@ -473,10 +473,10 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     const screen_y_top = screen_y + camera.px_per_tile;
 
     const radius = @sqrt(@as(f32, camera.px_per_tile * camera.px_per_tile / 2)) + 1;
-    const top_right_angle = std.math.pi / 4.0;
-    const bottom_right_angle = 3.0 * std.math.pi / 4.0;
-    const bottom_left_angle = 5.0 * std.math.pi / 4.0;
-    const top_left_angle = 7.0 * std.math.pi / 4.0;
+    const top_right_angle = utils.pi_over_four;
+    const bottom_right_angle = 3.0 * utils.pi_over_four;
+    const bottom_left_angle = 5.0 * utils.pi_over_four;
+    const top_left_angle = 7.0 * utils.pi_over_four;
 
     const x1 = (screen_x + radius * @cos(top_left_angle + camera.angle)) * camera.clip_scale_x;
     const y1 = (screen_y + radius * @sin(top_left_angle + camera.angle)) * camera.clip_scale_y;
@@ -496,9 +496,8 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     const floor_y: u32 = @intFromFloat(@floor(y));
 
     const bound_angle = utils.halfBound(camera.angle);
-    const pi_div_2 = std.math.pi / 2.0;
     topSide: {
-        if (bound_angle >= pi_div_2 and bound_angle <= std.math.pi or bound_angle >= -std.math.pi and bound_angle <= -pi_div_2) {
+        if (bound_angle >= utils.pi_over_two and bound_angle <= std.math.pi or bound_angle >= -std.math.pi and bound_angle <= -utils.pi_over_two) {
             if (!map.validPos(floor_x, floor_y - 1)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
@@ -533,7 +532,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     }
 
     bottomSide: {
-        if (bound_angle <= pi_div_2 and bound_angle >= -pi_div_2) {
+        if (bound_angle <= utils.pi_over_two and bound_angle >= -utils.pi_over_two) {
             if (!map.validPos(floor_x, floor_y + 1)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
@@ -2242,10 +2241,10 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     }
 
                     const radius = @sqrt(@as(f32, camera.px_per_tile * camera.px_per_tile / 2)) + 1;
-                    const top_right_angle = std.math.pi / 4.0;
-                    const bottom_right_angle = 3.0 * std.math.pi / 4.0;
-                    const bottom_left_angle = 5.0 * std.math.pi / 4.0;
-                    const top_left_angle = 7.0 * std.math.pi / 4.0;
+                    const top_right_angle = utils.pi_over_four;
+                    const bottom_right_angle = 3.0 * utils.pi_over_four;
+                    const bottom_left_angle = 5.0 * utils.pi_over_four;
+                    const top_left_angle = 7.0 * utils.pi_over_four;
 
                     drawSquare(
                         square_idx,
@@ -2354,19 +2353,8 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                         const size = camera.size_mult * camera.scale * player.size;
 
-                        const angle = if (std.math.isNan(player.facing))
-                            0.0
-                        else
-                            utils.halfBound(player.facing - camera.angle) / (std.math.pi / 4.0);
-                        const sec = switch (@as(u8, @intFromFloat(angle + 4)) % 8) {
-                            0, 7 => assets.left_dir,
-                            1, 2 => assets.up_dir,
-                            3, 4 => assets.right_dir,
-                            5, 6 => assets.down_dir,
-                            else => unreachable,
-                        };
-
-                        const anim_idx: u8 = @intFromFloat(@max(0, @min(0.99999, player.float_period)) * 2.0);
+                        const sec = player.anim_sector;
+                        const anim_idx = player.anim_index;
 
                         var atlas_data = switch (player.action) {
                             assets.walk_action => player.anim_data.walk_anims[sec][1 + anim_idx],
@@ -2603,14 +2591,8 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             continue;
                         }
 
-                        const angle = if (std.math.isNan(bo.facing)) 0.0 else utils.halfBound(bo.facing) / (std.math.pi / 4.0);
-                        const sec = switch (@as(u8, @intFromFloat(angle + 4)) % 8) {
-                            0, 1, 6, 7 => assets.left_dir,
-                            2, 3, 4, 5 => assets.right_dir,
-                            else => unreachable,
-                        };
-
-                        const anim_idx: u8 = @intFromFloat(@max(0, @min(0.99999, bo.float_period)) * 2.0);
+                        const sec = bo.anim_sector;
+                        const anim_idx = bo.anim_index;
 
                         var atlas_data = bo.atlas_data;
                         var x_offset: f32 = 0.0;
