@@ -20,8 +20,8 @@ pub const AccountRegisterScreen = struct {
     password_repeat_text: *ui.UiText = undefined,
     password_repeat_input: *ui.InputField = undefined,
 
-    register_button: *ui.Button = undefined,
-    return_button: *ui.Button = undefined,
+    confirm_button: *ui.Button = undefined,
+    back_button: *ui.Button = undefined,
 
     _allocator: std.mem.Allocator = undefined,
 
@@ -198,14 +198,14 @@ pub const AccountRegisterScreen = struct {
         const button_width = 100;
         const button_height = 35;
 
-        screen.register_button = try ui.Button.create(allocator, .{
+        screen.confirm_button = try ui.Button.create(allocator, .{
             .x = x_offset + (input_w - (button_width * 2)) / 2 - 12.5,
             .y = y_offset,
             .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
             .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
             .press_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
             .text_data = .{
-                .text = @constCast("Register"),
+                .text = @constCast("Confirm"),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
@@ -213,14 +213,14 @@ pub const AccountRegisterScreen = struct {
             .press_callback = registerCallback,
         });
 
-        screen.return_button = try ui.Button.create(allocator, .{
-            .x = screen.register_button.x + button_width + 25,
+        screen.back_button = try ui.Button.create(allocator, .{
+            .x = screen.confirm_button.x + button_width + 25,
             .y = y_offset,
             .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
             .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
             .press_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
             .text_data = .{
-                .text = @constCast("Return"),
+                .text = @constCast("Back"),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
@@ -232,37 +232,29 @@ pub const AccountRegisterScreen = struct {
     }
 
     pub fn deinit(self: *AccountRegisterScreen, allocator: std.mem.Allocator) void {
-        allocator.destroy(self.email_text);
-        allocator.destroy(self.email_input);
-
         allocator.destroy(self.username_text);
         allocator.destroy(self.username_input);
-
+        allocator.destroy(self.email_text);
+        allocator.destroy(self.email_input);
         allocator.destroy(self.password_text);
         allocator.destroy(self.password_input);
-
         allocator.destroy(self.password_repeat_input);
         allocator.destroy(self.password_repeat_text);
-
-        allocator.destroy(self.register_button);
-        allocator.destroy(self.return_button);
+        allocator.destroy(self.confirm_button);
+        allocator.destroy(self.back_button);
     }
 
     pub fn toggle(self: *AccountRegisterScreen, state: bool) void {
-        self.email_text.visible = state;
-        self.email_input.visible = state;
-
         self.username_text.visible = state;
         self.username_input.visible = state;
-
+        self.email_text.visible = state;
+        self.email_input.visible = state;
         self.password_text.visible = state;
         self.password_input.visible = state;
-
         self.password_repeat_input.visible = state;
         self.password_repeat_text.visible = state;
-
-        self.register_button.visible = state;
-        self.return_button.visible = state;
+        self.confirm_button.visible = state;
+        self.back_button.visible = state;
     }
 
     pub fn resize(self: *AccountRegisterScreen, w: f32, h: f32) void {
@@ -292,7 +284,7 @@ pub const AccountScreen = struct {
     password_text: *ui.UiText = undefined,
     password_input: *ui.InputField = undefined,
     login_button: *ui.Button = undefined,
-    register_button: *ui.Button = undefined,
+    confirm_button: *ui.Button = undefined,
 
     _allocator: std.mem.Allocator = undefined,
 
@@ -395,7 +387,7 @@ pub const AccountScreen = struct {
             .press_callback = loginCallback,
         });
 
-        screen.register_button = try ui.Button.create(allocator, .{
+        screen.confirm_button = try ui.Button.create(allocator, .{
             .x = screen.login_button.x + (input_w - 100) / 2 + 25,
             .y = 450,
             .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, 100, 35, 6, 6, 7, 7, 1.0) },
@@ -419,7 +411,7 @@ pub const AccountScreen = struct {
         allocator.destroy(self.password_text);
         allocator.destroy(self.password_input);
         allocator.destroy(self.login_button);
-        allocator.destroy(self.register_button);
+        allocator.destroy(self.confirm_button);
     }
 
     pub fn toggle(self: *AccountScreen, state: bool) void {
@@ -428,7 +420,7 @@ pub const AccountScreen = struct {
         self.password_text.visible = state;
         self.password_input.visible = state;
         self.login_button.visible = state;
-        self.register_button.visible = state;
+        self.confirm_button.visible = state;
     }
 
     pub fn resize(self: *AccountScreen, w: f32, h: f32) void {
