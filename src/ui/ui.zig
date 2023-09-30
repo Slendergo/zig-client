@@ -763,9 +763,10 @@ pub const TextData = struct {
 pub const DisplayContainer = struct {
     x: f32,
     y: f32,
-    elements: utils.DynSlice(*UiElement) = undefined,
     visible: bool = true,
+    _elements: utils.DynSlice(UiElement) = undefined,
     _disposed: bool = false,
+    _allocator: std.mem.Allocator = undefined,
 
     pub inline fn create(allocator: std.mem.Allocator, data: DisplayContainer) !*DisplayContainer {
         const should_lock = elements.isFull();
@@ -776,8 +777,47 @@ pub const DisplayContainer = struct {
 
         var elem = try allocator.create(DisplayContainer);
         elem.* = data;
+        elem._allocator = allocator;
+        elem._elements = try utils.DynSlice(UiElement).init(8, allocator);
         try elements.add(.{ .container = elem });
         return elem;
+    }
+
+    pub inline fn createElement(self: *DisplayContainer, comptime ElemType: type, data: ElemType) !*ElemType {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try self._allocator.create(ElemType);
+        elem.* = data;
+        switch (ElemType) {
+            Image => try self._elements.add(.{ .image = elem }),
+            Item => try self._elements.add(.{ .item = elem }),
+            Bar => try self._elements.add(.{ .bar = elem }),
+            InputField => try self._elements.add(.{ .input_field = elem }),
+            Button => try self._elements.add(.{ .button = elem }),
+            UiText => try self._elements.add(.{ .text = elem }),
+            CharacterBox => try self._elements.add(.{ .char_box = elem }),
+            DisplayContainer => try self._elements.add(.{ .container = elem }),
+            MenuBackground => try self._elements.add(.{ .menu_bg = elem }),
+            else => @compileError("Element type not supported"),
+        }
+        return elem;
+    }
+
+    // this is called in disposeElement() as well, so locking is the caller's job
+    pub inline fn destroy(self: *DisplayContainer) void {
+        if (self._disposed)
+            return;
+
+        for (self._elements.items()) |*elem| {
+            disposeElement(elem, self._allocator);
+        }
+        self._elements.deinit();
+
+        self._disposed = true;
     }
 };
 
@@ -839,14 +879,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
 pub fn disposeElement(elem: *UiElement, allocator: std.mem.Allocator) void {
     switch (elem.*) {
         .container => |container| {
-            if (container._disposed)
-                return;
-
-            for (container.elements.items()) |cont_elem| {
-                disposeElement(cont_elem, allocator);
-            }
-
-            container._disposed = true;
+            container.destroy();
         },
         .bar => |bar| {
             if (bar._disposed)

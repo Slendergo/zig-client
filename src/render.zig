@@ -2900,8 +2900,8 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     if (!container.visible)
                         continue;
 
-                    for (container.elements.items()) |cont_elem| {
-                        ui_idx = drawElement(ui_idx, cont_elem.*, draw_data, cam_x, cam_y, container.x, container.y);
+                    for (container._elements.items()) |cont_elem| {
+                        ui_idx = drawElement(ui_idx, cont_elem, draw_data, cam_x, cam_y, container.x, container.y);
                     }
                 },
                 else => {
