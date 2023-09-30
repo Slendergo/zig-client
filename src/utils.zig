@@ -450,6 +450,9 @@ pub const VM_COUNTERS_EX = extern struct {
     PrivateUsage: std.os.windows.SIZE_T,
 };
 
+pub const pi_2 = std.math.pi / 2.0;
+pub const pi_4 = std.math.pi / 4.0;
+
 pub var rng = std.rand.DefaultPrng.init(0x99999999);
 
 var last_memory_access: i64 = -1;
@@ -511,30 +514,9 @@ pub fn strlen(str: []const u8) usize {
 }
 
 pub fn halfBound(angle: f32) f32 {
-    var new_angle = @mod(angle, std.math.tau);
-    new_angle = @mod(new_angle + std.math.tau, std.math.tau);
-    if (new_angle > std.math.pi)
-        new_angle -= std.math.tau;
-    return new_angle;
-}
-
-pub const pi_over_two = std.math.pi / 2.0;
-pub const pi_over_four = std.math.pi / 4.0;
-
-// this works better for animations and fixes the sector problem where it doesnt like certain angles
-// if we remove this anims will break player animations
-pub fn animBoundToPI(x: f32) f32 {
-    var new = x;
-    if (x < -std.math.pi) {
-        var a: i32 = @as(i32, @intFromFloat(x / -std.math.pi)) + 1;
-        var v: i32 = @divFloor(a, 2);
-        new += @as(f32, @floatFromInt(v)) * std.math.tau;
-    } else if (x > std.math.pi) {
-        var a: i32 = @as(i32, @intFromFloat(x / std.math.pi)) + 1;
-        var v: i32 = @divFloor(a, 2);
-        new -= @as(f32, @floatFromInt(v)) * std.math.tau;
-    }
-    return x;
+    const mod_angle = @mod(angle, std.math.tau);
+    const new_angle = @mod(mod_angle + std.math.tau, std.math.tau);
+    return if (new_angle > std.math.pi) new_angle - std.math.tau else new_angle;
 }
 
 pub inline fn distSqr(x1: f32, y1: f32, x2: f32, y2: f32) f32 {

@@ -199,7 +199,7 @@ pub const GameObject = struct {
     atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     top_atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     move_angle: f32 = std.math.nan(f32),
-    facing: f32 = 0.0, //std.math.nan(f32),
+    facing: f32 = std.math.nan(f32),
     attack_start: i64 = 0,
     attack_angle: f32 = 0.0,
     dir: u8 = assets.left_dir,
@@ -548,9 +548,9 @@ pub const GameObject = struct {
         const angle = if (std.math.isNan(self.facing))
             0.0
         else
-            utils.animBoundToPI(self.facing) / utils.pi_over_four;
+            utils.halfBound(self.facing) / (std.math.pi / 4.0);
 
-        const sec = switch (@as(u8, @intFromFloat(angle + 4)) % 8) {
+        const sec = switch (@as(u8, @intFromFloat(@round(angle + 4))) % 8) {
             0, 1, 6, 7 => assets.left_dir,
             2, 3, 4, 5 => assets.right_dir,
             else => unreachable,
@@ -1161,12 +1161,13 @@ pub const Player = struct {
 
         const size = camera.size_mult * camera.scale * self.size;
 
+        const pi_div_4 = std.math.pi / 4.0;
         const angle = if (std.math.isNan(self.facing))
-            utils.animBoundToPI(camera.angle) / utils.pi_over_four
+            utils.halfBound(camera.angle) / pi_div_4 
         else
-            utils.animBoundToPI(self.facing - camera.angle) / utils.pi_over_four;
+            utils.halfBound(self.facing - camera.angle) / pi_div_4;
 
-        const sec = switch (@as(u8, @intFromFloat(angle + 4)) % 8) {
+        const sec = switch (@as(u8, @intFromFloat(@round(angle + 4))) % 8) {
             0, 7 => assets.left_dir,
             1, 2 => assets.up_dir,
             3, 4 => assets.right_dir,
@@ -1652,8 +1653,9 @@ pub const Projectile = struct {
                 const phase: f32 = if (self.bullet_id % 2 == 0) 0.0 else std.math.pi;
                 const time_ratio: f32 = @as(f32, @floatFromInt(elapsed)) / @as(f32, @floatFromInt(self.props.lifetime_ms));
                 const deflection_target = self.props.amplitude * @sin(phase + time_ratio * self.props.frequency * std.math.tau);
-                self.x += (deflection_target - self.last_deflect) * @cos(self.angle + utils.pi_over_two);
-                self.y += (deflection_target - self.last_deflect) * @sin(self.angle + utils.pi_over_two);
+                const pi_div_2 = std.math.pi / 2.0;
+                self.x += (deflection_target - self.last_deflect) * @cos(self.angle + pi_div_2);
+                self.y += (deflection_target - self.last_deflect) * @sin(self.angle + pi_div_2);
                 self.last_deflect = deflection_target;
             }
         }

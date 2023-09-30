@@ -473,10 +473,11 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     const screen_y_top = screen_y + camera.px_per_tile;
 
     const radius = @sqrt(@as(f32, camera.px_per_tile * camera.px_per_tile / 2)) + 1;
-    const top_right_angle = utils.pi_over_four;
-    const bottom_right_angle = 3.0 * utils.pi_over_four;
-    const bottom_left_angle = 5.0 * utils.pi_over_four;
-    const top_left_angle = 7.0 * utils.pi_over_four;
+    const pi_div_4 = std.math.pi / 4.0;
+    const top_right_angle = pi_div_4;
+    const bottom_right_angle = 3.0 * pi_div_4;
+    const bottom_left_angle = 5.0 * pi_div_4;
+    const top_left_angle = 7.0 * pi_div_4;
 
     const x1 = (screen_x + radius * @cos(top_left_angle + camera.angle)) * camera.clip_scale_x;
     const y1 = (screen_y + radius * @sin(top_left_angle + camera.angle)) * camera.clip_scale_y;
@@ -495,9 +496,10 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     const floor_x: u32 = @intFromFloat(@floor(x));
     const floor_y: u32 = @intFromFloat(@floor(y));
 
+    const pi_div_2 = std.math.pi / 2.0;
     const bound_angle = utils.halfBound(camera.angle);
     topSide: {
-        if (bound_angle >= utils.pi_over_two and bound_angle <= std.math.pi or bound_angle >= -std.math.pi and bound_angle <= -utils.pi_over_two) {
+        if (bound_angle >= pi_div_2 and bound_angle <= std.math.pi or bound_angle >= -std.math.pi and bound_angle <= -pi_div_2) {
             if (!map.validPos(floor_x, floor_y - 1)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
@@ -532,7 +534,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     }
 
     bottomSide: {
-        if (bound_angle <= utils.pi_over_two and bound_angle >= -utils.pi_over_two) {
+        if (bound_angle <= pi_div_2 and bound_angle >= -pi_div_2) {
             if (!map.validPos(floor_x, floor_y + 1)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
@@ -2241,10 +2243,11 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                     }
 
                     const radius = @sqrt(@as(f32, camera.px_per_tile * camera.px_per_tile / 2)) + 1;
-                    const top_right_angle = utils.pi_over_four;
-                    const bottom_right_angle = 3.0 * utils.pi_over_four;
-                    const bottom_left_angle = 5.0 * utils.pi_over_four;
-                    const top_left_angle = 7.0 * utils.pi_over_four;
+                    const pi_div_4 = std.math.pi / 4.0;
+                    const top_right_angle = pi_div_4;
+                    const bottom_right_angle = 3.0 * pi_div_4;
+                    const bottom_left_angle = 5.0 * pi_div_4;
+                    const top_left_angle = 7.0 * pi_div_4;
 
                     drawSquare(
                         square_idx,
