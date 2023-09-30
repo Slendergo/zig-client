@@ -499,11 +499,11 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     const pi_div_2 = std.math.pi / 2.0;
     topSide: {
         if (bound_angle >= pi_div_2 and bound_angle <= std.math.pi or bound_angle >= -std.math.pi and bound_angle <= -pi_div_2) {
-            if (!map.validPos(@intCast(floor_x), @intCast(floor_y - 1))) {
+            if (!map.validPos(floor_x, floor_y - 1)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
-                const top_sq = map.squares[(floor_y - 1) * @as(u32, @intCast(map.width)) + floor_x];
+                const top_sq = map.squares[(floor_y - 1) * map.width + floor_x];
                 if (top_sq.has_wall)
                     break :topSide;
 
@@ -534,11 +534,11 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
 
     bottomSide: {
         if (bound_angle <= pi_div_2 and bound_angle >= -pi_div_2) {
-            if (!map.validPos(@intCast(floor_x), @intCast(floor_y + 1))) {
+            if (!map.validPos(floor_x, floor_y + 1)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
-                const bottom_sq = map.squares[(floor_y + 1) * @as(u32, @intCast(map.width)) + floor_x];
+                const bottom_sq = map.squares[(floor_y + 1) * map.width + floor_x];
                 if (bottom_sq.has_wall)
                     break :bottomSide;
 
@@ -570,11 +570,11 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
 
     leftSide: {
         if (bound_angle >= 0 and bound_angle <= std.math.pi) {
-            if (!map.validPos(@intCast(floor_x - 1), @intCast(floor_y))) {
+            if (!map.validPos(floor_x - 1, floor_y)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
-                const left_sq = map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x - 1];
+                const left_sq = map.squares[floor_y * map.width + floor_x - 1];
                 if (left_sq.has_wall)
                     break :leftSide;
 
@@ -606,11 +606,11 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
 
     rightSide: {
         if (bound_angle <= 0 and bound_angle >= -std.math.pi) {
-            if (!map.validPos(@intCast(floor_x + 1), @intCast(floor_y))) {
+            if (!map.validPos(floor_x + 1, floor_y)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
             } else {
-                const right_sq = map.squares[floor_y * @as(u32, @intCast(map.width)) + floor_x + 1];
+                const right_sq = map.squares[floor_y * map.width + floor_x + 1];
                 if (right_sq.has_wall)
                     break :rightSide;
 
@@ -2195,12 +2195,12 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         first = false;
                     }
 
-                    const dx = cam_x - @as(f32, @floatFromInt(x)) - 0.5;
-                    const dy = cam_y - @as(f32, @floatFromInt(y)) - 0.5;
-                    if (dx * dx + dy * dy > camera.max_dist_sq)
-                        continue;
+                    // const dx = cam_x - @as(f32, @floatFromInt(x)) - 0.5;
+                    // const dy = cam_y - @as(f32, @floatFromInt(y)) - 0.5;
+                    // if (dx * dx + dy * dy > camera.max_dist_sq)
+                    //     continue;
 
-                    const map_square_idx = x + y * @as(usize, @intCast(map.width));
+                    const map_square_idx = x + y * map.width;
                     const square = map.squares[map_square_idx];
                     if (square.tile_type == 0xFFFF or square.tile_type == 0xFF)
                         continue;
@@ -2354,13 +2354,11 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                         const size = camera.size_mult * camera.scale * player.size;
 
-                        const angle = utils.halfBound(player.facing - camera.angle_unbound);
-                        const pi_over_4 = std.math.pi / 4.0;
-                        const angle_div = (angle / pi_over_4) + 4;
-
-                        var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(@round(angle_div))) % 8;
-
-                        sec = switch (sec) {
+                        const angle = if (std.math.isNan(player.facing))
+                            0.0
+                        else
+                            utils.halfBound(player.facing - camera.angle) / (std.math.pi / 4.0);
+                        const sec = switch (@as(u8, @intFromFloat(angle + 4)) % 8) {
                             0, 7 => assets.left_dir,
                             1, 2 => assets.up_dir,
                             3, 4 => assets.right_dir,
@@ -2368,11 +2366,10 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             else => unreachable,
                         };
 
-                        const capped_period = @max(0, @min(0.99999, player.float_period)) * 2.0; // 2 walk cycle frames so * 2
-                        const anim_idx: usize = @intFromFloat(capped_period);
+                        const anim_idx: u8 = @intFromFloat(@max(0, @min(0.99999, player.float_period)) * 2.0);
 
                         var atlas_data = switch (player.action) {
-                            assets.walk_action => player.anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
+                            assets.walk_action => player.anim_data.walk_anims[sec][1 + anim_idx],
                             assets.attack_action => player.anim_data.attack_anims[sec][anim_idx],
                             assets.stand_action => player.anim_data.walk_anims[sec][0],
                             else => unreachable,
@@ -2381,17 +2378,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         var x_offset: f32 = 0.0;
                         if (player.action == assets.attack_action and anim_idx == 1) {
                             const w = atlas_data.texWRaw() * size;
-                            if (sec == assets.left_dir) {
-                                x_offset = -assets.padding * size;
-                            } else {
-                                x_offset = w / 4.0;
-                            }
+                            x_offset = if (sec == assets.left_dir) -assets.padding * size else w / 4.0;
                         }
 
                         const square = map.getSquare(player.x, player.y);
                         var sink: f32 = 1.0;
                         if (square.tile_type != 0xFFFF) {
-                            sink += if (square.props != null and square.props.?.sink) 0.75 else 0;
+                            sink += if (square.props != null and square.props.?.sink and !square.protect_from_sink) 0.75 else 0;
                         }
 
                         atlas_data.tex_h /= sink;
@@ -2459,7 +2452,6 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             .{ .shadow_texel_mult = 2.0 / size, .alpha_mult = alpha_mult, .base_color = color, .base_color_intensity = color_intensity },
                         );
 
-                        // implement sink protection square.props.?.protect_from_sink
                         // todo make sink calculate actual values based on h, pad, etc
                         var y_pos: f32 = 5.0 + if (sink != 1.0) @as(f32, 15.0) else @as(f32, 0.0);
 
@@ -2611,27 +2603,20 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                             continue;
                         }
 
-                        const angle = utils.halfBound(bo.facing);
-                        const pi_over_4 = std.math.pi / 4.0;
-                        const angle_div = @divFloor(angle, pi_over_4);
-
-                        var sec: u8 = if (std.math.isNan(angle_div)) 0 else @as(u8, @intFromFloat(angle_div + 4)) % 8;
-
-                        sec = switch (sec) {
+                        const angle = if (std.math.isNan(bo.facing)) 0.0 else utils.halfBound(bo.facing) / (std.math.pi / 4.0);
+                        const sec = switch (@as(u8, @intFromFloat(angle + 4)) % 8) {
                             0, 1, 6, 7 => assets.left_dir,
                             2, 3, 4, 5 => assets.right_dir,
                             else => unreachable,
                         };
 
-                        // 2 frames so multiply by 2
-                        const capped_period = @max(0, @min(0.99999, bo.float_period)) * 2.0; // 2 walk cycle frames so * 2
-                        const anim_idx: usize = @intFromFloat(capped_period);
+                        const anim_idx: u8 = @intFromFloat(@max(0, @min(0.99999, bo.float_period)) * 2.0);
 
                         var atlas_data = bo.atlas_data;
                         var x_offset: f32 = 0.0;
                         if (bo.anim_data) |anim_data| {
                             atlas_data = switch (bo.action) {
-                                assets.walk_action => anim_data.walk_anims[sec][1 + anim_idx], // offset by 1 to start at walk frame instead of idle
+                                assets.walk_action => anim_data.walk_anims[sec][1 + anim_idx],
                                 assets.attack_action => anim_data.attack_anims[sec][anim_idx],
                                 assets.stand_action => anim_data.walk_anims[sec][0],
                                 else => unreachable,
@@ -2639,17 +2624,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
                             if (bo.action == assets.attack_action and anim_idx == 1) {
                                 const w = atlas_data.texWRaw() * size;
-                                if (sec == assets.left_dir) {
-                                    x_offset = -assets.padding * size;
-                                } else {
-                                    x_offset = w / 4.0;
-                                }
+                                x_offset = if (sec == assets.left_dir) -assets.padding * size else w / 4.0;
                             }
                         }
 
                         var sink: f32 = 1.0;
                         if (square.tile_type != 0xFFFF) {
-                            sink += if (square.props != null and square.props.?.sink) 0.75 else 0;
+                            sink += if (square.props != null and square.props.?.sink and !square.protect_from_sink) 0.75 else 0;
                         }
 
                         atlas_data.tex_h /= sink;

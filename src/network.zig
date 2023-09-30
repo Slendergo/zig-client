@@ -18,8 +18,8 @@ pub const TimedPosition = packed struct {
 };
 
 pub const TileData = extern struct {
-    x: i16,
-    y: i16,
+    x: u16,
+    y: u16,
     tile_type: u16,
 };
 
@@ -574,8 +574,8 @@ fn handleMapInfo(allocator: std.mem.Allocator) void {
     main.clear();
     camera.quake = false;
 
-    const width: isize = @intCast(reader.read(i32));
-    const height: isize = @intCast(reader.read(i32));
+    const width: u32 = @intCast(@max(0, reader.read(i32)));
+    const height: u32 = @intCast(@max(0, reader.read(i32)));
     map.setWH(width, height, allocator);
     map.name = reader.read([]u8);
     const display_name = reader.read([]u8);
@@ -661,7 +661,6 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
                         const y_dt = y - player.y;
                         const x_dt = x - player.x;
                         player.move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
-                        player.move_angle_camera_included = camera.angle_unbound + player.move_angle;
                     }
 
                     for (0..stats_len) |_| {

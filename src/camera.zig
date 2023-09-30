@@ -22,7 +22,6 @@ pub var clip_x: f32 = 0.0;
 pub var clip_y: f32 = 0.0;
 
 pub var angle: f32 = 0.0;
-pub var angle_unbound: f32 = 0.0;
 pub var min_x: u32 = 0;
 pub var min_y: u32 = 0;
 pub var max_x: u32 = 0;
@@ -55,7 +54,6 @@ pub fn update(target_x: f32, target_y: f32, dt: f32, rotate: i8) void {
     if (rotate != 0) {
         const float_rotate: f32 = @floatFromInt(rotate);
         angle = @mod(angle + dt * rotate_speed * float_rotate, math.tau);
-        angle_unbound += dt * rotate_speed * float_rotate;
     }
 
     const cos_angle = @cos(angle);
@@ -68,20 +66,20 @@ pub fn update(target_x: f32, target_y: f32, dt: f32, rotate: i8) void {
 
     const w_half = screen_width / (2 * px_per_tile * scale);
     const h_half = screen_height / (2 * px_per_tile * scale);
-    const max_dist = @ceil(@sqrt(w_half * w_half + h_half * h_half));
-    max_dist_sq = max_dist * max_dist;
+    max_dist_sq = w_half * w_half + h_half * h_half;
+    const max_dist = @ceil(@sqrt(max_dist_sq));
 
     const min_x_dt = tx - max_dist;
     min_x = if (min_x_dt < 0) 0 else @intFromFloat(min_x_dt);
     min_x = @max(0, min_x);
     max_x = @intFromFloat(tx + max_dist);
-    max_x = @min(@as(u32, @intCast(map.width - 1)), max_x);
+    max_x = @min(map.width - 1, max_x);
 
     const min_y_dt = ty - max_dist;
     min_y = if (min_y_dt < 0) 0 else @intFromFloat(min_y_dt);
     min_y = @max(0, min_y);
     max_y = @intFromFloat(ty + max_dist);
-    max_y = @min(@as(u32, @intCast(map.height - 1)), max_y);
+    max_y = @min(map.height - 1, max_y);
 }
 
 pub inline fn rotateAroundCameraClip(x_in: f32, y_in: f32) utils.Point {

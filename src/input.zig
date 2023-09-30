@@ -69,7 +69,6 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
         walking_speed_multiplier = 0.5;
     } else if (key == settings.reset_camera.getKey()) {
         camera.angle = 0;
-        camera.angle_unbound = 0;
     } else if (key == settings.shoot.getKey()) {
         attacking = true;
     } else if (key == settings.options.getKey()) {
@@ -153,7 +152,6 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
         walking_speed_multiplier = 0.5;
     } else if (button == settings.reset_camera.getMouse()) {
         camera.angle = 0;
-        camera.angle_unbound = 0;
     } else if (button == settings.shoot.getMouse()) {
         attacking = true;
     } else if (button == settings.options.getMouse()) {

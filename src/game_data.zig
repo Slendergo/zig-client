@@ -223,8 +223,6 @@ pub const GroundProps = struct {
     anim_dx: f32,
     anim_dy: f32,
     slide_amount: f32,
-    protect_from_ground_damage: bool,
-    protect_from_sink: bool,
 
     pub fn parse(node: xml.Node, allocator: std.mem.Allocator) !GroundProps {
         var anim_type: GroundAnimType = .none;
@@ -258,8 +256,6 @@ pub const GroundProps = struct {
             .anim_type = anim_type,
             .anim_dx = dx,
             .anim_dy = dy,
-            .protect_from_ground_damage = node.elementExists("ProtectFromGroundDamage"),
-            .protect_from_sink = node.elementExists("ProtectFromSend"),
         };
     }
 };
@@ -278,8 +274,8 @@ pub const ObjProps = struct {
     enemy_occupy_square: bool,
     static: bool,
     no_mini_map: bool,
-    ground_damage_immune: bool,
-    sink_immune: bool,
+    protect_from_ground_damage: bool,
+    protect_from_sink: bool,
     base_z: f32,
     flying: bool,
     color: u32,
@@ -337,8 +333,6 @@ pub const ObjProps = struct {
             .enemy_occupy_square = node.elementExists("EnemyOccupySquare"),
             .static = node.elementExists("Static"),
             .no_mini_map = node.elementExists("NoMiniMap"),
-            .ground_damage_immune = node.elementExists("ProtectFromGroundDamage"),
-            .sink_immune = node.elementExists("ProtectFromSink"),
             .base_z = try node.getValueFloat("Z", f32, 0.0),
             .flying = node.elementExists("Flying"),
             .color = try node.getValueInt("Color", u32, 0xFFFFFF),
@@ -364,6 +358,8 @@ pub const ObjProps = struct {
             .projectiles = try allocator.dupe(ProjProps, proj_list.items()),
             .hit_sound = try node.getValueAlloc("HitSound", allocator, "Unknown"),
             .death_sound = try node.getValueAlloc("DeathSound", allocator, "Unknown"),
+            .protect_from_ground_damage = node.elementExists("ProtectFromGroundDamage"),
+            .protect_from_sink = node.elementExists("ProtectFromSink"),
         };
     }
 
