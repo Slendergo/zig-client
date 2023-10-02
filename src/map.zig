@@ -1163,7 +1163,7 @@ pub const Player = struct {
 
         const pi_div_4 = std.math.pi / 4.0;
         const angle = if (std.math.isNan(self.facing))
-            utils.halfBound(camera.angle) / pi_div_4 
+            utils.halfBound(camera.angle) / pi_div_4
         else
             utils.halfBound(self.facing - camera.angle) / pi_div_4;
 

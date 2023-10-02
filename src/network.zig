@@ -339,7 +339,7 @@ fn handleAllyShoot() void {
                 proj.addToMap(true);
             }
 
-            const attack_period: i32 = @intFromFloat((1.0 / player.attackFrequency()) * (1.0 / item_props.?.rate_of_fire));
+            const attack_period: i64 = @intFromFloat((1.0 / player.attackFrequency()) * (1.0 / item_props.?.rate_of_fire) * std.time.us_per_ms);
             player.attack_period = attack_period;
             player.attack_angle = angle - camera.angle;
             player.attack_start = main.current_time;
