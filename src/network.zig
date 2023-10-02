@@ -322,22 +322,23 @@ fn handleAllyShoot() void {
     if (map.findEntityRef(owner_id)) |en| {
         if (en.* == .player) {
             const player = &en.player;
-            const weapon = player.inventory[0];
-            const item_props = game_data.item_type_to_props.getPtr(@intCast(weapon));
+            const item_props = game_data.item_type_to_props.getPtr(@intCast(container_type));
             const proj_props = &item_props.?.projectile.?;
-            const projs_len = item_props.?.num_projectiles;
-            for (0..projs_len) |_| {
-                var proj = map.Projectile{
-                    .x = player.x,
-                    .y = player.y,
-                    .props = proj_props,
-                    .angle = angle,
-                    .start_time = @divFloor(main.current_time, std.time.us_per_ms),
-                    .bullet_id = @intCast(bullet_id),
-                    .owner_id = player.obj_id,
-                };
-                proj.addToMap(true);
-            }
+            // in case of Shoot AE this will cause problems as we send 1 per shot
+            // (in future might be ideal to redo the shoot AE in PlayerShoot as we can credit the shot for AE to use for validation)
+            // const projs_len = item_props.?.num_projectiles;
+            // for (0..projs_len) |_| {
+            var proj = map.Projectile{
+                .x = player.x,
+                .y = player.y,
+                .props = proj_props,
+                .angle = angle,
+                .start_time = @divFloor(main.current_time, std.time.us_per_ms),
+                .bullet_id = @intCast(bullet_id),
+                .owner_id = player.obj_id,
+            };
+            proj.addToMap(true);
+            // }
 
             const attack_period: i64 = @intFromFloat((1.0 / player.attackFrequency()) * (1.0 / item_props.?.rate_of_fire) * std.time.us_per_ms);
             player.attack_period = attack_period;
