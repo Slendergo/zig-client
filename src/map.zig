@@ -1313,7 +1313,7 @@ pub const Player = struct {
             return;
         }
 
-        var step_size = move_threshold / @max(@fabs(dx), @fabs(dy));
+        var step_size = move_threshold / @max(@abs(dx), @abs(dy));
 
         target_x.* = self.x;
         target_y.* = self.y;

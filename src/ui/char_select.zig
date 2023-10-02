@@ -23,28 +23,20 @@ pub const CharSelectScreen = struct {
         return screen;
     }
 
-    pub fn deinit(self: *CharSelectScreen, allocator: std.mem.Allocator) void {
-        for (self.boxes.items) |box| {
-            for (ui.elements.items(), 0..) |element, i| {
-                if (element == .char_box and element.char_box == box) {
-                    ui.disposeElement(ui.elements.removePtr(i), allocator);
-                }
-            }
-            allocator.destroy(box);
-        }
+    pub fn deinit(self: *CharSelectScreen) void {
+        while (!ui.ui_lock.tryLock()) {}
+        defer ui.ui_lock.unlock();
 
+        for (self.boxes.items) |box| {
+            box.destroy();
+        }
         self.boxes.clearAndFree();
     }
 
     pub fn toggle(self: *CharSelectScreen, state: bool) void {
         while (!ui.ui_lock.tryLock()) {}
         for (self.boxes.items) |box| {
-            for (ui.elements.items(), 0..) |element, i| {
-                if (element == .char_box and element.char_box == box) {
-                    ui.disposeElement(ui.elements.removePtr(i), self._allocator);
-                }
-            }
-            self._allocator.destroy(box);
+            box.destroy();
         }
         ui.ui_lock.unlock();
 

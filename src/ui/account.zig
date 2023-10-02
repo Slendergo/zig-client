@@ -231,17 +231,20 @@ pub const AccountRegisterScreen = struct {
         return screen;
     }
 
-    pub fn deinit(self: *AccountRegisterScreen, allocator: std.mem.Allocator) void {
-        allocator.destroy(self.username_text);
-        allocator.destroy(self.username_input);
-        allocator.destroy(self.email_text);
-        allocator.destroy(self.email_input);
-        allocator.destroy(self.password_text);
-        allocator.destroy(self.password_input);
-        allocator.destroy(self.password_repeat_input);
-        allocator.destroy(self.password_repeat_text);
-        allocator.destroy(self.confirm_button);
-        allocator.destroy(self.back_button);
+    pub fn deinit(self: *AccountRegisterScreen) void {
+        while (!ui.ui_lock.tryLock()) {}
+        defer ui.ui_lock.unlock();
+
+        self.username_text.destroy();
+        self.username_input.destroy();
+        self.email_text.destroy();
+        self.email_input.destroy();
+        self.password_text.destroy();
+        self.password_input.destroy();
+        self.password_repeat_input.destroy();
+        self.password_repeat_text.destroy();
+        self.confirm_button.destroy();
+        self.back_button.destroy();
     }
 
     pub fn toggle(self: *AccountRegisterScreen, state: bool) void {
@@ -405,13 +408,16 @@ pub const AccountScreen = struct {
         return screen;
     }
 
-    pub fn deinit(self: *AccountScreen, allocator: std.mem.Allocator) void {
-        allocator.destroy(self.email_text);
-        allocator.destroy(self.email_input);
-        allocator.destroy(self.password_text);
-        allocator.destroy(self.password_input);
-        allocator.destroy(self.login_button);
-        allocator.destroy(self.confirm_button);
+    pub fn deinit(self: *AccountScreen) void {
+        while (!ui.ui_lock.tryLock()) {}
+        defer ui.ui_lock.unlock();
+
+        self.email_text.destroy();
+        self.email_input.destroy();
+        self.password_text.destroy();
+        self.password_input.destroy();
+        self.login_button.destroy();
+        self.confirm_button.destroy();
     }
 
     pub fn toggle(self: *AccountScreen, state: bool) void {

@@ -121,13 +121,13 @@ fn onResize(_: *zglfw.Window, w: i32, h: i32) callconv(.C) void {
     ui.resize(float_w, float_h);
 }
 
-fn networkTick(allocator: std.mem.Allocator) void {
+fn networkTick(allocator: *std.mem.Allocator) void {
     while (tick_network) {
         std.time.sleep(100 * std.time.ns_per_ms);
 
         if (selected_server) |sel_srv| {
             if (!network.connected)
-                network.init(sel_srv.dns, sel_srv.port, &_allocator);
+                network.init(sel_srv.dns, sel_srv.port, allocator);
 
             if (network.connected) {
                 if (selected_char_id != 65535 and !sent_hello) {
@@ -144,7 +144,7 @@ fn networkTick(allocator: std.mem.Allocator) void {
                     sent_hello = true;
                 }
 
-                network.accept(allocator);
+                network.accept(allocator.*);
             }
         }
     }
@@ -284,11 +284,11 @@ pub fn disconnect() void {
 }
 
 pub fn main() !void {
-    if (settings.enable_tracy) {
-        // needed for tracy to register
-        const main_zone = ztracy.ZoneNC(@src(), "Main Zone", 0x00FF0000);
-        defer main_zone.End();
-    }
+    // needed for tracy to register
+    var main_zone: ztracy.ZoneCtx = undefined;
+    if (settings.enable_tracy)
+        main_zone = ztracy.ZoneNC(@src(), "Main Zone", 0x00FF0000);
+    defer if (settings.enable_tracy) main_zone.End();
 
     const start_time = std.time.microTimestamp();
     utils.rng.seed(@as(u64, @intCast(start_time)));
@@ -297,7 +297,7 @@ pub fn main() !void {
     var gpa = if (is_debug) std.heap.GeneralPurposeAllocator(.{}){} else {};
     defer _ = if (is_debug) gpa.deinit();
 
-    const allocator = switch (builtin.mode) {
+    var allocator = switch (builtin.mode) {
         .Debug => gpa.allocator(),
         .ReleaseSafe => std.heap.c_allocator,
         .ReleaseFast, .ReleaseSmall => std.heap.raw_c_allocator,
@@ -339,7 +339,7 @@ pub fn main() !void {
     defer input.deinit(allocator);
 
     try ui.init(allocator);
-    defer ui.deinit(allocator);
+    defer ui.deinit();
 
     ui.switchScreen(.main_menu);
 
@@ -380,7 +380,7 @@ pub fn main() !void {
     render.init(gctx, allocator);
     defer render.deinit(allocator);
 
-    network_thread = try std.Thread.spawn(.{}, networkTick, .{allocator});
+    network_thread = try std.Thread.spawn(.{}, networkTick, .{&allocator});
     defer {
         tick_network = false;
         network_thread.join();
@@ -415,7 +415,7 @@ pub fn main() !void {
     }
 
     if (network.connected) {
-        defer network.deinit(&_allocator);
+        defer network.deinit(&allocator);
     }
 
     if (character_list.len > 0) {

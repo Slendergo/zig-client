@@ -264,7 +264,7 @@ pub fn accept(allocator: std.mem.Allocator) void {
             .aoe => handleAoe(),
             .buy_result => handleBuyResult(),
             .create_success => handleCreateSuccess(),
-            .damage => handleDamage(),
+            .damage => handleDamage(allocator),
             .death => handleDeath(),
             .enemy_shoot => handleEnemyShoot(),
             .failure => handleFailure(),
@@ -387,7 +387,7 @@ fn handleCreateSuccess() void {
         std.log.debug("Recv - CreateSuccess: player_id={d}, char_id={d}", .{ map.local_player_id, char_id });
 }
 
-fn handleDamage() void {
+fn handleDamage(allocator: std.mem.Allocator) void {
     const target_id = reader.read(i32);
     const effects = reader.read(utils.Condition);
     const amount = reader.read(u16);
@@ -406,7 +406,7 @@ fn handleDamage() void {
                     0.0,
                     100.0 / 10000.0,
                     false,
-                    main._allocator,
+                    allocator,
                 );
             },
             .object => |*object| {
@@ -420,7 +420,7 @@ fn handleDamage() void {
                     0.0,
                     100.0 / 10000.0,
                     false,
-                    main._allocator,
+                    allocator,
                 );
             },
             else => {},

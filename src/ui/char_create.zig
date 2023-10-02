@@ -18,8 +18,7 @@ pub const CharCreateScreen = struct {
         return screen;
     }
 
-    pub fn deinit(self: *CharCreateScreen, allocator: std.mem.Allocator) void {
-        _ = allocator;
+    pub fn deinit(self: *CharCreateScreen) void {
         _ = self;
     }
 

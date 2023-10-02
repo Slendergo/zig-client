@@ -6,8 +6,8 @@ var headers: std.http.Headers = undefined;
 var buffer: [std.math.maxInt(u16)]u8 = undefined;
 
 pub fn init(allocator: std.mem.Allocator) void {
-    client = std.http.Client{ .allocator = allocator };
-    headers = std.http.Headers{ .allocator = allocator };
+    client = .{ .allocator = allocator };
+    headers = .{ .allocator = allocator };
 }
 
 pub fn deinit() void {
@@ -23,7 +23,7 @@ pub fn sendCharList(email: []const u8, password: []const u8) ![]const u8 {
 
     defer req.deinit();
     req.transfer_encoding = .chunked;
-    try req.start();
+    try req.start(.{});
     const writer = req.writer();
     try writer.writeAll("email=");
     try writer.writeAll(email);
@@ -43,7 +43,7 @@ pub fn sendCharDelete(email: []const u8, password: []const u8, char_id: []const 
 
     defer req.deinit();
     req.transfer_encoding = .chunked;
-    try req.start();
+    try req.start(.{});
     const writer = req.writer();
     try writer.writeAll("email=");
     try writer.writeAll(email);
@@ -65,7 +65,7 @@ pub fn sendAccountVerify(email: []const u8, password: []const u8) ![]const u8 {
 
     defer req.deinit();
     req.transfer_encoding = .chunked;
-    try req.start();
+    try req.start(.{});
     const writer = req.writer();
     try writer.writeAll("email=");
     try writer.writeAll(email);
@@ -85,7 +85,7 @@ pub fn sendAccountRegister(email: []const u8, password: []const u8, username: []
 
     defer req.deinit();
     req.transfer_encoding = .chunked;
-    try req.start();
+    try req.start(.{});
     const writer = req.writer();
     try writer.writeAll("&email=");
     try writer.writeAll(email);
@@ -107,7 +107,7 @@ pub fn sendAccountChangePassword(email: []const u8, password: []const u8, newPas
 
     defer req.deinit();
     req.transfer_encoding = .chunked;
-    try req.start();
+    try req.start(.{});
     const writer = req.writer();
     try writer.writeAll("email=");
     try writer.writeAll(email);
@@ -129,7 +129,7 @@ pub fn sendAppInit() ![]const u8 {
 
     defer req.deinit();
     req.transfer_encoding = .chunked;
-    try req.start();
+    try req.start(.{});
     try req.wait();
     const len = try req.readAll(&buffer);
     return buffer[0..len];

@@ -332,27 +332,30 @@ pub const InGameScreen = struct {
         return screen;
     }
 
-    pub fn deinit(self: *InGameScreen, allocator: std.mem.Allocator) void {
-        allocator.destroy(self.minimap_decor);
-        allocator.destroy(self.inventory_decor);
-        allocator.destroy(self.container_decor);
-        allocator.destroy(self.bars_decor);
-        allocator.destroy(self.stats_button);
-        allocator.destroy(self.level_text);
-        allocator.destroy(self.xp_bar);
-        allocator.destroy(self.fame_bar);
-        allocator.destroy(self.health_bar);
-        allocator.destroy(self.mana_bar);
-        allocator.destroy(self.chat_decor);
-        allocator.destroy(self.chat_input);
-        allocator.destroy(self.fps_text);
+    pub fn deinit(self: *InGameScreen) void {
+        while (!ui.ui_lock.tryLock()) {}
+        defer ui.ui_lock.unlock();
+
+        self.minimap_decor.destroy();
+        self.inventory_decor.destroy();
+        self.container_decor.destroy();
+        self.bars_decor.destroy();
+        self.stats_button.destroy();
+        self.level_text.destroy();
+        self.xp_bar.destroy();
+        self.fame_bar.destroy();
+        self.health_bar.destroy();
+        self.mana_bar.destroy();
+        self.chat_decor.destroy();
+        self.chat_input.destroy();
+        self.fps_text.destroy();
 
         for (self.inventory_items) |item| {
-            allocator.destroy(item);
+            item.destroy();
         }
 
         for (self.container_items) |item| {
-            allocator.destroy(item);
+            item.destroy();
         }
     }
 
