@@ -660,6 +660,10 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
                         const y_dt = y - player.y;
                         const x_dt = x - player.x;
                         player.move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
+
+                        const float_tick_time = @as(f32, @floatFromInt(tick_time));
+                        player.x_dir = (player.target_x - player.tick_x) / float_tick_time;
+                        player.y_dir = (player.target_y - player.tick_y) / float_tick_time; // used for animation stuff for non "self" player
                     }
 
                     for (0..stats_len) |_| {
