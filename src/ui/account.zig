@@ -269,8 +269,27 @@ pub const AccountRegisterScreen = struct {
         _ = ms_time;
     }
 
+    fn register(email: []const u8, password: []const u8, username: []const u8) !bool {
+        const response = try requests.sendAccountRegister(email, password, username);
+        if (std.mem.eql(u8, response, "<Error />")) {
+            std.log.err("Register failed: {s}", .{response});
+            return false;
+        }
+
+        return true;
+    }
+    
     fn registerCallback() void {
-        ui.switchScreen(.register);
+
+        _ = register(
+            ui.account_register_screen.email_input.text_data.text,
+            ui.account_register_screen.password_input.text_data.text,
+            ui.account_register_screen.username_input.text_data.text,
+        ) catch |e| {
+            std.log.err("Register failed: {any}", .{e});
+        };
+
+        ui.switchScreen(.main_menu);
     }
 
     fn backCallback() void {
