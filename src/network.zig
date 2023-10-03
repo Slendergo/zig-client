@@ -50,7 +50,6 @@ const C2SPacketId = enum(u8) {
     edit_account_list = 11,
     enemy_hit = 12,
     escape = 13,
-    goto_ack = 14,
     ground_damage = 15,
     guild_invite = 16,
     guild_remove = 17,
@@ -89,7 +88,6 @@ pub const C2SPacket = union(C2SPacketId) {
     edit_account_list: packed struct { list_id: i32, add: bool, obj_id: i32 },
     enemy_hit: packed struct { time: i64, bullet_id: u8, target_id: i32, killed: bool },
     escape: packed struct {},
-    goto_ack: packed struct { time: i64 },
     ground_damage: packed struct { time: i64, x: f32, y: f32 },
     guild_invite: struct { name: []const u8 },
     guild_remove: struct { name: []const u8 },
@@ -524,6 +522,9 @@ fn handleGoto() void {
     const x = reader.read(f32);
     const y = reader.read(f32);
 
+    while (!map.object_lock.tryLock()) {}
+    defer map.object_lock.unlock();
+
     if (map.findEntityRef(object_id)) |en| {
         if (en.* == .player) {
             const player = &en.player;
@@ -540,8 +541,6 @@ fn handleGoto() void {
     } else {
         std.log.err("Object id {d} not found while attempting to goto to pos x={d}, y={d}", .{ object_id, x, y });
     }
-
-    sendPacket(.{ .goto_ack = .{ .time = main.current_time } });
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_non_tick)
         std.log.debug("Recv - Goto: object_id={d}, x={e}, y={e}", .{ object_id, x, y });
