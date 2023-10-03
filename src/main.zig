@@ -176,7 +176,8 @@ fn renderTick(allocator: std.mem.Allocator) !void {
 
         const commands = encoder.finish(null);
         gctx.submit(&.{commands});
-        _ = gctx.present();
+        if (gctx.present() == .swap_chain_resized)
+            render.createColorTexture(gctx, gctx.swapchain_descriptor.width, gctx.swapchain_descriptor.height);
 
         back_buffer.release();
         encoder.release();

@@ -25,6 +25,13 @@ pub const CursorType = enum(u8) {
     target_ally = 6,
 };
 
+pub const AaType = enum(u8) {
+    none = 0,
+    fxaa = 1, // not implemented yet
+    msaa2x = 2,
+    msaa4x = 3,
+};
+
 pub const Button = union(enum) {
     key: zglfw.Key,
     mouse: zglfw.MouseButton,
@@ -92,6 +99,7 @@ pub var enable_vsync = true;
 pub var always_show_xp_gain = true;
 pub var fps_cap: f32 = 360.0; // 0 to disable
 pub var selected_cursor = CursorType.aztec;
+pub var aa_type: AaType = .msaa4x;
 
 pub fn init(allocator: std.mem.Allocator) !void {
     key_tex_map = std.AutoHashMap(Button, u16).init(allocator);
@@ -247,4 +255,5 @@ pub fn resetToDefault() void {
     always_show_xp_gain = false;
     fps_cap = 360.0;
     selected_cursor = CursorType.aztec;
+    aa_type = .msaa4x;
 }

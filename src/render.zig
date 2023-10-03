@@ -117,6 +117,8 @@ pub var minimap_texture: zgpu.TextureHandle = undefined;
 pub var minimap_texture_view: zgpu.TextureViewHandle = undefined;
 pub var menu_bg_texture: zgpu.TextureHandle = undefined;
 pub var menu_bg_texture_view: zgpu.TextureViewHandle = undefined;
+pub var color_texture: zgpu.TextureHandle = undefined;
+pub var color_texture_view: zgpu.TextureViewHandle = undefined;
 
 pub var sampler: zgpu.SamplerHandle = undefined;
 pub var linear_sampler: zgpu.SamplerHandle = undefined;
@@ -150,6 +152,24 @@ fn createTexture(gctx: *zgpu.GraphicsContext, tex: *zgpu.TextureHandle, view: *z
         u8,
         img.data,
     );
+}
+
+pub fn createColorTexture(gctx: *zgpu.GraphicsContext, w: u32, h: u32) void {
+    color_texture = gctx.createTexture(.{
+        .usage = .{ .render_attachment = true },
+        .dimension = .tdim_2d,
+        .size = .{
+            .width = w,
+            .height = h,
+        },
+        .format = gctx.swapchain_descriptor.format,
+        .sample_count = switch (settings.aa_type) {
+            .msaa2x => 2,
+            .msaa4x => 4,
+            else => 1,
+        },
+    });
+    color_texture_view = gctx.createTextureView(color_texture, .{});
 }
 
 pub fn deinit(allocator: std.mem.Allocator) void {
@@ -244,6 +264,14 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         .size = index_data.len * @sizeOf(u16),
     });
     gctx.queue.writeBuffer(index_buffer, 0, u16, index_data[0..]);
+
+    const sample_count: u32 = switch (settings.aa_type) {
+        .msaa2x => 2,
+        .msaa4x => 4,
+        else => 1,
+    };
+
+    createColorTexture(gctx, gctx.swapchain_descriptor.width, gctx.swapchain_descriptor.height);
 
     createTexture(gctx, &medium_text_texture, &medium_text_texture_view, assets.medium_atlas);
     createTexture(gctx, &medium_italic_text_texture, &medium_italic_text_texture_view, assets.medium_italic_atlas);
@@ -355,6 +383,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
                 .target_count = color_targets.len,
                 .targets = &color_targets,
             },
+            .multisample = .{ .count = sample_count },
         };
         base_pipeline = gctx.createRenderPipeline(pipeline_layout, pipeline_descriptor);
     }
@@ -402,6 +431,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
                 .target_count = color_targets.len,
                 .targets = &color_targets,
             },
+            .multisample = .{ .count = sample_count },
         };
         ground_pipeline = gctx.createRenderPipeline(pipeline_layout, pipeline_descriptor);
     }
@@ -453,6 +483,7 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
                 .target_count = color_targets.len,
                 .targets = &color_targets,
             },
+            .multisample = .{ .count = sample_count },
         };
         light_pipeline = gctx.createRenderPipeline(pipeline_layout, pipeline_descriptor);
     }
@@ -2106,7 +2137,8 @@ inline fn endDraw(draw_data: DrawData, verts: u64, indices: u32, offsets: ?[]con
 
 pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.TextureView, encoder: zgpu.wgpu.CommandEncoder) void {
     const clear_color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
-        .view = back_buffer,
+        .view = gctx.lookupResource(color_texture_view).?,
+        .resolve_target = back_buffer,
         .load_op = .clear,
         .store_op = .store,
     }};
@@ -2116,7 +2148,8 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     };
 
     const load_color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
-        .view = back_buffer,
+        .view = gctx.lookupResource(color_texture_view).?,
+        .resolve_target = back_buffer,
         .load_op = .load,
         .store_op = .store,
     }};
