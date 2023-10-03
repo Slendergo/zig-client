@@ -404,8 +404,8 @@ pub fn scrollEvent(_: *zglfw.Window, _: f64, yoffset: f64) callconv(.C) void {
 }
 
 fn useAbility() void {
-    while (!map.object_lock.tryLock()) {}
-    defer map.object_lock.unlock();
+    while (!map.object_lock.tryLockShared()) {}
+    defer map.object_lock.unlockShared();
 
     if (map.localPlayerRef()) |local_player| {
         const x: f32 = @floatCast(mouse_x);

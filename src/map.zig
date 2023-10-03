@@ -1971,7 +1971,7 @@ const AtlasHashHack = [4]u32;
 const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
 const day_cycle_ms_half: f32 = @as(f32, day_cycle_ms) / 2;
 
-pub var object_lock: std.Thread.Mutex = .{};
+pub var object_lock: std.Thread.RwLock = .{};
 pub var entities: utils.DynSlice(Entity) = undefined;
 pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
 pub var atlas_to_color_data: std.AutoHashMap(AtlasHashHack, []u32) = undefined;
@@ -2314,9 +2314,8 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
         ui.current_screen.in_game.setContainerVisible(false);
     }
 
-    std.mem.reverse(usize, entity_indices_to_remove.items());
-
-    for (entity_indices_to_remove.items()) |idx| {
+    var remove_iter = std.mem.reverseIterator(entity_indices_to_remove.items());
+    while (remove_iter.next()) |idx| {
         disposeEntity(allocator, entities.removePtr(idx));
     }
 

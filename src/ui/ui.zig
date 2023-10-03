@@ -1107,7 +1107,7 @@ pub fn switchScreen(screen_type: ScreenType) void {
     menu_background.visible = screen_type != .in_game;
 
     switch (current_screen) {
-        inline else => |*screen| screen.deinit()
+        inline else => |*screen| screen.deinit(),
     }
 
     // should probably figure out some comptime magic to avoid all this... todo
@@ -1317,8 +1317,8 @@ pub fn mouseRelease(x: f32, y: f32) void {
 }
 
 pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
-    while (!map.object_lock.tryLock()) {}
-    defer map.object_lock.unlock();
+    while (!map.object_lock.tryLockShared()) {}
+    defer map.object_lock.unlockShared();
 
     const ms_time = @divFloor(time, std.time.us_per_ms);
     const ms_dt = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;

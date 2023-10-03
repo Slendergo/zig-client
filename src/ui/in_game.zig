@@ -129,8 +129,6 @@ pub const InGameScreen = struct {
             ._allocator = allocator,
         };
 
-        defer screen.inited = true;
-
         screen.parseItemRects();
 
         const minimap_data = assets.getUiData("minimap", 0);
@@ -332,6 +330,7 @@ pub const InGameScreen = struct {
             .text_data = fps_text_data,
         });
 
+        screen.inited = true;
         return screen;
     }
 
@@ -517,8 +516,8 @@ pub const InGameScreen = struct {
                 } });
             }
         } else {
-            while (!map.object_lock.tryLock()) {}
-            defer map.object_lock.unlock();
+            while (!map.object_lock.tryLockShared()) {}
+            defer map.object_lock.unlockShared();
 
             if (map.localPlayerConst()) |local_player| {
                 const start_item = if (start_slot.is_container)
@@ -578,8 +577,8 @@ pub const InGameScreen = struct {
         const start_slot = Slot.findSlotId(ui.current_screen.in_game, item.x + 4, item.y + 4);
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             if (props.consumable and !start_slot.is_container) {
-                while (!map.object_lock.tryLock()) {}
-                defer map.object_lock.unlock();
+                while (!map.object_lock.tryLockShared()) {}
+                defer map.object_lock.unlockShared();
 
                 if (map.localPlayerConst()) |local_player| {
                     network.queuePacket(.{ .use_item = .{
@@ -609,8 +608,8 @@ pub const InGameScreen = struct {
             ui.current_screen.in_game.swapSlots(start_slot, end_slot);
         } else {
             if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
-                while (!map.object_lock.tryLock()) {}
-                defer map.object_lock.unlock();
+                while (!map.object_lock.tryLockShared()) {}
+                defer map.object_lock.unlockShared();
 
                 if (map.localPlayerConst()) |local_player| {
                     const end_slot = Slot.nextEquippableSlot(local_player.slot_types, props.slot_type);
@@ -662,8 +661,8 @@ pub const InGameScreen = struct {
 
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             if (props.consumable) {
-                while (!map.object_lock.tryLock()) {}
-                defer map.object_lock.unlock();
+                while (!map.object_lock.tryLockShared()) {}
+                defer map.object_lock.unlockShared();
 
                 if (map.localPlayerConst()) |local_player| {
                     network.queuePacket(.{ .use_item = .{
