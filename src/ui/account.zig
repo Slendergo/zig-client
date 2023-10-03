@@ -281,13 +281,12 @@ pub const AccountRegisterScreen = struct {
 
         return true;
     }
-    
-    fn registerCallback() void {
 
+    fn registerCallback() void {
         _ = register(
-            ui.account_register_screen.email_input.text_data.text,
-            ui.account_register_screen.password_input.text_data.text,
-            ui.account_register_screen.username_input.text_data.text,
+            ui.current_screen.register.email_input.text_data.text,
+            ui.current_screen.register.password_input.text_data.text,
+            ui.current_screen.register.username_input.text_data.text,
         ) catch |e| {
             std.log.err("Register failed: {any}", .{e});
         };
@@ -462,9 +461,9 @@ pub const AccountScreen = struct {
 
     fn loginCallback() void {
         _ = login(
-            ui.account_screen._allocator,
-            ui.account_screen.email_input.text_data.text,
-            ui.account_screen.password_input.text_data.text,
+            ui.current_screen.main_menu._allocator,
+            ui.current_screen.main_menu.email_input.text_data.text,
+            ui.current_screen.main_menu.password_input.text_data.text,
         ) catch |e| {
             std.log.err("Login failed: {any}", .{e});
         };
@@ -495,8 +494,14 @@ pub const AccountScreen = struct {
             return false;
         };
 
-        main.current_account.email = email;
-        main.current_account.password = password;
+        main.current_account.email = allocator.dupe(u8, email) catch |e| {
+            std.log.err("Could not dupe current account email: {any}", .{e});
+            return false;
+        };
+        main.current_account.password = allocator.dupe(u8, password) catch |e| {
+            std.log.err("Could not dupe current account password: {any}", .{e});
+            return false;
+        };
         main.current_account.admin = verify_root.elementExists("Admin");
 
         const guild_node = verify_root.findChild("Guild");
@@ -534,7 +539,7 @@ pub const AccountScreen = struct {
         if (main.character_list.len > 0) {
             ui.switchScreen(.char_select);
         } else {
-            ui.switchScreen(.char_creation);
+            ui.switchScreen(.char_create);
         }
 
         return true;

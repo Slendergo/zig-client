@@ -20,6 +20,29 @@ pub const CharSelectScreen = struct {
         screen.boxes = std.ArrayList(*ui.CharacterBox).init(allocator);
         try screen.boxes.ensureTotalCapacity(8);
 
+        const button_data_base = assets.getUiData("buttonBase", 0);
+        const button_data_hover = assets.getUiData("buttonHover", 0);
+        const button_data_press = assets.getUiData("buttonPress", 0);
+
+        for (main.character_list, 0..) |char, i| {
+            const box = ui.CharacterBox.create(allocator, .{
+                .x = (camera.screen_width - button_data_base.texWRaw()) / 2,
+                .y = @floatFromInt(50 * i),
+                .id = char.id,
+                .base_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_base, 100, 40, 6, 6, 7, 7, 1.0) },
+                .hover_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_hover, 100, 40, 6, 6, 7, 7, 1.0) },
+                .press_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_press, 100, 40, 6, 6, 7, 7, 1.0) },
+                .text_data = ui.TextData{
+                    .text = @constCast(char.name[0..]),
+                    .backing_buffer = allocator.alloc(u8, 1) catch return screen,
+                    .size = 16,
+                    .text_type = .bold,
+                },
+                .press_callback = boxClickCallback,
+            }) catch return screen;
+            screen.boxes.append(box) catch return screen;
+        }
+
         return screen;
     }
 
@@ -31,42 +54,6 @@ pub const CharSelectScreen = struct {
             box.destroy();
         }
         self.boxes.clearAndFree();
-    }
-
-    pub fn toggle(self: *CharSelectScreen, state: bool) void {
-        while (!ui.ui_lock.tryLock()) {}
-        for (self.boxes.items) |box| {
-            box.destroy();
-        }
-        ui.ui_lock.unlock();
-
-        self.boxes.clearAndFree();
-
-        if (!state)
-            return;
-
-        const button_data_base = assets.getUiData("buttonBase", 0);
-        const button_data_hover = assets.getUiData("buttonHover", 0);
-        const button_data_press = assets.getUiData("buttonPress", 0);
-
-        for (main.character_list, 0..) |char, i| {
-            const box = ui.CharacterBox.create(self._allocator, .{
-                .x = (camera.screen_width - button_data_base.texWRaw()) / 2,
-                .y = @floatFromInt(50 * i),
-                .id = char.id,
-                .base_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_base, 100, 40, 6, 6, 7, 7, 1.0) },
-                .hover_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_hover, 100, 40, 6, 6, 7, 7, 1.0) },
-                .press_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_press, 100, 40, 6, 6, 7, 7, 1.0) },
-                .text_data = ui.TextData{
-                    .text = @constCast(char.name[0..]),
-                    .backing_buffer = self._allocator.alloc(u8, 1) catch return,
-                    .size = 16,
-                    .text_type = .bold,
-                },
-                .press_callback = boxClickCallback,
-            }) catch return;
-            self.boxes.append(box) catch return;
-        }
     }
 
     pub fn resize(self: *CharSelectScreen, w: f32, h: f32) void {

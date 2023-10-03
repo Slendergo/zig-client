@@ -1156,8 +1156,8 @@ fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: 
             const inv_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.inv_0);
             const item = reader.read(i32);
             plr.inventory[inv_idx] = item;
-            if (plr.obj_id == map.local_player_id)
-                ui.in_game_screen.setInvItem(item, inv_idx);
+            if (plr.obj_id == map.local_player_id and ui.current_screen == .in_game)
+                ui.current_screen.in_game.setInvItem(item, inv_idx);
         },
         .stars => plr.stars = reader.read(i32),
         .name => plr.name_override = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},
@@ -1206,8 +1206,8 @@ fn parsePlrStatData(plr: *map.Player, stat_type: game_data.StatType, allocator: 
             const backpack_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.backpack_0) + 12;
             const item = reader.read(i32);
             plr.inventory[backpack_idx] = item;
-            if (plr.obj_id == map.local_player_id)
-                ui.in_game_screen.setInvItem(item, backpack_idx);
+            if (plr.obj_id == map.local_player_id and ui.current_screen == .in_game)
+                ui.current_screen.in_game.setInvItem(item, backpack_idx);
         },
         .has_backpack => plr.has_backpack = reader.read(bool),
         .skin => plr.skin = reader.read(i32),
@@ -1237,8 +1237,8 @@ fn parseObjStatData(obj: *map.GameObject, stat_type: game_data.StatType, allocat
             const inv_idx = @intFromEnum(stat_type) - @intFromEnum(game_data.StatType.inv_0);
             const item = reader.read(i32);
             obj.inventory[inv_idx] = item;
-            if (obj.obj_id == map.interactive_id.load(.Acquire)) {
-                ui.in_game_screen.setContainerItem(item, inv_idx);
+            if (obj.obj_id == map.interactive_id.load(.Acquire) and ui.current_screen == .in_game) {
+                ui.current_screen.in_game.setContainerItem(item, inv_idx);
             }
         },
         .name => obj.name_override = allocator.dupe(u8, reader.read([]u8)) catch &[0]u8{},

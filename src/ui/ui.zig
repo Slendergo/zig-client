@@ -1031,15 +1031,6 @@ pub const DisplayContainer = struct {
     }
 };
 
-pub const ScreenType = enum(u8) {
-    main_menu,
-    register,
-    char_select,
-    char_creation,
-    map_editor,
-    in_game,
-};
-
 pub const UiElement = union(enum) {
     image: *Image,
     item: *Item,
@@ -1055,18 +1046,28 @@ pub const UiElement = union(enum) {
     status: StatusText,
 };
 
+pub const ScreenType = enum {
+    main_menu,
+    register,
+    char_select,
+    char_create,
+    in_game,
+};
+
+pub const Screen = union(ScreenType) {
+    main_menu: AccountScreen,
+    register: AccountRegisterScreen,
+    char_select: CharSelectScreen,
+    char_create: CharCreateScreen,
+    in_game: InGameScreen,
+};
+
 pub var ui_lock: std.Thread.Mutex = .{};
 pub var elements: utils.DynSlice(UiElement) = undefined;
 pub var elements_to_remove: utils.DynSlice(*UiElement) = undefined;
-pub var current_screen = ScreenType.main_menu;
+pub var current_screen: Screen = undefined;
 
 var menu_background: *MenuBackground = undefined;
-
-pub var account_screen: AccountScreen = undefined;
-pub var account_register_screen: AccountRegisterScreen = undefined;
-pub var char_select_screen: CharSelectScreen = undefined;
-pub var char_create_screen: CharCreateScreen = undefined;
-pub var in_game_screen: InGameScreen = undefined;
 
 pub fn init(allocator: std.mem.Allocator) !void {
     elements = try utils.DynSlice(UiElement).init(64, allocator);
@@ -1079,21 +1080,15 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .h = camera.screen_height,
     });
 
-    account_screen = try AccountScreen.init(allocator);
-    account_register_screen = try AccountRegisterScreen.init(allocator);
-    char_select_screen = try CharSelectScreen.init(allocator);
-    char_create_screen = try CharCreateScreen.init(allocator);
-    in_game_screen = try InGameScreen.init(allocator);
+    current_screen = .{ .main_menu = try AccountScreen.init(allocator) };
 }
 
 pub fn deinit() void {
     menu_background.destroy();
 
-    char_select_screen.deinit();
-    account_screen.deinit();
-    account_register_screen.deinit();
-    in_game_screen.deinit();
-    char_create_screen.deinit();
+    switch (current_screen) {
+        inline else => |*screen| screen.deinit(),
+    }
 
     elements.deinit();
     elements_to_remove.deinit();
@@ -1103,22 +1098,51 @@ pub fn resize(w: f32, h: f32) void {
     menu_background.w = camera.screen_width;
     menu_background.h = camera.screen_height;
 
-    account_screen.resize(w, h);
-    account_register_screen.resize(w, h);
-    in_game_screen.resize(w, h);
-    char_select_screen.resize(w, h);
-    char_create_screen.resize(w, h);
+    switch (current_screen) {
+        inline else => |*screen| screen.resize(w, h),
+    }
 }
 
 pub fn switchScreen(screen_type: ScreenType) void {
-    current_screen = screen_type;
-
     menu_background.visible = screen_type != .in_game;
-    account_screen.toggle(screen_type == .main_menu);
-    account_register_screen.toggle(screen_type == .register);
-    in_game_screen.toggle(screen_type == .in_game);
-    char_select_screen.toggle(screen_type == .char_select);
-    char_create_screen.toggle(screen_type == .char_creation);
+
+    switch (current_screen) {
+        inline else => |*screen| screen.deinit()
+    }
+
+    // should probably figure out some comptime magic to avoid all this... todo
+    switch (screen_type) {
+        .main_menu => {
+            current_screen = .{ .main_menu = AccountScreen.init(main._allocator) catch |e| {
+                std.log.err("Initializing login screen failed: {any}", .{e});
+                return;
+            } };
+        },
+        .register => {
+            current_screen = .{ .register = AccountRegisterScreen.init(main._allocator) catch |e| {
+                std.log.err("Initializing register screen failed: {any}", .{e});
+                return;
+            } };
+        },
+        .char_select => {
+            current_screen = .{ .char_select = CharSelectScreen.init(main._allocator) catch |e| {
+                std.log.err("Initializing char select screen failed: {any}", .{e});
+                return;
+            } };
+        },
+        .char_create => {
+            current_screen = .{ .char_create = CharCreateScreen.init(main._allocator) catch |e| {
+                std.log.err("Initializing char create screen failed: {any}", .{e});
+                return;
+            } };
+        },
+        .in_game => {
+            current_screen = .{ .in_game = InGameScreen.init(main._allocator) catch |e| {
+                std.log.err("Initializing in game screen failed: {any}", .{e});
+                return;
+            } };
+        },
+    }
 }
 
 pub fn removeAttachedUi(obj_id: i32, allocator: std.mem.Allocator) void {
@@ -1297,15 +1321,10 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
     defer map.object_lock.unlock();
 
     const ms_time = @divFloor(time, std.time.us_per_ms);
-    const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
+    const ms_dt = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
 
     switch (current_screen) {
-        .main_menu => try account_screen.update(ms_time, ms_dt),
-        .register => try account_register_screen.update(ms_time, ms_dt),
-        .char_select => try char_select_screen.update(ms_time, ms_dt),
-        .in_game => try in_game_screen.update(ms_time, ms_dt),
-        .char_creation => try char_create_screen.update(ms_time, ms_dt),
-        else => {},
+        inline else => |*screen| try screen.update(ms_time, ms_dt),
     }
 
     for (elements.items()) |*elem| {

@@ -183,7 +183,8 @@ fn renderTick(allocator: std.mem.Allocator) !void {
         commands.release();
 
         // this has to be updated on render thread to avoid headaches (gctx sharing)
-        try ui.in_game_screen.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
+        if (ui.current_screen == .in_game and ui.current_screen.in_game.inited)
+            try ui.current_screen.in_game.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
 
         minimapUpdate: {
             if (need_minimap_update) {
@@ -410,26 +411,32 @@ pub fn main() !void {
         std.time.sleep(6.5 * std.time.ns_per_ms);
     }
 
-    if (!std.mem.eql(u8, current_account.name, "")) {
-        defer allocator.free(current_account.name);
-    }
+    defer {
+        if (current_account.name.len > 0)
+            allocator.free(current_account.name);
 
-    if (network.connected) {
-        defer network.deinit(&allocator);
-    }
+        if (current_account.email.len > 0)
+            allocator.free(current_account.email);
 
-    if (character_list.len > 0) {
-        for (character_list) |char| {
-            defer allocator.free(char.name);
+        if (current_account.password.len > 0)
+            allocator.free(current_account.password);
+
+        if (network.connected)
+            network.deinit(&allocator);
+
+        if (character_list.len > 0) {
+            for (character_list) |char| {
+                allocator.free(char.name);
+            }
+            allocator.free(character_list);
         }
-        defer allocator.free(character_list);
-    }
 
-    if (server_list) |srv_list| {
-        for (srv_list) |srv| {
-            defer allocator.free(srv.name);
-            defer allocator.free(srv.dns);
+        if (server_list) |srv_list| {
+            for (srv_list) |srv| {
+                allocator.free(srv.name);
+                allocator.free(srv.dns);
+            }
+            allocator.free(srv_list);
         }
-        defer allocator.free(srv_list);
     }
 }

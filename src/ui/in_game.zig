@@ -34,7 +34,7 @@ pub const InGameScreen = struct {
         }
 
         fn findContainerSlotId(screen: InGameScreen, x: f32, y: f32) u8 {
-            if (!ui.in_game_screen.container_visible)
+            if (!ui.current_screen.in_game.container_visible)
                 return 255;
 
             for (0..8) |i| {
@@ -96,6 +96,7 @@ pub const InGameScreen = struct {
     last_max_mp: i32 = -1,
     container_visible: bool = false,
     container_id: i32 = -1,
+    inited: bool = false,
 
     fps_text: *ui.UiText = undefined,
     chat_input: *ui.InputField = undefined,
@@ -127,6 +128,8 @@ pub const InGameScreen = struct {
         var screen = InGameScreen{
             ._allocator = allocator,
         };
+
+        defer screen.inited = true;
 
         screen.parseItemRects();
 
@@ -359,45 +362,6 @@ pub const InGameScreen = struct {
         }
     }
 
-    pub fn toggle(self: *InGameScreen, state: bool) void {
-        self.last_level = -1;
-        self.last_xp = -1;
-        self.last_xp_goal = -1;
-        self.last_fame = -1;
-        self.last_fame_goal = -1;
-        self.last_hp = -1;
-        self.last_max_hp = -1;
-        self.last_mp = -1;
-        self.last_max_mp = -1;
-        self.container_visible = false;
-        self.container_id = -1;
-
-        self.fps_text.visible = state;
-        self.chat_input.visible = state;
-        self.chat_decor.visible = state;
-        self.bars_decor.visible = state;
-        self.stats_button.visible = state;
-        self.level_text.visible = state;
-        self.xp_bar.visible = state;
-        self.fame_bar.visible = state;
-        self.health_bar.visible = state;
-        self.mana_bar.visible = state;
-        self.inventory_decor.visible = state;
-        for (&self.inventory_items) |item| {
-            item.visible = if (item._item == -1) false else state;
-        }
-        // self.health_potion.visible = state;
-        // self.health_potion_text.visible = state;
-        // self.magic_potion.visible = state;
-        // self.magic_potion_text.visible = state;
-        self.container_decor.visible = state;
-        // self.container_name.visible = state;
-        for (&self.container_items) |item| {
-            item.visible = if (item._item == -1) false else state;
-        }
-        self.minimap_decor.visible = state;
-    }
-
     pub fn resize(self: *InGameScreen, w: f32, h: f32) void {
         self.minimap_decor.x = w - self.minimap_decor.width() - 10;
         self.inventory_decor.x = w - self.inventory_decor.width() - 10;
@@ -424,13 +388,13 @@ pub const InGameScreen = struct {
         self.fps_text.y = self.minimap_decor.y + self.minimap_decor.height() + 10;
 
         for (0..20) |idx| {
-            self.inventory_items[idx].x = self.inventory_decor.x + ui.in_game_screen.inventory_pos_data[idx].x + (ui.in_game_screen.inventory_pos_data[idx].w - self.inventory_items[idx].width() + assets.padding * 2) / 2;
-            self.inventory_items[idx].y = self.inventory_decor.y + ui.in_game_screen.inventory_pos_data[idx].y + (ui.in_game_screen.inventory_pos_data[idx].h - self.inventory_items[idx].height() + assets.padding * 2) / 2;
+            self.inventory_items[idx].x = self.inventory_decor.x + ui.current_screen.in_game.inventory_pos_data[idx].x + (ui.current_screen.in_game.inventory_pos_data[idx].w - self.inventory_items[idx].width() + assets.padding * 2) / 2;
+            self.inventory_items[idx].y = self.inventory_decor.y + ui.current_screen.in_game.inventory_pos_data[idx].y + (ui.current_screen.in_game.inventory_pos_data[idx].h - self.inventory_items[idx].height() + assets.padding * 2) / 2;
         }
 
         for (0..8) |idx| {
-            self.container_items[idx].x = self.container_decor.x + ui.in_game_screen.container_pos_data[idx].x + (ui.in_game_screen.container_pos_data[idx].w - self.container_items[idx].width() + assets.padding * 2) / 2;
-            self.container_items[idx].y = self.container_decor.y + ui.in_game_screen.container_pos_data[idx].y + (ui.in_game_screen.container_pos_data[idx].h - self.container_items[idx].height() + assets.padding * 2) / 2;
+            self.container_items[idx].x = self.container_decor.x + ui.current_screen.in_game.container_pos_data[idx].x + (ui.current_screen.in_game.container_pos_data[idx].w - self.container_items[idx].width() + assets.padding * 2) / 2;
+            self.container_items[idx].y = self.container_decor.y + ui.current_screen.in_game.container_pos_data[idx].y + (ui.current_screen.in_game.container_pos_data[idx].h - self.container_items[idx].height() + assets.padding * 2) / 2;
         }
     }
 
@@ -611,7 +575,7 @@ pub const InGameScreen = struct {
         if (item._item < 0)
             return;
 
-        const start_slot = Slot.findSlotId(ui.in_game_screen, item.x + 4, item.y + 4);
+        const start_slot = Slot.findSlotId(ui.current_screen.in_game, item.x + 4, item.y + 4);
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             if (props.consumable and !start_slot.is_container) {
                 while (!map.object_lock.tryLock()) {}
@@ -635,14 +599,14 @@ pub const InGameScreen = struct {
         }
 
         if (start_slot.is_container) {
-            const end_slot = Slot.nextAvailableSlot(ui.in_game_screen);
+            const end_slot = Slot.nextAvailableSlot(ui.current_screen.in_game);
             if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
                 item.x = item._drag_start_x;
                 item.y = item._drag_start_y;
                 return;
             }
 
-            ui.in_game_screen.swapSlots(start_slot, end_slot);
+            ui.current_screen.in_game.swapSlots(start_slot, end_slot);
         } else {
             if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
                 while (!map.object_lock.tryLock()) {}
@@ -658,7 +622,7 @@ pub const InGameScreen = struct {
                         return;
                     }
 
-                    ui.in_game_screen.swapSlots(start_slot, end_slot);
+                    ui.current_screen.in_game.swapSlots(start_slot, end_slot);
                 }
             }
         }
@@ -672,29 +636,29 @@ pub const InGameScreen = struct {
         if (input_text.len > 0) {
             network.queuePacket(.{ .player_text = .{ .text = input_text } });
 
-            const msg_d = ui.in_game_screen._allocator.dupe(u8, input_text) catch unreachable;
+            const msg_d = ui.current_screen.in_game._allocator.dupe(u8, input_text) catch unreachable;
             input.input_history.append(msg_d) catch unreachable;
             input.input_history_idx = @intCast(input.input_history.items.len);
         }
     }
 
     fn itemDragEndCallback(item: *ui.Item) void {
-        const start_slot = Slot.findSlotId(ui.in_game_screen, item._drag_start_x + 4, item._drag_start_y + 4);
-        const end_slot = Slot.findSlotId(ui.in_game_screen, item.x - item._drag_offset_x, item.y - item._drag_offset_y);
+        const start_slot = Slot.findSlotId(ui.current_screen.in_game, item._drag_start_x + 4, item._drag_start_y + 4);
+        const end_slot = Slot.findSlotId(ui.current_screen.in_game, item.x - item._drag_offset_x, item.y - item._drag_offset_y);
         if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
             item.x = item._drag_start_x;
             item.y = item._drag_start_y;
             return;
         }
 
-        ui.in_game_screen.swapSlots(start_slot, end_slot);
+        ui.current_screen.in_game.swapSlots(start_slot, end_slot);
     }
 
     fn itemShiftClickCallback(item: *ui.Item) void {
         if (item._item < 0)
             return;
 
-        const slot = Slot.findSlotId(ui.in_game_screen, item.x + 4, item.y + 4);
+        const slot = Slot.findSlotId(ui.current_screen.in_game, item.x + 4, item.y + 4);
 
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             if (props.consumable) {
@@ -703,7 +667,7 @@ pub const InGameScreen = struct {
 
                 if (map.localPlayerConst()) |local_player| {
                     network.queuePacket(.{ .use_item = .{
-                        .obj_id = if (slot.is_container) ui.in_game_screen.container_id else map.local_player_id,
+                        .obj_id = if (slot.is_container) ui.current_screen.in_game.container_id else map.local_player_id,
                         .slot_id = slot.idx,
                         .obj_type = item._item,
                         .x = local_player.x,

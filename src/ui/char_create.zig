@@ -15,27 +15,22 @@ pub const CharCreateScreen = struct {
             ._allocator = allocator,
         };
 
+        main.char_create_type = 0x030e;
+        main.char_create_skin_type = 0;
+        main.selected_char_id = main.next_char_id;
+        main.next_char_id += 1;
+        if (main.server_list) |server_list| {
+            main.selected_server = server_list[0];
+            ui.switchScreen(.in_game);
+        } else {
+            std.log.err("Server list was empty", .{});
+        }
+
         return screen;
     }
 
     pub fn deinit(self: *CharCreateScreen) void {
         _ = self;
-    }
-
-    pub fn toggle(self: *CharCreateScreen, state: bool) void {
-        _ = self;
-        if (state) {
-            main.char_create_type = 0x030e;
-            main.char_create_skin_type = 0;
-            main.selected_char_id = main.next_char_id;
-            main.next_char_id += 1;
-            if (main.server_list) |server_list| {
-                main.selected_server = server_list[0];
-                ui.switchScreen(.in_game);
-            } else {
-                std.log.err("Server list was empty", .{});
-            }
-        }
     }
 
     pub fn resize(self: *CharCreateScreen, w: f32, h: f32) void {

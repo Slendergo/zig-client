@@ -86,26 +86,26 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     } else if (key == settings.ability.getKey()) {
         useAbility();
     } else if (key == settings.chat.getKey()) {
-        selected_input_field = ui.in_game_screen.chat_input;
+        selected_input_field = ui.current_screen.in_game.chat_input;
     } else if (key == settings.chat_cmd.getKey()) {
         charEvent(window, .slash);
-        selected_input_field = ui.in_game_screen.chat_input;
+        selected_input_field = ui.current_screen.in_game.chat_input;
     } else if (key == settings.inv_0.getKey()) {
-        ui.in_game_screen.useItem(if (mods.control) 4 + 8 else 4);
+        ui.current_screen.in_game.useItem(if (mods.control) 4 + 8 else 4);
     } else if (key == settings.inv_1.getKey()) {
-        ui.in_game_screen.useItem(if (mods.control) 5 + 8 else 5);
+        ui.current_screen.in_game.useItem(if (mods.control) 5 + 8 else 5);
     } else if (key == settings.inv_2.getKey()) {
-        ui.in_game_screen.useItem(if (mods.control) 6 + 8 else 6);
+        ui.current_screen.in_game.useItem(if (mods.control) 6 + 8 else 6);
     } else if (key == settings.inv_3.getKey()) {
-        ui.in_game_screen.useItem(if (mods.control) 7 + 8 else 7);
+        ui.current_screen.in_game.useItem(if (mods.control) 7 + 8 else 7);
     } else if (key == settings.inv_4.getKey()) {
-        ui.in_game_screen.useItem(if (mods.control) 8 + 8 else 8);
+        ui.current_screen.in_game.useItem(if (mods.control) 8 + 8 else 8);
     } else if (key == settings.inv_5.getKey()) {
-        ui.in_game_screen.useItem(if (mods.control) 9 + 8 else 9);
+        ui.current_screen.in_game.useItem(if (mods.control) 9 + 8 else 9);
     } else if (key == settings.inv_6.getKey()) {
-        ui.in_game_screen.useItem(if (mods.control) 10 + 8 else 10);
+        ui.current_screen.in_game.useItem(if (mods.control) 10 + 8 else 10);
     } else if (key == settings.inv_7.getKey()) {
-        ui.in_game_screen.useItem(if (mods.control) 11 + 8 else 11);
+        ui.current_screen.in_game.useItem(if (mods.control) 11 + 8 else 11);
     }
 }
 
@@ -169,26 +169,26 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
     } else if (button == settings.ability.getMouse()) {
         useAbility();
     } else if (button == settings.chat.getMouse()) {
-        selected_input_field = ui.in_game_screen.chat_input;
+        selected_input_field = ui.current_screen.in_game.chat_input;
     } else if (button == settings.chat_cmd.getMouse()) {
         charEvent(window, .slash);
-        selected_input_field = ui.in_game_screen.chat_input;
+        selected_input_field = ui.current_screen.in_game.chat_input;
     } else if (button == settings.inv_0.getMouse()) {
-        ui.in_game_screen.useItem(if (mods.control) 4 + 8 else 4);
+        ui.current_screen.in_game.useItem(if (mods.control) 4 + 8 else 4);
     } else if (button == settings.inv_1.getMouse()) {
-        ui.in_game_screen.useItem(if (mods.control) 5 + 8 else 5);
+        ui.current_screen.in_game.useItem(if (mods.control) 5 + 8 else 5);
     } else if (button == settings.inv_2.getMouse()) {
-        ui.in_game_screen.useItem(if (mods.control) 6 + 8 else 6);
+        ui.current_screen.in_game.useItem(if (mods.control) 6 + 8 else 6);
     } else if (button == settings.inv_3.getMouse()) {
-        ui.in_game_screen.useItem(if (mods.control) 7 + 8 else 7);
+        ui.current_screen.in_game.useItem(if (mods.control) 7 + 8 else 7);
     } else if (button == settings.inv_4.getMouse()) {
-        ui.in_game_screen.useItem(if (mods.control) 8 + 8 else 8);
+        ui.current_screen.in_game.useItem(if (mods.control) 8 + 8 else 8);
     } else if (button == settings.inv_5.getMouse()) {
-        ui.in_game_screen.useItem(if (mods.control) 9 + 8 else 9);
+        ui.current_screen.in_game.useItem(if (mods.control) 9 + 8 else 9);
     } else if (button == settings.inv_6.getMouse()) {
-        ui.in_game_screen.useItem(if (mods.control) 10 + 8 else 10);
+        ui.current_screen.in_game.useItem(if (mods.control) 10 + 8 else 10);
     } else if (button == settings.inv_7.getMouse()) {
-        ui.in_game_screen.useItem(if (mods.control) 11 + 8 else 11);
+        ui.current_screen.in_game.useItem(if (mods.control) 11 + 8 else 11);
     }
 }
 

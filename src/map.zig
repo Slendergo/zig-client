@@ -59,7 +59,7 @@ pub const Square = struct {
 
         const current_prio = props.?.blend_prio;
 
-        if (validPos(x - 1, y)) {
+        if (x > 0 and validPos(x - 1, y)) {
             const left_idx = x - 1 + y * width;
             const left_sq = squares[left_idx];
             if (left_sq.tile_type != 0xFFFF and left_sq.tile_type != 0xFF and left_sq.props != null) {
@@ -83,7 +83,7 @@ pub const Square = struct {
             }
         }
 
-        if (validPos(x, y - 1)) {
+        if (y > 0 and validPos(x, y - 1)) {
             const top_idx = x + (y - 1) * width;
             const top_sq = squares[top_idx];
             if (top_sq.tile_type != 0xFFFF and top_sq.tile_type != 0xFF and top_sq.props != null) {
@@ -107,7 +107,7 @@ pub const Square = struct {
             }
         }
 
-        if (validPos(x + 1, y)) {
+        if (x < std.math.maxInt(u32) and validPos(x + 1, y)) {
             const right_idx = x + 1 + y * width;
             const right_sq = squares[right_idx];
             if (right_sq.tile_type != 0xFFFF and right_sq.tile_type != 0xFF and right_sq.props != null) {
@@ -131,7 +131,7 @@ pub const Square = struct {
             }
         }
 
-        if (validPos(x, y + 1)) {
+        if (y < std.math.maxInt(u32) and validPos(x, y + 1)) {
             const bottom_idx = x + (y + 1) * width;
             const bottom_sq = squares[bottom_idx];
             if (bottom_sq.tile_type != 0xFFFF and bottom_sq.tile_type != 0xFF and bottom_sq.props != null) {
@@ -1163,7 +1163,7 @@ pub const Player = struct {
 
         const pi_div_4 = std.math.pi / 4.0;
         const angle = if (std.math.isNan(self.facing))
-            utils.halfBound(camera.angle) / pi_div_4 
+            utils.halfBound(camera.angle) / pi_div_4
         else
             utils.halfBound(self.facing - camera.angle) / pi_div_4;
 
@@ -2252,15 +2252,15 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                         interactive_id.store(object.obj_id, .Release);
                         interactive_type.store(object.class, .Release);
 
-                        if (is_container) {
-                            if (ui.in_game_screen.container_id != object.obj_id) {
+                        if (is_container and ui.current_screen == .in_game) {
+                            if (ui.current_screen.in_game.container_id != object.obj_id) {
                                 inline for (0..8) |idx| {
-                                    ui.in_game_screen.setContainerItem(object.inventory[idx], idx);
+                                    ui.current_screen.in_game.setContainerItem(object.inventory[idx], idx);
                                 }
                             }
 
-                            ui.in_game_screen.container_id = object.obj_id;
-                            ui.in_game_screen.setContainerVisible(true);
+                            ui.current_screen.in_game.container_id = object.obj_id;
+                            ui.current_screen.in_game.setContainerVisible(true);
                         }
 
                         interactive_set = true;
@@ -2298,15 +2298,15 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
         }
     }
 
-    if (!interactive_set) {
-        if (ui.in_game_screen.container_id != -1) {
+    if (!interactive_set and ui.current_screen == .in_game) {
+        if (ui.current_screen.in_game.container_id != -1) {
             inline for (0..8) |idx| {
-                ui.in_game_screen.setContainerItem(-1, idx);
+                ui.current_screen.in_game.setContainerItem(-1, idx);
             }
         }
 
-        ui.in_game_screen.container_id = -1;
-        ui.in_game_screen.setContainerVisible(false);
+        ui.current_screen.in_game.container_id = -1;
+        ui.current_screen.in_game.setContainerVisible(false);
     }
 
     std.mem.reverse(usize, entity_indices_to_remove.items());
@@ -2320,8 +2320,9 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     std.sort.pdq(Entity, entities.items(), {}, lessThan);
 }
 
+// x/y < 0 has to be handled before this, since it's a u32
 pub inline fn validPos(x: u32, y: u32) bool {
-    return !(x < 0 or x >= width or y < 0 or y >= height);
+    return !(x >= width or y >= height);
 }
 
 pub inline fn getSquare(x: f32, y: f32) Square {

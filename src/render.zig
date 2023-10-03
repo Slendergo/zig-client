@@ -20,7 +20,7 @@ const VertexField = packed struct {
     w: f32,
 };
 
-pub const BaseVertexData = extern struct {
+pub const BaseVertexData = packed struct {
     pos_uv: VertexField,
     base_color_and_intensity: VertexField = .{
         .x = 0.0,
@@ -499,7 +499,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     const pi_div_2 = std.math.pi / 2.0;
     const bound_angle = utils.halfBound(camera.angle);
     topSide: {
-        if (bound_angle >= pi_div_2 and bound_angle <= std.math.pi or bound_angle >= -std.math.pi and bound_angle <= -pi_div_2) {
+        if (bound_angle >= pi_div_2 and bound_angle <= std.math.pi or bound_angle >= -std.math.pi and bound_angle <= -pi_div_2 and floor_y > 0) {
             if (!map.validPos(floor_x, floor_y - 1)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
@@ -534,7 +534,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     }
 
     bottomSide: {
-        if (bound_angle <= pi_div_2 and bound_angle >= -pi_div_2) {
+        if (bound_angle <= pi_div_2 and bound_angle >= -pi_div_2 and floor_y < std.math.maxInt(u32)) {
             if (!map.validPos(floor_x, floor_y + 1)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
@@ -570,7 +570,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     }
 
     leftSide: {
-        if (bound_angle >= 0 and bound_angle <= std.math.pi) {
+        if (bound_angle >= 0 and bound_angle <= std.math.pi and floor_x > 0) {
             if (!map.validPos(floor_x - 1, floor_y)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
@@ -606,7 +606,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
     }
 
     rightSide: {
-        if (bound_angle <= 0 and bound_angle >= -std.math.pi) {
+        if (bound_angle <= 0 and bound_angle >= -std.math.pi and floor_x < std.math.maxInt(u32)) {
             if (!map.validPos(floor_x + 1, floor_y)) {
                 atlas_data_new.tex_u = assets.wall_backface_data.tex_u;
                 atlas_data_new.tex_v = assets.wall_backface_data.tex_v;
