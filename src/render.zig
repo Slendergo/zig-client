@@ -12,15 +12,14 @@ const ui = @import("ui/ui.zig");
 const main = @import("main.zig");
 const zgui = @import("zgui");
 
-// because packed structs can't have [4]f32
-const VertexField = packed struct {
+const VertexField = extern struct {
     x: f32,
     y: f32,
     z: f32,
     w: f32,
 };
 
-pub const BaseVertexData = packed struct {
+pub const BaseVertexData = extern struct {
     pos_uv: VertexField,
     base_color_and_intensity: VertexField = .{
         .x = 0.0,
@@ -49,16 +48,18 @@ pub const BaseVertexData = packed struct {
     render_type: f32,
 };
 
-pub const GroundVertexData = packed struct {
+pub const GroundVertexData = extern struct {
     pos_uv: VertexField,
     left_top_blend_uv: VertexField,
     right_bottom_blend_uv: VertexField,
     base_and_offset_uv: VertexField,
 };
 
-pub const LightVertexData = packed struct {
-    pos_uv: VertexField,
-    color_and_intensity: VertexField,
+pub const LightVertexData = extern struct {
+    color: ui.RGBF32,
+    pos: [2]f32,
+    uv: [2]f32,
+    intensity: f32,
 };
 
 // must be multiples of 16 bytes. be mindful
@@ -423,8 +424,10 @@ pub fn init(gctx: *zgpu.GraphicsContext, allocator: std.mem.Allocator) void {
         }};
 
         const vertex_attributes = [_]zgpu.wgpu.VertexAttribute{
-            .{ .format = .float32x4, .offset = @offsetOf(LightVertexData, "pos_uv"), .shader_location = 0 },
-            .{ .format = .float32x4, .offset = @offsetOf(LightVertexData, "color_and_intensity"), .shader_location = 1 },
+            .{ .format = .float32x3, .offset = @offsetOf(LightVertexData, "color"), .shader_location = 2 },
+            .{ .format = .float32x2, .offset = @offsetOf(LightVertexData, "pos"), .shader_location = 0 },
+            .{ .format = .float32x2, .offset = @offsetOf(LightVertexData, "uv"), .shader_location = 1 },
+            .{ .format = .float32, .offset = @offsetOf(LightVertexData, "intensity"), .shader_location = 3 },
         };
         const vertex_buffers = [_]zgpu.wgpu.VertexBufferLayout{.{
             .array_stride = @sizeOf(LightVertexData),
@@ -1795,77 +1798,43 @@ fn drawNineSlice(
 }
 
 fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: u32, intensity: f32) u16 {
-    var idx_new = idx;
-
     const rgb = ui.RGBF32.fromInt(color);
 
-    // 2x given size
+    // 2x normal size
     const scaled_w = w * 4 * camera.clip_scale_x * camera.scale;
     const scaled_h = h * 4 * camera.clip_scale_y * camera.scale;
     const scaled_x = (x - camera.screen_width / 2.0) * camera.clip_scale_x;
     const scaled_y = -(y - camera.screen_height / 2.0) * camera.clip_scale_y;
 
-    light_vert_data[idx_new] = LightVertexData{
-        .pos_uv = .{
-            .x = scaled_w * -0.5 + scaled_x,
-            .y = scaled_h * 0.5 + scaled_y,
-            .z = 1,
-            .w = 1,
-        },
-        .color_and_intensity = .{
-            .x = rgb.r,
-            .y = rgb.g,
-            .z = rgb.b,
-            .w = intensity,
-        },
+    light_vert_data[idx] = LightVertexData{
+        .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
+        .uv = [2]f32{ 1, 1 },
+        .color = rgb,
+        .intensity = intensity,
     };
 
-    light_vert_data[idx_new + 1] = LightVertexData{
-        .pos_uv = .{
-            .x = scaled_w * 0.5 + scaled_x,
-            .y = scaled_h * 0.5 + scaled_y,
-            .z = 0,
-            .w = 1,
-        },
-        .color_and_intensity = .{
-            .x = rgb.r,
-            .y = rgb.g,
-            .z = rgb.b,
-            .w = intensity,
-        },
+    light_vert_data[idx + 1] = LightVertexData{
+        .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * 0.5 + scaled_y },
+        .uv = [2]f32{ 0, 1 },
+        .color = rgb,
+        .intensity = intensity,
     };
 
-    light_vert_data[idx_new + 2] = LightVertexData{
-        .pos_uv = .{
-            .x = scaled_w * 0.5 + scaled_x,
-            .y = scaled_h * -0.5 + scaled_y,
-            .z = 0,
-            .w = 0,
-        },
-        .color_and_intensity = .{
-            .x = rgb.r,
-            .y = rgb.g,
-            .z = rgb.b,
-            .w = intensity,
-        },
+    light_vert_data[idx + 2] = LightVertexData{
+        .pos = [2]f32{ scaled_w * 0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
+        .uv = [2]f32{ 0, 0 },
+        .color = rgb,
+        .intensity = intensity,
     };
 
-    light_vert_data[idx_new + 3] = LightVertexData{
-        .pos_uv = .{
-            .x = scaled_w * -0.5 + scaled_x,
-            .y = scaled_h * -0.5 + scaled_y,
-            .z = 1,
-            .w = 0,
-        },
-        .color_and_intensity = .{
-            .x = rgb.r,
-            .y = rgb.g,
-            .z = rgb.b,
-            .w = intensity,
-        },
+    light_vert_data[idx + 3] = LightVertexData{
+        .pos = [2]f32{ scaled_w * -0.5 + scaled_x, scaled_h * -0.5 + scaled_y },
+        .uv = [2]f32{ 1, 0 },
+        .color = rgb,
+        .intensity = intensity,
     };
 
-    return idx_new + 4;
+    return idx + 4;
 }
 
 fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, cam_y: f32, x_offset: f32, y_offset: f32) u16 {
@@ -2851,15 +2820,12 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
 
         if (settings.enable_lights and light_idx != 0) {
             lightPass: {
-                const pipeline = gctx.lookupResource(light_pipeline) orelse break :lightPass;
-                const bind_group = gctx.lookupResource(light_bind_group) orelse break :lightPass;
-
                 const draw_data = DrawData{
                     .pass_info = load_render_pass_info,
                     .encoder = encoder,
-                    .buffer = base_vb,
-                    .pipeline = pipeline,
-                    .bind_group = bind_group,
+                    .buffer = light_vb,
+                    .pipeline = gctx.lookupResource(light_pipeline) orelse break :lightPass,
+                    .bind_group = gctx.lookupResource(light_bind_group) orelse break :lightPass,
                 };
 
                 encoder.writeBuffer(

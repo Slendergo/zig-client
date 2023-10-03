@@ -429,6 +429,8 @@
 		<Animate dx=".33" dy=".33">Flow</Animate>
 		<Sink/>
 		<Speed>.666</Speed>
+        <LightColor>0xcc4539</LightColor>
+        <LightIntensity>0.25</LightIntensity>
 	</Ground>
 	<Ground type="0x72" id="Water">
 		<Texture><File>lofiEnvironment</File><Index>0x72</Index></Texture>
@@ -672,6 +674,8 @@
 		<Sink/>
 		<Speed>.666</Speed>
 		<BlendPriority>1</BlendPriority>
+		<LightColor>0xcc4539</LightColor>
+        <LightIntensity>0.25</LightIntensity>
 	</Ground>
 	
 	

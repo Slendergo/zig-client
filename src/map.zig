@@ -1968,7 +1968,7 @@ pub const Entity = union(enum) {
 
 const AtlasHashHack = [4]u32;
 
-const day_cycle_ms: i32 = 10 * 60 * 1000; // 10 minutes
+const day_cycle_ms: i32 = 10 * 60 * 1000 * std.time.us_per_ms; // 10 minutes
 const day_cycle_ms_half: f32 = @as(f32, day_cycle_ms) / 2;
 
 pub var object_lock: std.Thread.RwLock = .{};

@@ -234,6 +234,8 @@ pub var ui_error_data: AtlasData = undefined;
 pub var error_data: AtlasData = undefined;
 pub var error_data_enemy: AnimEnemyData = undefined;
 pub var error_data_player: AnimPlayerData = undefined;
+pub var light_w: f32 = 1.0;
+pub var light_h: f32 = 1.0;
 
 fn isImageEmpty(img: zstbi.Image, x: usize, y: usize, w: u32, h: u32) bool {
     for (y..y + h) |loop_y| {
@@ -763,6 +765,8 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addCursors("Cursors.png", 32, 32);
 
     light_tex = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/Light.png", 4);
+    light_w = @floatFromInt(light_tex.width);
+    light_h = @floatFromInt(light_tex.height);
 
     atlas = try zstbi.Image.createEmpty(atlas_width, atlas_height, 4, .{});
     var ctx = zstbrp.PackContext{

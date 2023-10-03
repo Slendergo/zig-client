@@ -591,6 +591,10 @@ fn handleMapInfo(allocator: std.mem.Allocator) void {
         map.day_light_intensity = reader.read(f32);
         map.night_light_intensity = reader.read(f32);
         map.server_time_offset = reader.read(i64) - main.current_time;
+    } else {
+        map.day_light_intensity = 0.0;
+        map.night_light_intensity = 0.0;
+        map.server_time_offset = 0;
     }
     map.random = utils.Random{ .seed = map.seed };
 
