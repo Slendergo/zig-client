@@ -12,6 +12,7 @@ const assert = std.debug.assert;
 const zglfw = @import("zglfw");
 const wgsl = @import("common_wgsl.zig");
 const zgpu_options = @import("zgpu_options");
+const builtin = @import("builtin");
 pub const wgpu = @import("wgpu.zig");
 
 pub const GraphicsContextOptions = struct {
@@ -119,7 +120,15 @@ pub const GraphicsContext = struct {
 
             var response = Response{};
             instance.requestAdapter(
-                .{ .power_preference = .high_performance },
+                .{
+                    .power_preference = .high_performance,
+                    .backend_type = switch (builtin.os.tag) {
+                        .windows => .vulkan,
+                        .macos => .metal,
+                        .linux => .vulkan,
+                        else => .vulkan,
+                    },
+                },
                 callback,
                 @ptrCast(&response),
             );
@@ -168,6 +177,8 @@ pub const GraphicsContext = struct {
                 .enabled_toggles = &toggles,
             };
 
+            const features = [_]wgpu.FeatureName{};
+
             var response = Response{};
             adapter.requestDevice(
                 wgpu.DeviceDescriptor{
@@ -175,6 +186,8 @@ pub const GraphicsContext = struct {
                         @ptrCast(&dawn_toggles)
                     else
                         null,
+                    .required_features = &features,
+                    .required_features_count = features.len,
                 },
                 callback,
                 @ptrCast(&response),

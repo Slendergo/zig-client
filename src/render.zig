@@ -155,6 +155,15 @@ fn createTexture(gctx: *zgpu.GraphicsContext, tex: *zgpu.TextureHandle, view: *z
 }
 
 pub fn createColorTexture(gctx: *zgpu.GraphicsContext, w: u32, h: u32) void {
+    const sample_count: u32 = switch (settings.aa_type) {
+        .msaa2x => 2,
+        .msaa4x => 4,
+        else => 1,
+    };
+
+    if (sample_count == 1)
+        return;
+
     color_texture = gctx.createTexture(.{
         .usage = .{ .render_attachment = true },
         .dimension = .tdim_2d,
@@ -163,11 +172,7 @@ pub fn createColorTexture(gctx: *zgpu.GraphicsContext, w: u32, h: u32) void {
             .height = h,
         },
         .format = gctx.swapchain_descriptor.format,
-        .sample_count = switch (settings.aa_type) {
-            .msaa2x => 2,
-            .msaa4x => 4,
-            else => 1,
-        },
+        .sample_count = sample_count,
     });
     color_texture_view = gctx.createTextureView(color_texture, .{});
 }
@@ -2136,23 +2141,43 @@ inline fn endDraw(draw_data: DrawData, verts: u64, indices: u32, offsets: ?[]con
 }
 
 pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.TextureView, encoder: zgpu.wgpu.CommandEncoder) void {
-    const clear_color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
-        .view = gctx.lookupResource(color_texture_view).?,
-        .resolve_target = back_buffer,
-        .load_op = .clear,
-        .store_op = .store,
-    }};
+    const sample_count: u8 = switch (settings.aa_type) {
+        .msaa2x => 2,
+        .msaa4x => 4,
+        else => 1,
+    };
+
+    const clear_color_attachments = if (sample_count != 1)
+        [_]zgpu.wgpu.RenderPassColorAttachment{.{
+            .view = gctx.lookupResource(color_texture_view).?,
+            .resolve_target = back_buffer,
+            .load_op = .clear,
+            .store_op = .store,
+        }}
+    else
+        [_]zgpu.wgpu.RenderPassColorAttachment{.{
+            .view = back_buffer,
+            .load_op = .clear,
+            .store_op = .store,
+        }};
     const clear_render_pass_info = zgpu.wgpu.RenderPassDescriptor{
         .color_attachment_count = clear_color_attachments.len,
         .color_attachments = &clear_color_attachments,
     };
 
-    const load_color_attachments = [_]zgpu.wgpu.RenderPassColorAttachment{.{
-        .view = gctx.lookupResource(color_texture_view).?,
-        .resolve_target = back_buffer,
-        .load_op = .load,
-        .store_op = .store,
-    }};
+    const load_color_attachments = if (sample_count != 1)
+        [_]zgpu.wgpu.RenderPassColorAttachment{.{
+            .view = gctx.lookupResource(color_texture_view).?,
+            .resolve_target = back_buffer,
+            .load_op = .load,
+            .store_op = .store,
+        }}
+    else
+        [_]zgpu.wgpu.RenderPassColorAttachment{.{
+            .view = back_buffer,
+            .load_op = .load,
+            .store_op = .store,
+        }};
     const load_render_pass_info = zgpu.wgpu.RenderPassDescriptor{
         .color_attachment_count = load_color_attachments.len,
         .color_attachments = &load_color_attachments,
