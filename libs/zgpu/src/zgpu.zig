@@ -123,7 +123,7 @@ pub const GraphicsContext = struct {
                 .{
                     .power_preference = .high_performance,
                     .backend_type = switch (builtin.os.tag) {
-                        .windows => .vulkan,
+                        .windows => .d3d12,
                         .macos => .metal,
                         .linux => .vulkan,
                         else => .vulkan,

@@ -83,18 +83,72 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             }
 
             var sum = 0.0;
-            for (var i = 0.0; i < 7.0; i += 1.0) {
-                let uv_y = in.pos_uv.w + in.texel_and_text_data.y * (i - 3.5);
-                let tex_x_2 = in.texel_and_text_data.x * 2.0;
-                let tex_x_3 = in.texel_and_text_data.x * 3.0;
-                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y), dx, dy).a;
-                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y), dx, dy).a;
-                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y), dx, dy).a;
-                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z, uv_y), dx, dy).a;
-                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y), dx, dy).a;
-                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y), dx, dy).a;
-                sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y), dx, dy).a;
-            }
+
+            let tex_x_2 = in.texel_and_text_data.x * 2.0;
+            let tex_x_3 = in.texel_and_text_data.x * 3.0;
+
+            let uv_y_0 = in.pos_uv.w + in.texel_and_text_data.y * -3.5;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_0), dx, dy).a;
+
+            let uv_y_1 = in.pos_uv.w + in.texel_and_text_data.y * -2.5;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_1), dx, dy).a;
+
+            let uv_y_2 = in.pos_uv.w + in.texel_and_text_data.y * -1.5;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_2), dx, dy).a;
+
+            let uv_y_3 = in.pos_uv.w + in.texel_and_text_data.y * -0.5;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_3), dx, dy).a;
+
+            let uv_y_4 = in.pos_uv.w + in.texel_and_text_data.y * 0.5;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_4), dx, dy).a;
+
+            let uv_y_5 = in.pos_uv.w + in.texel_and_text_data.y * 1.5;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_5), dx, dy).a;
+
+            let uv_y_6 = in.pos_uv.w + in.texel_and_text_data.y * 2.5;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(base_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_6), dx, dy).a;
 
             if sum == 0.0 {
                 discard;
@@ -117,18 +171,71 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
             }
 
             var sum = 0.0;
-            for (var i = 0.0; i < 7.0; i += 1.0) {
-                let uv_y = in.pos_uv.w + in.texel_and_text_data.y * (i - 3.5);
-                let tex_x_2 = in.texel_and_text_data.x * 2.0;
-                let tex_x_3 = in.texel_and_text_data.x * 3.0;
-                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y), dx, dy).a;
-                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y), dx, dy).a;
-                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y), dx, dy).a;
-                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z, uv_y), dx, dy).a;
-                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y), dx, dy).a;
-                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y), dx, dy).a;
-                sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y), dx, dy).a;
-            }
+            let tex_x_2 = in.texel_and_text_data.x * 2.0;
+            let tex_x_3 = in.texel_and_text_data.x * 3.0;
+
+            let uv_y_0 = in.pos_uv.w + in.texel_and_text_data.y * -3.5;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_0), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_0), dx, dy).a;
+
+            let uv_y_1 = in.pos_uv.w + in.texel_and_text_data.y * -2.5;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_1), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_1), dx, dy).a;
+
+            let uv_y_2 = in.pos_uv.w + in.texel_and_text_data.y * -1.5;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_2), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_2), dx, dy).a;
+
+            let uv_y_3 = in.pos_uv.w + in.texel_and_text_data.y * -0.5;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_3), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_3), dx, dy).a;
+
+            let uv_y_4 = in.pos_uv.w + in.texel_and_text_data.y * 0.5;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_4), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_4), dx, dy).a;
+
+            let uv_y_5 = in.pos_uv.w + in.texel_and_text_data.y * 1.5;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_5), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_5), dx, dy).a;
+
+            let uv_y_6 = in.pos_uv.w + in.texel_and_text_data.y * 2.5;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_3, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - tex_x_2, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z - in.texel_and_text_data.x, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + in.texel_and_text_data.x, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_2, uv_y_6), dx, dy).a;
+            sum += textureSampleGrad(ui_tex, default_sampler, vec2(in.pos_uv.z + tex_x_3, uv_y_6), dx, dy).a;
 
             if sum == 0.0 {
                 discard;
