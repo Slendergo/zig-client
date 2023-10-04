@@ -8,10 +8,12 @@ const main = @import("../main.zig");
 const utils = @import("../utils.zig");
 
 pub const CharCreateScreen = struct {
+    inited: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    pub fn init(allocator: std.mem.Allocator) !CharCreateScreen {
-        var screen = CharCreateScreen{
+    pub fn init(allocator: std.mem.Allocator) !*CharCreateScreen {
+        var screen = try allocator.create(CharCreateScreen);
+        screen.* = CharCreateScreen{
             ._allocator = allocator,
         };
 
@@ -26,11 +28,12 @@ pub const CharCreateScreen = struct {
             std.log.err("Server list was empty", .{});
         }
 
+        screen.inited = true;
         return screen;
     }
 
     pub fn deinit(self: *CharCreateScreen) void {
-        _ = self;
+        self._allocator.destroy(self);
     }
 
     pub fn resize(self: *CharCreateScreen, w: f32, h: f32) void {

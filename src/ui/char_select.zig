@@ -9,11 +9,13 @@ const utils = @import("../utils.zig");
 
 pub const CharSelectScreen = struct {
     boxes: std.ArrayList(*ui.CharacterBox) = undefined,
+    inited: bool = false,
 
     _allocator: std.mem.Allocator = undefined,
 
-    pub fn init(allocator: std.mem.Allocator) !CharSelectScreen {
-        var screen = CharSelectScreen{
+    pub fn init(allocator: std.mem.Allocator) !*CharSelectScreen {
+        var screen = try allocator.create(CharSelectScreen);
+        screen.* = .{
             ._allocator = allocator,
         };
 
@@ -43,6 +45,7 @@ pub const CharSelectScreen = struct {
             screen.boxes.append(box) catch return screen;
         }
 
+        screen.inited = true;
         return screen;
     }
 
@@ -54,6 +57,8 @@ pub const CharSelectScreen = struct {
             box.destroy();
         }
         self.boxes.clearAndFree();
+
+        self._allocator.destroy(self);
     }
 
     pub fn resize(self: *CharSelectScreen, w: f32, h: f32) void {

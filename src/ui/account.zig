@@ -10,25 +10,21 @@ const utils = @import("../utils.zig");
 pub const AccountRegisterScreen = struct {
     username_text: *ui.UiText = undefined,
     username_input: *ui.InputField = undefined,
-
     email_text: *ui.UiText = undefined,
     email_input: *ui.InputField = undefined,
-
     password_text: *ui.UiText = undefined,
     password_input: *ui.InputField = undefined,
-
     password_repeat_text: *ui.UiText = undefined,
     password_repeat_input: *ui.InputField = undefined,
-
     confirm_button: *ui.Button = undefined,
     back_button: *ui.Button = undefined,
+    inited: bool = false,
 
     _allocator: std.mem.Allocator = undefined,
 
-    pub fn init(allocator: std.mem.Allocator) !AccountRegisterScreen {
-        var screen = AccountRegisterScreen{
-            ._allocator = allocator,
-        };
+    pub fn init(allocator: std.mem.Allocator) !*AccountRegisterScreen {
+        var screen = try allocator.create(AccountRegisterScreen);
+        screen.* = .{ ._allocator = allocator };
 
         const input_w = 300;
         const input_h = 50;
@@ -228,6 +224,7 @@ pub const AccountRegisterScreen = struct {
             .press_callback = backCallback,
         });
 
+        screen.inited = true;
         return screen;
     }
 
@@ -245,19 +242,8 @@ pub const AccountRegisterScreen = struct {
         self.password_repeat_text.destroy();
         self.confirm_button.destroy();
         self.back_button.destroy();
-    }
 
-    pub fn toggle(self: *AccountRegisterScreen, state: bool) void {
-        self.username_text.visible = state;
-        self.username_input.visible = state;
-        self.email_text.visible = state;
-        self.email_input.visible = state;
-        self.password_text.visible = state;
-        self.password_input.visible = state;
-        self.password_repeat_input.visible = state;
-        self.password_repeat_text.visible = state;
-        self.confirm_button.visible = state;
-        self.back_button.visible = state;
+        self._allocator.destroy(self);
     }
 
     pub fn resize(self: *AccountRegisterScreen, w: f32, h: f32) void {
@@ -306,13 +292,13 @@ pub const AccountScreen = struct {
     password_input: *ui.InputField = undefined,
     login_button: *ui.Button = undefined,
     confirm_button: *ui.Button = undefined,
+    inited: bool = false,
 
     _allocator: std.mem.Allocator = undefined,
 
-    pub fn init(allocator: std.mem.Allocator) !AccountScreen {
-        var screen = AccountScreen{
-            ._allocator = allocator,
-        };
+    pub fn init(allocator: std.mem.Allocator) !*AccountScreen {
+        var screen = try allocator.create(AccountScreen);
+        screen.* = .{ ._allocator = allocator };
 
         const input_w = 300;
         const input_h = 50;
@@ -423,6 +409,7 @@ pub const AccountScreen = struct {
             .press_callback = registerCallback,
         });
 
+        screen.inited = true;
         return screen;
     }
 
@@ -436,15 +423,8 @@ pub const AccountScreen = struct {
         self.password_input.destroy();
         self.login_button.destroy();
         self.confirm_button.destroy();
-    }
 
-    pub fn toggle(self: *AccountScreen, state: bool) void {
-        self.email_text.visible = state;
-        self.email_input.visible = state;
-        self.password_text.visible = state;
-        self.password_input.visible = state;
-        self.login_button.visible = state;
-        self.confirm_button.visible = state;
+        self._allocator.destroy(self);
     }
 
     pub fn resize(self: *AccountScreen, w: f32, h: f32) void {

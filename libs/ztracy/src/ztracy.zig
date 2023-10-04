@@ -243,7 +243,9 @@ const tracy_full = struct {
     const c = @cImport({
         @cDefine("TRACY_HAS_CALLSTACK", {});
         @cDefine("TRACY_CALLSTACK", "8");
-        @cDefine("TRACY_ENABLE", "");
+        @cDefine("TRACY_ENABLE", {});
+        @cDefine("TRACY_IMPORTS", {});
+        @cDefine("TRACY_SAMPLING_HZ", if (builtin.os.tag == .windows) "8000" else "10000");
         @cInclude("TracyC.h");
     });
 

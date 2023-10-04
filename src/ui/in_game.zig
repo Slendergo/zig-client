@@ -124,10 +124,9 @@ pub const InGameScreen = struct {
 
     _allocator: std.mem.Allocator = undefined,
 
-    pub fn init(allocator: std.mem.Allocator) !InGameScreen {
-        var screen = InGameScreen{
-            ._allocator = allocator,
-        };
+    pub fn init(allocator: std.mem.Allocator) !*InGameScreen {
+        var screen = try allocator.create(InGameScreen);
+        screen.* = .{ ._allocator = allocator };
 
         screen.parseItemRects();
 
@@ -359,6 +358,8 @@ pub const InGameScreen = struct {
         for (self.container_items) |item| {
             item.destroy();
         }
+
+        self._allocator.destroy(self);
     }
 
     pub fn resize(self: *InGameScreen, w: f32, h: f32) void {
@@ -574,7 +575,7 @@ pub const InGameScreen = struct {
         if (item._item < 0)
             return;
 
-        const start_slot = Slot.findSlotId(ui.current_screen.in_game, item.x + 4, item.y + 4);
+        const start_slot = Slot.findSlotId(ui.current_screen.in_game.*, item.x + 4, item.y + 4);
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             if (props.consumable and !start_slot.is_container) {
                 while (!map.object_lock.tryLockShared()) {}
@@ -598,7 +599,7 @@ pub const InGameScreen = struct {
         }
 
         if (start_slot.is_container) {
-            const end_slot = Slot.nextAvailableSlot(ui.current_screen.in_game);
+            const end_slot = Slot.nextAvailableSlot(ui.current_screen.in_game.*);
             if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
                 item.x = item._drag_start_x;
                 item.y = item._drag_start_y;
@@ -642,8 +643,8 @@ pub const InGameScreen = struct {
     }
 
     fn itemDragEndCallback(item: *ui.Item) void {
-        const start_slot = Slot.findSlotId(ui.current_screen.in_game, item._drag_start_x + 4, item._drag_start_y + 4);
-        const end_slot = Slot.findSlotId(ui.current_screen.in_game, item.x - item._drag_offset_x, item.y - item._drag_offset_y);
+        const start_slot = Slot.findSlotId(ui.current_screen.in_game.*, item._drag_start_x + 4, item._drag_start_y + 4);
+        const end_slot = Slot.findSlotId(ui.current_screen.in_game.*, item.x - item._drag_offset_x, item.y - item._drag_offset_y);
         if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
             item.x = item._drag_start_x;
             item.y = item._drag_start_y;
@@ -657,7 +658,7 @@ pub const InGameScreen = struct {
         if (item._item < 0)
             return;
 
-        const slot = Slot.findSlotId(ui.current_screen.in_game, item.x + 4, item.y + 4);
+        const slot = Slot.findSlotId(ui.current_screen.in_game.*, item.x + 4, item.y + 4);
 
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             if (props.consumable) {

@@ -13,6 +13,7 @@ const AccountRegisterScreen = @import("account.zig").AccountRegisterScreen;
 const InGameScreen = @import("in_game.zig").InGameScreen;
 const CharSelectScreen = @import("char_select.zig").CharSelectScreen;
 const CharCreateScreen = @import("char_create.zig").CharCreateScreen;
+const EmptyScreen = @import("empty_screen.zig").EmptyScreen;
 
 pub const RGBF32 = extern struct {
     r: f32,
@@ -56,7 +57,7 @@ pub const InputField = struct {
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    pub inline fn create(allocator: std.mem.Allocator, data: InputField) !*InputField {
+    pub fn create(allocator: std.mem.Allocator, data: InputField) !*InputField {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -70,7 +71,7 @@ pub const InputField = struct {
         return elem;
     }
 
-    pub inline fn imageData(self: InputField) ImageData {
+    pub fn imageData(self: InputField) ImageData {
         switch (self.state) {
             .none => return self.base_decor_data,
             .pressed => return self.press_decor_data orelse self.base_decor_data,
@@ -78,26 +79,26 @@ pub const InputField = struct {
         }
     }
 
-    pub inline fn width(self: InputField) f32 {
+    pub fn width(self: InputField) f32 {
         return @max(self.text_data.width(), switch (self.imageData()) {
             .nine_slice => |nine_slice| return nine_slice.w,
             .normal => |image_data| return image_data.width(),
         });
     }
 
-    pub inline fn height(self: InputField) f32 {
+    pub fn height(self: InputField) f32 {
         return @max(self.text_data.height(), switch (self.imageData()) {
             .nine_slice => |nine_slice| return nine_slice.h,
             .normal => |image_data| return image_data.height(),
         });
     }
 
-    pub inline fn clear(self: *InputField) void {
+    pub fn clear(self: *InputField) void {
         self.text_data.text = "";
         self._index = 0;
     }
 
-    pub inline fn destroy(self: *InputField) void {
+    pub fn destroy(self: *InputField) void {
         if (self._disposed)
             return;
 
@@ -128,7 +129,7 @@ pub const Button = struct {
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    pub inline fn create(allocator: std.mem.Allocator, data: Button) !*Button {
+    pub fn create(allocator: std.mem.Allocator, data: Button) !*Button {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -142,7 +143,7 @@ pub const Button = struct {
         return elem;
     }
 
-    pub inline fn imageData(self: Button) ImageData {
+    pub fn imageData(self: Button) ImageData {
         switch (self.state) {
             .none => return self.base_image_data,
             .pressed => return self.press_image_data orelse self.base_image_data,
@@ -150,7 +151,7 @@ pub const Button = struct {
         }
     }
 
-    pub inline fn width(self: Button) f32 {
+    pub fn width(self: Button) f32 {
         if (self.text_data) |text| {
             return @max(text.width(), switch (self.imageData()) {
                 .nine_slice => |nine_slice| return nine_slice.w,
@@ -164,7 +165,7 @@ pub const Button = struct {
         }
     }
 
-    pub inline fn height(self: Button) f32 {
+    pub fn height(self: Button) f32 {
         if (self.text_data) |text| {
             return @max(text.height(), switch (self.imageData()) {
                 .nine_slice => |nine_slice| return nine_slice.h,
@@ -178,7 +179,7 @@ pub const Button = struct {
         }
     }
 
-    pub inline fn destroy(self: *Button) void {
+    pub fn destroy(self: *Button) void {
         if (self._disposed)
             return;
 
@@ -213,7 +214,7 @@ pub const CharacterBox = struct {
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    pub inline fn create(allocator: std.mem.Allocator, data: CharacterBox) !*CharacterBox {
+    pub fn create(allocator: std.mem.Allocator, data: CharacterBox) !*CharacterBox {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -227,7 +228,7 @@ pub const CharacterBox = struct {
         return elem;
     }
 
-    pub inline fn imageData(self: CharacterBox) ImageData {
+    pub fn imageData(self: CharacterBox) ImageData {
         switch (self.state) {
             .none => return self.base_image_data,
             .pressed => return self.press_image_data orelse self.base_image_data,
@@ -235,7 +236,7 @@ pub const CharacterBox = struct {
         }
     }
 
-    pub inline fn width(self: CharacterBox) f32 {
+    pub fn width(self: CharacterBox) f32 {
         if (self.text_data) |text| {
             return @max(text.width(), switch (self.imageData()) {
                 .nine_slice => |nine_slice| return nine_slice.w,
@@ -249,7 +250,7 @@ pub const CharacterBox = struct {
         }
     }
 
-    pub inline fn height(self: CharacterBox) f32 {
+    pub fn height(self: CharacterBox) f32 {
         if (self.text_data) |text| {
             return @max(text.height(), switch (self.imageData()) {
                 .nine_slice => |nine_slice| return nine_slice.h,
@@ -263,7 +264,7 @@ pub const CharacterBox = struct {
         }
     }
 
-    pub inline fn destroy(self: *CharacterBox) void {
+    pub fn destroy(self: *CharacterBox) void {
         if (self._disposed)
             return;
 
@@ -300,7 +301,7 @@ pub const NineSliceImageData = struct {
     alpha: f32 = 1.0,
     atlas_data: [9]assets.AtlasData,
 
-    pub inline fn fromAtlasData(data: assets.AtlasData, w: f32, h: f32, slice_x: f32, slice_y: f32, slice_w: f32, slice_h: f32, alpha: f32) NineSliceImageData {
+    pub fn fromAtlasData(data: assets.AtlasData, w: f32, h: f32, slice_x: f32, slice_y: f32, slice_w: f32, slice_h: f32, alpha: f32) NineSliceImageData {
         const base_u = data.texURaw() + assets.padding;
         const base_v = data.texVRaw() + assets.padding;
         const base_w = data.texWRaw() - assets.padding * 2;
@@ -323,39 +324,39 @@ pub const NineSliceImageData = struct {
         };
     }
 
-    pub inline fn topLeft(self: NineSliceImageData) assets.AtlasData {
+    pub fn topLeft(self: NineSliceImageData) assets.AtlasData {
         return self.atlas_data[top_left_idx];
     }
 
-    pub inline fn topCenter(self: NineSliceImageData) assets.AtlasData {
+    pub fn topCenter(self: NineSliceImageData) assets.AtlasData {
         return self.atlas_data[top_center_idx];
     }
 
-    pub inline fn topRight(self: NineSliceImageData) assets.AtlasData {
+    pub fn topRight(self: NineSliceImageData) assets.AtlasData {
         return self.atlas_data[top_right_idx];
     }
 
-    pub inline fn middleLeft(self: NineSliceImageData) assets.AtlasData {
+    pub fn middleLeft(self: NineSliceImageData) assets.AtlasData {
         return self.atlas_data[middle_left_idx];
     }
 
-    pub inline fn middleCenter(self: NineSliceImageData) assets.AtlasData {
+    pub fn middleCenter(self: NineSliceImageData) assets.AtlasData {
         return self.atlas_data[middle_center_idx];
     }
 
-    pub inline fn middleRight(self: NineSliceImageData) assets.AtlasData {
+    pub fn middleRight(self: NineSliceImageData) assets.AtlasData {
         return self.atlas_data[middle_right_idx];
     }
 
-    pub inline fn bottomLeft(self: NineSliceImageData) assets.AtlasData {
+    pub fn bottomLeft(self: NineSliceImageData) assets.AtlasData {
         return self.atlas_data[bottom_left_idx];
     }
 
-    pub inline fn bottomCenter(self: NineSliceImageData) assets.AtlasData {
+    pub fn bottomCenter(self: NineSliceImageData) assets.AtlasData {
         return self.atlas_data[bottom_center_idx];
     }
 
-    pub inline fn bottomRight(self: NineSliceImageData) assets.AtlasData {
+    pub fn bottomRight(self: NineSliceImageData) assets.AtlasData {
         return self.atlas_data[bottom_right_idx];
     }
 };
@@ -366,11 +367,11 @@ pub const NormalImageData = struct {
     alpha: f32 = 1.0,
     atlas_data: assets.AtlasData,
 
-    pub inline fn width(self: NormalImageData) f32 {
+    pub fn width(self: NormalImageData) f32 {
         return self.atlas_data.texWRaw() * self.scale_x;
     }
 
-    pub inline fn height(self: NormalImageData) f32 {
+    pub fn height(self: NormalImageData) f32 {
         return self.atlas_data.texHRaw() * self.scale_y;
     }
 };
@@ -395,7 +396,7 @@ pub const Image = struct {
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    pub inline fn create(allocator: std.mem.Allocator, data: Image) !*Image {
+    pub fn create(allocator: std.mem.Allocator, data: Image) !*Image {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -409,21 +410,21 @@ pub const Image = struct {
         return elem;
     }
 
-    pub inline fn width(self: Image) f32 {
+    pub fn width(self: Image) f32 {
         switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.w,
             .normal => |image_data| return image_data.width(),
         }
     }
 
-    pub inline fn height(self: Image) f32 {
+    pub fn height(self: Image) f32 {
         switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.h,
             .normal => |image_data| return image_data.height(),
         }
     }
 
-    pub inline fn destroy(self: *Image) void {
+    pub fn destroy(self: *Image) void {
         if (self._disposed)
             return;
 
@@ -449,7 +450,7 @@ pub const MenuBackground = struct {
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    pub inline fn create(allocator: std.mem.Allocator, data: MenuBackground) !*MenuBackground {
+    pub fn create(allocator: std.mem.Allocator, data: MenuBackground) !*MenuBackground {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -463,7 +464,7 @@ pub const MenuBackground = struct {
         return elem;
     }
 
-    pub inline fn destroy(self: *MenuBackground) void {
+    pub fn destroy(self: *MenuBackground) void {
         if (self._disposed)
             return;
 
@@ -500,7 +501,7 @@ pub const Item = struct {
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    pub inline fn create(allocator: std.mem.Allocator, data: Item) !*Item {
+    pub fn create(allocator: std.mem.Allocator, data: Item) !*Item {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -514,21 +515,21 @@ pub const Item = struct {
         return elem;
     }
 
-    pub inline fn width(self: Item) f32 {
+    pub fn width(self: Item) f32 {
         switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.w,
             .normal => |image_data| return image_data.width(),
         }
     }
 
-    pub inline fn height(self: Item) f32 {
+    pub fn height(self: Item) f32 {
         switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.h,
             .normal => |image_data| return image_data.height(),
         }
     }
 
-    pub inline fn destroy(self: *Item) void {
+    pub fn destroy(self: *Item) void {
         if (self._disposed)
             return;
 
@@ -558,7 +559,7 @@ pub const Bar = struct {
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    pub inline fn create(allocator: std.mem.Allocator, data: Bar) !*Bar {
+    pub fn create(allocator: std.mem.Allocator, data: Bar) !*Bar {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -572,21 +573,21 @@ pub const Bar = struct {
         return elem;
     }
 
-    pub inline fn width(self: Bar) f32 {
+    pub fn width(self: Bar) f32 {
         switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.w,
             .normal => |image_data| return image_data.width(),
         }
     }
 
-    pub inline fn height(self: Bar) f32 {
+    pub fn height(self: Bar) f32 {
         switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.h,
             .normal => |image_data| return image_data.height(),
         }
     }
 
-    pub inline fn destroy(self: *Bar) void {
+    pub fn destroy(self: *Bar) void {
         if (self._disposed)
             return;
 
@@ -615,7 +616,7 @@ pub const SpeechBalloon = struct {
     _screen_y: f32 = 0.0,
     _disposed: bool = false,
 
-    pub inline fn add(data: SpeechBalloon) !void {
+    pub fn add(data: SpeechBalloon) !void {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -625,21 +626,21 @@ pub const SpeechBalloon = struct {
         try elements.add(.{ .balloon = data });
     }
 
-    pub inline fn width(self: SpeechBalloon) f32 {
+    pub fn width(self: SpeechBalloon) f32 {
         return @max(self.text_data.width(), switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.w,
             .normal => |image_data| return image_data.width(),
         });
     }
 
-    pub inline fn height(self: SpeechBalloon) f32 {
+    pub fn height(self: SpeechBalloon) f32 {
         return @max(self.text_data.height(), switch (self.image_data) {
             .nine_slice => |nine_slice| return nine_slice.h,
             .normal => |image_data| return image_data.height(),
         });
     }
 
-    pub inline fn destroy(self: *SpeechBalloon, allocator: std.mem.Allocator) void {
+    pub fn destroy(self: *SpeechBalloon, allocator: std.mem.Allocator) void {
         if (self._disposed)
             return;
 
@@ -664,7 +665,7 @@ pub const UiText = struct {
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    pub inline fn create(allocator: std.mem.Allocator, data: UiText) !*UiText {
+    pub fn create(allocator: std.mem.Allocator, data: UiText) !*UiText {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -678,7 +679,7 @@ pub const UiText = struct {
         return elem;
     }
 
-    pub inline fn destroy(self: *UiText) void {
+    pub fn destroy(self: *UiText) void {
         if (self._disposed)
             return;
 
@@ -708,7 +709,7 @@ pub const StatusText = struct {
     _screen_y: f32 = 0.0,
     _disposed: bool = false,
 
-    pub inline fn add(data: StatusText) !void {
+    pub fn add(data: StatusText) !void {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -718,15 +719,15 @@ pub const StatusText = struct {
         try elements.add(.{ .status = data });
     }
 
-    pub inline fn width(self: StatusText) f32 {
+    pub fn width(self: StatusText) f32 {
         return self.text_data.width();
     }
 
-    pub inline fn height(self: StatusText) f32 {
+    pub fn height(self: StatusText) f32 {
         return self.text_data.height();
     }
 
-    pub inline fn destroy(self: *StatusText, allocator: std.mem.Allocator) void {
+    pub fn destroy(self: *StatusText, allocator: std.mem.Allocator) void {
         if (self._disposed)
             return;
 
@@ -958,7 +959,7 @@ pub const DisplayContainer = struct {
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    pub inline fn create(allocator: std.mem.Allocator, data: DisplayContainer) !*DisplayContainer {
+    pub fn create(allocator: std.mem.Allocator, data: DisplayContainer) !*DisplayContainer {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -973,7 +974,7 @@ pub const DisplayContainer = struct {
         return elem;
     }
 
-    pub inline fn createElement(self: *DisplayContainer, comptime ElemType: type, data: ElemType) !*ElemType {
+    pub fn createElement(self: *DisplayContainer, comptime ElemType: type, data: ElemType) !*ElemType {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
@@ -997,7 +998,7 @@ pub const DisplayContainer = struct {
         return elem;
     }
 
-    pub inline fn destroy(self: *DisplayContainer) void {
+    pub fn destroy(self: *DisplayContainer) void {
         if (self._disposed)
             return;
 
@@ -1047,6 +1048,7 @@ pub const UiElement = union(enum) {
 };
 
 pub const ScreenType = enum {
+    empty,
     main_menu,
     register,
     char_select,
@@ -1055,11 +1057,12 @@ pub const ScreenType = enum {
 };
 
 pub const Screen = union(ScreenType) {
-    main_menu: AccountScreen,
-    register: AccountRegisterScreen,
-    char_select: CharSelectScreen,
-    char_create: CharCreateScreen,
-    in_game: InGameScreen,
+    empty: *EmptyScreen,
+    main_menu: *AccountScreen,
+    register: *AccountRegisterScreen,
+    char_select: *CharSelectScreen,
+    char_create: *CharCreateScreen,
+    in_game: *InGameScreen,
 };
 
 pub var ui_lock: std.Thread.Mutex = .{};
@@ -1080,14 +1083,14 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .h = camera.screen_height,
     });
 
-    current_screen = .{ .main_menu = try AccountScreen.init(allocator) };
+    current_screen = .{ .empty = try EmptyScreen.init(allocator) };
 }
 
 pub fn deinit() void {
     menu_background.destroy();
 
     switch (current_screen) {
-        inline else => |*screen| screen.deinit(),
+        inline else => |screen| screen.deinit(),
     }
 
     elements.deinit();
@@ -1099,7 +1102,7 @@ pub fn resize(w: f32, h: f32) void {
     menu_background.h = camera.screen_height;
 
     switch (current_screen) {
-        inline else => |*screen| screen.resize(w, h),
+        inline else => |screen| screen.resize(w, h),
     }
 }
 
@@ -1107,11 +1110,12 @@ pub fn switchScreen(screen_type: ScreenType) void {
     menu_background.visible = screen_type != .in_game;
 
     switch (current_screen) {
-        inline else => |*screen| screen.deinit(),
+        inline else => |screen| if (screen.inited) screen.deinit(),
     }
 
     // should probably figure out some comptime magic to avoid all this... todo
     switch (screen_type) {
+        .empty => current_screen = .{ .empty = EmptyScreen.init(main._allocator) catch unreachable },
         .main_menu => {
             current_screen = .{ .main_menu = AccountScreen.init(main._allocator) catch |e| {
                 std.log.err("Initializing login screen failed: {any}", .{e});
@@ -1324,7 +1328,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
     const ms_dt = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
 
     switch (current_screen) {
-        inline else => |*screen| try screen.update(ms_time, ms_dt),
+        inline else => |screen| try screen.update(ms_time, ms_dt),
     }
 
     for (elements.items()) |*elem| {
