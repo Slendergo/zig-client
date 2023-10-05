@@ -281,9 +281,17 @@ pub const AccountRegisterScreen = struct {
             current_screen.username_input.text_data.text,
         ) catch |e| {
             std.log.err("Register failed: {any}", .{e});
+            return;
         };
 
-        ui.switchScreen(.main_menu);
+        _ = login(
+            current_screen.email_input.text_data.text,
+            current_screen.password_input.text_data.text,
+            current_screen.username_input.text_data.text,
+        ) catch |e| {
+            std.log.err("Login failed: {any}", .{e});
+            return;
+        };
     }
 
     fn backCallback() void {
@@ -508,76 +516,66 @@ pub const AccountScreen = struct {
     fn registerCallback() void {
         ui.switchScreen(.register);
     }
-
-    fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) !bool {
-        const response = try requests.sendAccountVerify(email, password);
-        if (std.mem.eql(u8, response, "<Error />")) {
-            std.log.err("Login failed: {s}", .{response});
-            return false;
-        }
-
-        const verify_doc = try xml.Doc.fromMemory(response);
-        defer verify_doc.deinit();
-        const verify_root = try verify_doc.getRootElement();
-
-        if (std.mem.eql(u8, verify_root.currentName().?, "Error")) {
-            std.log.err("Login failed: {s}", .{verify_root.currentValue().?});
-            return false;
-        }
-
-        main.current_account.name = allocator.dupeZ(u8, verify_root.getValue("Name") orelse "Guest") catch |e| {
-            std.log.err("Could not dupe current account name: {any}", .{e});
-            return false;
-        };
-
-        main.current_account.email = allocator.dupe(u8, email) catch |e| {
-            std.log.err("Could not dupe current account email: {any}", .{e});
-            return false;
-        };
-        main.current_account.password = allocator.dupe(u8, password) catch |e| {
-            std.log.err("Could not dupe current account password: {any}", .{e});
-            return false;
-        };
-        main.current_account.admin = verify_root.elementExists("Admin");
-
-        const guild_node = verify_root.findChild("Guild");
-        main.current_account.guild_name = try guild_node.?.getValueAlloc("Name", allocator, "");
-        main.current_account.guild_rank = try guild_node.?.getValueInt("Rank", u8, 0);
-
-        const list_response = try requests.sendCharList(email, password);
-        const list_doc = try xml.Doc.fromMemory(list_response);
-        defer list_doc.deinit();
-        const list_root = try list_doc.getRootElement();
-        main.next_char_id = try list_root.getAttributeInt("nextCharId", u8, 0);
-        main.max_chars = try list_root.getAttributeInt("maxNumChars", u8, 0);
-
-        var char_list = try utils.DynSlice(main.CharacterData).init(4, allocator);
-        defer char_list.deinit();
-
-        var char_iter = list_root.iterate(&.{}, "Char");
-        while (char_iter.next()) |node|
-            try char_list.add(try main.CharacterData.parse(allocator, node, try node.getAttributeInt("id", u32, 0)));
-
-        main.character_list = try allocator.dupe(main.CharacterData, char_list.items());
-
-        const server_root = list_root.findChild("Servers");
-        if (server_root) |srv_root| {
-            var server_data_list = try utils.DynSlice(main.ServerData).init(4, allocator);
-            defer server_data_list.deinit();
-
-            var server_iter = srv_root.iterate(&.{}, "Server");
-            while (server_iter.next()) |server_node|
-                try server_data_list.add(try main.ServerData.parse(server_node, allocator));
-
-            main.server_list = try allocator.dupe(main.ServerData, server_data_list.items());
-        }
-
-        if (main.character_list.len > 0) {
-            ui.switchScreen(.char_select);
-        } else {
-            ui.switchScreen(.char_create);
-        }
-
-        return true;
-    }
 };
+
+fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) !bool {
+    const response = try requests.sendAccountVerify(email, password);
+    if (std.mem.eql(u8, response, "<Error />")) {
+        std.log.err("Login failed: {s}", .{response});
+        return false;
+    }
+
+    const verify_doc = try xml.Doc.fromMemory(response);
+    defer verify_doc.deinit();
+    const verify_root = try verify_doc.getRootElement();
+
+    if (std.mem.eql(u8, verify_root.currentName().?, "Error")) {
+        std.log.err("Login failed: {s}", .{verify_root.currentValue().?});
+        return false;
+    }
+
+    main.current_account.name = try allocator.dupeZ(u8, verify_root.getValue("Name") orelse "Guest");
+    main.current_account.email = try allocator.dupe(u8, email);
+    main.current_account.password = try allocator.dupe(u8, password);
+    main.current_account.admin = verify_root.elementExists("Admin");
+
+    const guild_node = verify_root.findChild("Guild");
+    main.current_account.guild_name = try guild_node.?.getValueAlloc("Name", allocator, "");
+    main.current_account.guild_rank = try guild_node.?.getValueInt("Rank", u8, 0);
+
+    const list_response = try requests.sendCharList(email, password);
+    const list_doc = try xml.Doc.fromMemory(list_response);
+    defer list_doc.deinit();
+    const list_root = try list_doc.getRootElement();
+    main.next_char_id = try list_root.getAttributeInt("nextCharId", u8, 0);
+    main.max_chars = try list_root.getAttributeInt("maxNumChars", u8, 0);
+
+    var char_list = try utils.DynSlice(main.CharacterData).init(4, allocator);
+    defer char_list.deinit();
+
+    var char_iter = list_root.iterate(&.{}, "Char");
+    while (char_iter.next()) |node|
+        try char_list.add(try main.CharacterData.parse(allocator, node, try node.getAttributeInt("id", u32, 0)));
+
+    main.character_list = try allocator.dupe(main.CharacterData, char_list.items());
+
+    const server_root = list_root.findChild("Servers");
+    if (server_root) |srv_root| {
+        var server_data_list = try utils.DynSlice(main.ServerData).init(4, allocator);
+        defer server_data_list.deinit();
+
+        var server_iter = srv_root.iterate(&.{}, "Server");
+        while (server_iter.next()) |server_node|
+            try server_data_list.add(try main.ServerData.parse(server_node, allocator));
+
+        main.server_list = try allocator.dupe(main.ServerData, server_data_list.items());
+    }
+
+    if (main.character_list.len > 0) {
+        ui.switchScreen(.char_select);
+    } else {
+        ui.switchScreen(.char_create);
+    }
+
+    return true;
+}
