@@ -20,6 +20,7 @@ pub const max_attack_freq = 0.008;
 pub const min_attack_mult = 0.5;
 pub const max_attack_mult = 2.0;
 pub const max_sink_level = 18.0;
+pub const nexus_id_name = "Nexus";
 
 pub const Square = struct {
     tile_type: u16 = 0xFFFF,
@@ -2445,4 +2446,11 @@ inline fn getId(time: i64) i32 {
 
 inline fn getScore(id: i32, time: i64) i64 {
     return std.math.absInt(time - last_records_clear_time - id * 100);
+}
+
+// doesnt work atm Outputs: info: N~?ö? -> Nexus
+// name might need allocating?
+pub inline fn isNexus() bool {
+    // std.log.info("{s} -> {s}", .{ name, nexus_id_name });
+    return std.mem.eql(u8, name, nexus_id_name);
 }

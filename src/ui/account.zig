@@ -285,9 +285,9 @@ pub const AccountRegisterScreen = struct {
         };
 
         _ = login(
+            main._allocator,
             current_screen.email_input.text_data.text,
             current_screen.password_input.text_data.text,
-            current_screen.username_input.text_data.text,
         ) catch |e| {
             std.log.err("Login failed: {any}", .{e});
             return;
