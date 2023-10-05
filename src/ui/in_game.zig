@@ -220,7 +220,7 @@ pub const InGameScreen = struct {
         screen.stats_button = try ui.Button.create(allocator, .{
             .x = screen.bars_decor.x + 7,
             .y = screen.bars_decor.y + 8,
-            .base_image_data = .{ .normal = .{ .atlas_data = stats_data } },
+            .image_data = .{ .base = .{ .normal = .{ .atlas_data = stats_data } } },
             .press_callback = statsCallback,
         });
 
@@ -304,7 +304,7 @@ pub const InGameScreen = struct {
             .y = screen.chat_decor.y + screen.chat_decor.height(),
             .text_inlay_x = 9,
             .text_inlay_y = 8,
-            .base_decor_data = .{ .normal = .{ .atlas_data = input_data } },
+            .image_data = .{ .base = .{ .normal = .{ .atlas_data = input_data } } },
             .text_data = .{
                 .text = "",
                 .size = 12,
@@ -314,7 +314,7 @@ pub const InGameScreen = struct {
             },
             .allocator = allocator,
             .enter_callback = chatCallback,
-            .allow_chat_history = true,
+            .is_chat = true,
         });
 
         const fps_text_data = ui.TextData{
@@ -398,9 +398,7 @@ pub const InGameScreen = struct {
         }
     }
 
-    pub fn update(self: *InGameScreen, ms_time: i64, ms_dt: f32) !void {
-        _ = ms_dt;
-        _ = ms_time;
+    pub fn update(self: *InGameScreen, _: i64, _: f32) !void {
         if (map.localPlayerConst()) |local_player| {
             if (self.last_level != local_player.level) {
                 self.level_text.text_data.text = try std.fmt.bufPrint(self.level_text.text_data.backing_buffer, "{d}", .{local_player.level});
@@ -636,29 +634,32 @@ pub const InGameScreen = struct {
         if (input_text.len > 0) {
             network.queuePacket(.{ .player_text = .{ .text = input_text } });
 
-            const msg_d = ui.current_screen.in_game._allocator.dupe(u8, input_text) catch unreachable;
-            input.input_history.append(msg_d) catch unreachable;
+            const current_screen = ui.current_screen.in_game;
+            const text_copy = current_screen._allocator.dupe(u8, input_text) catch unreachable;
+            input.input_history.append(text_copy) catch unreachable;
             input.input_history_idx = @intCast(input.input_history.items.len);
         }
     }
 
     fn itemDragEndCallback(item: *ui.Item) void {
-        const start_slot = Slot.findSlotId(ui.current_screen.in_game.*, item._drag_start_x + 4, item._drag_start_y + 4);
-        const end_slot = Slot.findSlotId(ui.current_screen.in_game.*, item.x - item._drag_offset_x, item.y - item._drag_offset_y);
+        var current_screen = ui.current_screen.in_game;
+        const start_slot = Slot.findSlotId(current_screen.*, item._drag_start_x + 4, item._drag_start_y + 4);
+        const end_slot = Slot.findSlotId(current_screen.*, item.x - item._drag_offset_x, item.y - item._drag_offset_y);
         if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
             item.x = item._drag_start_x;
             item.y = item._drag_start_y;
             return;
         }
 
-        ui.current_screen.in_game.swapSlots(start_slot, end_slot);
+        current_screen.swapSlots(start_slot, end_slot);
     }
 
     fn itemShiftClickCallback(item: *ui.Item) void {
         if (item._item < 0)
             return;
 
-        const slot = Slot.findSlotId(ui.current_screen.in_game.*, item.x + 4, item.y + 4);
+        const current_screen = ui.current_screen.in_game.*;
+        const slot = Slot.findSlotId(current_screen, item.x + 4, item.y + 4);
 
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             if (props.consumable) {
@@ -667,7 +668,7 @@ pub const InGameScreen = struct {
 
                 if (map.localPlayerConst()) |local_player| {
                     network.queuePacket(.{ .use_item = .{
-                        .obj_id = if (slot.is_container) ui.current_screen.in_game.container_id else map.local_player_id,
+                        .obj_id = if (slot.is_container) current_screen.container_id else map.local_player_id,
                         .slot_id = slot.idx,
                         .obj_type = item._item,
                         .x = local_player.x,

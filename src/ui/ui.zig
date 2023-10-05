@@ -15,6 +15,7 @@ const CharSelectScreen = @import("char_select.zig").CharSelectScreen;
 const CharCreateScreen = @import("char_create.zig").CharCreateScreen;
 const EmptyScreen = @import("empty_screen.zig").EmptyScreen;
 
+// Assumes ARGB because flash scuff. Change later
 pub const RGBF32 = extern struct {
     r: f32,
     g: f32,
@@ -33,10 +34,24 @@ pub const RGBF32 = extern struct {
     }
 };
 
-pub const InteractableState = enum(u8) {
-    none = 0,
-    pressed = 1,
-    hovered = 2,
+pub const InteractableState = enum {
+    none,
+    pressed,
+    hovered,
+};
+
+pub const InteractableImageData = struct {
+    base: ImageData,
+    hover: ?ImageData = null,
+    press: ?ImageData = null,
+
+    pub fn current(self: InteractableImageData, state: InteractableState) ImageData {
+        switch (state) {
+            .none => return self.base,
+            .pressed => return self.press orelse self.base,
+            .hovered => return self.hover orelse self.base,
+        }
+    }
 };
 
 pub const InputField = struct {
@@ -44,15 +59,13 @@ pub const InputField = struct {
     y: f32,
     text_inlay_x: f32,
     text_inlay_y: f32,
-    base_decor_data: ImageData,
+    image_data: InteractableImageData,
     text_data: TextData,
     allocator: std.mem.Allocator,
     enter_callback: ?*const fn ([]u8) void = null,
     state: InteractableState = .none,
-    hover_decor_data: ?ImageData = null,
-    press_decor_data: ?ImageData = null,
     visible: bool = true,
-    allow_chat_history: bool = false,
+    is_chat: bool = false,
     _index: u32 = 0,
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
@@ -72,11 +85,7 @@ pub const InputField = struct {
     }
 
     pub fn imageData(self: InputField) ImageData {
-        switch (self.state) {
-            .none => return self.base_decor_data,
-            .pressed => return self.press_decor_data orelse self.base_decor_data,
-            .hovered => return self.hover_decor_data orelse self.base_decor_data,
-        }
+        return self.image_data.current(self.state);
     }
 
     pub fn width(self: InputField) f32 {
@@ -119,11 +128,9 @@ pub const InputField = struct {
 pub const Button = struct {
     x: f32,
     y: f32,
-    base_image_data: ImageData,
     press_callback: *const fn () void,
+    image_data: InteractableImageData,
     state: InteractableState = .none,
-    hover_image_data: ?ImageData = null,
-    press_image_data: ?ImageData = null,
     text_data: ?TextData = null,
     visible: bool = true,
     _disposed: bool = false,
@@ -144,11 +151,7 @@ pub const Button = struct {
     }
 
     pub fn imageData(self: Button) ImageData {
-        switch (self.state) {
-            .none => return self.base_image_data,
-            .pressed => return self.press_image_data orelse self.base_image_data,
-            .hovered => return self.hover_image_data orelse self.base_image_data,
-        }
+        return self.image_data.current(self.state);
     }
 
     pub fn width(self: Button) f32 {
@@ -204,11 +207,9 @@ pub const CharacterBox = struct {
     x: f32,
     y: f32,
     id: u32,
-    base_image_data: ImageData,
     press_callback: *const fn (*CharacterBox) void,
+    image_data: InteractableImageData,
     state: InteractableState = .none,
-    hover_image_data: ?ImageData = null,
-    press_image_data: ?ImageData = null,
     text_data: ?TextData = null,
     visible: bool = true,
     _disposed: bool = false,
@@ -229,11 +230,7 @@ pub const CharacterBox = struct {
     }
 
     pub fn imageData(self: CharacterBox) ImageData {
-        switch (self.state) {
-            .none => return self.base_image_data,
-            .pressed => return self.press_image_data orelse self.base_image_data,
-            .hovered => return self.hover_image_data orelse self.base_image_data,
-        }
+        return self.image_data.current(self.state);
     }
 
     pub fn width(self: CharacterBox) f32 {
@@ -993,6 +990,7 @@ pub const DisplayContainer = struct {
             CharacterBox => try self._elements.add(.{ .char_box = elem }),
             DisplayContainer => try self._elements.add(.{ .container = elem }),
             MenuBackground => try self._elements.add(.{ .menu_bg = elem }),
+            Toggle => try self._elements.add(.{ .toggle = elem }),
             else => @compileError("Element type not supported"),
         }
         return elem;
@@ -1022,6 +1020,7 @@ pub const DisplayContainer = struct {
                 .item => |item| item.destroy(),
                 .image => |image| image.destroy(),
                 .menu_bg => |menu_bg| menu_bg.destroy(),
+                .toggle => |toggle| toggle.destroy(),
                 // maybe don't assume that the allocator is the same?
                 .balloon => |*balloon| balloon.destroy(self._allocator),
                 .status => |*status| status.destroy(self._allocator),
@@ -1029,6 +1028,70 @@ pub const DisplayContainer = struct {
             }
         }
         self._elements.deinit();
+    }
+};
+
+pub const Toggle = struct {
+    x: f32,
+    y: f32,
+    off_image_data: InteractableImageData,
+    on_image_data: InteractableImageData,
+    state: InteractableState = .none,
+    toggled: bool = false,
+    state_change: ?*const fn (*Toggle) void,
+    visible: bool = true,
+    _disposed: bool = false,
+    _allocator: std.mem.Allocator = undefined,
+
+    pub fn create(allocator: std.mem.Allocator, data: Toggle) !*Toggle {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(Toggle);
+        elem.* = data;
+        elem._allocator = allocator;
+        try elements.add(.{ .toggle = elem });
+        return elem;
+    }
+
+    pub fn imageData(self: Toggle) ImageData {
+        return if (self.toggled)
+            self.on_image_data.current(self.state)
+        else
+            self.off_image_data.current(self.state);
+    }
+
+    pub fn width(self: Toggle) f32 {
+        switch (self.imageData()) {
+            .nine_slice => |nine_slice| return nine_slice.w,
+            .normal => |image_data| return image_data.width(),
+        }
+    }
+
+    pub fn height(self: Toggle) f32 {
+        switch (self.imageData()) {
+            .nine_slice => |nine_slice| return nine_slice.h,
+            .normal => |image_data| return image_data.height(),
+        }
+    }
+
+    pub fn destroy(self: *Toggle) void {
+        if (self._disposed)
+            return;
+
+        self._disposed = true;
+
+        for (elements.items(), 0..) |element, i| {
+            if (element == .toggle and element.toggle == self) {
+                _ = elements.remove(i);
+                break;
+            }
+        }
+
+        self._allocator.destroy(self);
     }
 };
 
@@ -1042,6 +1105,7 @@ pub const UiElement = union(enum) {
     char_box: *CharacterBox,
     container: *DisplayContainer,
     menu_bg: *MenuBackground,
+    toggle: *Toggle,
     // pointers on these would imply allocation, which is pointless and wasteful
     balloon: SpeechBalloon,
     status: StatusText,
@@ -1188,6 +1252,16 @@ pub fn mouseMove(x: f32, y: f32) void {
                     button.state = .none;
                 }
             },
+            .toggle => |toggle| {
+                if (!toggle.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, toggle.x, toggle.y, toggle.width(), toggle.height())) {
+                    toggle.state = .hovered;
+                } else {
+                    toggle.state = .none;
+                }
+            },
             .char_box => |box| {
                 if (!box.visible)
                     continue;
@@ -1253,6 +1327,20 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                     return true;
                 }
             },
+            .toggle => |toggle| {
+                if (!toggle.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, toggle.x, toggle.y, toggle.width(), toggle.height())) {
+                    toggle.state = .pressed;
+                    toggle.toggled = !toggle.toggled;
+                    if (toggle.state_change) |callback| {
+                        callback(toggle);
+                    }
+                    assets.playSfx("button_click");
+                    return true;
+                }
+            },
             .char_box => |box| {
                 if (!box.visible)
                     continue;
@@ -1297,6 +1385,14 @@ pub fn mouseRelease(x: f32, y: f32) void {
 
                 if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
                     button.state = .none;
+                }
+            },
+            .toggle => |toggle| {
+                if (!toggle.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, toggle.x, toggle.y, toggle.width(), toggle.height())) {
+                    toggle.state = .none;
                 }
             },
             .char_box => |box| {

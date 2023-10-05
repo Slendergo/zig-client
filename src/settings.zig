@@ -93,13 +93,14 @@ pub var shoot: Button = .{ .mouse = .left };
 pub var ability: Button = .{ .mouse = .right };
 pub var sfx_volume: f32 = 0.0; // 0.33;
 pub var music_volume: f32 = 0.0; // 0.1;
-pub var enable_glow = false;
-pub var enable_lights = false;
-pub var enable_vsync = false;
+pub var enable_glow = true;
+pub var enable_lights = true;
+pub var enable_vsync = true;
 pub var always_show_xp_gain = true;
-pub var fps_cap: f32 = 0.0; // 0 to disable
+pub var fps_cap: f32 = 360.0; // 0 to disable
 pub var selected_cursor = CursorType.aztec;
-pub var aa_type: AaType = .none;
+pub var aa_type: AaType = .msaa4x;
+pub var save_email = true;
 
 pub fn init(allocator: std.mem.Allocator) !void {
     key_tex_map = std.AutoHashMap(Button, u16).init(allocator);
@@ -256,4 +257,5 @@ pub fn resetToDefault() void {
     fps_cap = 360.0;
     selected_cursor = CursorType.aztec;
     aa_type = .msaa4x;
+    save_email = true;
 }

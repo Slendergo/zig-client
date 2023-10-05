@@ -2123,6 +2123,18 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 draw_data,
             );
         },
+        .toggle => |toggle| {
+            if (!toggle.visible)
+                return ui_idx;
+
+            switch (toggle.imageData()) {
+                .nine_slice => |nine_slice| ui_idx = drawNineSlice(ui_idx, toggle.x + x_offset, toggle.y + y_offset, nine_slice, draw_data),
+                .normal => |image_data| {
+                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true };
+                    ui_idx = drawQuad(ui_idx, toggle.x + x_offset, toggle.y + y_offset, image_data.width(), image_data.height(), image_data.atlas_data, draw_data, opts);
+                },
+            }
+        },
         else => {},
     }
 

@@ -278,7 +278,7 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Act
                 return;
             }
 
-            if (input_field.allow_chat_history) {
+            if (input_field.is_chat) {
                 if (key == .up) {
                     if (input_history_idx > 0) {
                         input_history_idx -= 1;

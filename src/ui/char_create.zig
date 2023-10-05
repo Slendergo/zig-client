@@ -36,15 +36,7 @@ pub const CharCreateScreen = struct {
         self._allocator.destroy(self);
     }
 
-    pub fn resize(self: *CharCreateScreen, w: f32, h: f32) void {
-        _ = h;
-        _ = w;
-        _ = self;
-    }
+    pub fn resize(_: *CharCreateScreen, _: f32, _: f32) void {}
 
-    pub fn update(self: *CharCreateScreen, ms_time: i64, ms_dt: f32) !void {
-        _ = self;
-        _ = ms_dt;
-        _ = ms_time;
-    }
+    pub fn update(_: *CharCreateScreen, _: i64, _: f32) !void {}
 };

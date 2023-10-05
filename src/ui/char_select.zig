@@ -31,9 +31,11 @@ pub const CharSelectScreen = struct {
                 .x = (camera.screen_width - button_data_base.texWRaw()) / 2,
                 .y = @floatFromInt(50 * i),
                 .id = char.id,
-                .base_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_base, 100, 40, 6, 6, 7, 7, 1.0) },
-                .hover_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_hover, 100, 40, 6, 6, 7, 7, 1.0) },
-                .press_image_data = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_press, 100, 40, 6, 6, 7, 7, 1.0) },
+                .image_data = .{
+                    .base = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_base, 100, 40, 6, 6, 7, 7, 1.0) },
+                    .hover = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_hover, 100, 40, 6, 6, 7, 7, 1.0) },
+                    .press = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_press, 100, 40, 6, 6, 7, 7, 1.0) },
+                },
                 .text_data = ui.TextData{
                     .text = @constCast(char.name[0..]),
                     .backing_buffer = allocator.alloc(u8, 1) catch return screen,
@@ -61,17 +63,9 @@ pub const CharSelectScreen = struct {
         self._allocator.destroy(self);
     }
 
-    pub fn resize(self: *CharSelectScreen, w: f32, h: f32) void {
-        _ = h;
-        _ = w;
-        _ = self;
-    }
+    pub fn resize(_: *CharSelectScreen, _: f32, _: f32) void {}
 
-    pub fn update(self: *CharSelectScreen, ms_time: i64, ms_dt: f32) !void {
-        _ = self;
-        _ = ms_dt;
-        _ = ms_time;
-    }
+    pub fn update(_: *CharSelectScreen, _: i64, _: f32) !void {}
 
     fn boxClickCallback(box: *ui.CharacterBox) void {
         main.selected_char_id = box.id;

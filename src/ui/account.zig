@@ -6,6 +6,7 @@ const requests = @import("../requests.zig");
 const xml = @import("../xml.zig");
 const main = @import("../main.zig");
 const utils = @import("../utils.zig");
+const settings = @import("../settings.zig");
 
 pub const AccountRegisterScreen = struct {
     username_text: *ui.UiText = undefined,
@@ -60,9 +61,11 @@ pub const AccountRegisterScreen = struct {
             .y = y_offset,
             .text_inlay_x = 9,
             .text_inlay_y = 8,
-            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -97,9 +100,11 @@ pub const AccountRegisterScreen = struct {
             .y = y_offset,
             .text_inlay_x = 9,
             .text_inlay_y = 8,
-            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -134,9 +139,11 @@ pub const AccountRegisterScreen = struct {
             .y = y_offset,
             .text_inlay_x = 9,
             .text_inlay_y = 8,
-            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -172,9 +179,11 @@ pub const AccountRegisterScreen = struct {
             .y = y_offset,
             .text_inlay_x = 9,
             .text_inlay_y = 8,
-            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -197,9 +206,11 @@ pub const AccountRegisterScreen = struct {
         screen.confirm_button = try ui.Button.create(allocator, .{
             .x = x_offset + (input_w - (button_width * 2)) / 2 - 12.5,
             .y = y_offset,
-            .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
-            .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
-            .press_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
             .text_data = .{
                 .text = @constCast("Confirm"),
                 .size = 16,
@@ -212,9 +223,11 @@ pub const AccountRegisterScreen = struct {
         screen.back_button = try ui.Button.create(allocator, .{
             .x = screen.confirm_button.x + button_width + 25,
             .y = y_offset,
-            .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
-            .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
-            .press_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
             .text_data = .{
                 .text = @constCast("Back"),
                 .size = 16,
@@ -246,17 +259,9 @@ pub const AccountRegisterScreen = struct {
         self._allocator.destroy(self);
     }
 
-    pub fn resize(self: *AccountRegisterScreen, w: f32, h: f32) void {
-        _ = h;
-        _ = w;
-        _ = self;
-    }
+    pub fn resize(_: *AccountRegisterScreen, _: f32, _: f32) void {}
 
-    pub fn update(self: *AccountRegisterScreen, ms_time: i64, ms_dt: f32) !void {
-        _ = self;
-        _ = ms_dt;
-        _ = ms_time;
-    }
+    pub fn update(_: *AccountRegisterScreen, _: i64, _: f32) !void {}
 
     fn register(email: []const u8, password: []const u8, username: []const u8) !bool {
         const response = try requests.sendAccountRegister(email, password, username);
@@ -269,10 +274,11 @@ pub const AccountRegisterScreen = struct {
     }
 
     fn registerCallback() void {
+        const current_screen = ui.current_screen.register;
         _ = register(
-            ui.current_screen.register.email_input.text_data.text,
-            ui.current_screen.register.password_input.text_data.text,
-            ui.current_screen.register.username_input.text_data.text,
+            current_screen.email_input.text_data.text,
+            current_screen.password_input.text_data.text,
+            current_screen.username_input.text_data.text,
         ) catch |e| {
             std.log.err("Register failed: {any}", .{e});
         };
@@ -292,6 +298,8 @@ pub const AccountScreen = struct {
     password_input: *ui.InputField = undefined,
     login_button: *ui.Button = undefined,
     confirm_button: *ui.Button = undefined,
+    save_email_text: *ui.UiText = undefined,
+    save_email_toggle: *ui.Toggle = undefined,
     inited: bool = false,
 
     _allocator: std.mem.Allocator = undefined,
@@ -313,9 +321,11 @@ pub const AccountScreen = struct {
             .y = 200,
             .text_inlay_x = 9,
             .text_inlay_y = 8,
-            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -346,9 +356,11 @@ pub const AccountScreen = struct {
             .y = 350,
             .text_inlay_x = 9,
             .text_inlay_y = 8,
-            .base_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .hover_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
-            .press_decor_data = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(input_data_base, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
+            },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -375,16 +387,59 @@ pub const AccountScreen = struct {
             },
         });
 
+        const check_box_base_on = assets.getUiData("checkedBoxBase", 0);
+        const check_box_hover_on = assets.getUiData("checkedBoxHover", 0);
+        const check_box_press_on = assets.getUiData("checkedBoxPress", 0);
+        const check_box_base_off = assets.getUiData("uncheckedBoxBase", 0);
+        const check_box_hover_off = assets.getUiData("uncheckedBoxHover", 0);
+        const check_box_press_off = assets.getUiData("uncheckedBoxPress", 0);
+
+        const text_w = 150;
+
+        screen.save_email_toggle = try ui.Toggle.create(allocator, .{
+            .x = screen.password_input.x + (input_w - text_w - check_box_base_on.texWRaw()) / 2,
+            .y = 400 + (100 - check_box_base_on.texHRaw()) / 2,
+            .off_image_data = .{
+                .base = .{ .normal = .{ .atlas_data = check_box_base_off } },
+                .hover = .{ .normal = .{ .atlas_data = check_box_hover_off } },
+                .press = .{ .normal = .{ .atlas_data = check_box_press_off } },
+            },
+            .on_image_data = .{
+                .base = .{ .normal = .{ .atlas_data = check_box_base_on } },
+                .hover = .{ .normal = .{ .atlas_data = check_box_hover_on } },
+                .press = .{ .normal = .{ .atlas_data = check_box_press_on } },
+            },
+            .state_change = saveEmailChanged,
+            .toggled = settings.save_email,
+        });
+
+        screen.save_email_text = try ui.UiText.create(allocator, .{
+            .x = screen.save_email_toggle.x + check_box_base_on.texWRaw(),
+            .y = 400,
+            .text_data = .{
+                .text = @constCast("Save e-mail"),
+                .size = 20,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+                .hori_align = .middle,
+                .vert_align = .middle,
+                .max_width = text_w,
+                .max_height = 100,
+            },
+        });
+
         const button_data_base = assets.getUiData("buttonBase", 0);
         const button_data_hover = assets.getUiData("buttonHover", 0);
         const button_data_press = assets.getUiData("buttonPress", 0);
 
         screen.login_button = try ui.Button.create(allocator, .{
             .x = screen.password_input.x + (input_w - 200) / 2 - 12.5,
-            .y = 450,
-            .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, 100, 35, 6, 6, 7, 7, 1.0) },
-            .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, 100, 35, 6, 6, 7, 7, 1.0) },
-            .press_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, 100, 35, 6, 6, 7, 7, 1.0) },
+            .y = 500,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, 100, 35, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, 100, 35, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, 100, 35, 6, 6, 7, 7, 1.0) },
+            },
             .text_data = .{
                 .text = @constCast("Login"),
                 .size = 16,
@@ -396,10 +451,12 @@ pub const AccountScreen = struct {
 
         screen.confirm_button = try ui.Button.create(allocator, .{
             .x = screen.login_button.x + (input_w - 100) / 2 + 25,
-            .y = 450,
-            .base_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, 100, 35, 6, 6, 7, 7, 1.0) },
-            .hover_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, 100, 35, 6, 6, 7, 7, 1.0) },
-            .press_image_data = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, 100, 35, 6, 6, 7, 7, 1.0) },
+            .y = 500,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, 100, 35, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, 100, 35, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, 100, 35, 6, 6, 7, 7, 1.0) },
+            },
             .text_data = .{
                 .text = @constCast("Register"),
                 .size = 16,
@@ -423,27 +480,26 @@ pub const AccountScreen = struct {
         self.password_input.destroy();
         self.login_button.destroy();
         self.confirm_button.destroy();
+        self.save_email_text.destroy();
+        self.save_email_toggle.destroy();
 
         self._allocator.destroy(self);
     }
 
-    pub fn resize(self: *AccountScreen, w: f32, h: f32) void {
-        _ = h;
-        _ = w;
-        _ = self;
-    }
+    pub fn resize(_: *AccountScreen, _: f32, _: f32) void {}
 
-    pub fn update(self: *AccountScreen, ms_time: i64, ms_dt: f32) !void {
-        _ = self;
-        _ = ms_dt;
-        _ = ms_time;
+    pub fn update(_: *AccountScreen, _: i64, _: f32) !void {}
+
+    fn saveEmailChanged(toggle: *ui.Toggle) void {
+        settings.save_email = toggle.toggled;
     }
 
     fn loginCallback() void {
+        const current_screen = ui.current_screen.main_menu;
         _ = login(
-            ui.current_screen.main_menu._allocator,
-            ui.current_screen.main_menu.email_input.text_data.text,
-            ui.current_screen.main_menu.password_input.text_data.text,
+            current_screen._allocator,
+            current_screen.email_input.text_data.text,
+            current_screen.password_input.text_data.text,
         ) catch |e| {
             std.log.err("Login failed: {any}", .{e});
         };
