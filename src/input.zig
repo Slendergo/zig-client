@@ -74,7 +74,7 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     } else if (key == settings.options.getKey()) {
         main.disconnect();
     } else if (key == settings.escape.getKey()) {
-        network.queuePacket(.{ .escape = .{} });
+        tryEscape();
     } else if (key == settings.interact.getKey()) {
         const int_id = map.interactive_id.load(.Acquire);
         if (int_id != -1) {
@@ -409,6 +409,13 @@ pub fn scrollEvent(_: *zglfw.Window, _: f64, yoffset: f64) callconv(.C) void {
 
     camera.minimap_zoom += @floatCast(yoffset * scroll_speed);
     camera.minimap_zoom = @max(1, @min(max_zoom, camera.minimap_zoom));
+}
+
+fn tryEscape() void {
+    if (map.isNexus()) {
+        return;
+    }
+    network.queuePacket(.{ .escape = .{} });
 }
 
 fn useAbility() void {
