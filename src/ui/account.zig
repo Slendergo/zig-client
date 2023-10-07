@@ -56,6 +56,7 @@ pub const AccountRegisterScreen = struct {
 
         y_offset += 50;
 
+        const cursor_data = assets.getUiData("chatboxCursor", 0);
         screen.username_input = try ui.InputField.create(allocator, .{
             .x = x_offset,
             .y = y_offset,
@@ -66,6 +67,7 @@ pub const AccountRegisterScreen = struct {
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
             },
+            .cursor_image_data = .{ .normal = .{ .atlas_data = cursor_data } },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -105,6 +107,7 @@ pub const AccountRegisterScreen = struct {
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
             },
+            .cursor_image_data = .{ .normal = .{ .atlas_data = cursor_data } },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -144,6 +147,7 @@ pub const AccountRegisterScreen = struct {
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
             },
+            .cursor_image_data = .{ .normal = .{ .atlas_data = cursor_data } },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -184,6 +188,7 @@ pub const AccountRegisterScreen = struct {
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
             },
+            .cursor_image_data = .{ .normal = .{ .atlas_data = cursor_data } },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -324,6 +329,7 @@ pub const AccountScreen = struct {
 
         const NineSlice = ui.NineSliceImageData;
 
+        const cursor_data = assets.getUiData("chatboxCursor", 0);
         screen.email_input = try ui.InputField.create(allocator, .{
             .x = (camera.screen_width - input_w) / 2,
             .y = 200,
@@ -334,6 +340,7 @@ pub const AccountScreen = struct {
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
             },
+            .cursor_image_data = .{ .normal = .{ .atlas_data = cursor_data } },
             .text_data = .{
                 .text = "",
                 .size = 20,
@@ -369,6 +376,7 @@ pub const AccountScreen = struct {
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(input_data_hover, input_w, input_h, 8, 8, 32, 32, 1.0) },
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(input_data_press, input_w, input_h, 8, 8, 32, 32, 1.0) },
             },
+            .cursor_image_data = .{ .normal = .{ .atlas_data = cursor_data } },
             .text_data = .{
                 .text = "",
                 .size = 20,

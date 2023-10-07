@@ -2266,7 +2266,7 @@ fn drawLight(idx: u16, w: f32, h: f32, x: f32, y: f32, color: u32, intensity: f3
     return idx + 4;
 }
 
-fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, cam_y: f32, x_offset: f32, y_offset: f32) u16 {
+fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, cam_y: f32, x_offset: f32, y_offset: f32, time: i64) u16 {
     var ui_idx = idx;
     switch (elem) {
         .status => |text| {
@@ -2502,13 +2502,21 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 },
             }
 
-            ui_idx = drawText(
-                ui_idx,
-                input_field.x + input_field.text_inlay_x + x_offset + input_field._x_offset,
-                input_field.y + input_field.text_inlay_y + y_offset,
-                input_field.text_data,
-                draw_data,
-            );
+            const text_x = input_field.x + input_field.text_inlay_x + x_offset + input_field._x_offset;
+            const text_y = input_field.y + input_field.text_inlay_y + y_offset;
+            ui_idx = drawText(ui_idx, text_x, text_y, input_field.text_data, draw_data);
+
+            const flash_delay = 500 * std.time.us_per_ms;
+            if (input_field._last_input != -1 and (time - input_field._last_input < flash_delay or @mod(@divFloor(time, flash_delay), 2) == 0)) {
+                const cursor_x = text_x + input_field.text_data.width();
+                switch (input_field.cursor_image_data) {
+                    .nine_slice => |nine_slice| ui_idx = drawNineSlice(ui_idx, cursor_x, text_y, nine_slice, draw_data),
+                    .normal => |image_data| {
+                        const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                        ui_idx = drawQuad(ui_idx, cursor_x, text_y, image_data.width(), image_data.height(), image_data.atlas_data, draw_data, opts);
+                    },
+                }
+            }
         },
         .toggle => |toggle| {
             if (!toggle.visible)
@@ -3324,11 +3332,11 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         continue;
 
                     for (container._elements.items()) |cont_elem| {
-                        ui_idx = drawElement(ui_idx, cont_elem, draw_data, cam_x, cam_y, container.x, container.y);
+                        ui_idx = drawElement(ui_idx, cont_elem, draw_data, cam_x, cam_y, container.x, container.y, time);
                     }
                 },
                 else => {
-                    ui_idx = drawElement(ui_idx, elem, draw_data, cam_x, cam_y, 0, 0);
+                    ui_idx = drawElement(ui_idx, elem, draw_data, cam_x, cam_y, 0, 0, time);
                 },
             }
         }

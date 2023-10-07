@@ -87,9 +87,11 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
         useAbility();
     } else if (key == settings.chat.getKey()) {
         selected_input_field = ui.current_screen.in_game.chat_input;
+        selected_input_field.?._last_input = 0;
     } else if (key == settings.chat_cmd.getKey()) {
         charEvent(window, .slash);
         selected_input_field = ui.current_screen.in_game.chat_input;
+        selected_input_field.?._last_input = 0;
     } else if (key == settings.inv_0.getKey()) {
         ui.current_screen.in_game.useItem(if (mods.control) 4 + 8 else 4);
     } else if (key == settings.inv_1.getKey()) {
@@ -170,9 +172,11 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
         useAbility();
     } else if (button == settings.chat.getMouse()) {
         selected_input_field = ui.current_screen.in_game.chat_input;
+        selected_input_field.?._last_input = 0;
     } else if (button == settings.chat_cmd.getMouse()) {
         charEvent(window, .slash);
         selected_input_field = ui.current_screen.in_game.chat_input;
+        selected_input_field.?._last_input = 0;
     } else if (button == settings.inv_0.getMouse()) {
         ui.current_screen.in_game.useItem(if (mods.control) 4 + 8 else 4);
     } else if (button == settings.inv_1.getMouse()) {
@@ -229,7 +233,7 @@ pub fn charEvent(_: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
         input_field.text_data.backing_buffer[input_field._index] = byte_code;
         input_field._index += 1;
         input_field.text_data.text = input_field.text_data.backing_buffer[0..input_field._index];
-        input_field.updateTextPos();
+        input_field.inputUpdate();
         return;
     }
 }
@@ -251,7 +255,7 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Act
                             @memcpy(input_field.text_data.backing_buffer[input_field._index .. input_field._index + clip_len], clip_str);
                             input_field._index += @intCast(clip_len);
                             input_field.text_data.text = input_field.text_data.backing_buffer[0..input_field._index];
-                            input_field.updateTextPos();
+                            input_field.inputUpdate();
                             return;
                         }
                     },
@@ -259,7 +263,7 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Act
                         input_field.text_data.backing_buffer[input_field._index] = 0;
                         window.setClipboardString(input_field.text_data.backing_buffer[0..input_field._index :0]);
                         input_field.clear();
-                        input_field.updateTextPos();
+                        input_field.inputUpdate();
                         return;
                     },
                     else => {},
@@ -270,7 +274,8 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Act
                 if (input_field.enter_callback) |enter_cb| {
                     enter_cb(input_field.text_data.text);
                     input_field.clear();
-                    input_field.updateTextPos();
+                    input_field.inputUpdate();
+                    input_field._last_input = -1;
                     selected_input_field = null;
                 }
 
@@ -280,7 +285,7 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Act
             if (key == .backspace and input_field._index > 0) {
                 input_field._index -= 1;
                 input_field.text_data.text = input_field.text_data.backing_buffer[0..input_field._index];
-                input_field.updateTextPos();
+                input_field.inputUpdate();
                 return;
             }
 
@@ -293,7 +298,7 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Act
                         @memcpy(input_field.text_data.backing_buffer[0..msg_len], msg);
                         input_field.text_data.text = input_field.text_data.backing_buffer[0..msg_len];
                         input_field._index = @intCast(msg_len);
-                        input_field.updateTextPos();
+                        input_field.inputUpdate();
                     }
 
                     return;
@@ -311,7 +316,7 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Act
                             @memcpy(input_field.text_data.backing_buffer[0..msg_len], msg);
                             input_field.text_data.text = input_field.text_data.backing_buffer[0..msg_len];
                             input_field._index = @intCast(msg_len);
-                            input_field.updateTextPos();
+                            input_field.inputUpdate();
                         }
                     }
 

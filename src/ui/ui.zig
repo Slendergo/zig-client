@@ -75,12 +75,15 @@ pub const InputField = struct {
     text_inlay_x: f32,
     text_inlay_y: f32,
     image_data: InteractableImageData,
+    cursor_image_data: ImageData,
     text_data: TextData,
     allocator: std.mem.Allocator,
     enter_callback: ?*const fn ([]u8) void = null,
     state: InteractableState = .none,
     visible: bool = true,
     is_chat: bool = false,
+    // -1 means not selected
+    _last_input: i64 = -1,
     _x_offset: f32 = 0.0,
     _index: u32 = 0,
     _disposed: bool = false,
@@ -104,6 +107,11 @@ pub const InputField = struct {
                 .max_x = elem.width() - elem.text_inlay_x * 2,
                 .max_y = elem.height() - elem.text_inlay_y * 2,
             };
+        }
+
+        switch (elem.cursor_image_data) {
+            .nine_slice => |*nine_slice| nine_slice.h = data.text_data.height(),
+            .normal => |*image_data| image_data.scale_y = data.text_data.height() / image_data.height(),
         }
 
         try elements.add(.{ .input_field = elem });
@@ -133,11 +141,18 @@ pub const InputField = struct {
         self._index = 0;
     }
 
-    pub fn updateTextPos(self: *InputField) void {
+    pub fn inputUpdate(self: *InputField) void {
+        self._last_input = main.current_time;
+
+        const cursor_width = switch (self.cursor_image_data) {
+            .nine_slice => |nine_slice| if (nine_slice.alpha > 0) nine_slice.w else 0.0,
+            .normal => |image_data| if (image_data.alpha > 0) image_data.width() else 0.0,
+        };
+
         const img_width = switch (self.imageData()) {
             .nine_slice => |nine_slice| nine_slice.w,
             .normal => |image_data| image_data.width(),
-        } - self.text_inlay_x * 2;
+        } - self.text_inlay_x * 2 - cursor_width;
         const offset = @max(0, self.text_data.width() - img_width);
         self._x_offset = -offset;
         self.text_data.scissor.min_x = offset;
@@ -1327,7 +1342,10 @@ pub fn mouseMove(x: f32, y: f32) void {
 }
 
 pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
-    input.selected_input_field = null;
+    if (input.selected_input_field) |input_field| {
+        input_field._last_input = -1;
+        input.selected_input_field = null;
+    }
 
     for (elements.items()) |elem| {
         switch (elem) {
@@ -1397,6 +1415,7 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
 
                 if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
                     input.selected_input_field = input_field;
+                    input_field._last_input = 0;
                     input_field.state = .pressed;
                     return true;
                 }

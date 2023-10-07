@@ -299,12 +299,14 @@ pub const InGameScreen = struct {
             .image_data = .{ .normal = .{ .atlas_data = chat_data } },
         });
 
+        const cursor_data = assets.getUiData("chatboxCursor", 0);
         screen.chat_input = try ui.InputField.create(allocator, .{
             .x = screen.chat_decor.x,
             .y = screen.chat_decor.y + screen.chat_decor.height(),
             .text_inlay_x = 9,
             .text_inlay_y = 8,
             .image_data = .{ .base = .{ .normal = .{ .atlas_data = input_data } } },
+            .cursor_image_data = .{ .normal = .{ .atlas_data = cursor_data } },
             .text_data = .{
                 .text = "",
                 .size = 12,
