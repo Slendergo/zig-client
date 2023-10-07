@@ -192,12 +192,15 @@ fn renderTick(allocator: std.mem.Allocator) !void {
                 // we need to make copies of these, other threads can change them mid execution
                 // this is a hack though. should be handled double buffered or else chunks of minimap can be lost
                 const min_x = minimap_update_min_x;
-                const max_x = minimap_update_max_x;
+                const max_x = minimap_update_max_x + 1;
                 const min_y = minimap_update_min_y;
-                const max_y = minimap_update_max_y;
+                const max_y = minimap_update_max_y + 1;
 
                 const w = max_x - min_x;
                 const h = max_y - min_y;
+                if (w <= 0 or h <= 0)
+                    break :minimapUpdate;
+                    
                 const comp_len = map.minimap.num_components * map.minimap.bytes_per_component;
                 const copy = allocator.alloc(u8, w * h * comp_len) catch |e| {
                     std.log.err("Minimap alloc failed: {any}", .{e});

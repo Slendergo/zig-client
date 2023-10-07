@@ -412,7 +412,7 @@ pub const InGameScreen = struct {
                     self.fame_bar.visible = true;
                     self.xp_bar.visible = false;
                     const fame_perc = @as(f32, @floatFromInt(local_player.fame)) / @as(f32, @floatFromInt(local_player.fame_goal));
-                    self.fame_bar.max_width = self.fame_bar.width() * fame_perc;
+                    self.fame_bar.image_data.normal.scissor.max_x = self.fame_bar.width() * fame_perc;
                     self.fame_bar.text_data.text = try std.fmt.bufPrint(self.fame_bar.text_data.backing_buffer, "{d}/{d} Fame", .{ local_player.fame, local_player.fame_goal });
 
                     self.last_fame = local_player.fame;
@@ -423,7 +423,7 @@ pub const InGameScreen = struct {
                     self.xp_bar.visible = true;
                     self.fame_bar.visible = false;
                     const exp_perc = @as(f32, @floatFromInt(local_player.exp)) / @as(f32, @floatFromInt(local_player.exp_goal));
-                    self.xp_bar.max_width = self.xp_bar.width() * exp_perc;
+                    self.xp_bar.image_data.normal.scissor.max_x = self.xp_bar.width() * exp_perc;
                     self.xp_bar.text_data.text = try std.fmt.bufPrint(self.xp_bar.text_data.backing_buffer, "{d}/{d} XP", .{ local_player.exp, local_player.exp_goal });
 
                     self.last_xp = local_player.exp;
@@ -433,7 +433,7 @@ pub const InGameScreen = struct {
 
             if (self.last_hp != local_player.hp or self.last_max_hp != local_player.max_hp) {
                 const hp_perc = @as(f32, @floatFromInt(local_player.hp)) / @as(f32, @floatFromInt(local_player.max_hp));
-                self.health_bar.max_width = self.health_bar.width() * hp_perc;
+                self.health_bar.image_data.normal.scissor.max_x = self.health_bar.width() * hp_perc;
                 self.health_bar.text_data.text = try std.fmt.bufPrint(self.health_bar.text_data.backing_buffer, "{d}/{d} HP", .{ local_player.hp, local_player.max_hp });
 
                 self.last_hp = local_player.hp;
@@ -442,7 +442,7 @@ pub const InGameScreen = struct {
 
             if (self.last_mp != local_player.mp or self.last_max_mp != local_player.max_mp) {
                 const mp_perc = @as(f32, @floatFromInt(local_player.mp)) / @as(f32, @floatFromInt(local_player.max_mp));
-                self.mana_bar.max_width = self.mana_bar.width() * mp_perc;
+                self.mana_bar.image_data.normal.scissor.max_x = self.mana_bar.width() * mp_perc;
                 self.mana_bar.text_data.text = try std.fmt.bufPrint(self.mana_bar.text_data.backing_buffer, "{d}/{d} MP", .{ local_player.mp, local_player.max_mp });
 
                 self.last_mp = local_player.mp;

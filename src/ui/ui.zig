@@ -54,6 +54,21 @@ pub const InteractableImageData = struct {
     }
 };
 
+// Scissor positions are relative to the element it's attached to
+pub const ScissorRect = extern struct {
+    pub const dont_scissor = -1.0;
+
+    min_x: f32 = dont_scissor,
+    max_x: f32 = dont_scissor,
+    min_y: f32 = dont_scissor,
+    max_y: f32 = dont_scissor,
+
+    // hack
+    pub fn isDefault(self: ScissorRect) bool {
+        return @as(u128, @bitCast(self)) == @as(u128, @bitCast(ScissorRect{}));
+    }
+};
+
 pub const InputField = struct {
     x: f32,
     y: f32,
@@ -66,6 +81,7 @@ pub const InputField = struct {
     state: InteractableState = .none,
     visible: bool = true,
     is_chat: bool = false,
+    _x_offset: f32 = 0.0,
     _index: u32 = 0,
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
@@ -80,6 +96,16 @@ pub const InputField = struct {
         var elem = try allocator.create(InputField);
         elem.* = data;
         elem._allocator = allocator;
+
+        if (data.text_data.scissor.isDefault()) {
+            elem.text_data.scissor = .{
+                .min_x = 0,
+                .min_y = 0,
+                .max_x = elem.width() - elem.text_inlay_x * 2,
+                .max_y = elem.height() - elem.text_inlay_y * 2,
+            };
+        }
+
         try elements.add(.{ .input_field = elem });
         return elem;
     }
@@ -105,6 +131,17 @@ pub const InputField = struct {
     pub fn clear(self: *InputField) void {
         self.text_data.text = "";
         self._index = 0;
+    }
+
+    pub fn updateTextPos(self: *InputField) void {
+        const img_width = switch (self.imageData()) {
+            .nine_slice => |nine_slice| nine_slice.w,
+            .normal => |image_data| image_data.width(),
+        } - self.text_inlay_x * 2;
+        const offset = @max(0, self.text_data.width() - img_width);
+        self._x_offset = -offset;
+        self.text_data.scissor.min_x = offset;
+        self.text_data.scissor.max_x = offset + img_width;
     }
 
     pub fn destroy(self: *InputField) void {
@@ -297,6 +334,7 @@ pub const NineSliceImageData = struct {
     h: f32,
     alpha: f32 = 1.0,
     atlas_data: [9]assets.AtlasData,
+    scissor: ScissorRect = .{},
 
     pub fn fromAtlasData(data: assets.AtlasData, w: f32, h: f32, slice_x: f32, slice_y: f32, slice_w: f32, slice_h: f32, alpha: f32) NineSliceImageData {
         const base_u = data.texURaw() + assets.padding;
@@ -363,6 +401,7 @@ pub const NormalImageData = struct {
     scale_y: f32 = 1.0,
     alpha: f32 = 1.0,
     atlas_data: assets.AtlasData,
+    scissor: ScissorRect = .{},
 
     pub fn width(self: NormalImageData) f32 {
         return self.atlas_data.texWRaw() * self.scale_x;
@@ -382,7 +421,6 @@ pub const Image = struct {
     x: f32,
     y: f32,
     image_data: ImageData,
-    max_width: f32 = std.math.maxInt(u32),
     visible: bool = true,
     // hack
     is_minimap_decor: bool = false,
@@ -443,6 +481,7 @@ pub const MenuBackground = struct {
     y: f32,
     w: f32,
     h: f32,
+    scissor: ScissorRect = .{},
     visible: bool = true,
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
@@ -550,7 +589,6 @@ pub const Bar = struct {
     x: f32,
     y: f32,
     image_data: ImageData,
-    max_width: f32 = std.math.maxInt(u32),
     visible: bool = true,
     text_data: TextData,
     _disposed: bool = false,
@@ -775,6 +813,7 @@ pub const TextData = struct {
     password: bool = false,
     handle_special_chars: bool = true,
     disable_subpixel: bool = false,
+    scissor: ScissorRect = .{},
     // alignments other than default need max width/height defined respectively
     // no support for multi-line alignment currently
     hori_align: AlignHori = .left,
