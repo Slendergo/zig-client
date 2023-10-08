@@ -591,7 +591,7 @@ pub const InGameScreen = struct {
                         .time = main.current_time,
                         .use_type = game_data.UseType.default,
                     } });
-                    assets.playSfx("use_potion");
+                    assets.playSfx("UsePotion");
                 }
 
                 return;
@@ -678,7 +678,7 @@ pub const InGameScreen = struct {
                         .time = main.current_time,
                         .use_type = game_data.UseType.default,
                     } });
-                    assets.playSfx("use_potion");
+                    assets.playSfx("UsePotion");
                 }
 
                 return;

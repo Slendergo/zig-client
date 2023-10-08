@@ -1380,7 +1380,7 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                 if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
                     button.state = .pressed;
                     button.press_callback();
-                    assets.playSfx("button_click");
+                    assets.playSfx("ButtonClick");
                     return true;
                 }
             },
@@ -1394,7 +1394,7 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                     if (toggle.state_change) |callback| {
                         callback(toggle);
                     }
-                    assets.playSfx("button_click");
+                    assets.playSfx("ButtonClick");
                     return true;
                 }
             },
@@ -1405,7 +1405,7 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                 if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
                     box.state = .pressed;
                     box.press_callback(box);
-                    assets.playSfx("button_click");
+                    assets.playSfx("ButtonClick");
                     return true;
                 }
             },

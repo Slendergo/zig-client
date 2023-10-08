@@ -383,7 +383,7 @@ pub const GameObject = struct {
             }
 
             if (class_props == .container) {
-                assets.playSfx("loot_appears");
+                assets.playSfx("LootAppears");
             }
         }
 
@@ -842,20 +842,20 @@ pub const Player = struct {
     // todo change use_type to be enum?
     pub fn useAbility(self: *Player, screen_x: f32, screen_y: f32, use_type: game_data.UseType) void {
         if (self.condition.paused) {
-            assets.playSfx("error");
+            assets.playSfx("Error");
             return;
         }
 
         const item_type: i32 = self.inventory[1];
         if (item_type == -1) {
-            assets.playSfx("error");
+            assets.playSfx("Error");
             return;
         }
 
         const item_props = game_data.item_type_to_props.getPtr(@intCast(item_type));
         if (item_props == null or !item_props.?.usable) {
             // doesnt actually error on original but it hink it makes sense
-            assets.playSfx("error");
+            assets.playSfx("Error");
             return;
         }
 
@@ -882,20 +882,20 @@ pub const Player = struct {
 
         var position = camera.screenToWorld(screen_x, screen_y);
         if (needs_walkable and !isValidPosition(position.x, position.y)) {
-            assets.playSfx("error");
+            assets.playSfx("Error");
             return;
         }
 
         const now = main.current_time;
         if (use_type == game_data.UseType.start) {
             if (now < self.next_ability_attack_time) {
-                assets.playSfx("error");
+                assets.playSfx("Error");
                 return;
             }
 
             const mana_cost: i32 = @intFromFloat(item_props.?.mp_cost);
             if (mana_cost > self.mp) {
-                assets.playSfx("no_mana");
+                assets.playSfx("NoMana");
                 return;
             }
 
