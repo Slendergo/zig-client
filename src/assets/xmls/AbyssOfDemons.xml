@@ -8,8 +8,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x13</Index>
     </AnimatedTexture>
-    <HitSound>monster/demons_hit</HitSound>
-    <DeathSound>monster/demons_death</DeathSound>
+    <HitSound>monster/DemonsHit</HitSound>
+    <DeathSound>monster/DemonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>900</MaxHitPoints>
     <Defense>7</Defense>
@@ -65,8 +65,8 @@
       <File>chars16x16dEncounters</File>
       <Index>0</Index>
     </AnimatedTexture>
-    <HitSound>monster/demons_hit</HitSound>
-    <DeathSound>monster/demons_death</DeathSound>
+    <HitSound>monster/DemonsHit</HitSound>
+    <DeathSound>monster/DemonsDeath</DeathSound>
     <MaxHitPoints>10000</MaxHitPoints>
     <Size>100</Size>
     <Defense>20</Defense>
@@ -129,8 +129,8 @@
       <File>chars8x8dEncounters</File>
       <Index>1</Index>
     </AnimatedTexture>
-    <HitSound>monster/demons_hit</HitSound>
-    <DeathSound>monster/demons_death</DeathSound>
+    <HitSound>monster/DemonsHit</HitSound>
+    <DeathSound>monster/DemonsDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj2</File>
@@ -186,8 +186,8 @@
       <File>lofiChar28x8</File>
       <Index>0x20</Index>
     </Texture>
-    <HitSound>monster/abyss_demons_hit</HitSound>
-    <DeathSound>monster/abyss_demons_death</DeathSound>
+    <HitSound>monster/AbyssDemonsHit</HitSound>
+    <DeathSound>monster/AbyssDemonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>300</MaxHitPoints>
     <Defense>30</Defense>
@@ -211,8 +211,8 @@
       <File>lofiChar28x8</File>
       <Index>0x21</Index>
     </Texture>
-    <HitSound>monster/abyss_demons_hit</HitSound>
-    <DeathSound>monster/abyss_demons_death</DeathSound>
+    <HitSound>monster/AbyssDemonsHit</HitSound>
+    <DeathSound>monster/AbyssDemonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>30</Defense>
@@ -235,8 +235,8 @@
       <File>lofiChar28x8</File>
       <Index>0x22</Index>
     </Texture>
-    <HitSound>monster/abyss_demons_hit</HitSound>
-    <DeathSound>monster/abyss_demons_death</DeathSound>
+    <HitSound>monster/AbyssDemonsHit</HitSound>
+    <DeathSound>monster/AbyssDemonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>30</Defense>
@@ -258,8 +258,8 @@
       <File>lofiChar28x8</File>
       <Index>0x23</Index>
     </Texture>
-    <HitSound>monster/abyss_demons_hit</HitSound>
-    <DeathSound>monster/abyss_demons_death</DeathSound>
+    <HitSound>monster/AbyssDemonsHit</HitSound>
+    <DeathSound>monster/AbyssDemonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>350</MaxHitPoints>
     <Defense>30</Defense>
@@ -281,8 +281,8 @@
       <File>lofiChar28x8</File>
       <Index>0x24</Index>
     </Texture>
-    <HitSound>monster/abyss_brutes_hit</HitSound>
-    <DeathSound>monster/abyss_brutes_death</DeathSound>
+    <HitSound>monster/AbyssBrutesHit</HitSound>
+    <DeathSound>monster/AbyssBrutesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>500</MaxHitPoints>
     <Defense>30</Defense>
@@ -304,8 +304,8 @@
       <File>lofiChar28x8</File>
       <Index>0x25</Index>
     </Texture>
-    <HitSound>monster/abyss_brutes_hit</HitSound>
-    <DeathSound>monster/abyss_brutes_death</DeathSound>
+    <HitSound>monster/AbyssBrutesHit</HitSound>
+    <DeathSound>monster/AbyssBrutesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>500</MaxHitPoints>
     <Defense>30</Defense>
@@ -344,8 +344,8 @@
     <Size>120</Size>
     <StasisImmune />
     <Defense>30</Defense>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_hit</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsHit</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj3</File>

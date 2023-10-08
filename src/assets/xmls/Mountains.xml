@@ -8,8 +8,8 @@
       <File>chars16x16dMountains1</File>
       <Index>0x00</Index>
     </AnimatedTexture>
-    <HitSound>monster/greater_demons_hit</HitSound>
-    <DeathSound>monster/greater_demons_death</DeathSound>
+    <HitSound>monster/GreaterDemonsHit</HitSound>
+    <DeathSound>monster/GreaterDemonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>12</Defense>
@@ -44,8 +44,8 @@
       <File>chars16x16dMountains1</File>
       <Index>0x01</Index>
     </AnimatedTexture>
-    <HitSound>monster/sprite_god_hit</HitSound>
-    <DeathSound>monster/sprite_god_death</DeathSound>
+    <HitSound>monster/SpriteGodHit</HitSound>
+    <DeathSound>monster/SpriteGodDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>2000</MaxHitPoints>
     <Defense>12</Defense>
@@ -83,8 +83,8 @@
       <File>lofiChar8x8</File>
       <Index>0x9b</Index>
     </Texture>
-    <HitSound>monster/sprites_hit</HitSound>
-    <DeathSound>monster/sprites_death</DeathSound>
+    <HitSound>monster/SpritesHit</HitSound>
+    <DeathSound>monster/SpritesDeath</DeathSound>
     <Size>75</Size>
     <MaxHitPoints>50</MaxHitPoints>
     <Defense>0</Defense>
@@ -99,8 +99,8 @@
       <File>chars16x16dMountains1</File>
       <Index>0x02</Index>
     </AnimatedTexture>
-    <HitSound>monster/medusa_hit</HitSound>
-    <DeathSound>monster/medusa_death</DeathSound>
+    <HitSound>monster/MedusaHit</HitSound>
+    <DeathSound>monster/MedusaDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>2000</MaxHitPoints>
     <Defense>18</Defense>
@@ -132,8 +132,8 @@
       <File>chars16x16dMountains1</File>
       <Index>0x04</Index>
     </AnimatedTexture>
-    <HitSound>monster/ents_hit</HitSound>
-    <DeathSound>monster/ents_death</DeathSound>
+    <HitSound>monster/EntsHit</HitSound>
+    <DeathSound>monster/EntsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>18</Defense>
@@ -166,8 +166,8 @@
       <File>chars16x16dMountains1</File>
       <Index>0x05</Index>
     </AnimatedTexture>
-    <HitSound>monster/beholder_hit</HitSound>
-    <DeathSound>monster/beholder_death</DeathSound>
+    <HitSound>monster/BeholderHit</HitSound>
+    <DeathSound>monster/BeholderDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>1500</MaxHitPoints>
     <Defense>12</Defense>
@@ -212,8 +212,8 @@
       <File>chars16x16dMountains1</File>
       <Index>0x06</Index>
     </AnimatedTexture>
-    <HitSound>monster/flying_brain_hit</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/FlyingBrainHit</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>12</Defense>
@@ -246,8 +246,8 @@
       <File>chars16x16dMountains1</File>
       <Index>0x07</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_hit</HitSound>
-    <DeathSound>monster/slimes_death</DeathSound>
+    <HitSound>monster/SlimesHit</HitSound>
+    <DeathSound>monster/SlimesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>12</Defense>
@@ -283,8 +283,8 @@
       <File>chars16x16dMountains2</File>
       <Index>0</Index>
     </AnimatedTexture>
-    <HitSound>monster/ghost_god_hit</HitSound>
-    <DeathSound>monster/ghost_god_death</DeathSound>
+    <HitSound>monster/GhostGodHit</HitSound>
+    <DeathSound>monster/GhostGodDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>12</Defense>
@@ -319,8 +319,8 @@
       <File>lofiChar216x16</File>
       <Index>0x24</Index>
     </Texture>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj2</File>
@@ -349,8 +349,8 @@
       <File>lofiChar216x16</File>
       <Index>0x25</Index>
     </Texture>
-    <HitSound>monster/wooden_walls_hit</HitSound>
-    <DeathSound>monster/wooden_walls_death</DeathSound>
+    <HitSound>monster/WoodenWallsHit</HitSound>
+    <DeathSound>monster/WoodenWallsDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj2</File>
@@ -377,8 +377,8 @@
       <File>lofiChar216x16</File>
       <Index>0x26</Index>
     </Texture>
-    <HitSound>monster/rocks_hit</HitSound>
-    <DeathSound>monster/rocks_death</DeathSound>
+    <HitSound>monster/RocksHit</HitSound>
+    <DeathSound>monster/RocksDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj2</File>
@@ -404,8 +404,8 @@
       <File>chars16x16dMountains1</File>
       <Index>0x03</Index>
     </AnimatedTexture>
-    <HitSound>monster/djinn_hit</HitSound>
-    <DeathSound>monster/djinn_death</DeathSound>
+    <HitSound>monster/DjinnHit</HitSound>
+    <DeathSound>monster/DjinnDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>12</Defense>
@@ -439,8 +439,8 @@
       <File>chars16x16dEncounters</File>
       <Index>5</Index>
     </AnimatedTexture>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Size>120</Size>
     <LightColor>0x99d3e0</LightColor>
     <LightIntensity>0.10</LightIntensity>
@@ -470,8 +470,8 @@
       <File>chars16x16dMountains2</File>
       <Index>1</Index>
     </AnimatedTexture>
-    <HitSound>monster/greater_pit_snakes_hit</HitSound>
-    <DeathSound>monster/medusa_death</DeathSound>
+    <HitSound>monster/GreaterPitSnakesHit</HitSound>
+    <DeathSound>monster/MedusaDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>2000</MaxHitPoints>
     <Defense>20</Defense>

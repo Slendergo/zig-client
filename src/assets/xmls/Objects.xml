@@ -8,9 +8,9 @@
       <File>lofiChar8x8</File>
       <Index>0xcd</Index>
     </Texture>
-    <HitSound>monster/chicken_hit</HitSound>
-    <DeathSound>monster/chicken_death</DeathSound>
-    <Sound id="0">monster/chicken_hit</Sound>
+    <HitSound>monster/ChickenHit</HitSound>
+    <DeathSound>monster/ChickenDeath</DeathSound>
+    <Sound id="0">monster/ChickenHit</Sound>
     <MaxHitPoints>300</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -44,8 +44,8 @@
       <File>lofiChar8x8</File>
       <Index>0xcd</Index>
     </Texture>
-    <HitSound>monster/chicken_hit</HitSound>
-    <DeathSound>monster/chicken_death</DeathSound>
+    <HitSound>monster/ChickenHit</HitSound>
+    <DeathSound>monster/ChickenDeath</DeathSound>
     <MaxHitPoints>300</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -78,8 +78,8 @@
       <File>lofiChar8x8</File>
       <Index>0xe9</Index>
     </Texture>
-    <HitSound>monster/eggs_hit</HitSound>
-    <DeathSound>monster/eggs_death</DeathSound>
+    <HitSound>monster/EggsHit</HitSound>
+    <DeathSound>monster/EggsDeath</DeathSound>
     <Size>75</Size>
     <MaxHitPoints>1</MaxHitPoints>
   </Object>
@@ -89,8 +89,8 @@
       <File>lofiChar8x8</File>
       <Index>0xca</Index>
     </Texture>
-    <HitSound>monster/spiders_hit</HitSound>
-    <DeathSound>monster/spiders_death</DeathSound>
+    <HitSound>monster/SpidersHit</HitSound>
+    <DeathSound>monster/SpidersDeath</DeathSound>
     <Size>75</Size>
     <MaxHitPoints>150</MaxHitPoints>
     <Enemy />
@@ -111,8 +111,8 @@
       <File>lofiChar8x8</File>
       <Index>0xc8</Index>
     </Texture>
-    <HitSound>monster/spiders_hit</HitSound>
-    <DeathSound>monster/spiders_death</DeathSound>
+    <HitSound>monster/SpidersHit</HitSound>
+    <DeathSound>monster/SpidersDeath</DeathSound>
     <Size>115</Size>
     <MaxHitPoints>350</MaxHitPoints>
     <Enemy />
@@ -132,8 +132,8 @@
       <File>lofiChar28x8</File>
       <Index>0x11</Index>
     </Texture>
-    <HitSound>monster/spiders_hit</HitSound>
-    <DeathSound>monster/spiders_death</DeathSound>
+    <HitSound>monster/SpidersHit</HitSound>
+    <DeathSound>monster/SpidersDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>200</MaxHitPoints>
     <Enemy />
@@ -153,8 +153,8 @@
       <File>lofiChar28x8</File>
       <Index>0x10</Index>
     </Texture>
-    <HitSound>monster/spiders_hit</HitSound>
-    <DeathSound>monster/spiders_death</DeathSound>
+    <HitSound>monster/SpidersHit</HitSound>
+    <DeathSound>monster/SpidersDeath</DeathSound>
     <Size>90</Size>
     <MaxHitPoints>200</MaxHitPoints>
     <ProjectileId>Purple Fire</ProjectileId>
@@ -176,8 +176,8 @@
       <File>lofiChar28x8</File>
       <Index>0x13</Index>
     </Texture>
-    <HitSound>monster/spiders_hit</HitSound>
-    <DeathSound>monster/spiders_death</DeathSound>
+    <HitSound>monster/SpidersHit</HitSound>
+    <DeathSound>monster/SpidersDeath</DeathSound>
     <Size>60</Size>
     <MaxHitPoints>100</MaxHitPoints>
     <Enemy />
@@ -1005,8 +1005,8 @@
       <File>chars8x8rEncounters</File>
       <Index>26</Index>
     </AnimatedTexture>
-    <HitSound>monster/bats_hit</HitSound>
-    <DeathSound>monster/bats_death</DeathSound>
+    <HitSound>monster/BatsHit</HitSound>
+    <DeathSound>monster/BatsDeath</DeathSound>
     <MaxHitPoints>125</MaxHitPoints>
     <Defense>25</Defense>
     <XpMult>1</XpMult>

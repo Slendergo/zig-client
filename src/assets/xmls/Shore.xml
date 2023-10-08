@@ -8,8 +8,8 @@
       <File>chars8x8rBeach</File>
       <Index>1</Index>
     </AnimatedTexture>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/pirates_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/PiratesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -32,8 +32,8 @@
       <File>chars8x8rBeach</File>
       <Index>2</Index>
     </AnimatedTexture>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/pirates_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/PiratesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>6</MaxHitPoints>
     <Defense>0</Defense>
@@ -57,8 +57,8 @@
       <File>chars8x8dBeach</File>
       <Index>0</Index>
     </AnimatedTexture>
-    <HitSound>monster/snakes_hit</HitSound>
-    <DeathSound>monster/snakes_death</DeathSound>
+    <HitSound>monster/SnakesHit</HitSound>
+    <DeathSound>monster/SnakesDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -88,8 +88,8 @@
       <File>chars8x8rBeach</File>
       <Index>4</Index>
     </AnimatedTexture>
-    <HitSound>monster/scorpions_hit</HitSound>
-    <DeathSound>monster/scorpions_death</DeathSound>
+    <HitSound>monster/ScorpionsHit</HitSound>
+    <DeathSound>monster/ScorpionsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>10</MaxHitPoints>
     <Defense>0</Defense>
@@ -112,8 +112,8 @@
       <File>chars8x8rBeach</File>
       <Index>5</Index>
     </AnimatedTexture>
-    <HitSound>monster/scorpions_hit</HitSound>
-    <DeathSound>monster/scorpions_death</DeathSound>
+    <HitSound>monster/ScorpionsHit</HitSound>
+    <DeathSound>monster/ScorpionsDeath</DeathSound>
     <Size>150</Size>
     <MaxHitPoints>100</MaxHitPoints>
     <Defense>0</Defense>
@@ -131,8 +131,8 @@
       <File>chars8x8rBeach</File>
       <Index>10</Index>
     </AnimatedTexture>
-    <HitSound>monster/elves_hit</HitSound>
-    <DeathSound>monster/elves_death</DeathSound>
+    <HitSound>monster/ElvesHit</HitSound>
+    <DeathSound>monster/ElvesDeath</DeathSound>
     <Size>150</Size>
     <MaxHitPoints>280</MaxHitPoints>
     <Defense>2</Defense>
@@ -161,8 +161,8 @@
       <File>chars8x8rBeach</File>
       <Index>11</Index>
     </AnimatedTexture>
-    <HitSound>monster/elves_hit</HitSound>
-    <DeathSound>monster/elves_death</DeathSound>
+    <HitSound>monster/ElvesHit</HitSound>
+    <DeathSound>monster/ElvesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>50</MaxHitPoints>
     <Defense>1</Defense>
@@ -196,8 +196,8 @@
       <File>lofiChar8x8</File>
       <Index>0xbc</Index>
     </Texture>
-    <HitSound>monster/cubes_hit</HitSound>
-    <DeathSound>monster/cubes_death</DeathSound>
+    <HitSound>monster/CubesHit</HitSound>
+    <DeathSound>monster/CubesDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>70</MaxHitPoints>
     <Defense>0</Defense>
@@ -230,8 +230,8 @@
       <File>lofiChar8x8</File>
       <Index>0xbd</Index>
     </Texture>
-    <HitSound>monster/cubes_hit</HitSound>
-    <DeathSound>monster/cubes_death</DeathSound>
+    <HitSound>monster/CubesHit</HitSound>
+    <DeathSound>monster/CubesDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>70</MaxHitPoints>
     <Defense>0</Defense>
@@ -263,8 +263,8 @@
       <File>lofiChar8x8</File>
       <Index>0xbe</Index>
     </Texture>
-    <HitSound>monster/cubes_hit</HitSound>
-    <DeathSound>monster/cubes_death</DeathSound>
+    <HitSound>monster/CubesHit</HitSound>
+    <DeathSound>monster/CubesDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>70</MaxHitPoints>
     <Defense>0</Defense>

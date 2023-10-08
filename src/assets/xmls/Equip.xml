@@ -11,7 +11,7 @@
     <Tier>0</Tier>
     <Description>A steel short sword.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/blunt_sword</Sound>
+    <Sound>weapon/BluntSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -36,7 +36,7 @@
     <Tier>1</Tier>
     <Description>A broad-bladed steel sword.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -61,7 +61,7 @@
     <Tier>2</Tier>
     <Description>A single-edged light sword.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -86,7 +86,7 @@
     <Tier>3</Tier>
     <Description>A well-made sword with a double edged blade.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -111,7 +111,7 @@
     <Tier>4</Tier>
     <Description>A single-edged broad-bladed sword.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -136,7 +136,7 @@
     <Tier>5</Tier>
     <Description>A fiery blade capable of burning flesh and bone.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_sword</Sound>
+    <Sound>weapon/FireSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -162,7 +162,7 @@
     <Tier>6</Tier>
     <Description>A sword formed from a single shard of unbreakable glass.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/glass_sword</Sound>
+    <Sound>weapon/GlassSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -188,7 +188,7 @@
     <Tier>7</Tier>
     <Description>A sharp sword plated with gold, clearly intended for the use of a great lord.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/golden_sword</Sound>
+    <Sound>weapon/GoldenSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -213,7 +213,7 @@
     <Tier>8</Tier>
     <Description>A powerful sword infused with the spirit of dark rituals.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/mithril_sword</Sound>
+    <Sound>weapon/MithrilSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -240,7 +240,7 @@
     <Tier>9</Tier>
     <Description>A sword forged in a great volcano and consecrated with dragon magic.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/mithril_sword</Sound>
+    <Sound>weapon/MithrilSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -267,7 +267,7 @@
     <Tier>10</Tier>
     <Description>A sword pulsing with the powerful magic of ancient beings.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/mithril_sword</Sound>
+    <Sound>weapon/MithrilSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -294,7 +294,7 @@
     <Tier>11</Tier>
     <Description>An unfathomably powerful sword wielded by titanic air elementals in their great war of revolution.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/mithril_sword</Sound>
+    <Sound>weapon/MithrilSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -321,7 +321,7 @@
     <Tier>12</Tier>
     <Description>A great sword of recognition, forged by the gods for the champions of humankind.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/mithril_sword</Sound>
+    <Sound>weapon/MithrilSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -347,7 +347,7 @@
     <SlotType>1</SlotType>
     <Description>An exalted weapon of the august kings of old, hallowed with the spirit of nations and yearning to grant power anew.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/mithril_sword</Sound>
+    <Sound>weapon/MithrilSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -373,7 +373,7 @@
     <SlotType>1</SlotType>
     <Description>A gleaming obsidian sword of imperial power, fashioned by enslaved demons for the personal use of a world-conquering leader of mortals.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/mithril_sword</Sound>
+    <Sound>weapon/MithrilSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -399,7 +399,7 @@
     <SlotType>1</SlotType>
     <Description>A lightweight blade that seems to dance in your hands.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/glass_sword</Sound>
+    <Sound>weapon/GlassSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -426,7 +426,7 @@
     <SlotType>1</SlotType>
     <Description>A swift and hungry blade that is never satisfied with just one kill.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/glass_sword</Sound>
+    <Sound>weapon/GlassSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -454,7 +454,7 @@
     <SlotType>1</SlotType>
     <Description>A slow but powerful sword that is a relic of a long forgotten age.</Description>
     <RateOfFire>0.6</RateOfFire>
-    <Sound>weapon/glass_sword</Sound>
+    <Sound>weapon/GlassSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -481,7 +481,7 @@
     <Tier>0</Tier>
     <Description>A wand that casts a simple fire spell.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_wand</Sound>
+    <Sound>weapon/FireWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -506,7 +506,7 @@
     <Tier>1</Tier>
     <Description>A wand that emits bolts of pure force.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/missile_wand</Sound>
+    <Sound>weapon/MissileWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -531,7 +531,7 @@
     <Tier>2</Tier>
     <Description>A wand that fires power bolts.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/missile_wand</Sound>
+    <Sound>weapon/MissileWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -556,7 +556,7 @@
     <Tier>3</Tier>
     <Description>A wand that casts a strong missile.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/missile_wand</Sound>
+    <Sound>weapon/MissileWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -581,7 +581,7 @@
     <Tier>4</Tier>
     <Description>A wand that shoots dark eldritch energy.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/missile_wand</Sound>
+    <Sound>weapon/MissileWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -606,7 +606,7 @@
     <Tier>5</Tier>
     <Description>A wand that casts a strong fire spell.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/hells_fire_wand</Sound>
+    <Sound>weapon/HellsFireWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -631,7 +631,7 @@
     <Tier>6</Tier>
     <Description>A wand that casts a bolt of pure magic force.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_dark_magic</Sound>
+    <Sound>weapon/WandOfDarkMagic</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -657,7 +657,7 @@
     <Tier>7</Tier>
     <Description>A deadly wand that channels magefire from the nether planes.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_dark_magic</Sound>
+    <Sound>weapon/WandOfDarkMagic</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -681,7 +681,7 @@
     <SlotType>8</SlotType>
     <Description>A wand created from the wood of Sprite trees.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/sprite_wand</Sound>
+    <Sound>weapon/SpriteWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -707,7 +707,7 @@
     <Tier>8</Tier>
     <Description>A fearsome wand that fires bolts of penetrating death magic.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -733,7 +733,7 @@
     <Tier>9</Tier>
     <Description>A mysterious wand of otherworldly origin, imbued with the purest of arcane energies.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -759,7 +759,7 @@
     <Tier>10</Tier>
     <Description>A wand of demonic enigmas, cloaked in darkness and crackling with dark enchantments.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -785,7 +785,7 @@
     <Tier>11</Tier>
     <Description>A centuries-old wand of great power, heralding long-destined destruction.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -811,7 +811,7 @@
     <Tier>12</Tier>
     <Description>A great golden wand of the heavens, created by angels to wreak justice on the slayers of the innocent.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -836,7 +836,7 @@
     <SlotType>8</SlotType>
     <Description>A shining gold wand of force, built by a diabolic archmagus to channel vast corrupting energies into the material plane.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -861,7 +861,7 @@
     <SlotType>8</SlotType>
     <Description>A golden wand of breathtaking power, created by elemental forces from the realms of ice and flame to unleash revenge on their enemies.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -886,7 +886,7 @@
     <SlotType>8</SlotType>
     <Description>A sound almost like a wind chime emanates softly from this wand.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -913,7 +913,7 @@
     <SlotType>8</SlotType>
     <Description>This strange weapon was used by ancient battle mages to deter invaders. The secret to its construction has long been lost.</Description>
     <RateOfFire>0.33</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj4</File>
@@ -941,7 +941,7 @@
     <SlotType>5</SlotType>
     <Tier>0</Tier>
     <Description>A shield made of sturdy wood.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -976,7 +976,7 @@
     <SlotType>5</SlotType>
     <Tier>1</Tier>
     <Description>A shield made of well forged iron.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -1011,7 +1011,7 @@
     <SlotType>5</SlotType>
     <Tier>2</Tier>
     <Description>A shield made of high quality steel.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -1046,7 +1046,7 @@
     <SlotType>5</SlotType>
     <Tier>3</Tier>
     <Description>A steel shield supported by iron ribbing.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -1082,7 +1082,7 @@
     <SlotType>5</SlotType>
     <Tier>4</Tier>
     <Description>An ornate but strong shield plated with gold.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -1118,7 +1118,7 @@
     <SlotType>5</SlotType>
     <Tier>5</Tier>
     <Description>A very strong shield made from the strongest and most desirable of all metals.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -1154,7 +1154,7 @@
     <SlotType>5</SlotType>
     <Tier>6</Tier>
     <Description>A superior shield forged in deep armories for the construct armies of the underworld.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -1191,7 +1191,7 @@
     </Texture>
     <SlotType>5</SlotType>
     <Description>A shield made of snake skin stretched across rigid frame.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -1226,7 +1226,7 @@
     </Texture>
     <SlotType>5</SlotType>
     <Description>This massive shield was created for the wealthy and powerful Ogre kings as a sign of their unrivaled strength.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -1692,7 +1692,7 @@
     <Tier>0</Tier>
     <Description>A sharp dagger made of steel.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/blunt_dagger</Sound>
+    <Sound>weapon/BluntDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -1817,7 +1817,7 @@
     <Tier>5</Tier>
     <Description>A well-made dagger plated with gold and inscribed with evil runes.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/golden_dagger</Sound>
+    <Sound>weapon/GoldenDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -1842,7 +1842,7 @@
     <Tier>6</Tier>
     <Description>A dagger with a blade made of volcanic glass.</Description>
     <RateOfFire>1.5</RateOfFire>
-    <Sound>weapon/obsidian_dagger</Sound>
+    <Sound>weapon/ObsidianDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -1866,7 +1866,7 @@
     <SlotType>2</SlotType>
     <Description>A dagger fashioned from the fang of an enormous spider.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/poison_fang_dagger</Sound>
+    <Sound>weapon/PoisonFangDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -1892,7 +1892,7 @@
     <Tier>7</Tier>
     <Description>An extremely sharp dagger made from the strongest and most desirable of all metals.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/mithril_dagger</Sound>
+    <Sound>weapon/MithrilDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -1917,7 +1917,7 @@
     <Tier>8</Tier>
     <Description>A dagger with a blade that burns with an unholy magic.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_dagger</Sound>
+    <Sound>weapon/FireDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -1943,7 +1943,7 @@
     <Tier>9</Tier>
     <Description>A sharp druidic dagger vibrating with primal energies.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_dagger</Sound>
+    <Sound>weapon/FireDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -1970,7 +1970,7 @@
     <Tier>10</Tier>
     <Description>A deadly dagger of glittering magical emerald.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_dagger</Sound>
+    <Sound>weapon/FireDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -1997,7 +1997,7 @@
     <Tier>11</Tier>
     <Description>A dagger of rare purple agate, infused with powerful dark magics.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_dagger</Sound>
+    <Sound>weapon/FireDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -2023,7 +2023,7 @@
     <Tier>12</Tier>
     <Description>A crimson felsteel dagger saturated with evil magic and primordial hatreds.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_dagger</Sound>
+    <Sound>weapon/FireDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -2048,7 +2048,7 @@
     <SlotType>2</SlotType>
     <Description>A moonsteel dagger of the underworld, corrupted by loathsome enchantments and profane spells.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_dagger</Sound>
+    <Sound>weapon/FireDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -2073,7 +2073,7 @@
     <SlotType>2</SlotType>
     <Description>A jagged, wickedly barbed blade of evil, charged with the unreasoning rage of ancestral vendettas.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_dagger</Sound>
+    <Sound>weapon/FireDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -2098,7 +2098,7 @@
     <SlotType>2</SlotType>
     <Description>This legendary dagger was commissioned by a band of mad rogues to prove the worth of the Dirk.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_dagger</Sound>
+    <Sound>weapon/FireDagger</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2125,7 +2125,7 @@
     <Tier>0</Tier>
     <Description>A well-made shortbow.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/poor_quality_bow</Sound>
+    <Sound>weapon/PoorQualityBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2152,7 +2152,7 @@
     <Tier>1</Tier>
     <Description>An iron-reinforced bow.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/poor_quality_bow</Sound>
+    <Sound>weapon/PoorQualityBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2205,7 +2205,7 @@
     <Tier>3</Tier>
     <Description>A bow made from the rare greywood tree.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/poor_quality_bow</Sound>
+    <Sound>weapon/PoorQualityBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2232,7 +2232,7 @@
     <Tier>4</Tier>
     <Description>A high-quality bow made of magical ironwood.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/poor_quality_bow</Sound>
+    <Sound>weapon/PoorQualityBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2259,7 +2259,7 @@
     <Tier>5</Tier>
     <Description>A bow that shoots arrows that burn with an unholy fire.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_bow</Sound>
+    <Sound>weapon/FireBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -2285,7 +2285,7 @@
     <Tier>6</Tier>
     <Description>A bow that somehow manages to shoot two arrows in different directions.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/double_bow</Sound>
+    <Sound>weapon/DoubleBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2313,7 +2313,7 @@
     <Tier>7</Tier>
     <Description>A slow but powerful crossbow with a good grip.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/heavy_crossbow</Sound>
+    <Sound>weapon/HeavyCrossbow</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -2339,7 +2339,7 @@
     <Tier>8</Tier>
     <Description>A bow gifted to mortals from the gods themselves. It shoots powerful arrows in three directions at once.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/golden_bow</Sound>
+    <Sound>weapon/GoldenBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2368,7 +2368,7 @@
     <Tier>9</Tier>
     <Description>A highly effective bow fashioned of still-living magical springwood.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/golden_bow</Sound>
+    <Sound>weapon/GoldenBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2397,7 +2397,7 @@
     <Tier>10</Tier>
     <Description>A powerful bow crafted by dryads and blessed by the spirits of the woodlands.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/golden_bow</Sound>
+    <Sound>weapon/GoldenBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2426,7 +2426,7 @@
     <Tier>11</Tier>
     <Description>A runed bow steeped in the dark power of ancient injustice.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/golden_bow</Sound>
+    <Sound>weapon/GoldenBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2455,7 +2455,7 @@
     <Tier>12</Tier>
     <Description>A diamondwire bow used by guardians of the unseen ethereal shrines.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/golden_bow</Sound>
+    <Sound>weapon/GoldenBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2483,7 +2483,7 @@
     <SlotType>3</SlotType>
     <Description>A superlative bow of sunsteel and diamondwire, created by a secretive race of star-dwelling entities.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/golden_bow</Sound>
+    <Sound>weapon/GoldenBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2511,7 +2511,7 @@
     <SlotType>3</SlotType>
     <Description>A peerless triple bow crafted of nightmatter and diamondwire by the exalted bowyers of the primeval overgods.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/golden_bow</Sound>
+    <Sound>weapon/GoldenBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -2539,7 +2539,7 @@
     <SlotType>3</SlotType>
     <Description>No mortal can fire this dreaded bow without resting in between shots. It requires tremendous skill to wield.</Description>
     <RateOfFire>0.33</RateOfFire>
-    <Sound>weapon/golden_bow</Sound>
+    <Sound>weapon/GoldenBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -2567,7 +2567,7 @@
     <SlotType>3</SlotType>
     <Description>A bow fashioned from living coral found in only the deepest ocean trenches.  It is the favored weapon of those that inhabit the realms beneath the waves.</Description>
     <RateOfFire>1.25</RateOfFire>
-    <Sound>weapon/double_bow</Sound>
+    <Sound>weapon/DoubleBow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -2595,7 +2595,7 @@
     <SlotType>10</SlotType>
     <Tier>2</Tier>
     <Description>A potion that permanently increases attack power.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate stat="20" amount="1">IncrementStat</Activate>
     <Consumable />
     <Potion />
@@ -2611,7 +2611,7 @@
     <SlotType>10</SlotType>
     <Tier>2</Tier>
     <Description>A potion that permanently increases defense power.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate stat="21" amount="1">IncrementStat</Activate>
     <Consumable />
     <Potion />
@@ -2627,7 +2627,7 @@
     <SlotType>10</SlotType>
     <Tier>2</Tier>
     <Description>A potion that permanently increases speed.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate stat="22" amount="1">IncrementStat</Activate>
     <Consumable />
     <Potion />
@@ -2643,7 +2643,7 @@
     <SlotType>10</SlotType>
     <Tier>2</Tier>
     <Description>A potion that permanently increases vitality.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate stat="26" amount="1">IncrementStat</Activate>
     <Consumable />
     <Potion />
@@ -2659,7 +2659,7 @@
     <SlotType>10</SlotType>
     <Tier>2</Tier>
     <Description>A potion that permanently increases wisdom.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate stat="27" amount="1">IncrementStat</Activate>
     <Consumable />
     <Potion />
@@ -2675,7 +2675,7 @@
     <SlotType>10</SlotType>
     <Tier>2</Tier>
     <Description>A potion that permanently increases dexterity.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate stat="28" amount="1">IncrementStat</Activate>
     <Consumable />
     <Potion />
@@ -2690,7 +2690,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that permanently increases health.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate stat="0" amount="5">IncrementStat</Activate>
     <Consumable />
     <Potion />
@@ -2705,7 +2705,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that permanently increases magic.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate stat="3" amount="5">IncrementStat</Activate>
     <Consumable />
     <Potion />
@@ -2720,7 +2720,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A small potion that restores health points.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="50">Heal</Activate>
     <Consumable />
     <Potion />
@@ -2735,7 +2735,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A small potion that restores magic points.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="50">Magic</Activate>
     <Consumable />
     <Potion />
@@ -2751,7 +2751,7 @@
     <SlotType>10</SlotType>
     <Tier>1</Tier>
     <Description>A potion that instantly restores health points.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="100">Heal</Activate>
     <Consumable />
     <Potion />
@@ -2767,7 +2767,7 @@
     <SlotType>10</SlotType>
     <Tier>1</Tier>
     <Description>A potion that instantly restores magic points.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="100">Magic</Activate>
     <Consumable />
     <Potion />
@@ -2783,7 +2783,7 @@
     <SlotType>10</SlotType>
     <Tier>3</Tier>
     <Description>A potent draught from Oryx's wine cellar.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="230">Heal</Activate>
     <Consumable />
     <Potion />
@@ -2799,7 +2799,7 @@
     <SlotType>10</SlotType>
     <Tier>3</Tier>
     <Description>A potent draught from Oryx's wine cellar.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="150">Magic</Activate>
     <Consumable />
     <Potion />
@@ -2815,7 +2815,7 @@
     <SlotType>10</SlotType>
     <Tier>3</Tier>
     <Description>A potent draught from Oryx's wine cellar.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="150">Heal</Activate>
     <Consumable />
     <Potion />
@@ -2831,7 +2831,7 @@
     <SlotType>10</SlotType>
     <Tier>3</Tier>
     <Description>A potent draught from Oryx's wine cellar.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="150">Magic</Activate>
     <Consumable />
     <Potion />
@@ -2847,7 +2847,7 @@
     <SlotType>10</SlotType>
     <Tier>3</Tier>
     <Description>A potent draught from Oryx's wine cellar.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="150">Heal</Activate>
     <Consumable />
     <Potion />
@@ -2863,7 +2863,7 @@
     <SlotType>10</SlotType>
     <Tier>3</Tier>
     <Description>A potent draught from Oryx's wine cellar.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="150">Magic</Activate>
     <Consumable />
     <Potion />
@@ -2879,7 +2879,7 @@
     <SlotType>10</SlotType>
     <Tier>3</Tier>
     <Description>A potent draught from Oryx's wine cellar.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="150">Heal</Activate>
     <Consumable />
     <Potion />
@@ -2895,7 +2895,7 @@
     <SlotType>10</SlotType>
     <Tier>3</Tier>
     <Description>A potent draught from Oryx's wine cellar.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="150">Magic</Activate>
     <Consumable />
     <Potion />
@@ -2911,7 +2911,7 @@
     <SlotType>10</SlotType>
     <Tier>3</Tier>
     <Description>A potent draught from Oryx's wine cellar.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="150">Heal</Activate>
     <Consumable />
     <Potion />
@@ -2927,7 +2927,7 @@
     <SlotType>10</SlotType>
     <Tier>3</Tier>
     <Description>A potent draught from Oryx's wine cellar.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="150">Magic</Activate>
     <Consumable />
     <Potion />
@@ -2943,7 +2943,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding seven doses of healing elixir.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>7</Doses>
     <Activate amount="125">Heal</Activate>
     <Consumable />
@@ -2962,7 +2962,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding six doses of healing elixir.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>6</Doses>
     <Activate amount="125">Heal</Activate>
     <Consumable />
@@ -2981,7 +2981,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding five doses of healing elixir.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>5</Doses>
     <Activate amount="125">Heal</Activate>
     <Consumable />
@@ -3000,7 +3000,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding four doses of healing elixir.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>4</Doses>
     <Activate amount="125">Heal</Activate>
     <Consumable />
@@ -3019,7 +3019,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding three doses of healing elixir.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>3</Doses>
     <Activate amount="125">Heal</Activate>
     <Consumable />
@@ -3038,7 +3038,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding two doses of healing elixir.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>2</Doses>
     <Activate amount="125">Heal</Activate>
     <Consumable />
@@ -3057,7 +3057,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial of healing elixir.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="125">Heal</Activate>
     <Consumable />
     <Soulbound />
@@ -3074,7 +3074,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding seven doses of magical essence.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>7</Doses>
     <Activate amount="125">Magic</Activate>
     <Consumable />
@@ -3093,7 +3093,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding six doses of magical essence.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>6</Doses>
     <Activate amount="125">Magic</Activate>
     <Consumable />
@@ -3112,7 +3112,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding five doses of magical essence.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>5</Doses>
     <Activate amount="125">Magic</Activate>
     <Consumable />
@@ -3131,7 +3131,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding four doses of magical essence.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>4</Doses>
     <Activate amount="125">Magic</Activate>
     <Consumable />
@@ -3150,7 +3150,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding three doses of magical essence.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>3</Doses>
     <Activate amount="125">Magic</Activate>
     <Consumable />
@@ -3169,7 +3169,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial holding two doses of magical essence.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Doses>2</Doses>
     <Activate amount="125">Magic</Activate>
     <Consumable />
@@ -3188,7 +3188,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A large vial of magical essence.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="125">Magic</Activate>
     <Consumable />
     <Soulbound />
@@ -3204,7 +3204,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A topical potion of healing that upon use is shared with fellow travelers.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Potion />
     <BagType>0</BagType>
@@ -3219,7 +3219,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>This foul-smelling spider ichor restores health.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="150">Heal</Activate>
     <Consumable />
     <Potion />
@@ -3234,7 +3234,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that instantly restores health points.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="200">Heal</Activate>
     <Consumable />
     <Soulbound />
@@ -3250,7 +3250,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that instantly restores magic points.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="200">Magic</Activate>
     <Consumable />
     <Soulbound />
@@ -3266,7 +3266,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Adds speed and reduces attack.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -3283,7 +3283,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Adds attack to everyone reduces speed for self.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -3300,7 +3300,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that temporarily boosts dexterity.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -3316,7 +3316,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that temporarily boosts maximum health points.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -3332,7 +3332,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that temporarily boosts maximum magic points.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -3348,7 +3348,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that temporarily boosts defense.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -3364,7 +3364,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that temporarily boosts the dexterity of all nearby allies.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -3380,7 +3380,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that temporarily boosts the maximum health points of all nearby allies.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -3396,7 +3396,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that temporarily boosts the maximum magic points of all nearby allies.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -3412,7 +3412,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that temporarily boosts the defense of all nearby allies.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -4066,7 +4066,7 @@
     <SlotType>11</SlotType>
     <Tier>0</Tier>
     <Description>A spell that shoots fire in all directions.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -4093,7 +4093,7 @@
     <SlotType>11</SlotType>
     <Tier>1</Tier>
     <Description>A dangerous spell that summons green fire from the astral plane.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -4120,7 +4120,7 @@
     <SlotType>11</SlotType>
     <Tier>2</Tier>
     <Description>A deadly spell created by goblin sorcerers to subdue their orcish enemies.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -4147,7 +4147,7 @@
     <SlotType>11</SlotType>
     <Tier>3</Tier>
     <Description>A formidable fire spell used by dwarven magi in their war against the trolls.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -4175,7 +4175,7 @@
     <SlotType>11</SlotType>
     <Tier>4</Tier>
     <Description>An immensely powerful spell created by the wizard lords of the underworld to harness dark energies.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -4203,7 +4203,7 @@
     <SlotType>11</SlotType>
     <Tier>5</Tier>
     <Description>An unimaginably destructive spell, devised by the great mountain thaumaturgists to battle against demonic giants.</Description>
-    <Sound>spell/magic_nova</Sound>
+    <Sound>spell/MagicNova</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -4231,7 +4231,7 @@
     <SlotType>11</SlotType>
     <Tier>6</Tier>
     <Description>A horrifically dangerous spell, formulated in the elemental planes during the great astral wars.</Description>
-    <Sound>spell/magic_nova</Sound>
+    <Sound>spell/MagicNova</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -4260,7 +4260,7 @@
     </Texture>
     <SlotType>11</SlotType>
     <Description>This spell's destructive power is so notorious that casting it was banned for many generations.</Description>
-    <Sound>spell/magic_nova</Sound>
+    <Sound>spell/MagicNova</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -4291,7 +4291,7 @@
     <SlotType>4</SlotType>
     <Tier>0</Tier>
     <Description>A holy tome of healing prayers.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>60</MpCost>
@@ -4307,7 +4307,7 @@
     <SlotType>4</SlotType>
     <Tier>1</Tier>
     <Description>A hallowed tome of blessed healing rituals.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>65</MpCost>
@@ -4323,7 +4323,7 @@
     <SlotType>4</SlotType>
     <Tier>2</Tier>
     <Description>An exalted holy tome, filled with prayers and blessed by angels.</Description>
-    <Sound>spell/heal_nova</Sound>
+    <Sound>spell/HealNova</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>70</MpCost>
@@ -4339,7 +4339,7 @@
     <SlotType>4</SlotType>
     <Tier>3</Tier>
     <Description>A sacred tome, consecrated by the spirits of the upright and the supplications of the pure.</Description>
-    <Sound>spell/heal_nova</Sound>
+    <Sound>spell/HealNova</Sound>
     <Usable />
     <BagType>1</BagType>
     <FameBonus>1</FameBonus>
@@ -4356,7 +4356,7 @@
     <SlotType>4</SlotType>
     <Tier>4</Tier>
     <Description>An angelic tome, empowered by divine might and justified by the souls of the righteous.</Description>
-    <Sound>spell/major_heal</Sound>
+    <Sound>spell/MajorHeal</Sound>
     <Usable />
     <BagType>1</BagType>
     <FameBonus>2</FameBonus>
@@ -4373,7 +4373,7 @@
     <SlotType>4</SlotType>
     <Tier>5</Tier>
     <Description>A sanctified tome, blessed by the heavens and purified by ancient rites, trembling with unseen divine power.</Description>
-    <Sound>spell/major_heal</Sound>
+    <Sound>spell/MajorHeal</Sound>
     <Usable />
     <BagType>2</BagType>
     <FameBonus>3</FameBonus>
@@ -4390,7 +4390,7 @@
     <SlotType>4</SlotType>
     <Tier>6</Tier>
     <Description>A tome of blessing, gifted by the gods for the benefit of all good mortals.</Description>
-    <Sound>spell/major_heal</Sound>
+    <Sound>spell/MajorHeal</Sound>
     <ActivateOnEquip stat="26" amount="2">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="27" amount="2">IncrementStat</ActivateOnEquip>
     <Usable />
@@ -4408,7 +4408,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>It doesn't seem like drinking this would be a good idea.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <BagType>1</BagType>
     <Activate effect="Drunk" duration="30">ConditionEffectSelf</Activate>
@@ -4422,7 +4422,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A strange looking mushroom.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <BagType>1</BagType>
     <Activate effect="Hallucinating" duration="30">ConditionEffectSelf</Activate>
@@ -4437,7 +4437,7 @@
     <SlotType>12</SlotType>
     <Tier>0</Tier>
     <Description>A holy seal of divine favor.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>70</MpCost>
@@ -4454,7 +4454,7 @@
     <SlotType>12</SlotType>
     <Tier>1</Tier>
     <Description>A seal of holy providence and mortal virtue.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>75</MpCost>
@@ -4471,7 +4471,7 @@
     <SlotType>12</SlotType>
     <Tier>2</Tier>
     <Description>A holy seal of godly protection, shimmering with divine might.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>80</MpCost>
@@ -4488,7 +4488,7 @@
     <SlotType>12</SlotType>
     <Tier>3</Tier>
     <Description>A seal of blessed preservation, gleaming with the sacred will of the righteous.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Usable />
     <BagType>1</BagType>
     <FameBonus>1</FameBonus>
@@ -4506,7 +4506,7 @@
     <SlotType>12</SlotType>
     <Tier>4</Tier>
     <Description>A consecrated seal of the heavens, shining with divine brilliance and godly power.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Usable />
     <BagType>1</BagType>
     <FameBonus>2</FameBonus>
@@ -4524,7 +4524,7 @@
     <SlotType>12</SlotType>
     <Tier>5</Tier>
     <Description>A hallowed seal of the immortal divine, sanctified by the pious and used since ancient times to inspire great numbers of crusading warriors.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Usable />
     <BagType>2</BagType>
     <FameBonus>3</FameBonus>
@@ -4542,7 +4542,7 @@
     <SlotType>12</SlotType>
     <Tier>6</Tier>
     <Description>A holy seal of heavenly omnipotence, given to aid mortal warriors in their fight against chaos and darkness.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <ActivateOnEquip stat="26" amount="2">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="27" amount="2">IncrementStat</ActivateOnEquip>
     <Usable />
@@ -4561,7 +4561,7 @@
     </Texture>
     <SlotType>12</SlotType>
     <Description>A seal that is said to briefly borrow the power of the Gods themselves.  Some Paladins shun its dark power, others embrace it.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <ActivateOnEquip stat="22" amount="5">IncrementStat</ActivateOnEquip>
     <Usable />
     <BagType>4</BagType>
@@ -4582,7 +4582,7 @@
     <SlotType>13</SlotType>
     <Tier>0</Tier>
     <Description>A magical cloak, made for slipping into shadows undetected.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>60</MpCost>
@@ -4599,7 +4599,7 @@
     <SlotType>13</SlotType>
     <Tier>1</Tier>
     <Description>An enchanted cloak steeped in magical darkness.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>65</MpCost>
@@ -4616,7 +4616,7 @@
     <SlotType>13</SlotType>
     <Tier>2</Tier>
     <Description>A mystical grey cloak once used by blackguard tricksters for flanking maneuvers and sneak attacks.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <ActivateOnEquip stat="22" amount="3">IncrementStat</ActivateOnEquip>
     <Usable />
     <BagType>0</BagType>
@@ -4634,7 +4634,7 @@
     <SlotType>13</SlotType>
     <Tier>3</Tier>
     <Description>An exceptional cloak used by sorcerer-thieves for night operations in dockyards and storehouses.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <ActivateOnEquip stat="22" amount="5">IncrementStat</ActivateOnEquip>
     <Usable />
     <BagType>1</BagType>
@@ -4653,7 +4653,7 @@
     <SlotType>13</SlotType>
     <Tier>4</Tier>
     <Description>A powerful cloak used by master spies to infiltrate the most tightly guarded fortresses.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <ActivateOnEquip stat="22" amount="5">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="28" amount="3">IncrementStat</ActivateOnEquip>
     <Usable />
@@ -4673,7 +4673,7 @@
     <SlotType>13</SlotType>
     <Tier>5</Tier>
     <Description>A powerful cloak woven from the shadows of twilight.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <ActivateOnEquip stat="22" amount="5">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="28" amount="4">IncrementStat</ActivateOnEquip>
     <Usable />
@@ -4693,7 +4693,7 @@
     <SlotType>13</SlotType>
     <Tier>6</Tier>
     <Description>An eldritch cloak of the afterworld which grants invisibility by enveloping its user in death itself.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <ActivateOnEquip stat="22" amount="5">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="26" amount="2">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="27" amount="2">IncrementStat</ActivateOnEquip>
@@ -4714,7 +4714,7 @@
     </Texture>
     <SlotType>13</SlotType>
     <Description>An enchanted cloak crafted by an ancient guild of timeshifter thieves.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <ActivateOnEquip stat="22" amount="5">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="28" amount="4">IncrementStat</ActivateOnEquip>
     <Usable />
@@ -4971,7 +4971,7 @@
     <SlotType>15</SlotType>
     <Tier>0</Tier>
     <Description>A magical quiver that enchants arrows.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -5004,7 +5004,7 @@
     <SlotType>15</SlotType>
     <Tier>1</Tier>
     <Description>An enchanted quiver made of high-quality leather and brass.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -5038,7 +5038,7 @@
     <SlotType>15</SlotType>
     <Tier>2</Tier>
     <Description>A strong quiver of magical iron.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -5072,7 +5072,7 @@
     <SlotType>15</SlotType>
     <Tier>3</Tier>
     <Description>A powerful enchanting quiver made by forest elves.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5107,7 +5107,7 @@
     <SlotType>15</SlotType>
     <Tier>4</Tier>
     <Description>A superior enchanting quiver made of high quality magesteel.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5142,7 +5142,7 @@
     <SlotType>15</SlotType>
     <Tier>5</Tier>
     <Description>A quiver that shines with gold and pulses with the power of elvish archer spirits.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -5177,7 +5177,7 @@
     <SlotType>15</SlotType>
     <Tier>6</Tier>
     <Description>A forestcloth quiver of highest quality, exhibiting exceptional magic powers and used by the foremost masters of Elven archery.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -5213,7 +5213,7 @@
     </Texture>
     <SlotType>15</SlotType>
     <Description>This strange quiver that was created in a forgotten age by a lost tribe of Dark Elves.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -5399,7 +5399,7 @@
     <Tier>0</Tier>
     <Description>A magical wooden staff topped with a white crystal.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_wand</Sound>
+    <Sound>weapon/FireWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5429,7 +5429,7 @@
     <Tier>1</Tier>
     <Description>A staff imbued with potent magical fire.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/missile_wand</Sound>
+    <Sound>weapon/MissileWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -5459,7 +5459,7 @@
     <Tier>2</Tier>
     <Description>A staff charged with the icy powers of the heavens.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/missile_wand</Sound>
+    <Sound>weapon/MissileWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5489,7 +5489,7 @@
     <Tier>3</Tier>
     <Description>A staff powered by the magic of Stheno's minions.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/missile_wand</Sound>
+    <Sound>weapon/MissileWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -5519,7 +5519,7 @@
     <Tier>4</Tier>
     <Description>A staff that harnesses the energy of shooting stars.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/missile_wand</Sound>
+    <Sound>weapon/MissileWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5549,7 +5549,7 @@
     <Tier>5</Tier>
     <Description>A powerful staff crafted by demons for waging war on mortals.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/hells_fire_wand</Sound>
+    <Sound>weapon/HellsFireWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5579,7 +5579,7 @@
     <Tier>6</Tier>
     <Description>A slender felwood staff pulsing with auras of vengeance and justice.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_dark_magic</Sound>
+    <Sound>weapon/WandOfDarkMagic</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5609,7 +5609,7 @@
     <Tier>7</Tier>
     <Description>An ancient knurlwood staff crackling with power and exuding thin grey vapors.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/sprite_wand</Sound>
+    <Sound>weapon/SpriteWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -5639,7 +5639,7 @@
     <Tier>8</Tier>
     <Description>A mysterious runewood staff decorated with horrific figures.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -5670,7 +5670,7 @@
     <Tier>9</Tier>
     <Description>A golden staff imbued with the powers of death magic.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5701,7 +5701,7 @@
     <Tier>10</Tier>
     <Description>An imposing golden staff of tremendous otherworldly power.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5732,7 +5732,7 @@
     <Tier>11</Tier>
     <Description>A splendid golden staff of astonishing power, bathed in light and brimming with magical energy.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5763,7 +5763,7 @@
     <Tier>12</Tier>
     <Description>A golden staff of transcendent understanding, made from crystals present at the formation of universe.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -5793,7 +5793,7 @@
     <SlotType>17</SlotType>
     <Description>A golden staff of elysian consciousness, shining with the base power of empyrean truths.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj2</File>
@@ -5823,7 +5823,7 @@
     <SlotType>17</SlotType>
     <Description>An otherworldly staff of omnipresent elation, embodied of cardinal essence and the power of deathless peace.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -5853,7 +5853,7 @@
     <SlotType>17</SlotType>
     <Description>Once the most powerful staff in existence; a crack in its frame has rendered it incapable of focusing fire. It remains uniquely deadly.</Description>
     <RateOfFire>0.4</RateOfFire>
-    <Sound>weapon/sprite_wand</Sound>
+    <Sound>weapon/SpriteWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -6363,11 +6363,11 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>An egg that when used, hatches a Purple Drake to help you in battle for a short time.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Consumable />
     <BagType>2</BagType>
     <Activate objectId="Purple Drake">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
   </Object>
   <Object type="0xaef" id="White Drake Egg">
     <Class>Equipment</Class>
@@ -6378,11 +6378,11 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>An egg that when used, hatches a White Drake to heal your wounds in battle for a short time.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Consumable />
     <BagType>2</BagType>
     <Activate objectId="White Drake">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
   </Object>
   <Object type="0xaf0" id="Blue Drake Egg">
     <Class>Equipment</Class>
@@ -6393,11 +6393,11 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>An egg that when used, hatches a Blue Drake to help you in battle for a short time, paralyzing your enemies.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Consumable />
     <BagType>2</BagType>
     <Activate objectId="Blue Drake">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
   </Object>
   <Object type="0xaf1" id="Orange Drake Egg">
     <Class>Equipment</Class>
@@ -6408,11 +6408,11 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>An egg that when used, hatches an Orange Drake to help you in battle for a short time, placing your enemies in stasis.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Consumable />
     <BagType>2</BagType>
     <Activate objectId="Orange Drake">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
   </Object>
   <Object type="0xaf2" id="Green Drake Egg">
     <Class>Equipment</Class>
@@ -6423,14 +6423,14 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>An egg that when used, hatches a Green Drake to help you in battle for a short time, casting slow upon your enemies.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Consumable />
     <BagType>2</BagType>
     <Activate objectId="Green Drake">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
   </Object>
   <Object type="0xaf3" id="Yellow Drake Egg">Bleeding
-        <Class>Equipment</Class><Item /><Texture><File>lofiChar8x8</File><Index>0xe7</Index></Texture><SlotType>10</SlotType><Description>An egg that when used, hatches a Yellow Drake to help you in battle for a short time, causing bleeding to your enemies.</Description><Sound>spell/light_heal</Sound><Consumable /><BagType>2</BagType><Activate objectId="Yellow Drake">Pet</Activate><OldSound>use_potion</OldSound></Object>
+        <Class>Equipment</Class><Item /><Texture><File>lofiChar8x8</File><Index>0xe7</Index></Texture><SlotType>10</SlotType><Description>An egg that when used, hatches a Yellow Drake to help you in battle for a short time, causing bleeding to your enemies.</Description><Sound>spell/LightHeal</Sound><Consumable /><BagType>2</BagType><Activate objectId="Yellow Drake">Pet</Activate><OldSound>UsePotion</OldSound></Object>
   <Object type="0xae3" id="Decoy Prism">
     <Class>Equipment</Class>
     <Item />
@@ -6605,7 +6605,7 @@
     <SlotType>23</SlotType>
     <Tier>0</Tier>
     <Description>A scepter that fires a blast of chain lightning.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>60</MpCost>
@@ -6621,7 +6621,7 @@
     <SlotType>23</SlotType>
     <Tier>1</Tier>
     <Description>A steel-and-ruby scepter that blasts electrical arcs.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>65</MpCost>
@@ -6637,7 +6637,7 @@
     <SlotType>23</SlotType>
     <Tier>2</Tier>
     <Description>A powerful scepter imbued with the energy of astral storms.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <Usable />
     <BagType>0</BagType>
     <MpCost>70</MpCost>
@@ -6653,7 +6653,7 @@
     <SlotType>23</SlotType>
     <Tier>3</Tier>
     <Description>A glittering golden scepter charged with magical lightning.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <Usable />
     <BagType>1</BagType>
     <FameBonus>1</FameBonus>
@@ -6670,7 +6670,7 @@
     <SlotType>23</SlotType>
     <Tier>4</Tier>
     <Description>A golden scepter of power, created by storm giants during their long war against the undertrolls.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <Usable />
     <BagType>1</BagType>
     <FameBonus>2</FameBonus>
@@ -6687,7 +6687,7 @@
     <SlotType>23</SlotType>
     <Tier>5</Tier>
     <Description>A commanding scepter of authority, wielded by cloud titan nobles from the elemental plane of air.</Description>
-    <Sound>spell/magic_nova</Sound>
+    <Sound>spell/MagicNova</Sound>
     <Usable />
     <BagType>2</BagType>
     <FameBonus>3</FameBonus>
@@ -6704,7 +6704,7 @@
     <SlotType>23</SlotType>
     <Tier>6</Tier>
     <Description>An ancient druidic scepter created by the nature gods themselves, embodying all the fury of the megacosm.</Description>
-    <Sound>spell/magic_nova</Sound>
+    <Sound>spell/MagicNova</Sound>
     <ActivateOnEquip stat="26" amount="2">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="27" amount="2">IncrementStat</ActivateOnEquip>
     <Usable />
@@ -6744,7 +6744,7 @@
     <SlotType>1</SlotType>
     <Description>The sacred blade of the Cult of Admin.  Not to be trifled with.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_dagger</Sound>
+    <Sound>weapon/FireDagger</Sound>
     <Soulbound />
     <Projectile>
       <Texture>
@@ -6768,7 +6768,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens an entrance to an Undead Lair.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Undead Lair Portal">Create</Activate>
@@ -6782,7 +6782,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens an entrance to a Pirate Cave.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Pirate Cave Portal">Create</Activate>
@@ -6796,7 +6796,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens an entrance to a Spider Den.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Spider Den Portal">Create</Activate>
@@ -6810,7 +6810,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens an entrance to an Abyss of Demons.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Abyss of Demons Portal">Create</Activate>
@@ -6824,7 +6824,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens an entrance to a Snake Pit.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Snake Pit Portal">Create</Activate>
@@ -6838,7 +6838,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens an entrance to a Tomb of Ancients.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Tomb of the Ancients Portal">Create</Activate>
@@ -6852,7 +6852,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens an entrance to a Sprite World.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Glowing Portal">Create</Activate>
@@ -6866,7 +6866,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>An incantation that unlocks the Wine Cellar.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <BagType>4</BagType>
     <Activate dungeonName="Wine Cellar" lockedName="Locked Wine Cellar Portal">UnlockPortal</Activate>
@@ -6880,7 +6880,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens an entrance to an Ocean Trench.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Ocean Trench Portal">Create</Activate>
@@ -6894,7 +6894,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A rare drink created by Thessal herself. It cures wounds and replenishes mental strength.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="100">Heal</Activate>
     <Activate amount="100">Magic</Activate>
     <Consumable />
@@ -6940,7 +6940,7 @@
     <SlotType>17</SlotType>
     <Description>An ancient staff used both for sacrifice and communion with the gods.</Description>
     <RateOfFire>1.1</RateOfFire>
-    <Sound>monster/djinn_hit</Sound>
+    <Sound>monster/DjinnHit</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -7012,7 +7012,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens a passage to the Forbidden Jungle.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Forbidden Jungle Portal">Create</Activate>
@@ -7026,7 +7026,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A pouch of ground pollen from the flowers indigenous to the Forbidden Jungle.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Potion />
     <BagType>0</BagType>
@@ -7043,7 +7043,7 @@
     <Description>A deadly mechanical bow and a marvel of technology.</Description>
     <RateOfFire>2.5</RateOfFire>
     <Soulbound />
-    <Sound>weapon/heavy_crossbow</Sound>
+    <Sound>weapon/HeavyCrossbow</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -7089,7 +7089,7 @@
     <ActivateOnEquip stat="26" amount="4">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="27" amount="4">IncrementStat</ActivateOnEquip>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/fire_wand</Sound>
+    <Sound>weapon/FireWand</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -7113,7 +7113,7 @@
     </Texture>
     <SlotType>4</SlotType>
     <Description>A tome dedicated to the works of a forgotten god is written in a strange script that glows with a pure white light.</Description>
-    <Sound>spell/major_heal</Sound>
+    <Sound>spell/MajorHeal</Sound>
     <ActivateOnEquip stat="26" amount="4">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="0" amount="40">IncrementStat</ActivateOnEquip>
     <Usable />
@@ -7132,7 +7132,7 @@
     </Texture>
     <SlotType>4</SlotType>
     <Description>An ancient tome bound in white Leather, created to aid in the struggle against the ultimate evil.</Description>
-    <Sound>spell/major_heal</Sound>
+    <Sound>spell/MajorHeal</Sound>
     <ActivateOnEquip stat="26" amount="7">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="27" amount="7">IncrementStat</ActivateOnEquip>
     <Usable />
@@ -7182,7 +7182,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Blessed water that heals and purifies the user.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Activate amount="100">Heal</Activate>
     <Activate effect="Speedy" checkExistingEffect="Hexed">ClearConditionEffectSelf</Activate>
     <Activate>RemoveNegativeConditionsSelf</Activate>
@@ -7226,7 +7226,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens a passage to the Manor of the Immortals.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Manor of the Immortals Portal">Create</Activate>
@@ -7242,7 +7242,7 @@
     <Tier>0</Tier>
     <Description>A staff that channels the ultimate force of Anatis.</Description>
     <RateOfFire>0.25</RateOfFire>
-    <Sound>monster/chicken_death</Sound>
+    <Sound>monster/ChickenDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -7271,7 +7271,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Rum with ghostly properties that can help the drinker enter the spirit realm. It has fermented under the sea for ages.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <BagType>1</BagType>
     <Activate effect="Drunk" duration="6">ConditionEffectSelf</Activate>
@@ -7377,11 +7377,11 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Damages monsters while celebrating Independence Day. Happy 4th of July!</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Consumable />
     <BagType>2</BagType>
     <Activate objectId="Lil Firecracker">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
     <Soulbound />
   </Object>
   <Object type="0xc2c" id="Large Firecracker">
@@ -7393,11 +7393,11 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Damages monsters for longer while celebrating Independence Day. Happy 4th of July!</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Consumable />
     <BagType>2</BagType>
     <Activate objectId="Big Firecracker">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
     <Soulbound />
   </Object>
   <Object type="0xc2d" id="America Ring">
@@ -7429,7 +7429,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key that opens the way to Davy Jones's Locker.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Davy Jones's Locker Portal">Create</Activate>
@@ -7443,7 +7443,7 @@
     </Texture>
     <SlotType>23</SlotType>
     <Description>This scepter's blast is so powerful it will slow opponents.</Description>
-    <Sound>spell/magic_nova</Sound>
+    <Sound>spell/MagicNova</Sound>
     <ActivateOnEquip stat="20" amount="2">IncrementStat</ActivateOnEquip>
     <ActivateOnEquip stat="27" amount="2">IncrementStat</ActivateOnEquip>
     <Usable />
@@ -7495,7 +7495,7 @@
     <SlotType>8</SlotType>
     <Description>This wand is powerful at conducting magical energy into a devastating blast.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/wand_of_death</Sound>
+    <Sound>weapon/WandOfDeath</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -7523,13 +7523,13 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Use this to make an awesome sand castle! (Heals nearby injured players.)</Description>
-    <Sound>monster/stone_walls_hit</Sound>
+    <Sound>monster/StoneWallsHit</Sound>
     <Consumable />
     <Doses>5</Doses>
     <SuccessorId>Sand Pail 4</SuccessorId>
     <BagType>2</BagType>
     <Activate objectId="Sand Castle">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
     <Soulbound />
   </Object>
   <Object type="0xc35" id="Sand Pail 4">
@@ -7542,13 +7542,13 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Use this to make an awesome sand castle! (Heals nearby injured players.)</Description>
-    <Sound>monster/stone_walls_hit</Sound>
+    <Sound>monster/StoneWallsHit</Sound>
     <Consumable />
     <Doses>4</Doses>
     <SuccessorId>Sand Pail 3</SuccessorId>
     <BagType>2</BagType>
     <Activate objectId="Sand Castle">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
     <Soulbound />
   </Object>
   <Object type="0xc36" id="Sand Pail 3">
@@ -7561,13 +7561,13 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Use this to make an awesome sand castle! (Heals nearby injured players.)</Description>
-    <Sound>monster/stone_walls_hit</Sound>
+    <Sound>monster/StoneWallsHit</Sound>
     <Consumable />
     <Doses>3</Doses>
     <SuccessorId>Sand Pail 2</SuccessorId>
     <BagType>2</BagType>
     <Activate objectId="Sand Castle">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
     <Soulbound />
   </Object>
   <Object type="0xc37" id="Sand Pail 2">
@@ -7580,13 +7580,13 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Use this to make an awesome sand castle! (Heals nearby injured players.)</Description>
-    <Sound>monster/stone_walls_hit</Sound>
+    <Sound>monster/StoneWallsHit</Sound>
     <Consumable />
     <Doses>2</Doses>
     <SuccessorId>Sand Pail 1</SuccessorId>
     <BagType>2</BagType>
     <Activate objectId="Sand Castle">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
     <Soulbound />
   </Object>
   <Object type="0xc38" id="Sand Pail 1">
@@ -7599,11 +7599,11 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Use this to make an awesome sand castle! (Heals nearby injured players.)</Description>
-    <Sound>monster/stone_walls_hit</Sound>
+    <Sound>monster/StoneWallsHit</Sound>
     <Consumable />
     <BagType>2</BagType>
     <Activate objectId="Sand Castle">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
     <Soulbound />
   </Object>
   <Object type="0xc39" id="Bahama Sunrise">
@@ -7615,7 +7615,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A tangy fruit drink that boosts dexterity and life.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -7633,7 +7633,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A refreshing tropical drink that boosts life and mana.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -7651,7 +7651,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A sweet tropical drink that boosts attack and dexterity.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -7669,7 +7669,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A bold island drink that boosts defense and vitality.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <Potion />
@@ -7687,7 +7687,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key which opens a portal to the Beachzone.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Beachzone Portal">Create</Activate>
@@ -7746,7 +7746,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key that reveals the way to the Mad Lab.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Mad Lab Portal">Create</Activate>
@@ -7760,7 +7760,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A science experiment.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <BagType>1</BagType>
     <Activate effect="Invisible">ClearConditionEffectSelf</Activate>
@@ -7775,7 +7775,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Get 2x all XP gained! Lasts until level 20 or death.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <BagType>1</BagType>
@@ -7791,7 +7791,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Get 2x all XP gained! Lasts until level 20 or death.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <BagType>1</BagType>
@@ -7809,7 +7809,7 @@
     <Tier>0</Tier>
     <Description>A rusty old katana.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/blunt_sword</Sound>
+    <Sound>weapon/BluntSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -7836,7 +7836,7 @@
     <Tier>1</Tier>
     <Description>Suitable for practice.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/blunt_sword</Sound>
+    <Sound>weapon/BluntSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -7863,7 +7863,7 @@
     <Tier>2</Tier>
     <Description>A basic katana.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -7890,7 +7890,7 @@
     <Tier>3</Tier>
     <Description>A striking fine-edged weapon.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -7917,7 +7917,7 @@
     <Tier>4</Tier>
     <Description>A katana capable of cutting a razor-thin line.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -7944,7 +7944,7 @@
     <Tier>5</Tier>
     <Description>An ancient katana with a blade of jet black steel.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -7971,7 +7971,7 @@
     <Tier>6</Tier>
     <Description>A beautiful katana, forged and cooled by the mists atop a great mountain.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -7998,7 +7998,7 @@
     <Tier>7</Tier>
     <Description>A mighty weapon wielded by a hero from long ago.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -8025,7 +8025,7 @@
     <Tier>8</Tier>
     <Description>A cruel blade forged in hell flame and blood.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -8053,7 +8053,7 @@
     <Tier>9</Tier>
     <Description>A mighty katana with a crystal eye embeded in the hilt.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -8081,7 +8081,7 @@
     <Tier>10</Tier>
     <Description>One of the legendary great blades of the master Ichimonji.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -8109,7 +8109,7 @@
     <Tier>11</Tier>
     <Description>An evil blade that hungers for blood.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -8137,7 +8137,7 @@
     <Tier>12</Tier>
     <Description>A magnificent legendary blade which only cuts those who deserve death.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -8164,7 +8164,7 @@
     <SlotType>24</SlotType>
     <Description>An ancient weapon imbued with the power of the cosmos.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <RandomTexture>
         <Texture>
@@ -8215,7 +8215,7 @@
     <SlotType>24</SlotType>
     <Description>A great katana charged with the power of the sun itself.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/long_sword</Sound>
+    <Sound>weapon/LongSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj3</File>
@@ -8242,7 +8242,7 @@
     <SlotType>25</SlotType>
     <Tier>0</Tier>
     <Description>A basic ninja-star.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <ExtraTooltipData>
       <EffectInfo name="While Key Held" description="" />
       <EffectInfo name="" description="Speedy on self" />
@@ -8279,7 +8279,7 @@
     <SlotType>25</SlotType>
     <Tier>1</Tier>
     <Description>A ninja-star with four razor-sharp points.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <ExtraTooltipData>
       <EffectInfo name="While Key Held" description="" />
       <EffectInfo name="" description="Speedy on self" />
@@ -8316,7 +8316,7 @@
     <SlotType>25</SlotType>
     <Tier>2</Tier>
     <Description>A ninja-star with curved spiraling blades.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <ExtraTooltipData>
       <EffectInfo name="While Key Held" description="" />
       <EffectInfo name="" description="Speedy on self" />
@@ -8353,7 +8353,7 @@
     <SlotType>25</SlotType>
     <Tier>3</Tier>
     <Description>A beautifully crafted shuriken.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <ExtraTooltipData>
       <EffectInfo name="While Key Held" description="" />
       <EffectInfo name="" description="Speedy on self" />
@@ -8391,7 +8391,7 @@
     <SlotType>25</SlotType>
     <Tier>4</Tier>
     <Description>A sacred shuriken that embodies the power and speed of the wind.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <ExtraTooltipData>
       <EffectInfo name="While Key Held" description="" />
       <EffectInfo name="" description="Speedy on self" />
@@ -8429,7 +8429,7 @@
     <SlotType>25</SlotType>
     <Tier>5</Tier>
     <Description>A mystical shuriken formed from ever-frozen ice.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <ExtraTooltipData>
       <EffectInfo name="While Key Held" description="" />
       <EffectInfo name="" description="Speedy on self" />
@@ -8467,7 +8467,7 @@
     <SlotType>25</SlotType>
     <Tier>6</Tier>
     <Description>A sacred shuriken that embodies the power and speed of the wind.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <ExtraTooltipData>
       <EffectInfo name="While Key Held" description="" />
       <EffectInfo name="" description="Speedy on self" />
@@ -8504,7 +8504,7 @@
     </Texture>
     <SlotType>25</SlotType>
     <Description>A legendary shuriken that sucks the light in around it.</Description>
-    <Sound>spell/fire_spray</Sound>
+    <Sound>spell/FireSpray</Sound>
     <ExtraTooltipData>
       <EffectInfo name="While Key Held" description="" />
       <EffectInfo name="" description="Speedy on self" />
@@ -8542,7 +8542,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A refreshing malted barley beer that boosts your mind and body.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Potion />
     <BagType>3</BagType>
@@ -8559,7 +8559,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A rich, dark beer that strengthens you from within.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Potion />
     <BagType>3</BagType>
@@ -8575,7 +8575,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A light-golden wheat beer that reinvigorates your mind.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Potion />
     <BagType>3</BagType>
@@ -8592,7 +8592,7 @@
     <SlotType>1</SlotType>
     <Description>For Testing Monster Defense.</Description>
     <RateOfFire>1</RateOfFire>
-    <Sound>weapon/blunt_sword</Sound>
+    <Sound>weapon/BluntSword</Sound>
     <Projectile>
       <Texture>
         <File>lofiObj</File>
@@ -8630,11 +8630,11 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A sugary-sweet natural grenade found in the Candyland Hunting Grounds.</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Consumable />
     <BagType>1</BagType>
     <Activate objectId="Rock Candy Grenade">Pet</Activate>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
   </Object>
   <Object type="0xc61" id="Candy-Coated Armor">
     <Class>Equipment</Class>
@@ -8659,7 +8659,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key that opens the way to the Candyland Hunting Grounds.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Candyland Portal">Create</Activate>
@@ -8673,7 +8673,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Gum that temporarily boosts your vitality.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Potion />
     <BagType>1</BagType>
@@ -8688,7 +8688,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Gum that temporarily boosts your attack.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Potion />
     <BagType>1</BagType>
@@ -8703,7 +8703,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Gum that temporarily boosts your defense.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Potion />
     <BagType>1</BagType>
@@ -8718,7 +8718,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Gum that temporarily boosts your speed.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Potion />
     <BagType>1</BagType>
@@ -8733,7 +8733,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>Gum that temporarily boosts your dexterity.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Potion />
     <BagType>1</BagType>
@@ -8748,7 +8748,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A potion that boosts the tier level of dropped loot. Up to +3 tiers! Lasts 30 minutes.</Description>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <ExtraTooltipData>
       <EffectInfo name="Duration" description="30 min" />
     </ExtraTooltipData>
@@ -8770,7 +8770,7 @@
     <ExtraTooltipData>
       <EffectInfo name="Duration" description="30 min" />
     </ExtraTooltipData>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <LDBoosted />
@@ -8789,7 +8789,7 @@
     <ExtraTooltipData>
       <EffectInfo name="Duration" description="1 hour" />
     </ExtraTooltipData>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <BagType>1</BagType>
@@ -8808,7 +8808,7 @@
     <ExtraTooltipData>
       <EffectInfo name="Duration" description="20 minutes" />
     </ExtraTooltipData>
-    <Sound>use_potion</Sound>
+    <Sound>UsePotion</Sound>
     <Consumable />
     <Soulbound />
     <BagType>1</BagType>
@@ -8825,7 +8825,7 @@
     <SlotType>17</SlotType>
     <Description>A godly weapon belonging to the Cult of Admin.</Description>
     <RateOfFire>1.1</RateOfFire>
-    <Sound>monster/djinn_hit</Sound>
+    <Sound>monster/DjinnHit</Sound>
     <Projectile>
       <Texture>
         <File>lofiProjs</File>
@@ -8856,7 +8856,7 @@
     </Texture>
     <SlotType>4</SlotType>
     <Description>A magical amulet that enables lightning assaults.</Description>
-    <Sound>spell/fire_nova</Sound>
+    <Sound>spell/FireNova</Sound>
     <Usable />
     <Soulbound />
     <MpCost>5</MpCost>
@@ -8890,12 +8890,12 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A backpack that'll double your inventory space!</Description>
-    <Sound>spell/light_heal</Sound>
+    <Sound>spell/LightHeal</Sound>
     <Consumable />
     <Backpack />
     <Soulbound />
     <BagType>1</BagType>
-    <OldSound>use_potion</OldSound>
+    <OldSound>UsePotion</OldSound>
     <Activate>Backpack</Activate>
   </Object>
   <Object type="0xc6e" id="Resurrected Warrior's Armor">
@@ -8922,7 +8922,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A key that opens a portal to the Haunted Cemetery.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Haunted Cemetery Portal">Create</Activate>

@@ -8,8 +8,8 @@
       <File>chars16x16rEncounters</File>
       <Index>10</Index>
     </AnimatedTexture>
-    <HitSound>monster/elves_death</HitSound>
-    <DeathSound>monster/flaming_skulls_death</DeathSound>
+    <HitSound>monster/ElvesDeath</HitSound>
+    <DeathSound>monster/FlamingSkullsDeath</DeathSound>
     <MaxHitPoints>10000</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -59,8 +59,8 @@
       <File>invisible</File>
       <Index>0</Index>
     </Texture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/dwarves_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/DwarvesDeath</DeathSound>
     <MaxHitPoints>8000</MaxHitPoints>
     <XpMult>0.0</XpMult>
     <Size>110</Size>
@@ -74,8 +74,8 @@
       <File>chars8x8dEncounters</File>
       <Index>15</Index>
     </AnimatedTexture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/dark_elves_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/DarkElvesDeath</DeathSound>
     <MaxHitPoints>1000</MaxHitPoints>
     <XpMult>0.0</XpMult>
     <Size>120</Size>
@@ -99,8 +99,8 @@
       <File>chars8x8dEncounters</File>
       <Index>17</Index>
     </AnimatedTexture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/dark_elves_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/DarkElvesDeath</DeathSound>
     <MaxHitPoints>1000</MaxHitPoints>
     <XpMult>0.0</XpMult>
     <Size>60</Size>
@@ -132,8 +132,8 @@
         <Index>19</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/medusa_hit</HitSound>
-    <DeathSound>monster/medusa_death</DeathSound>
+    <HitSound>monster/MedusaHit</HitSound>
+    <DeathSound>monster/MedusaDeath</DeathSound>
     <MaxHitPoints>10000</MaxHitPoints>
     <ShadowSize>0</ShadowSize>
     <God />
@@ -215,8 +215,8 @@
         <Index>0x24</Index>
       </Texture>
     </AltTexture>
-    <HitSound>monster/djinn_hit</HitSound>
-    <DeathSound>monster/flaming_skulls_death</DeathSound>
+    <HitSound>monster/DjinnHit</HitSound>
+    <DeathSound>monster/FlamingSkullsDeath</DeathSound>
   </Object>
   <Object type="0x1706" id="Thessal the Mermaid Goddess">
     <Group>Ocean Trench</Group>
@@ -226,8 +226,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>16</Index>
     </AnimatedTexture>
-    <HitSound>monster/medusa_hit</HitSound>
-    <DeathSound>monster/medusa_death</DeathSound>
+    <HitSound>monster/MedusaHit</HitSound>
+    <DeathSound>monster/MedusaDeath</DeathSound>
     <MaxHitPoints>69000</MaxHitPoints>
     <ShadowSize>0</ShadowSize>
     <God />
@@ -292,8 +292,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>10</Index>
     </AnimatedTexture>
-    <HitSound>monster/abyss_demons_hit</HitSound>
-    <DeathSound>monster/abyss_brutes_death</DeathSound>
+    <HitSound>monster/AbyssDemonsHit</HitSound>
+    <DeathSound>monster/AbyssBrutesDeath</DeathSound>
     <MaxHitPoints>15000</MaxHitPoints>
     <ShadowSize>0</ShadowSize>
     <StasisImmune />
@@ -354,8 +354,8 @@
       <File>chars8x8rEncounters</File>
       <Index>13</Index>
     </AnimatedTexture>
-    <HitSound>monster/dragons_hit</HitSound>
-    <DeathSound>monster/flaming_skulls_death</DeathSound>
+    <HitSound>monster/DragonsHit</HitSound>
+    <DeathSound>monster/FlamingSkullsDeath</DeathSound>
     <MaxHitPoints>2500</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -390,8 +390,8 @@
       <File>chars8x8rEncounters</File>
       <Index>18</Index>
     </AnimatedTexture>
-    <HitSound>monster/elves_death</HitSound>
-    <DeathSound>monster/night_elves_death</DeathSound>
+    <HitSound>monster/ElvesDeath</HitSound>
+    <DeathSound>monster/NightElvesDeath</DeathSound>
     <MaxHitPoints>1000</MaxHitPoints>
     <Flying />
     <Z>0.26</Z>
@@ -432,8 +432,8 @@
       <File>chars16x16rEncounters</File>
       <Index>13</Index>
     </AnimatedTexture>
-    <HitSound>monster/ogres_hit</HitSound>
-    <DeathSound>monster/medusa_death</DeathSound>
+    <HitSound>monster/OgresHit</HitSound>
+    <DeathSound>monster/MedusaDeath</DeathSound>
     <MaxHitPoints>6000</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -469,8 +469,8 @@
       <File>chars8x8dEncounters</File>
       <Index>19</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_hit</HitSound>
-    <DeathSound>monster/slimes_death</DeathSound>
+    <HitSound>monster/SlimesHit</HitSound>
+    <DeathSound>monster/SlimesDeath</DeathSound>
     <MaxHitPoints>2000</MaxHitPoints>
     <Flying />
     <Projectile id="0">
@@ -517,8 +517,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>17</Index>
     </AnimatedTexture>
-    <HitSound>monster/spider_queen_hit</HitSound>
-    <DeathSound>monster/scorpions_death</DeathSound>
+    <HitSound>monster/SpiderQueenHit</HitSound>
+    <DeathSound>monster/ScorpionsDeath</DeathSound>
     <MaxHitPoints>6000</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -559,8 +559,8 @@
         <Index>0x6d</Index>
       </Texture>
     </AltTexture>
-    <HitSound>monster/trees_hit</HitSound>
-    <DeathSound>monster/stone_walls_hit</DeathSound>
+    <HitSound>monster/TreesHit</HitSound>
+    <DeathSound>monster/StoneWallsHit</DeathSound>
     <MaxHitPoints>5000</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -595,8 +595,8 @@
       <File>chars8x8rEncounters</File>
       <Index>19</Index>
     </AnimatedTexture>
-    <HitSound>monster/cubes_hit</HitSound>
-    <DeathSound>monster/blobs_death</DeathSound>
+    <HitSound>monster/CubesHit</HitSound>
+    <DeathSound>monster/BlobsDeath</DeathSound>
     <MaxHitPoints>1000</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -691,8 +691,8 @@
         <Index>0x7c</Index>
       </Texture>
     </Top>
-    <HitSound>monster/wooden_walls_hit</HitSound>
-    <DeathSound>monster/wooden_walls_death</DeathSound>
+    <HitSound>monster/WoodenWallsHit</HitSound>
+    <DeathSound>monster/WoodenWallsDeath</DeathSound>
     <Static />
     <FullOccupy />
     <OccupySquare />
@@ -711,8 +711,8 @@
         <Index>0x7c</Index>
       </Texture>
     </Top>
-    <HitSound>monster/wooden_walls_hit</HitSound>
-    <DeathSound>monster/wooden_walls_death</DeathSound>
+    <HitSound>monster/WoodenWallsHit</HitSound>
+    <DeathSound>monster/WoodenWallsDeath</DeathSound>
     <Static />
     <FullOccupy />
     <OccupySquare />

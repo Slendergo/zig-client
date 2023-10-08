@@ -12,8 +12,8 @@
         <Index>0x26</Index>
       </Texture>
     </Top>
-    <HitSound>monster/wooden_walls_hit</HitSound>
-    <DeathSound>monster/wooden_walls_death</DeathSound>
+    <HitSound>monster/WoodenWallsHit</HitSound>
+    <DeathSound>monster/WoodenWallsDeath</DeathSound>
     <MaxHitPoints>3000</MaxHitPoints>
     <Static />
     <FullOccupy />
@@ -29,8 +29,8 @@
       <File>lofiChar216x16</File>
       <Index>0x07</Index>
     </Texture>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <MaxHitPoints>4000</MaxHitPoints>
     <Size>80</Size>
     <StasisImmune />
@@ -46,8 +46,8 @@
       <File>chars8x8dEncounters</File>
       <Index>14</Index>
     </AnimatedTexture>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <MaxHitPoints>4000</MaxHitPoints>
     <Size>120</Size>
     <Static />
@@ -80,8 +80,8 @@
         <Index>0x64</Index>
       </Texture>
     </AltTexture>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Static />
     <FullOccupy />
     <OccupySquare />
@@ -101,8 +101,8 @@
         <Index>0x62</Index>
       </Texture>
     </Top>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Static />
     <FullOccupy />
     <OccupySquare />
@@ -121,8 +121,8 @@
         <Index>0x62</Index>
       </Texture>
     </Top>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Static />
     <FullOccupy />
     <OccupySquare />
@@ -142,8 +142,8 @@
         <Index>0x62</Index>
       </Texture>
     </Top>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Static />
     <FullOccupy />
     <OccupySquare />
@@ -163,8 +163,8 @@
         <Index>0x62</Index>
       </Texture>
     </Top>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Static />
     <FullOccupy />
     <OccupySquare />
@@ -213,8 +213,8 @@
         <Index>1</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/stone_walls_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/StoneWallsDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <MaxHitPoints>60000</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -292,8 +292,8 @@
         <Index>1</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/stone_walls_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/StoneWallsDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <MaxHitPoints>60000</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -338,8 +338,8 @@
       <File>invisible</File>
       <Index>0</Index>
     </Texture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/dwarves_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/DwarvesDeath</DeathSound>
     <MaxHitPoints>100</MaxHitPoints>
     <Size>0</Size>
     <Defense>0</Defense>
@@ -364,8 +364,8 @@
       <File>chars8x8dEncounters</File>
       <Index>16</Index>
     </AnimatedTexture>
-    <HitSound>monster/ents_hit</HitSound>
-    <DeathSound>monster/traps_hit</DeathSound>
+    <HitSound>monster/EntsHit</HitSound>
+    <DeathSound>monster/TrapsHit</DeathSound>
     <ShadowSize>0</ShadowSize>
     <LightColor>0xcccccc</LightColor>
     <LightIntensity>0.10</LightIntensity>
@@ -396,8 +396,8 @@
       <File>invisible</File>
       <Index>0</Index>
     </Texture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/dwarves_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/DwarvesDeath</DeathSound>
     <MaxHitPoints>100</MaxHitPoints>
     <Size>0</Size>
     <Defense>20</Defense>
@@ -424,8 +424,8 @@
         <Index>0</Index>
       </Texture>
     </AltTexture>
-    <HitSound>monster/traps_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/TrapsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <MaxHitPoints>3000</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -461,8 +461,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>7</Index>
     </AnimatedTexture>
-    <HitSound>monster/medusa_hit</HitSound>
-    <DeathSound>monster/snake_queen_death</DeathSound>
+    <HitSound>monster/MedusaHit</HitSound>
+    <DeathSound>monster/SnakeQueenDeath</DeathSound>
     <MaxHitPoints>3500</MaxHitPoints>
     <Flying />
     <Projectile id="0">
@@ -500,8 +500,8 @@
         <Index>15</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/snake_queen_hit</HitSound>
-    <DeathSound>monster/snakes_hit</DeathSound>
+    <HitSound>monster/SnakeQueenHit</HitSound>
+    <DeathSound>monster/SnakesHit</DeathSound>
     <MaxHitPoints>500</MaxHitPoints>
     <Flying />
     <Projectile id="0">
@@ -539,8 +539,8 @@
       <File>chars8x8dEncounters</File>
       <Index>18</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/trees_hit</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/TreesHit</DeathSound>
     <MaxHitPoints>1500</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -583,8 +583,8 @@
         <Index>9</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/ogres_hit</HitSound>
-    <DeathSound>monster/ogres_death</DeathSound>
+    <HitSound>monster/OgresHit</HitSound>
+    <DeathSound>monster/OgresDeath</DeathSound>
     <MaxHitPoints>7000</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -635,8 +635,8 @@
       <File>chars8x8rEncounters</File>
       <Index>16</Index>
     </AnimatedTexture>
-    <HitSound>monster/dwarves_hit</HitSound>
-    <DeathSound>monster/dragons_hit</DeathSound>
+    <HitSound>monster/DwarvesHit</HitSound>
+    <DeathSound>monster/DragonsHit</DeathSound>
     <MaxHitPoints>2500</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -696,8 +696,8 @@
       <File>chars8x8rEncounters</File>
       <Index>17</Index>
     </AnimatedTexture>
-    <HitSound>monster/night_elves_hit</HitSound>
-    <DeathSound>monster/medusa_hit</DeathSound>
+    <HitSound>monster/NightElvesHit</HitSound>
+    <DeathSound>monster/MedusaHit</DeathSound>
     <MaxHitPoints>750</MaxHitPoints>
     <Projectile id="0">
       <Texture>
@@ -720,8 +720,8 @@
     <Group>Oryx's Minions</Group>
     <Class>GameObject</Class>
     <Enemy />
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <MaxHitPoints>2600</MaxHitPoints>
     <DrawOnGround />
     <Texture>
@@ -781,8 +781,8 @@
         <Index>0x24</Index>
       </Texture>
     </AltTexture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skull_shrine_hit</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkullShrineHit</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiProjs</File>
@@ -802,8 +802,8 @@
     <Group>Oryx's Minions</Group>
     <Class>GameObject</Class>
     <Enemy />
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <MaxHitPoints>2600</MaxHitPoints>
     <DrawOnGround />
     <Texture>

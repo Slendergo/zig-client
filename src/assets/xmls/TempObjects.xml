@@ -11,8 +11,8 @@
     <Defense>35</Defense>
     <XpMult>0</XpMult>
     <Size>120</Size>
-    <HitSound>monster/chicken_hit</HitSound>
-    <DeathSound>monster/chicken_death</DeathSound>
+    <HitSound>monster/ChickenHit</HitSound>
+    <DeathSound>monster/ChickenDeath</DeathSound>
     <MaxHitPoints>1100</MaxHitPoints>
     <XpMult>0.3</XpMult>
     <ShadowSize>80</ShadowSize>
@@ -105,8 +105,8 @@
         <Index>0x2b</Index>
       </Texture>
     </AltTexture>
-    <HitSound>monster/eggs_hit</HitSound>
-    <DeathSound>monster/eggs_death</DeathSound>
+    <HitSound>monster/EggsHit</HitSound>
+    <DeathSound>monster/EggsDeath</DeathSound>
     <MaxHitPoints>650000</MaxHitPoints>
     <Defense>0</Defense>
     <XpMult>0.0</XpMult>
@@ -126,8 +126,8 @@
     <XpMult>0.35</XpMult>
     <Size>40</Size>
     <ShadowSize>80</ShadowSize>
-    <HitSound>monster/chicken_hit</HitSound>
-    <DeathSound>monster/chicken_death</DeathSound>
+    <HitSound>monster/ChickenHit</HitSound>
+    <DeathSound>monster/ChickenDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiProjs</File>
@@ -255,8 +255,8 @@
         <Index>0x2fb</Index>
       </Texture>
     </AltTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>150</Size>
     <ShadowSize>50</ShadowSize>
     <Defense>10</Defense>

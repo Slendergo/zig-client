@@ -8,8 +8,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>37</Index>
     </AnimatedTexture>
-    <HitSound>monster/oryx_hit</HitSound>
-    <DeathSound>monster/oryx_death</DeathSound>
+    <HitSound>monster/OryxHit</HitSound>
+    <DeathSound>monster/OryxDeath</DeathSound>
     <Quest />
     <God />
     <Oryx />
@@ -468,8 +468,8 @@
       <File>lofiObj2</File>
       <Index>0x5f</Index>
     </Texture>
-    <HitSound>monster/cubes_hit</HitSound>
-    <DeathSound>monster/cubes_death</DeathSound>
+    <HitSound>monster/CubesHit</HitSound>
+    <DeathSound>monster/CubesDeath</DeathSound>
     <Defense>5</Defense>
     <XpMult>0.0</XpMult>
     <MaxHitPoints>1000</MaxHitPoints>
@@ -496,8 +496,8 @@
       <File>lofiCharBig</File>
       <Index>0x09</Index>
     </Texture>
-    <HitSound>monster/cubes_hit</HitSound>
-    <DeathSound>monster/cubes_death</DeathSound>
+    <HitSound>monster/CubesHit</HitSound>
+    <DeathSound>monster/CubesDeath</DeathSound>
     <Defense>5</Defense>
     <XpMult>0.0</XpMult>
     <MaxHitPoints>1000</MaxHitPoints>
@@ -533,8 +533,8 @@
       <File>chars8x8dEncounters</File>
       <Index>7</Index>
     </AnimatedTexture>
-    <HitSound>monster/cubes_hit</HitSound>
-    <DeathSound>monster/cubes_death</DeathSound>
+    <HitSound>monster/CubesHit</HitSound>
+    <DeathSound>monster/CubesDeath</DeathSound>
     <Defense>5</Defense>
     <XpMult>0.0</XpMult>
     <MaxHitPoints>1000</MaxHitPoints>

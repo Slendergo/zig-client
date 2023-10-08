@@ -7,8 +7,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>44</Index>
     </AnimatedTexture>
-    <HitSound>monster/goblins_hit</HitSound>
-    <DeathSound>monster/goblins_death</DeathSound>
+    <HitSound>monster/GoblinsHit</HitSound>
+    <DeathSound>monster/GoblinsDeath</DeathSound>
     <Size>120</Size>
     <ShadowSize>45</ShadowSize>
     <MaxHitPoints>800</MaxHitPoints>
@@ -25,8 +25,8 @@
       <File>chars16x16rEncounters</File>
       <Index>54</Index>
     </AnimatedTexture>
-    <HitSound>monster/elves_death</HitSound>
-    <DeathSound>monster/flaming_skulls_hit</DeathSound>
+    <HitSound>monster/ElvesDeath</HitSound>
+    <DeathSound>monster/FlamingSkullsHit</DeathSound>
     <Size>140</Size>
     <ShadowSize>75</ShadowSize>
     <MaxHitPoints>13000</MaxHitPoints>
@@ -118,8 +118,8 @@
       <File>chars16x16rEncounters</File>
       <Index>55</Index>
     </AnimatedTexture>
-    <HitSound>monster/blobs_death</HitSound>
-    <DeathSound>monster/blobs_hit</DeathSound>
+    <HitSound>monster/BlobsDeath</HitSound>
+    <DeathSound>monster/BlobsHit</DeathSound>
     <Size>200</Size>
     <ShadowSize>80</ShadowSize>
     <MaxHitPoints>1200</MaxHitPoints>
@@ -157,8 +157,8 @@
       <File>chars16x16rEncounters</File>
       <Index>56</Index>
     </AnimatedTexture>
-    <HitSound>weapon/sprite_wand</HitSound>
-    <DeathSound>monster/sprites_death</DeathSound>
+    <HitSound>weapon/SpriteWand</HitSound>
+    <DeathSound>monster/SpritesDeath</DeathSound>
     <Size>140</Size>
     <ShadowSize>80</ShadowSize>
     <MaxHitPoints>14500</MaxHitPoints>
@@ -224,8 +224,8 @@
       <File>chars16x16rEncounters</File>
       <Index>57</Index>
     </AnimatedTexture>
-    <HitSound>monster/dwarf_god_hit</HitSound>
-    <DeathSound>player/paladin_death</DeathSound>
+    <HitSound>monster/DwarfGodHit</HitSound>
+    <DeathSound>player/PaladinDeath</DeathSound>
     <Size>160</Size>
     <ShadowSize>80</ShadowSize>
     <MaxHitPoints>13000</MaxHitPoints>
@@ -294,8 +294,8 @@
       <File>chars16x16rEncounters</File>
       <Index>58</Index>
     </AnimatedTexture>
-    <HitSound>spell/light_heal</HitSound>
-    <DeathSound>spell/major_heal</DeathSound>
+    <HitSound>spell/LightHeal</HitSound>
+    <DeathSound>spell/MajorHeal</DeathSound>
     <Size>200</Size>
     <MaxHitPoints>16000</MaxHitPoints>
     <Defense>35</Defense>
@@ -352,8 +352,8 @@
       <File>lofiObjBig</File>
       <Index>0x7c</Index>
     </Texture>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Size>120</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>1000</MaxHitPoints>
@@ -368,8 +368,8 @@
       <File>chars16x16rEncounters</File>
       <Index>59</Index>
     </AnimatedTexture>
-    <HitSound>monster/greater_demons_hit</HitSound>
-    <DeathSound>monster/greater_demons_death</DeathSound>
+    <HitSound>monster/GreaterDemonsHit</HitSound>
+    <DeathSound>monster/GreaterDemonsDeath</DeathSound>
     <Size>120</Size>
     <ShadowSize>80</ShadowSize>
     <MaxHitPoints>6000</MaxHitPoints>
@@ -396,8 +396,8 @@
       <File>chars16x16rEncounters</File>
       <Index>60</Index>
     </AnimatedTexture>
-    <HitSound>weapon/skull_shrine_hit</HitSound>
-    <DeathSound>spell/light_heal</DeathSound>
+    <HitSound>weapon/SkullShrineHit</HitSound>
+    <DeathSound>spell/LightHeal</DeathSound>
     <Size>140</Size>
     <MaxHitPoints>5000</MaxHitPoints>
     <Defense>25</Defense>
@@ -434,8 +434,8 @@
       <File>chars8x8rEncounters</File>
       <Index>45</Index>
     </AnimatedTexture>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Size>120</Size>
     <ShadowSize>60</ShadowSize>
     <MaxHitPoints>1300</MaxHitPoints>
@@ -462,8 +462,8 @@
       <File>chars16x16rEncounters</File>
       <Index>61</Index>
     </AnimatedTexture>
-    <HitSound>monster/dwarves_hit</HitSound>
-    <DeathSound>monster/wizard_death</DeathSound>
+    <HitSound>monster/DwarvesHit</HitSound>
+    <DeathSound>monster/WizardDeath</DeathSound>
     <Size>140</Size>
     <ShadowSize>80</ShadowSize>
     <MaxHitPoints>5000</MaxHitPoints>
@@ -505,8 +505,8 @@
       <File>chars8x8rEncounters</File>
       <Index>46</Index>
     </AnimatedTexture>
-    <HitSound>monster/elves_hit</HitSound>
-    <DeathSound>monster/dwarves_hit</DeathSound>
+    <HitSound>monster/ElvesHit</HitSound>
+    <DeathSound>monster/DwarvesHit</DeathSound>
     <Size>120</Size>
     <ShadowSize>60</ShadowSize>
     <MaxHitPoints>1000</MaxHitPoints>
@@ -535,8 +535,8 @@
       <File>chars16x16rEncounters</File>
       <Index>62</Index>
     </AnimatedTexture>
-    <HitSound>monster/flaming_skulls_hit</HitSound>
-    <DeathSound>monster/flaming_skulls_death</DeathSound>
+    <HitSound>monster/FlamingSkullsHit</HitSound>
+    <DeathSound>monster/FlamingSkullsDeath</DeathSound>
     <Size>120</Size>
     <ShadowSize>60</ShadowSize>
     <MaxHitPoints>4000</MaxHitPoints>
@@ -565,8 +565,8 @@
       <File>chars8x8rEncounters</File>
       <Index>47</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_hit</HitSound>
-    <DeathSound>monster/slimes_death</DeathSound>
+    <HitSound>monster/SlimesHit</HitSound>
+    <DeathSound>monster/SlimesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>20</Defense>
@@ -592,8 +592,8 @@
       <File>chars16x16rEncounters</File>
       <Index>63</Index>
     </AnimatedTexture>
-    <HitSound>monster/blobs_death</HitSound>
-    <DeathSound>monster/blobs_hit</DeathSound>
+    <HitSound>monster/BlobsDeath</HitSound>
+    <DeathSound>monster/BlobsHit</DeathSound>
     <Size>100</Size>
     <ShadowSize>80</ShadowSize>
     <MaxHitPoints>2300</MaxHitPoints>
@@ -630,8 +630,8 @@
       <File>chars8x8rEncounters</File>
       <Index>48</Index>
     </AnimatedTexture>
-    <HitSound>monster/elves_death</HitSound>
-    <DeathSound>monster/cubes_death</DeathSound>
+    <HitSound>monster/ElvesDeath</HitSound>
+    <DeathSound>monster/CubesDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>80</ShadowSize>
     <MaxHitPoints>700</MaxHitPoints>
@@ -669,8 +669,8 @@
       <File>chars8x8rEncounters</File>
       <Index>49</Index>
     </AnimatedTexture>
-    <HitSound>monster/elves_hit</HitSound>
-    <DeathSound>monster/hobbits_death</DeathSound>
+    <HitSound>monster/ElvesHit</HitSound>
+    <DeathSound>monster/HobbitsDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>80</ShadowSize>
     <MaxHitPoints>1200</MaxHitPoints>
@@ -713,8 +713,8 @@
         <Index>65</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/dragons_hit</HitSound>
-    <DeathSound>monster/djinn_hit</DeathSound>
+    <HitSound>monster/DragonsHit</HitSound>
+    <DeathSound>monster/DjinnHit</DeathSound>
     <Size>120</Size>
     <ShadowSize>75</ShadowSize>
     <MaxHitPoints>2300</MaxHitPoints>

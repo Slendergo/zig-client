@@ -7,8 +7,8 @@
       <File>chars16x16dEncounters</File>
       <Index>4</Index>
     </AnimatedTexture>
-    <HitSound>monster/pirate_king_hit</HitSound>
-    <DeathSound>monster/pirate_king_death</DeathSound>
+    <HitSound>monster/PirateKingHit</HitSound>
+    <DeathSound>monster/PirateKingDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>800</MaxHitPoints>
     <Defense>3</Defense>
@@ -44,8 +44,8 @@
       <File>lofiChar28x8</File>
       <Index>0x00</Index>
     </Texture>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/pirates_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/PiratesDeath</DeathSound>
     <Size>105</Size>
     <MaxHitPoints>65</MaxHitPoints>
     <Defense>0</Defense>
@@ -67,8 +67,8 @@
       <File>lofiChar28x8</File>
       <Index>0x05</Index>
     </Texture>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/pirates_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/PiratesDeath</DeathSound>
     <Size>110</Size>
     <MaxHitPoints>75</MaxHitPoints>
     <Defense>0</Defense>
@@ -90,8 +90,8 @@
       <File>lofiChar28x8</File>
       <Index>0x06</Index>
     </Texture>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/pirates_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/PiratesDeath</DeathSound>
     <Size>115</Size>
     <MaxHitPoints>85</MaxHitPoints>
     <Defense>0</Defense>
@@ -113,8 +113,8 @@
       <File>lofiChar28x8</File>
       <Index>0x07</Index>
     </Texture>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/pirates_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/PiratesDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>95</MaxHitPoints>
     <Defense>0</Defense>
@@ -136,8 +136,8 @@
       <File>lofiChar28x8</File>
       <Index>0x02</Index>
     </Texture>
-    <HitSound>monster/cave_pirates_hit</HitSound>
-    <DeathSound>monster/cave_pirates_death</DeathSound>
+    <HitSound>monster/CavePiratesHit</HitSound>
+    <DeathSound>monster/CavePiratesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>10</MaxHitPoints>
     <Defense>0</Defense>
@@ -159,8 +159,8 @@
       <File>lofiChar28x8</File>
       <Index>0x03</Index>
     </Texture>
-    <HitSound>monster/cave_pirates_hit</HitSound>
-    <DeathSound>monster/cave_pirates_death</DeathSound>
+    <HitSound>monster/CavePiratesHit</HitSound>
+    <DeathSound>monster/CavePiratesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>15</MaxHitPoints>
     <Defense>0</Defense>
@@ -182,8 +182,8 @@
       <File>lofiChar28x8</File>
       <Index>0x04</Index>
     </Texture>
-    <HitSound>monster/cave_pirates_hit</HitSound>
-    <DeathSound>monster/cave_pirates_death</DeathSound>
+    <HitSound>monster/CavePiratesHit</HitSound>
+    <DeathSound>monster/CavePiratesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>20</MaxHitPoints>
     <Defense>0</Defense>
@@ -205,8 +205,8 @@
       <File>lofiChar28x8</File>
       <Index>0x08</Index>
     </Texture>
-    <HitSound>monster/cave_pirates_hit</HitSound>
-    <DeathSound>monster/cave_pirates_death</DeathSound>
+    <HitSound>monster/CavePiratesHit</HitSound>
+    <DeathSound>monster/CavePiratesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -219,8 +219,8 @@
       <File>lofiChar28x8</File>
       <Index>0x09</Index>
     </Texture>
-    <HitSound>monster/cave_pirates_hit</HitSound>
-    <DeathSound>monster/cave_pirates_death</DeathSound>
+    <HitSound>monster/CavePiratesHit</HitSound>
+    <DeathSound>monster/CavePiratesDeath</DeathSound>
     <Size>70</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -233,8 +233,8 @@
       <File>lofiChar28x8</File>
       <Index>0x0a</Index>
     </Texture>
-    <HitSound>monster/cave_pirates_hit</HitSound>
-    <DeathSound>monster/cave_pirates_death</DeathSound>
+    <HitSound>monster/CavePiratesHit</HitSound>
+    <DeathSound>monster/CavePiratesDeath</DeathSound>
     <Size>70</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -247,8 +247,8 @@
       <File>lofiChar28x8</File>
       <Index>0x0b</Index>
     </Texture>
-    <HitSound>monster/cave_pirates_hit</HitSound>
-    <DeathSound>monster/cave_pirates_death</DeathSound>
+    <HitSound>monster/CavePiratesHit</HitSound>
+    <DeathSound>monster/CavePiratesDeath</DeathSound>
     <Size>70</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -261,8 +261,8 @@
       <File>lofiChar28x8</File>
       <Index>0x0c</Index>
     </Texture>
-    <HitSound>monster/cave_pirates_hit</HitSound>
-    <DeathSound>monster/cave_pirates_death</DeathSound>
+    <HitSound>monster/CavePiratesHit</HitSound>
+    <DeathSound>monster/CavePiratesDeath</DeathSound>
     <Size>70</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -275,8 +275,8 @@
       <File>lofiChar28x8</File>
       <Index>0x0d</Index>
     </Texture>
-    <HitSound>monster/cave_pirates_hit</HitSound>
-    <DeathSound>monster/cave_pirates_death</DeathSound>
+    <HitSound>monster/CavePiratesHit</HitSound>
+    <DeathSound>monster/CavePiratesDeath</DeathSound>
     <Size>70</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>

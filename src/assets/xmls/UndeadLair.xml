@@ -7,8 +7,8 @@
       <File>lofiChar216x16</File>
       <Index>0x30</Index>
     </Texture>
-    <HitSound>monster/ghost_god_hit</HitSound>
-    <DeathSound>monster/ghost_god_death</DeathSound>
+    <HitSound>monster/GhostGodHit</HitSound>
+    <DeathSound>monster/GhostGodDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>8000</MaxHitPoints>
     <Defense>12</Defense>
@@ -91,8 +91,8 @@
       <File>lofiChar8x8</File>
       <Index>0x60</Index>
     </Texture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skeletons_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkeletonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>350</MaxHitPoints>
     <Defense>0</Defense>
@@ -114,8 +114,8 @@
       <File>lofiChar8x8</File>
       <Index>0x61</Index>
     </Texture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skeletons_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkeletonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>2</Defense>
@@ -137,8 +137,8 @@
       <File>lofiChar8x8</File>
       <Index>0x62</Index>
     </Texture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skeletons_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkeletonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>450</MaxHitPoints>
     <Defense>4</Defense>
@@ -160,8 +160,8 @@
       <File>lofiChar8x8</File>
       <Index>0x63</Index>
     </Texture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skeletons_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkeletonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>500</MaxHitPoints>
     <Defense>0</Defense>
@@ -183,8 +183,8 @@
       <File>lofiChar8x8</File>
       <Index>0x64</Index>
     </Texture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skeletons_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkeletonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>600</MaxHitPoints>
     <Defense>0</Defense>
@@ -207,8 +207,8 @@
       <File>lofiChar8x8</File>
       <Index>0x6a</Index>
     </Texture>
-    <HitSound>monster/mummies_hit</HitSound>
-    <DeathSound>monster/mummies_death</DeathSound>
+    <HitSound>monster/MummiesHit</HitSound>
+    <DeathSound>monster/MummiesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>0</Defense>
@@ -230,8 +230,8 @@
       <File>lofiChar8x8</File>
       <Index>0x6b</Index>
     </Texture>
-    <HitSound>monster/mummies_hit</HitSound>
-    <DeathSound>monster/mummies_death</DeathSound>
+    <HitSound>monster/MummiesHit</HitSound>
+    <DeathSound>monster/MummiesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>500</MaxHitPoints>
     <Defense>0</Defense>
@@ -253,8 +253,8 @@
       <File>lofiChar8x8</File>
       <Index>0x6c</Index>
     </Texture>
-    <HitSound>monster/mummies_hit</HitSound>
-    <DeathSound>monster/mummies_death</DeathSound>
+    <HitSound>monster/MummiesHit</HitSound>
+    <DeathSound>monster/MummiesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>600</MaxHitPoints>
     <Defense>0</Defense>
@@ -276,8 +276,8 @@
       <File>lofiChar16x16</File>
       <Index>0x4c</Index>
     </Texture>
-    <HitSound>monster/dwarf_god_hit</HitSound>
-    <DeathSound>monster/dwarf_god_death</DeathSound>
+    <HitSound>monster/DwarfGodHit</HitSound>
+    <DeathSound>monster/DwarfGodDeath</DeathSound>
     <Size>110</Size>
     <MaxHitPoints>700</MaxHitPoints>
     <Defense>20</Defense>
@@ -312,8 +312,8 @@
       <File>lofiChar16x16</File>
       <Index>0x4d</Index>
     </Texture>
-    <HitSound>monster/dwarf_god_hit</HitSound>
-    <DeathSound>monster/dwarf_god_death</DeathSound>
+    <HitSound>monster/DwarfGodHit</HitSound>
+    <DeathSound>monster/DwarfGodDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>800</MaxHitPoints>
     <Defense>20</Defense>
@@ -347,8 +347,8 @@
       <File>lofiChar8x8</File>
       <Index>0xb0</Index>
     </Texture>
-    <HitSound>monster/slimes_hit</HitSound>
-    <DeathSound>monster/slimes_death</DeathSound>
+    <HitSound>monster/SlimesHit</HitSound>
+    <DeathSound>monster/SlimesDeath</DeathSound>
     <Size>150</Size>
     <MaxHitPoints>300</MaxHitPoints>
     <Defense>0</Defense>
@@ -369,8 +369,8 @@
       <File>lofiChar8x8</File>
       <Index>0xb0</Index>
     </Texture>
-    <HitSound>monster/slimes_hit</HitSound>
-    <DeathSound>monster/slimes_death</DeathSound>
+    <HitSound>monster/SlimesHit</HitSound>
+    <DeathSound>monster/SlimesDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>150</MaxHitPoints>
     <Defense>0</Defense>
@@ -391,8 +391,8 @@
       <File>lofiChar8x8</File>
       <Index>0xb0</Index>
     </Texture>
-    <HitSound>monster/slimes_hit</HitSound>
-    <DeathSound>monster/slimes_death</DeathSound>
+    <HitSound>monster/SlimesHit</HitSound>
+    <DeathSound>monster/SlimesDeath</DeathSound>
     <Size>75</Size>
     <MaxHitPoints>50</MaxHitPoints>
     <Defense>0</Defense>
@@ -414,8 +414,8 @@
       <File>lofiChar8x8</File>
       <Index>0xb1</Index>
     </Texture>
-    <HitSound>monster/slimes_hit</HitSound>
-    <DeathSound>monster/slimes_death</DeathSound>
+    <HitSound>monster/SlimesHit</HitSound>
+    <DeathSound>monster/SlimesDeath</DeathSound>
     <Size>150</Size>
     <MaxHitPoints>300</MaxHitPoints>
     <Defense>0</Defense>
@@ -436,8 +436,8 @@
       <File>lofiChar8x8</File>
       <Index>0xb1</Index>
     </Texture>
-    <HitSound>monster/slimes_hit</HitSound>
-    <DeathSound>monster/slimes_death</DeathSound>
+    <HitSound>monster/SlimesHit</HitSound>
+    <DeathSound>monster/SlimesDeath</DeathSound>
     <Size>75</Size>
     <MaxHitPoints>150</MaxHitPoints>
     <Defense>0</Defense>
@@ -459,8 +459,8 @@
       <File>lofiChar8x8</File>
       <Index>0xce</Index>
     </Texture>
-    <HitSound>monster/bats_hit</HitSound>
-    <DeathSound>monster/bats_death</DeathSound>
+    <HitSound>monster/BatsHit</HitSound>
+    <DeathSound>monster/BatsDeath</DeathSound>
     <Size>50</Size>
     <MaxHitPoints>200</MaxHitPoints>
     <Defense>0</Defense>
@@ -483,8 +483,8 @@
       <File>lofiChar8x8</File>
       <Index>0x79</Index>
     </Texture>
-    <HitSound>monster/bats_hit</HitSound>
-    <DeathSound>monster/bats_death</DeathSound>
+    <HitSound>monster/BatsHit</HitSound>
+    <DeathSound>monster/BatsDeath</DeathSound>
     <Size>50</Size>
     <MaxHitPoints>200</MaxHitPoints>
     <Defense>30</Defense>
@@ -507,8 +507,8 @@
       <File>lofiEnvironment</File>
       <Index>0x61</Index>
     </Texture>
-    <HitSound>monster/traps_hit</HitSound>
-    <DeathSound>monster/traps_death</DeathSound>
+    <HitSound>monster/TrapsHit</HitSound>
+    <DeathSound>monster/TrapsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>100</MaxHitPoints>
     <Defense>0</Defense>
@@ -532,8 +532,8 @@
       <File>lofiEnvironment</File>
       <Index>0x51</Index>
     </Texture>
-    <HitSound>monster/traps_hit</HitSound>
-    <DeathSound>monster/traps_death</DeathSound>
+    <HitSound>monster/TrapsHit</HitSound>
+    <DeathSound>monster/TrapsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>100</MaxHitPoints>
     <Defense>0</Defense>
@@ -557,8 +557,8 @@
       <File>lofiChar8x8</File>
       <Index>0x6d</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>800</MaxHitPoints>
     <Defense>20</Defense>
@@ -581,8 +581,8 @@
       <File>lofiChar8x8</File>
       <Index>0x6e</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>300</MaxHitPoints>
     <Defense>0</Defense>
@@ -616,8 +616,8 @@
       <File>lofiChar8x8</File>
       <Index>0x6f</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>0</Defense>
@@ -651,8 +651,8 @@
       <File>lofiChar8x8</File>
       <Index>0x76</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>200</MaxHitPoints>
     <Defense>0</Defense>
@@ -676,8 +676,8 @@
       <File>lofiChar8x8</File>
       <Index>0x77</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>115</Size>
     <MaxHitPoints>300</MaxHitPoints>
     <Defense>0</Defense>
@@ -701,8 +701,8 @@
       <File>lofiChar8x8</File>
       <Index>0x78</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>130</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>0</Defense>
@@ -726,8 +726,8 @@
       <File>lofiChar8x8</File>
       <Index>0x7a</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>700</MaxHitPoints>
     <Defense>15</Defense>
@@ -751,8 +751,8 @@
       <File>lofiChar8x8</File>
       <Index>0x7b</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>15</Defense>
@@ -774,8 +774,8 @@
       <File>lofiChar8x8</File>
       <Index>0x7c</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>15</Defense>
@@ -798,8 +798,8 @@
       <File>lofiChar8x8</File>
       <Index>0x7d</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>15</Defense>
@@ -821,8 +821,8 @@
       <File>lofiChar8x8</File>
       <Index>0x7e</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>15</Defense>
@@ -844,8 +844,8 @@
       <File>lofiChar8x8</File>
       <Index>0x7f</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>15</Defense>
@@ -867,8 +867,8 @@
       <File>lofiChar8x8</File>
       <Index>0x7b</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>600</MaxHitPoints>
     <Defense>20</Defense>
@@ -891,8 +891,8 @@
       <File>lofiChar8x8</File>
       <Index>0x7c</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>600</MaxHitPoints>
     <Defense>20</Defense>
@@ -916,8 +916,8 @@
       <File>lofiChar8x8</File>
       <Index>0x7d</Index>
     </Texture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>600</MaxHitPoints>
     <Defense>20</Defense>
