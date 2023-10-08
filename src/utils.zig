@@ -407,16 +407,19 @@ pub const Rect = struct {
 };
 
 pub const Random = struct {
-    seed: u32 = 1,
+    seed: u32 = 834569746,
 
     pub fn init(seed: u32) Random {
         return .{ .seed = seed };
     }
 
+    pub fn setSeed(self: *Random, seed: u32) void {
+        self.seed = seed;
+    }
+
     pub fn nextIntRange(self: *Random, min: u32, max: u32) u32 {
         if (min == max)
             return min;
-
         return min + (self.gen() % (max - min));
     }
 
