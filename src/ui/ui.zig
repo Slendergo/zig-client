@@ -14,6 +14,7 @@ const InGameScreen = @import("in_game.zig").InGameScreen;
 const CharSelectScreen = @import("char_select.zig").CharSelectScreen;
 const CharCreateScreen = @import("char_create.zig").CharCreateScreen;
 const EmptyScreen = @import("empty_screen.zig").EmptyScreen;
+const OptionsUi = @import("options_ui.zig").OptionsUi;
 
 // Assumes ARGB because flash scuff. Change later
 pub const RGBF32 = extern struct {
@@ -1561,4 +1562,35 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
     }
 
     elements_to_remove.clear();
+}
+
+var options_opened: bool = false;
+var options: *OptionsUi = undefined;
+
+pub fn hideOptions() void {
+    input.disable_input = false;
+    options_opened = false;
+    options.deinit();
+}
+
+pub fn showOptions() void {
+    if (options_opened) {
+        //Maybe remove this if we want
+        //to use ESC to remove key binds
+        hideOptions();
+        return;
+    }
+
+    input.disable_input = true;
+
+    options_opened = true;
+
+    options = OptionsUi.init(main._allocator, .{ .visible = true }) catch |e| {
+        std.log.err("Initializing in options failed: {any}", .{e});
+        return;
+    };
+}
+
+pub fn switchOptionsTab(tab: OptionsUi.Tabs) void {
+    options.switchTab(tab);
 }

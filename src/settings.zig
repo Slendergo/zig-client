@@ -250,12 +250,12 @@ pub fn resetToDefault() void {
     ability = .{ .mouse = .right };
     sfx_volume = 0.33;
     music_volume = 0.33;
-    enable_glow = true;
-    enable_lights = true;
-    enable_vsync = true;
+    enable_glow = false;
+    enable_lights = false;
+    enable_vsync = false;
     always_show_xp_gain = false;
     fps_cap = 360.0;
     selected_cursor = CursorType.aztec;
-    aa_type = .msaa4x;
+    aa_type = .none; //.msaa4x; //caused the client to crash switching from none to msaa4x
     save_email = true;
 }

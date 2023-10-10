@@ -27,6 +27,8 @@ pub var selected_input_field: ?*ui.InputField = null;
 pub var input_history: std.ArrayList([]const u8) = undefined;
 pub var input_history_idx: u16 = 0;
 
+pub var disable_input: bool = false;
+
 pub fn reset() void {
     move_up = 0.0;
     move_down = 0.0;
@@ -53,6 +55,9 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     if (ui.current_screen != .in_game)
         return;
 
+    if (disable_input)
+        return;
+
     if (key == settings.move_up.getKey()) {
         move_up = 1.0;
     } else if (key == settings.move_down.getKey()) {
@@ -72,7 +77,8 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     } else if (key == settings.shoot.getKey()) {
         attacking = true;
     } else if (key == settings.options.getKey()) {
-        main.disconnect();
+        ui.showOptions();
+        //main.disconnect();
     } else if (key == settings.escape.getKey()) {
         tryEscape();
     } else if (key == settings.interact.getKey()) {
@@ -115,6 +121,9 @@ fn keyRelease(key: zglfw.Key) void {
     if (ui.current_screen != .in_game)
         return;
 
+    if (disable_input)
+        return;
+
     if (key == settings.move_up.getKey()) {
         move_up = 0.0;
     } else if (key == settings.move_down.getKey()) {
@@ -136,6 +145,9 @@ fn keyRelease(key: zglfw.Key) void {
 
 fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods) void {
     if (ui.current_screen != .in_game)
+        return;
+
+    if (disable_input)
         return;
 
     if (button == settings.move_up.getMouse()) {
@@ -198,6 +210,9 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
 
 fn mouseRelease(button: zglfw.MouseButton) void {
     if (ui.current_screen != .in_game)
+        return;
+
+    if (disable_input)
         return;
 
     if (button == settings.move_up.getMouse()) {
