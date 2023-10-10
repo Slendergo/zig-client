@@ -219,7 +219,6 @@ pub const OptionsUi = struct {
         } });
 
         //temp
-        //temp
         screen.hotkeys_text = try ui.UiText.create(allocator, .{ .x = buttons_x, .y = half_height, .visible = false, .text_data = .{
             .text = @constCast("Hotkeys"),
             .size = 24,
@@ -227,6 +226,7 @@ pub const OptionsUi = struct {
             .backing_buffer = try allocator.alloc(u8, 8),
         } });
 
+        //temp
         screen.graphics_text = try ui.UiText.create(allocator, .{ .x = buttons_x, .y = half_height, .visible = false, .text_data = .{
             .text = @constCast("Graphics"),
             .size = 24,
@@ -305,33 +305,10 @@ pub const OptionsUi = struct {
             return;
 
         self.selected_tab = tab;
-
-        switch (tab) {
-            .general => {
-                self.setGeneralVis(true);
-                self.setHotkeysVis(false);
-                self.setGraphicsVis(false);
-                self.setPerformanceVis(false);
-            },
-            .hotkeys => {
-                self.setGeneralVis(false);
-                self.setHotkeysVis(true);
-                self.setGraphicsVis(false);
-                self.setPerformanceVis(false);
-            },
-            .graphics => {
-                self.setGeneralVis(false);
-                self.setHotkeysVis(false);
-                self.setGraphicsVis(true);
-                self.setPerformanceVis(false);
-            },
-            .performance => {
-                self.setGeneralVis(false);
-                self.setHotkeysVis(false);
-                self.setGraphicsVis(false);
-                self.setPerformanceVis(true);
-            },
-        }
+        self.setGeneralVis(tab == Tabs.general);
+        self.setHotkeysVis(tab == Tabs.hotkeys);
+        self.setGraphicsVis(tab == Tabs.graphics);
+        self.setPerformanceVis(tab == Tabs.performance);
     }
 
     //All components of each tab goes below
