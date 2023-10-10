@@ -24,13 +24,14 @@ pub const OptionsUi = struct {
     buttons_background_image: *ui.Image = undefined,
     title_text: *ui.UiText = undefined,
 
-    movement_tab_button: *ui.Button = undefined,
-    graphics_tab_button: *ui.Button = undefined,
+    general_tab_button: *ui.Button = undefined,
     hotkeys_tab_button: *ui.Button = undefined,
+    graphics_tab_button: *ui.Button = undefined,
     performance_tab_button: *ui.Button = undefined,
-    selected_tab: Tabs = Tabs.movement,
 
-    movement_text: *ui.UiText = undefined,
+    selected_tab: Tabs = Tabs.general,
+
+    general_text: *ui.UiText = undefined,
     graphics_text: *ui.UiText = undefined,
     hotkeys_text: *ui.UiText = undefined,
     performance_text: *ui.UiText = undefined,
@@ -125,13 +126,13 @@ pub const OptionsUi = struct {
             .text = @constCast("Options"),
             .size = 24,
             .text_type = .bold,
-            .backing_buffer = try allocator.alloc(u8, 32),
+            .backing_buffer = try allocator.alloc(u8, 8),
         } });
 
         var tab_x_offset: f32 = 50;
         const tab_y: f32 = 100;
 
-        screen.movement_tab_button = try ui.Button.create(allocator, .{
+        screen.general_tab_button = try ui.Button.create(allocator, .{
             .x = tab_x_offset,
             .y = tab_y,
             .visible = screen.visible,
@@ -141,12 +142,12 @@ pub const OptionsUi = struct {
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
-                .text = @constCast("Movement"),
+                .text = @constCast("General"),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
-            .press_callback = movementTabCallback,
+            .press_callback = generalTabCallback,
         });
 
         tab_x_offset += 100 + button_width;
@@ -209,32 +210,36 @@ pub const OptionsUi = struct {
             .press_callback = performanceTabCallback,
         });
 
-        screen.movement_text = try ui.UiText.create(allocator, .{ .x = buttons_x, .y = half_height, .visible = true, .text_data = .{
-            .text = @constCast("Movement"),
+        //temp
+        screen.general_text = try ui.UiText.create(allocator, .{ .x = buttons_x, .y = half_height, .visible = true, .text_data = .{
+            .text = @constCast("General"),
             .size = 24,
             .text_type = .bold,
-            .backing_buffer = try allocator.alloc(u8, 32),
+            .backing_buffer = try allocator.alloc(u8, 8),
+        } });
+
+        //temp
+        //temp
+        screen.hotkeys_text = try ui.UiText.create(allocator, .{ .x = buttons_x, .y = half_height, .visible = false, .text_data = .{
+            .text = @constCast("Hotkeys"),
+            .size = 24,
+            .text_type = .bold,
+            .backing_buffer = try allocator.alloc(u8, 8),
         } });
 
         screen.graphics_text = try ui.UiText.create(allocator, .{ .x = buttons_x, .y = half_height, .visible = false, .text_data = .{
             .text = @constCast("Graphics"),
             .size = 24,
             .text_type = .bold,
-            .backing_buffer = try allocator.alloc(u8, 32),
+            .backing_buffer = try allocator.alloc(u8, 8),
         } });
 
-        screen.hotkeys_text = try ui.UiText.create(allocator, .{ .x = buttons_x, .y = half_height, .visible = false, .text_data = .{
-            .text = @constCast("Hotkeys"),
-            .size = 24,
-            .text_type = .bold,
-            .backing_buffer = try allocator.alloc(u8, 32),
-        } });
-
+        //temp
         screen.performance_text = try ui.UiText.create(allocator, .{ .x = buttons_x, .y = half_height, .visible = false, .text_data = .{
             .text = @constCast("Performance"),
             .size = 24,
             .text_type = .bold,
-            .backing_buffer = try allocator.alloc(u8, 32),
+            .backing_buffer = try allocator.alloc(u8, 8),
         } });
 
         screen.inited = true;
@@ -252,12 +257,12 @@ pub const OptionsUi = struct {
         self.reset_to_default_button.destroy();
         self.title_text.destroy();
 
-        self.movement_tab_button.destroy();
+        self.general_tab_button.destroy();
         self.hotkeys_tab_button.destroy();
         self.graphics_tab_button.destroy();
         self.performance_tab_button.destroy();
 
-        self.movement_text.destroy();
+        self.general_text.destroy();
         self.hotkeys_text.destroy();
         self.graphics_text.destroy();
         self.performance_text.destroy();
@@ -273,8 +278,8 @@ pub const OptionsUi = struct {
         settings.resetToDefault();
     }
 
-    fn movementTabCallback() void {
-        ui.switchOptionsTab(Tabs.movement);
+    fn generalTabCallback() void {
+        ui.switchOptionsTab(Tabs.general);
     }
 
     fn graphicsTabCallback() void {
@@ -302,36 +307,36 @@ pub const OptionsUi = struct {
         self.selected_tab = tab;
 
         switch (tab) {
-            .movement => {
-                self.setMovementVis(true);
+            .general => {
+                self.setGeneralVis(true);
+                self.setHotkeysVis(false);
                 self.setGraphicsVis(false);
                 self.setPerformanceVis(false);
-                self.setHotkeysVis(false);
             },
             .hotkeys => {
-                self.setMovementVis(false);
+                self.setGeneralVis(false);
+                self.setHotkeysVis(true);
                 self.setGraphicsVis(false);
                 self.setPerformanceVis(false);
-                self.setHotkeysVis(true);
             },
             .graphics => {
-                self.setMovementVis(false);
+                self.setGeneralVis(false);
+                self.setHotkeysVis(false);
                 self.setGraphicsVis(true);
                 self.setPerformanceVis(false);
-                self.setHotkeysVis(false);
             },
             .performance => {
-                self.setMovementVis(false);
+                self.setGeneralVis(false);
+                self.setHotkeysVis(false);
                 self.setGraphicsVis(false);
                 self.setPerformanceVis(true);
-                self.setHotkeysVis(false);
             },
         }
     }
 
     //All components of each tab goes below
-    fn setMovementVis(self: *OptionsUi, val: bool) void {
-        self.movement_text.visible = val;
+    fn setGeneralVis(self: *OptionsUi, val: bool) void {
+        self.general_text.visible = val;
     }
     fn setGraphicsVis(self: *OptionsUi, val: bool) void {
         self.graphics_text.visible = val;
@@ -344,7 +349,7 @@ pub const OptionsUi = struct {
     }
 
     pub const Tabs = enum {
-        movement,
+        general,
         hotkeys,
         graphics,
         performance,
