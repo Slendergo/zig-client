@@ -303,28 +303,28 @@ pub const OptionsUi = struct {
 
         switch (tab) {
             .movement => {
-                setMovementVis(self, true);
-                setGraphicsVis(self, false);
-                setPerformanceVis(self, false);
-                setHotkeysVis(self, false);
+                self.setMovementVis(true);
+                self.setGraphicsVis(false);
+                self.setPerformanceVis(false);
+                self.setHotkeysVis(false);
             },
             .hotkeys => {
-                setMovementVis(self, false);
-                setGraphicsVis(self, false);
-                setPerformanceVis(self, false);
-                setHotkeysVis(self, true);
+                self.setMovementVis(false);
+                self.setGraphicsVis(false);
+                self.setPerformanceVis(false);
+                self.setHotkeysVis(true);
             },
             .graphics => {
-                setMovementVis(self, false);
-                setGraphicsVis(self, true);
-                setPerformanceVis(self, false);
-                setHotkeysVis(self, false);
+                self.setMovementVis(false);
+                self.setGraphicsVis(true);
+                self.setPerformanceVis(false);
+                self.setHotkeysVis(false);
             },
             .performance => {
-                setMovementVis(self, false);
-                setGraphicsVis(self, false);
-                setPerformanceVis(self, true);
-                setHotkeysVis(self, false);
+                self.setMovementVis(false);
+                self.setGraphicsVis(false);
+                self.setPerformanceVis(true);
+                self.setHotkeysVis(false);
             },
         }
     }
