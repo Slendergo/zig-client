@@ -12,7 +12,7 @@ pub const CharSelectScreen = struct {
     inited: bool = false,
 
     _allocator: std.mem.Allocator = undefined,
-
+    new_char_button: *ui.Button = undefined,
     pub fn init(allocator: std.mem.Allocator) !*CharSelectScreen {
         var screen = try allocator.create(CharSelectScreen);
         screen.* = .{
@@ -25,16 +25,22 @@ pub const CharSelectScreen = struct {
         const button_data_base = assets.getUiData("buttonBase", 0);
         const button_data_hover = assets.getUiData("buttonHover", 0);
         const button_data_press = assets.getUiData("buttonPress", 0);
+        const button_width = 100;
+        const button_height = 40;
 
+        var counter: u32 = 0;
         for (main.character_list, 0..) |char, i| {
+            counter += 1;
+
             const box = ui.CharacterBox.create(allocator, .{
                 .x = (camera.screen_width - button_data_base.texWRaw()) / 2,
                 .y = @floatFromInt(50 * i),
                 .id = char.id,
+                .obj_type = char.obj_type,
                 .image_data = .{
-                    .base = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_base, 100, 40, 6, 6, 7, 7, 1.0) },
-                    .hover = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_hover, 100, 40, 6, 6, 7, 7, 1.0) },
-                    .press = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_press, 100, 40, 6, 6, 7, 7, 1.0) },
+                    .base = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                    .hover = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                    .press = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
                 },
                 .text_data = ui.TextData{
                     .text = @constCast(char.name[0..]),
@@ -46,6 +52,27 @@ pub const CharSelectScreen = struct {
             }) catch return screen;
             screen.boxes.append(box) catch return screen;
         }
+
+        screen.new_char_button = try ui.Button.create(allocator, .{
+            .x = (camera.screen_width - button_data_base.texWRaw()) / 2,
+            .y = @floatFromInt(50 * (counter + 1)),
+            .visible = false,
+            .image_data = .{
+                .base = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = ui.NineSliceImageData.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast("New Character"),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .press_callback = newCharCallback,
+        });
+
+        if (counter < main.max_chars)
+            screen.new_char_button.visible = true;
 
         screen.inited = true;
         return screen;
@@ -59,6 +86,7 @@ pub const CharSelectScreen = struct {
             box.destroy();
         }
         self.boxes.clearAndFree();
+        self.new_char_button.destroy();
 
         self._allocator.destroy(self);
     }
@@ -75,5 +103,9 @@ pub const CharSelectScreen = struct {
             std.log.err("No servers found", .{});
         }
         ui.switchScreen(.in_game);
+    }
+
+    fn newCharCallback() void {
+        ui.switchScreen(.char_create);
     }
 };

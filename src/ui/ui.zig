@@ -260,6 +260,7 @@ pub const CharacterBox = struct {
     x: f32,
     y: f32,
     id: u32,
+    obj_type: u16, //added so I don't have to make a NewCharacterBox struct rn
     press_callback: *const fn (*CharacterBox) void,
     image_data: InteractableImageData,
     state: InteractableState = .none,
