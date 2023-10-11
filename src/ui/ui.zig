@@ -262,6 +262,7 @@ pub const KeyMapper = struct {
     press_callback: *const fn () void,
     image_data: InteractableImageData,
     text_data: TextData,
+    title_text_data: ?TextData = null,
     state: InteractableState = .none,
     visible: bool = true,
     key: zglfw.Key = zglfw.Key.unknown,

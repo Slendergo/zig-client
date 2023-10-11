@@ -2558,7 +2558,19 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 key_mapper.text_data,
                 draw_data,
             );
-            
+
+            if (key_mapper.title_text_data) |text_data| {
+                const len: f32 = @floatFromInt(text_data.text.len);
+                var offset: f32 = text_data.size * len;
+                offset = @max(@min(offset, 100), 20);
+                ui_idx = drawText(
+                    ui_idx,
+                    key_mapper.x + (w - text_data.width()) / 2 + x_offset - offset, //move it before the button
+                    key_mapper.y + (h - text_data.height()) / 2 + y_offset,
+                    text_data,
+                    draw_data,
+                );
+            }
         },
         else => {},
     }

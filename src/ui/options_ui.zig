@@ -37,6 +37,9 @@ pub const OptionsUi = struct {
     performance_text: *ui.UiText = undefined,
 
     move_up_mapper: *ui.KeyMapper = undefined,
+    move_down_mapper: *ui.KeyMapper = undefined,
+    move_right_mapper: *ui.KeyMapper = undefined,
+    move_left_mapper: *ui.KeyMapper = undefined,
 
     pub fn init(allocator: std.mem.Allocator, data: OptionsUi) !*OptionsUi {
         var screen = try allocator.create(OptionsUi);
@@ -244,18 +247,108 @@ pub const OptionsUi = struct {
             .backing_buffer = try allocator.alloc(u8, 8),
         } });
 
+        const key_width: f32 = 50;
+        const key_y_spacer: f32 = 20 + button_height;
+        const key_title_size: f32 = 18;
+        var key_y: f32 = screen.general_tab_button.y + key_y_spacer;
+        const magic: f32 = key_title_size * 9;
+
         screen.move_up_mapper = try ui.KeyMapper.create(allocator, .{
-            .x = buttons_x - 100,
-            .y = half_height,
-            .visible = screen.visible,
+            .x = screen.general_tab_button.x + key_width + magic,
+            .y = key_y,
+            .visible = screen.selected_tab == Tabs.general,
             .image_data = .{
-                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
-                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
-                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
                 .text = "", //Set it to specific Settings.'key';
                 .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .title_text_data = .{
+                .text = @constCast("Move up"), //Set it to specific Settings.'key';
+                .size = key_title_size,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .press_callback = keyCallback,
+        });
+
+        key_y += key_y_spacer;
+
+        screen.move_down_mapper = try ui.KeyMapper.create(allocator, .{
+            .x = screen.general_tab_button.x + key_width + magic,
+            .y = key_y,
+            .visible = screen.selected_tab == Tabs.general,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = "", //Set it to specific Settings.'key';
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .title_text_data = .{
+                .text = @constCast("Move down"), //Set it to specific Settings.'key';
+                .size = key_title_size,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .press_callback = keyCallback,
+        });
+
+        key_y += key_y_spacer;
+
+        screen.move_right_mapper = try ui.KeyMapper.create(allocator, .{
+            .x = screen.general_tab_button.x + key_width + magic,
+            .y = key_y,
+            .visible = screen.selected_tab == Tabs.general,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = "", //Set it to specific Settings.'key';
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .title_text_data = .{
+                .text = @constCast("Move right"), //Set it to specific Settings.'key';
+                .size = key_title_size,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .press_callback = keyCallback,
+        });
+
+        key_y += key_y_spacer;
+
+        screen.move_left_mapper = try ui.KeyMapper.create(allocator, .{
+            .x = screen.general_tab_button.x + key_width + magic,
+            .y = key_y,
+            .visible = screen.selected_tab == Tabs.general,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = "", //Set it to specific Settings.'key';
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .title_text_data = .{
+                .text = @constCast("Move left"), //Set it to specific Settings.'key';
+                .size = key_title_size,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
@@ -288,6 +381,9 @@ pub const OptionsUi = struct {
         self.performance_text.destroy();
 
         self.move_up_mapper.destroy();
+        self.move_down_mapper.destroy();
+        self.move_right_mapper.destroy();
+        self.move_left_mapper.destroy();
 
         self._allocator.destroy(self);
     }
@@ -339,6 +435,10 @@ pub const OptionsUi = struct {
     //All components of each tab goes below
     fn setGeneralVis(self: *OptionsUi, val: bool) void {
         self.general_text.visible = val;
+        self.move_up_mapper.visible = val;
+        self.move_right_mapper.visible = val;
+        self.move_left_mapper.visible = val;
+        self.move_down_mapper.visible = val;
     }
     fn setGraphicsVis(self: *OptionsUi, val: bool) void {
         self.graphics_text.visible = val;
