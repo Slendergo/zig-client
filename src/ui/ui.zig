@@ -319,6 +319,9 @@ pub const KeyMapper = struct {
         }
 
         self._allocator.free(self.text_data.backing_buffer);
+        if (self.title_text_data) |title_text| {
+            self._allocator.free(title_text.backing_buffer);
+        }
 
         self._allocator.destroy(self);
     }
@@ -1146,7 +1149,6 @@ pub const DisplayContainer = struct {
             switch (elem.*) {
                 .container => |container| {
                     container.destroy();
-                    self._allocator.destroy(container);
                 },
                 .bar => |bar| {
                     self._allocator.free(bar.text_data.backing_buffer);
@@ -1192,12 +1194,17 @@ pub const DisplayContainer = struct {
                 },
                 .key_mapper => |key_mapper| {
                     self._allocator.free(key_mapper.text_data.backing_buffer);
+                    if (key_mapper.title_text_data) |title_text| {
+                        self._allocator.free(title_text.backing_buffer);
+                    }
                     self._allocator.destroy(key_mapper);
                 },
                 else => {},
             }
         }
         self._elements.deinit();
+
+        self._allocator.destroy(self);
     }
 };
 
