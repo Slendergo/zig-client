@@ -94,6 +94,7 @@ pub const OptionsUi = struct {
         const buttons_bg_image = try screen.buttons_cont.createElement(ui.Image, .{ .x = 0, .y = -20, .image_data = .{
             .nine_slice = NineSlice.fromAtlasData(text_input_press, width, button_height + 40, 8, 8, 32, 32, 1.0),
         } });
+        buttons_bg_image.x = 0;
 
         const cls_but = try screen.buttons_cont.createElement(ui.Button, .{
             .x = buttons_x - button_half_width,
@@ -163,6 +164,7 @@ pub const OptionsUi = struct {
         const gen_tab = try screen.tabs_cont.createElement(ui.Button, .{
             .x = tab_x_offset,
             .y = tab_y,
+            .visible = screen.visible,
             .image_data = .{
                 .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
@@ -183,6 +185,7 @@ pub const OptionsUi = struct {
         const keys_tab = try screen.tabs_cont.createElement(ui.Button, .{
             .x = tab_x_offset,
             .y = tab_y,
+            .visible = screen.visible,
             .image_data = .{
                 .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
@@ -224,6 +227,7 @@ pub const OptionsUi = struct {
         const perf_tab = try screen.tabs_cont.createElement(ui.Button, .{
             .x = tab_x_offset,
             .y = tab_y,
+            .visible = screen.visible,
             .image_data = .{
                 .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
@@ -248,6 +252,7 @@ pub const OptionsUi = struct {
         const move_up_map = try screen.gen_cont.createElement(ui.KeyMapper, .{
             .x = key_width + magic,
             .y = key_y,
+            .visible = screen.selected_tab == Tabs.general,
             .image_data = .{
                 .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
@@ -276,6 +281,7 @@ pub const OptionsUi = struct {
         const move_down_map = try screen.gen_cont.createElement(ui.KeyMapper, .{
             .x = key_width + magic,
             .y = key_y,
+            .visible = screen.selected_tab == Tabs.general,
             .image_data = .{
                 .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
@@ -304,6 +310,7 @@ pub const OptionsUi = struct {
         const move_right_map = try screen.gen_cont.createElement(ui.KeyMapper, .{
             .x = key_width + magic,
             .y = key_y,
+            .visible = screen.selected_tab == Tabs.general,
             .image_data = .{
                 .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
@@ -332,6 +339,7 @@ pub const OptionsUi = struct {
         const move_left_map = try screen.gen_cont.createElement(ui.KeyMapper, .{
             .x = key_width + magic,
             .y = key_y,
+            .visible = screen.selected_tab == Tabs.general,
             .image_data = .{
                 .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
@@ -371,6 +379,7 @@ pub const OptionsUi = struct {
         _ = try screen.graphics_cont.createElement(ui.Toggle, .{
             .x = toggle_x_offset + magic,
             .y = toggle_y,
+            .visible = screen.selected_tab == Tabs.graphics,
             .off_image_data = .{
                 .base = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_base_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_hover_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
@@ -391,6 +400,7 @@ pub const OptionsUi = struct {
         _ = try screen.graphics_cont.createElement(ui.Toggle, .{
             .x = toggle_x_offset + magic,
             .y = toggle_y,
+            .visible = screen.selected_tab == Tabs.graphics,
             .off_image_data = .{
                 .base = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_base_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_hover_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
@@ -401,7 +411,12 @@ pub const OptionsUi = struct {
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_hover_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_press_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
             },
-            .text_data = .{ .text = @constCast("Lights"), .size = 16, .text_type = .bold, .backing_buffer = try allocator.alloc(u8, 8) },
+            .text_data = .{
+                .text = @constCast("Lights"),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
             .toggled = settings.enable_lights,
             .state_change = onLightsToggle,
         });
@@ -411,6 +426,7 @@ pub const OptionsUi = struct {
         _ = try screen.graphics_cont.createElement(ui.Toggle, .{
             .x = toggle_x_offset + magic,
             .y = toggle_y,
+            .visible = screen.selected_tab == Tabs.graphics,
             .off_image_data = .{
                 .base = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_base_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
                 .hover = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_hover_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
