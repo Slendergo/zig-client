@@ -1108,6 +1108,10 @@ pub const DisplayContainer = struct {
 
         var elem = try self._allocator.create(T);
         elem.* = data;
+        if (T == DisplayContainer) {
+            elem._allocator = self._allocator;
+            elem._elements = try utils.DynSlice(UiElement).init(8, self._allocator);
+        }
         switch (T) {
             Image => try self._elements.add(.{ .image = elem }),
             Item => try self._elements.add(.{ .item = elem }),
@@ -1181,6 +1185,9 @@ pub const DisplayContainer = struct {
                     self._allocator.destroy(menu_bg);
                 },
                 .toggle => |toggle| {
+                    if (toggle.text_data) |text_data| {
+                        self._allocator.free(text_data.backing_buffer);
+                    }
                     self._allocator.destroy(toggle);
                 },
                 .key_mapper => |key_mapper| {
@@ -1255,6 +1262,10 @@ pub const Toggle = struct {
             }
         }
 
+        if (self.text_data) |text_data| {
+            self._allocator.free(text_data.backing_buffer);
+        }
+
         self._allocator.destroy(self);
     }
 };
@@ -1316,6 +1327,8 @@ pub fn init(allocator: std.mem.Allocator) !void {
 }
 
 pub fn deinit() void {
+    hideOptions();
+
     menu_background.destroy();
 
     switch (current_screen) {
@@ -1401,8 +1414,11 @@ pub fn removeAttachedUi(obj_id: i32, allocator: std.mem.Allocator) void {
 fn elemMove(elem: UiElement, x: f32, y: f32) void {
     switch (elem) {
         .container => |container| {
+            if (!container.visible)
+                return;
+
             for (container._elements.items()) |container_elem| {
-                elemMove(container_elem, x, y);
+                elemMove(container_elem, x - container.x, y - container.y);
             }
         },
         .item => |item| {
@@ -1475,9 +1491,12 @@ pub fn mouseMove(x: f32, y: f32) void {
 fn elemPress(elem: UiElement, x: f32, y: f32, mods: zglfw.Mods) bool {
     switch (elem) {
         .container => |container| {
+            if (!container.visible)
+                return false;
+
             var cont_iter = std.mem.reverseIterator(container._elements.items());
             while (cont_iter.next()) |container_elem| {
-                if (elemPress(container_elem, x, y, mods))
+                if (elemPress(container_elem, x - container.x, y - container.y, mods))
                     return true;
             }
         },
@@ -1591,8 +1610,11 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
 fn elemRelease(elem: UiElement, x: f32, y: f32) void {
     switch (elem) {
         .container => |container| {
+            if (!container.visible)
+                return;
+
             for (container._elements.items()) |container_elem| {
-                elemRelease(container_elem, x, y);
+                elemRelease(container_elem, x - container.x, y - container.y);
             }
         },
         .item => |item| {
@@ -1742,9 +1764,12 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
 }
 
 var options_opened: bool = false;
-var options: *OptionsUi = undefined;
+pub var options: *OptionsUi = undefined;
 
 pub fn hideOptions() void {
+    if (!options_opened)
+        return;
+
     input.disable_input = false;
     options_opened = false;
     options.deinit();
@@ -1762,12 +1787,8 @@ pub fn showOptions() void {
 
     options_opened = true;
 
-    options = OptionsUi.init(main._allocator, .{ .visible = true }) catch |e| {
+    options = OptionsUi.init(main._allocator) catch |e| {
         std.log.err("Initializing in options failed: {any}", .{e});
         return;
     };
-}
-
-pub fn switchOptionsTab(tab: OptionsUi.Tabs) void {
-    options.switchTab(tab);
 }
