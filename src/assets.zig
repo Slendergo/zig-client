@@ -875,6 +875,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addUiImage("lofiObj4", "sheets/LofiObj4.png", 8, 8, &ctx, allocator);
     try addUiImage("lofiObj5", "sheets/LofiObj5.png", 8, 8, &ctx, allocator);
     try addUiImage("lofiObj6", "sheets/LofiObj6.png", 8, 8, &ctx, allocator);
+    try addUiImage("keyIndicators", "sheets/KeyIndicators.png", 100, 100, &ctx, allocator);
     try addUiImage("errorTexture", "sheets/ErrorTexture.png", imply_size, imply_size, &ctx, allocator);
     try addUiImage("chatboxBackground", "ui/chat/ChatboxBackground.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("chatboxInput", "ui/chat/ChatboxInput.png", imply_size, imply_size, &ui_ctx, allocator);
@@ -911,7 +912,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addUiImage("playerStatusBarsDecor", "ui/PlayerStatusBarsDecor.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("playerStatusBarStatIcon", "ui/PlayerStatusBarStatIcon.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("playerStatusBarXp", "ui/PlayerStatusBarXp.png", imply_size, imply_size, &ui_ctx, allocator);
-    try addUiImage("optionsBackground", "ui/OptionsBackground.png", imply_size, imply_size,&ui_ctx, allocator);
+    try addUiImage("optionsBackground", "ui/OptionsBackground.png", imply_size, imply_size, &ui_ctx, allocator);
     if (settings.print_ui_atlas)
         try zstbi.Image.writeToFile(ui_atlas, "ui_atlas.png", .png);
 

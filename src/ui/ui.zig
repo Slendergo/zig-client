@@ -1398,69 +1398,179 @@ pub fn removeAttachedUi(obj_id: i32, allocator: std.mem.Allocator) void {
     }
 }
 
+fn elemMove(elem: UiElement, x: f32, y: f32) void {
+    switch (elem) {
+        .container => |container| {
+            for (container._elements.items()) |container_elem| {
+                elemMove(container_elem, x, y);
+            }
+        },
+        .item => |item| {
+            if (!item.visible or !item._is_dragging)
+                return;
+
+            item.x = x + item._drag_offset_x;
+            item.y = y + item._drag_offset_y;
+        },
+        .button => |button| {
+            if (!button.visible)
+                return;
+
+            if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
+                button.state = .hovered;
+            } else {
+                button.state = .none;
+            }
+        },
+        .toggle => |toggle| {
+            if (!toggle.visible)
+                return;
+
+            if (utils.isInBounds(x, y, toggle.x, toggle.y, toggle.width(), toggle.height())) {
+                toggle.state = .hovered;
+            } else {
+                toggle.state = .none;
+            }
+        },
+        .char_box => |box| {
+            if (!box.visible)
+                return;
+
+            if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
+                box.state = .hovered;
+            } else {
+                box.state = .none;
+            }
+        },
+        .input_field => |input_field| {
+            if (!input_field.visible)
+                return;
+
+            if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
+                input_field.state = .hovered;
+            } else {
+                input_field.state = .none;
+            }
+        },
+        .key_mapper => |key_mapper| {
+            if (!key_mapper.visible)
+                return;
+
+            if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
+                key_mapper.state = .hovered;
+            } else {
+                key_mapper.state = .none;
+            }
+        },
+        else => {},
+    }
+}
+
 pub fn mouseMove(x: f32, y: f32) void {
     for (elements.items()) |elem| {
-        switch (elem) {
-            .item => |item| {
-                if (!item.visible or !item._is_dragging)
-                    continue;
-
-                item.x = x + item._drag_offset_x;
-                item.y = y + item._drag_offset_y;
-            },
-            .button => |button| {
-                if (!button.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
-                    button.state = .hovered;
-                } else {
-                    button.state = .none;
-                }
-            },
-            .toggle => |toggle| {
-                if (!toggle.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, toggle.x, toggle.y, toggle.width(), toggle.height())) {
-                    toggle.state = .hovered;
-                } else {
-                    toggle.state = .none;
-                }
-            },
-            .char_box => |box| {
-                if (!box.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
-                    box.state = .hovered;
-                } else {
-                    box.state = .none;
-                }
-            },
-            .input_field => |input_field| {
-                if (!input_field.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
-                    input_field.state = .hovered;
-                } else {
-                    input_field.state = .none;
-                }
-            },
-            .key_mapper => |key_mapper| {
-                if (!key_mapper.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
-                    key_mapper.state = .hovered;
-                } else {
-                    key_mapper.state = .none;
-                }
-            },
-            else => {},
-        }
+        elemMove(elem, x, y);
     }
+}
+
+fn elemPress(elem: UiElement, x: f32, y: f32, mods: zglfw.Mods) bool {
+    switch (elem) {
+        .container => |container| {
+            var cont_iter = std.mem.reverseIterator(container._elements.items());
+            while (cont_iter.next()) |container_elem| {
+                if (elemPress(container_elem, x, y, mods))
+                    return true;
+            }
+        },
+        .item => |item| {
+            if (!item.visible or !item.draggable)
+                return false;
+
+            if (utils.isInBounds(x, y, item.x, item.y, item.width(), item.height())) {
+                if (mods.shift) {
+                    item.shift_click_callback(item);
+                    return true;
+                }
+
+                if (item._last_click_time + 333 * std.time.us_per_ms > main.current_time) {
+                    item.double_click_callback(item);
+                    return true;
+                }
+
+                item._is_dragging = true;
+                item._drag_start_x = item.x;
+                item._drag_start_y = item.y;
+                item._drag_offset_x = item.x - x;
+                item._drag_offset_y = item.y - y;
+                item._last_click_time = main.current_time;
+                return true;
+            }
+        },
+        .button => |button| {
+            if (!button.visible)
+                return false;
+
+            if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
+                button.state = .pressed;
+                button.press_callback();
+                assets.playSfx("ButtonClick");
+                return true;
+            }
+        },
+        .toggle => |toggle| {
+            if (!toggle.visible)
+                return false;
+
+            if (utils.isInBounds(x, y, toggle.x, toggle.y, toggle.width(), toggle.height())) {
+                toggle.state = .pressed;
+                toggle.toggled = !toggle.toggled;
+                if (toggle.state_change) |callback| {
+                    callback(toggle);
+                }
+                assets.playSfx("ButtonClick");
+                return true;
+            }
+        },
+        .char_box => |box| {
+            if (!box.visible)
+                return false;
+
+            if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
+                box.state = .pressed;
+                box.press_callback(box);
+                assets.playSfx("ButtonClick");
+                return true;
+            }
+        },
+        .input_field => |input_field| {
+            if (!input_field.visible)
+                return false;
+
+            if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
+                input.selected_input_field = input_field;
+                input_field._last_input = 0;
+                input_field.state = .pressed;
+                return true;
+            }
+        },
+        .key_mapper => |key_mapper| {
+            if (!key_mapper.visible)
+                return false;
+
+            if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
+                key_mapper.state = .pressed;
+                input.selected_key_mapper = key_mapper;
+
+                //Not needed at the moment
+                //key_mapper.press_callback();
+
+                assets.playSfx("ButtonClick");
+                return true;
+            }
+        },
+        else => {},
+    }
+
+    return false;
 }
 
 pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
@@ -1469,153 +1579,76 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
         input.selected_input_field = null;
     }
 
-    for (elements.items()) |elem| {
-        switch (elem) {
-            .item => |item| {
-                if (!item.visible or !item.draggable)
-                    continue;
-
-                if (utils.isInBounds(x, y, item.x, item.y, item.width(), item.height())) {
-                    if (mods.shift) {
-                        item.shift_click_callback(item);
-                        return true;
-                    }
-
-                    if (item._last_click_time + 333 * std.time.us_per_ms > main.current_time) {
-                        item.double_click_callback(item);
-                        return true;
-                    }
-
-                    item._is_dragging = true;
-                    item._drag_start_x = item.x;
-                    item._drag_start_y = item.y;
-                    item._drag_offset_x = item.x - x;
-                    item._drag_offset_y = item.y - y;
-                    item._last_click_time = main.current_time;
-                    return true;
-                }
-            },
-            .button => |button| {
-                if (!button.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
-                    button.state = .pressed;
-                    button.press_callback();
-                    assets.playSfx("ButtonClick");
-                    return true;
-                }
-            },
-            .toggle => |toggle| {
-                if (!toggle.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, toggle.x, toggle.y, toggle.width(), toggle.height())) {
-                    toggle.state = .pressed;
-                    toggle.toggled = !toggle.toggled;
-                    if (toggle.state_change) |callback| {
-                        callback(toggle);
-                    }
-                    assets.playSfx("ButtonClick");
-                    return true;
-                }
-            },
-            .char_box => |box| {
-                if (!box.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
-                    box.state = .pressed;
-                    box.press_callback(box);
-                    assets.playSfx("ButtonClick");
-                    return true;
-                }
-            },
-            .input_field => |input_field| {
-                if (!input_field.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
-                    input.selected_input_field = input_field;
-                    input_field._last_input = 0;
-                    input_field.state = .pressed;
-                    return true;
-                }
-            },
-            .key_mapper => |key_mapper| {
-                if (!key_mapper.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
-                    key_mapper.state = .pressed;
-                    input.selected_key_mapper = key_mapper;
-
-                    //Not needed at the moment
-                    //key_mapper.press_callback();
-
-                    assets.playSfx("ButtonClick");
-                    return true;
-                }
-            },
-            else => {},
-        }
+    var elem_iter = std.mem.reverseIterator(elements.items());
+    while (elem_iter.next()) |elem| {
+        if (elemPress(elem, x, y, mods))
+            return true;
     }
 
     return false;
 }
 
+fn elemRelease(elem: UiElement, x: f32, y: f32) void {
+    switch (elem) {
+        .container => |container| {
+            for (container._elements.items()) |container_elem| {
+                elemRelease(container_elem, x, y);
+            }
+        },
+        .item => |item| {
+            if (!item._is_dragging)
+                return;
+
+            item._is_dragging = false;
+            item.drag_end_callback(item);
+        },
+        .button => |button| {
+            if (!button.visible)
+                return;
+
+            if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
+                button.state = .none;
+            }
+        },
+        .toggle => |toggle| {
+            if (!toggle.visible)
+                return;
+
+            if (utils.isInBounds(x, y, toggle.x, toggle.y, toggle.width(), toggle.height())) {
+                toggle.state = .none;
+            }
+        },
+        .char_box => |box| {
+            if (!box.visible)
+                return;
+
+            if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
+                box.state = .none;
+            }
+        },
+        .input_field => |input_field| {
+            if (!input_field.visible)
+                return;
+
+            if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
+                input_field.state = .none;
+            }
+        },
+        .key_mapper => |key_mapper| {
+            if (!key_mapper.visible)
+                return;
+
+            if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
+                key_mapper.state = .none;
+            }
+        },
+        else => {},
+    }
+}
+
 pub fn mouseRelease(x: f32, y: f32) void {
     for (elements.items()) |elem| {
-        switch (elem) {
-            .item => |item| {
-                if (!item._is_dragging)
-                    continue;
-
-                item._is_dragging = false;
-                item.drag_end_callback(item);
-            },
-            .button => |button| {
-                if (!button.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
-                    button.state = .none;
-                }
-            },
-            .toggle => |toggle| {
-                if (!toggle.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, toggle.x, toggle.y, toggle.width(), toggle.height())) {
-                    toggle.state = .none;
-                }
-            },
-            .char_box => |box| {
-                if (!box.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
-                    box.state = .none;
-                }
-            },
-            .input_field => |input_field| {
-                if (!input_field.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
-                    input_field.state = .none;
-                }
-            },
-            .key_mapper => |key_mapper| {
-                if (!key_mapper.visible)
-                    continue;
-
-                if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
-                    key_mapper.state = .none;
-                }
-            },
-            else => {},
-        }
+        elemRelease(elem, x, y);
     }
 }
 
