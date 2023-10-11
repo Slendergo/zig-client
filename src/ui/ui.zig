@@ -15,6 +15,7 @@ const CharSelectScreen = @import("char_select.zig").CharSelectScreen;
 const CharCreateScreen = @import("char_create.zig").CharCreateScreen;
 const EmptyScreen = @import("empty_screen.zig").EmptyScreen;
 const OptionsUi = @import("options_ui.zig").OptionsUi;
+const settings = @import("../settings.zig");
 
 // Assumes ARGB because flash scuff. Change later
 pub const RGBF32 = extern struct {
@@ -259,13 +260,15 @@ pub const Button = struct {
 pub const KeyMapper = struct {
     x: f32,
     y: f32,
-    press_callback: *const fn () void,
+    //press_callback: *const fn () void,
+    set_key_callback: *const fn (*KeyMapper) void,
     image_data: InteractableImageData,
     text_data: TextData,
+    settings_button: *settings.Button,
+    key: zglfw.Key = zglfw.Key.unknown,
     title_text_data: ?TextData = null,
     state: InteractableState = .none,
     visible: bool = true,
-    key: zglfw.Key = zglfw.Key.unknown,
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
@@ -1505,7 +1508,10 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                 if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
                     key_mapper.state = .pressed;
                     input.selected_key_mapper = key_mapper;
-                    key_mapper.press_callback();
+
+                    //Not needed at the moment
+                    //key_mapper.press_callback();
+
                     assets.playSfx("ButtonClick");
                     return true;
                 }

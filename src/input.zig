@@ -254,38 +254,55 @@ pub fn charEvent(_: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
     }
 }
 
+fn handleKeyMapperKeyInput(key_mapper: *ui.KeyMapper, key: zglfw.Key) void {
+    switch (key) {
+        .escape => {
+            key_mapper.key = .unknown;
+
+            //I would like to change the key to show "None" after you hit esc
+            //but this gives me seg fault
+            //const name: []u8 = @constCast("None");
+
+            //for (0..key_mapper.text_data.backing_buffer.len) |i| {
+            //    if (i >= name.len)
+            //        break;
+
+            //    key_mapper.text_data.backing_buffer[i] = name[i];
+            //}
+            //key_mapper.text_data.text = key_mapper.text_data.backing_buffer;
+            return;
+        },
+        else => {
+            key_mapper.key = key;
+        },
+    }
+
+    const char_code = @intFromEnum(key_mapper.key);
+    if (char_code > std.math.maxInt(u8) or char_code < std.math.minInt(u8)) {
+        return;
+    }
+
+    const byte_code: u8 = @intCast(char_code);
+    if (!std.ascii.isASCII(byte_code))
+        return;
+
+    const tag_name: [:0]const u8 = @tagName(key);
+
+    for (0..key_mapper.text_data.backing_buffer.len) |i| {
+        if (i >= tag_name.len)
+            break;
+
+        key_mapper.text_data.backing_buffer[i] = tag_name[i];
+    }
+    key_mapper.text_data.text = key_mapper.text_data.backing_buffer;
+    key_mapper.set_key_callback(key_mapper);
+    selected_key_mapper = null;
+}
+
 pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
     if (action == .press or action == .repeat) {
         if (selected_key_mapper) |key_mapper| {
-            switch (key) {
-                .escape => {
-                    key_mapper.key = .unknown;
-                },
-                else => {
-                    key_mapper.key = key;
-                },
-            }
-
-            const char_code = @intFromEnum(key_mapper.key);
-            if (char_code > std.math.maxInt(u8) or char_code < std.math.minInt(u8)) {
-                return;
-            }
-
-            const byte_code: u8 = @intCast(char_code);
-            if (!std.ascii.isASCII(byte_code))
-                return;
-
-            const tag_name: [:0]const u8 = @tagName(key);
-
-            for (0..key_mapper.text_data.backing_buffer.len) |i| {
-                if (i >= tag_name.len)
-                    break;
-
-                key_mapper.text_data.backing_buffer[i] = tag_name[i];
-            }
-            key_mapper.text_data.text = key_mapper.text_data.backing_buffer;
-
-            selected_key_mapper = null;
+            handleKeyMapperKeyInput(key_mapper, key);
         }
         if (selected_input_field) |input_field| {
             if (mods.control) {

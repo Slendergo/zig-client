@@ -263,18 +263,20 @@ pub const OptionsUi = struct {
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
-                .text = "", //Set it to specific Settings.'key';
+                .text = @constCast(@tagName(settings.move_up.getKey())),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
             .title_text_data = .{
-                .text = @constCast("Move up"), //Set it to specific Settings.'key';
+                .text = @constCast("Move up"),
                 .size = key_title_size,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
-            .press_callback = keyCallback,
+            .key = settings.move_up.getKey(),
+            .settings_button = &settings.move_up,
+            .set_key_callback = keyCallback,
         });
 
         key_y += key_y_spacer;
@@ -289,18 +291,20 @@ pub const OptionsUi = struct {
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
-                .text = "", //Set it to specific Settings.'key';
+                .text = @constCast(@tagName(settings.move_down.getKey())),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
             .title_text_data = .{
-                .text = @constCast("Move down"), //Set it to specific Settings.'key';
+                .text = @constCast("Move down"),
                 .size = key_title_size,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
-            .press_callback = keyCallback,
+            .key = settings.move_down.getKey(),
+            .settings_button = &settings.move_down,
+            .set_key_callback = keyCallback,
         });
 
         key_y += key_y_spacer;
@@ -315,18 +319,20 @@ pub const OptionsUi = struct {
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
-                .text = "", //Set it to specific Settings.'key';
+                .text = @constCast(@tagName(settings.move_right.getKey())),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
             .title_text_data = .{
-                .text = @constCast("Move right"), //Set it to specific Settings.'key';
+                .text = @constCast("Move right"),
                 .size = key_title_size,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
-            .press_callback = keyCallback,
+            .key = settings.move_right.getKey(),
+            .settings_button = &settings.move_right,
+            .set_key_callback = keyCallback,
         });
 
         key_y += key_y_spacer;
@@ -341,18 +347,20 @@ pub const OptionsUi = struct {
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
-                .text = "", //Set it to specific Settings.'key';
+                .text = @constCast(@tagName(settings.move_left.getKey())),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
             .title_text_data = .{
-                .text = @constCast("Move left"), //Set it to specific Settings.'key';
+                .text = @constCast("Move left"),
                 .size = key_title_size,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
-            .press_callback = keyCallback,
+            .key = settings.move_left.getKey(),
+            .settings_button = &settings.move_left,
+            .set_key_callback = keyCallback,
         });
 
         screen.inited = true;
@@ -388,8 +396,8 @@ pub const OptionsUi = struct {
         self._allocator.destroy(self);
     }
 
-    fn keyCallback() void {
-        settings.save();
+    fn keyCallback(self: *ui.KeyMapper) void {
+        self.settings_button.key = self.key;
     }
 
     fn closeCallback() void {
