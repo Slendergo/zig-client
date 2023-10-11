@@ -197,6 +197,7 @@ var buffer_idx: usize = 0;
 var stream: std.net.Stream = undefined;
 var reader = utils.PacketReader{};
 var writer = utils.PacketWriter{};
+var last_tick_time: i64 = 0;
 
 pub fn init(ip: []const u8, port: u16, allocator: *std.mem.Allocator) void {
     stream = std.net.tcpConnectToAddress(std.net.Address.parseIp(ip, port) catch |address_error| {
@@ -648,21 +649,23 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
         const stats_byte_len = reader.read(u16);
         const next_obj_idx = reader.index + stats_byte_len;
 
-        const ms_time: i64 = @divFloor(main.current_time, std.time.us_per_ms);
-        const int_tick_time: i64 = @intFromFloat(tick_time);
-        const move_time_end = ms_time + int_tick_time;
-        
         if (map.findEntityRef(obj_id)) |en| {
             switch (en.*) {
                 .player => |*player| {
                     if (player.obj_id != map.local_player_id) {
+                        while (!player.move_lock.tryLock()) {}
+                        defer player.move_lock.unlock();
+                        
                         const y_dt = y - player.y;
                         const x_dt = x - player.x;
 
                         if (!std.math.isNan(player.move_angle)) {
                             const dist_sqr = y_dt * y_dt + x_dt * x_dt;
                             player.move_step = @sqrt(dist_sqr) / tick_time;
-                            player.move_time_end = move_time_end;
+                            player.target_x = x;
+                            player.target_y = y;
+                            player.target_x_dir = if (player.x > x) -1 else 1;
+                            player.target_y_dir = if (player.y > y) -1 else 1;
                             player.x_dir = x_dt / tick_time;
                             player.y_dir = y_dt / tick_time; // used for animation stuff for non "self" player
                         } else {
@@ -690,20 +693,28 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
                     continue;
                 },
                 .object => |*object| {
-                    const y_dt = y - object.y;
-                    const x_dt = x - object.x;
+                    {
+                        while (!object.move_lock.tryLock()) {}
+                        defer object.move_lock.unlock();
 
-                    if (!std.math.isNan(object.move_angle)) {
-                        const dist_sqr = y_dt * y_dt + x_dt * x_dt;
-                        object.move_step = @sqrt(dist_sqr) / tick_time;
-                        object.move_time_end = move_time_end;
-                        object.inv_dist = 0.5 / dist_sqr;
-                    } else {
-                        object.x = x;
-                        object.y = y;
+                        const y_dt = y - object.y;
+                        const x_dt = x - object.x;
+
+                        if (!std.math.isNan(object.move_angle)) {
+                            const dist_sqr = y_dt * y_dt + x_dt * x_dt;
+                            object.move_step = @sqrt(dist_sqr) / tick_time;
+                            object.target_x = x;
+                            object.target_y = y;
+                            object.target_x_dir = if (object.x > x) -1 else 1;
+                            object.target_y_dir = if (object.y > y) -1 else 1;
+                            object.inv_dist = 0.5 / dist_sqr;
+                        } else {
+                            object.x = x;
+                            object.y = y;
+                        }
+
+                        object.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
                     }
-
-                    object.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
 
                     for (0..stats_len) |_| {
                         const stat_id = reader.read(u8);

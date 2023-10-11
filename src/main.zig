@@ -123,7 +123,7 @@ fn onResize(_: *zglfw.Window, w: i32, h: i32) callconv(.C) void {
 
 fn networkTick(allocator: *std.mem.Allocator) void {
     while (tick_network) {
-        std.time.sleep(100 * std.time.ns_per_ms);
+        std.time.sleep(10 * std.time.ns_per_ms);
 
         if (selected_server) |sel_srv| {
             if (!network.connected)

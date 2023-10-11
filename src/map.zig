@@ -197,7 +197,11 @@ pub const GameObject = struct {
     top_atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     move_angle: f32 = std.math.nan(f32),
     move_step: f32 = 0.0,
-    move_time_end: i64 = 0,
+    move_lock: std.Thread.Mutex = .{},
+    target_x: f32 = 0.0,
+    target_y: f32 = 0.0,
+    target_x_dir: f32 = 0.0,
+    target_y_dir: f32 = 0.0,
     inv_dist: f32 = 0.0,
     facing: f32 = std.math.nan(f32),
     attack_start: i64 = 0,
@@ -523,7 +527,7 @@ pub const GameObject = struct {
         }
     }
 
-    pub fn update(self: *GameObject, time: i64, dt: f32) void {
+    pub fn update(self: *GameObject, _: i64, dt: f32) void {
         // todo: clean this up, reuse
         const attack_period = 300 * std.time.us_per_ms;
         if (main.current_time < self.attack_start + attack_period) {
@@ -574,9 +578,31 @@ pub const GameObject = struct {
         self.screen_y = screen_pos.y + self.z * -camera.px_per_tile - (h - size * assets.padding) - 10;
         self.screen_x = screen_pos.x;
 
-        if (!self.is_wall and !std.math.isNan(self.move_angle) and self.move_step > 0.0 and time < self.move_time_end) {
-            self.x += dt * self.move_step * @cos(self.move_angle);
-            self.y += dt * self.move_step * @sin(self.move_angle);
+        if (!self.is_wall and !std.math.isNan(self.move_angle) and self.move_step > 0.0) {
+            while (!self.move_lock.tryLock()) {}
+            defer self.move_lock.unlock();
+
+            var next_x = self.x + dt * self.move_step * @cos(self.move_angle);
+            var next_y = self.y + dt * self.move_step * @sin(self.move_angle);
+
+            if (self.target_x_dir == -1) {
+                if (self.target_x > next_x)
+                    next_x = self.x;
+            } else {
+                if (self.target_x < next_x)
+                    next_x = self.x;
+            }
+
+            if (self.target_y_dir == -1) {
+                if (self.target_y > next_y)
+                    next_y = self.y;
+            } else {
+                if (self.target_y < next_y)
+                    next_y = self.y;
+            }
+
+            self.x = next_x;
+            self.y = next_y;
         }
 
         merchantBlock: {
@@ -664,9 +690,13 @@ pub const Player = struct {
     attack_period: i64 = 0,
     attack_angle: f32 = 0,
     next_bullet_id: u8 = 0,
+    move_lock: std.Thread.Mutex = .{},
     move_angle: f32 = std.math.nan(f32),
     move_step: f32 = 0.0,
-    move_time_end: i64 = 0,
+    target_x: f32 = 0.0,
+    target_y: f32 = 0.0,
+    target_x_dir: f32 = 0.0,
+    target_y_dir: f32 = 0.0,
     facing: f32 = std.math.nan(f32),
     walk_speed_multiplier: f32 = 1.0,
     light_color: u32 = 0,
@@ -1249,9 +1279,31 @@ pub const Player = struct {
             return;
         }
 
-        if (!std.math.isNan(self.move_angle) and self.move_step > 0.0 and time < self.move_time_end) {
-            self.x += dt * self.move_step * @cos(self.move_angle);
-            self.y += dt * self.move_step * @sin(self.move_angle);
+        if (!std.math.isNan(self.move_angle) and self.move_step > 0.0) {
+            while (!self.move_lock.tryLock()) {}
+            defer self.move_lock.unlock();
+
+            var next_x = self.x + dt * self.move_step * @cos(self.move_angle);
+            var next_y = self.y + dt * self.move_step * @sin(self.move_angle);
+
+            if (self.target_x_dir == -1) {
+                if (self.target_x > next_x)
+                    next_x = self.x;
+            } else {
+                if (self.target_x < next_x)
+                    next_x = self.x;
+            }
+
+            if (self.target_y_dir == -1) {
+                if (self.target_y > next_y)
+                    next_y = self.y;
+            } else {
+                if (self.target_y < next_y)
+                    next_y = self.y;
+            }
+
+            self.x = next_x;
+            self.y = next_y;
         }
     }
 
