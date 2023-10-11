@@ -36,6 +36,8 @@ pub const OptionsUi = struct {
     hotkeys_text: *ui.UiText = undefined,
     performance_text: *ui.UiText = undefined,
 
+    move_up_mapper: *ui.KeyMapper = undefined,
+
     pub fn init(allocator: std.mem.Allocator, data: OptionsUi) !*OptionsUi {
         var screen = try allocator.create(OptionsUi);
         screen.* = .{ ._allocator = allocator };
@@ -242,6 +244,24 @@ pub const OptionsUi = struct {
             .backing_buffer = try allocator.alloc(u8, 8),
         } });
 
+        screen.move_up_mapper = try ui.KeyMapper.create(allocator, .{
+            .x = buttons_x - 100,
+            .y = half_height,
+            .visible = screen.visible,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = "", //Set it to specific Settings.'key';
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .press_callback = keyCallback,
+        });
+
         screen.inited = true;
         return screen;
     }
@@ -267,7 +287,13 @@ pub const OptionsUi = struct {
         self.graphics_text.destroy();
         self.performance_text.destroy();
 
+        self.move_up_mapper.destroy();
+
         self._allocator.destroy(self);
+    }
+
+    fn keyCallback() void {
+        settings.save();
     }
 
     fn closeCallback() void {
@@ -299,7 +325,6 @@ pub const OptionsUi = struct {
         main.disconnect();
     }
 
-    //I don't like this but it works :L -Evil
     pub fn switchTab(self: *OptionsUi, tab: Tabs) void {
         if (self.selected_tab == tab)
             return;

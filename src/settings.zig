@@ -219,6 +219,8 @@ pub fn deinit() void {
     key_tex_map.deinit();
 }
 
+pub fn save() void {}
+
 pub fn resetToDefault() void {
     inv_0 = .{ .key = .one };
     inv_1 = .{ .key = .two };

@@ -256,6 +256,69 @@ pub const Button = struct {
     }
 };
 
+pub const KeyMapper = struct {
+    x: f32,
+    y: f32,
+    press_callback: *const fn () void,
+    image_data: InteractableImageData,
+    text_data: TextData,
+    state: InteractableState = .none,
+    visible: bool = true,
+    key: zglfw.Key = zglfw.Key.unknown,
+    _disposed: bool = false,
+    _allocator: std.mem.Allocator = undefined,
+
+    pub fn create(allocator: std.mem.Allocator, data: KeyMapper) !*KeyMapper {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(KeyMapper);
+        elem.* = data;
+        elem._allocator = allocator;
+        try elements.add(.{ .key_mapper = elem });
+        return elem;
+    }
+
+    pub fn imageData(self: KeyMapper) ImageData {
+        return self.image_data.current(self.state);
+    }
+
+    pub fn width(self: KeyMapper) f32 {
+        return @max(self.text_data.width(), switch (self.imageData()) {
+            .nine_slice => |nine_slice| return nine_slice.w,
+            .normal => |image_data| return image_data.width(),
+        });
+    }
+
+    pub fn height(self: KeyMapper) f32 {
+        return @max(self.text_data.height(), switch (self.imageData()) {
+            .nine_slice => |nine_slice| return nine_slice.h,
+            .normal => |image_data| return image_data.height(),
+        });
+    }
+
+    pub fn destroy(self: *KeyMapper) void {
+        if (self._disposed)
+            return;
+
+        self._disposed = true;
+
+        for (elements.items(), 0..) |element, i| {
+            if (element == .key_mapper and element.key_mapper == self) {
+                _ = elements.remove(i);
+                break;
+            }
+        }
+
+        self._allocator.free(self.text_data.backing_buffer);
+
+        self._allocator.destroy(self);
+    }
+};
+
 pub const CharacterBox = struct {
     x: f32,
     y: f32,
@@ -1162,6 +1225,7 @@ pub const UiElement = union(enum) {
     container: *DisplayContainer,
     menu_bg: *MenuBackground,
     toggle: *Toggle,
+    key_mapper: *KeyMapper,
     // pointers on these would imply allocation, which is pointless and wasteful
     balloon: SpeechBalloon,
     status: StatusText,
@@ -1228,6 +1292,7 @@ pub fn resize(w: f32, h: f32) void {
 
 pub fn switchScreen(screen_type: ScreenType) void {
     menu_background.visible = screen_type != .in_game;
+    input.selected_key_mapper = null;
 
     switch (current_screen) {
         inline else => |screen| if (screen.inited) screen.deinit(),
@@ -1338,6 +1403,16 @@ pub fn mouseMove(x: f32, y: f32) void {
                     input_field.state = .none;
                 }
             },
+            .key_mapper => |key_mapper| {
+                if (!key_mapper.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
+                    key_mapper.state = .hovered;
+                } else {
+                    key_mapper.state = .none;
+                }
+            },
             else => {},
         }
     }
@@ -1422,6 +1497,18 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                     return true;
                 }
             },
+            .key_mapper => |key_mapper| {
+                if (!key_mapper.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
+                    key_mapper.state = .pressed;
+                    input.selected_key_mapper = key_mapper;
+                    key_mapper.press_callback();
+                    assets.playSfx("ButtonClick");
+                    return true;
+                }
+            },
             else => {},
         }
     }
@@ -1469,6 +1556,14 @@ pub fn mouseRelease(x: f32, y: f32) void {
 
                 if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
                     input_field.state = .none;
+                }
+            },
+            .key_mapper => |key_mapper| {
+                if (!key_mapper.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
+                    key_mapper.state = .none;
                 }
             },
             else => {},
