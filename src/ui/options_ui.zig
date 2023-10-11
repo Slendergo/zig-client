@@ -36,10 +36,20 @@ pub const OptionsUi = struct {
     hotkeys_text: *ui.UiText = undefined,
     performance_text: *ui.UiText = undefined,
 
+    //general
     move_up_mapper: *ui.KeyMapper = undefined,
     move_down_mapper: *ui.KeyMapper = undefined,
     move_right_mapper: *ui.KeyMapper = undefined,
     move_left_mapper: *ui.KeyMapper = undefined,
+
+    //keybinds
+
+    //graphics
+    vsync_toggle: *ui.Toggle = undefined,
+    glow_toggle: *ui.Toggle = undefined,
+    lights_toggle: *ui.Toggle = undefined,
+
+    //performance
 
     pub fn init(allocator: std.mem.Allocator, data: OptionsUi) !*OptionsUi {
         var screen = try allocator.create(OptionsUi);
@@ -363,6 +373,94 @@ pub const OptionsUi = struct {
             .set_key_callback = keyCallback,
         });
 
+        const toggle_data_base_off = assets.getUiData("toggleSliderBaseOff", 0);
+        const toggle_data_hover_off = assets.getUiData("toggleSliderHoverOff", 0);
+        const toggle_data_press_off = assets.getUiData("toggleSliderPressOff", 0);
+        const toggle_data_base_on = assets.getUiData("toggleSliderBaseOn", 0);
+        const toggle_data_hover_on = assets.getUiData("toggleSliderHoverOn", 0);
+        const toggle_data_press_on = assets.getUiData("toggleSliderPressOn", 0);
+
+        const toggle_width: f32 = 100;
+        const toggle_height: f32 = 50;
+        const toggle_x_offset: f32 = 25;
+        const toggle_y_offset: f32 = 75;
+        var toggle_y: f32 = screen.general_tab_button.y + toggle_y_offset;
+
+        screen.vsync_toggle = try ui.Toggle.create(allocator, .{
+            .x = screen.general_tab_button.x + toggle_x_offset + magic,
+            .y = toggle_y,
+            .visible = screen.selected_tab == Tabs.graphics,
+            .off_image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_base_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_hover_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_press_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+            },
+            .on_image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_base_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_hover_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_press_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast("V-Sync"),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .toggled = settings.enable_vsync,
+            .state_change = onVSyncToggle,
+        });
+
+        toggle_y += toggle_y_offset;
+
+        screen.lights_toggle = try ui.Toggle.create(allocator, .{
+            .x = screen.general_tab_button.x + toggle_x_offset + magic,
+            .y = toggle_y,
+            .visible = screen.selected_tab == Tabs.graphics,
+            .off_image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_base_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_hover_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_press_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+            },
+            .on_image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_base_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_hover_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_press_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast("Lights"),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .toggled = settings.enable_lights,
+            .state_change = onLightsToggle,
+        });
+
+        toggle_y += toggle_y_offset;
+
+        screen.glow_toggle = try ui.Toggle.create(allocator, .{
+            .x = screen.general_tab_button.x + toggle_x_offset + magic,
+            .y = toggle_y,
+            .visible = screen.selected_tab == Tabs.graphics,
+            .off_image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_base_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_hover_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_press_off, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+            },
+            .on_image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_base_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_hover_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(toggle_data_press_on, toggle_width, toggle_height, 0, 0, 84, 48, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast("Glow"),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .toggled = settings.enable_glow,
+            .state_change = onGlowToggle,
+        });
         screen.inited = true;
         return screen;
     }
@@ -393,7 +491,21 @@ pub const OptionsUi = struct {
         self.move_right_mapper.destroy();
         self.move_left_mapper.destroy();
 
+        self.vsync_toggle.destroy();
+        self.glow_toggle.destroy();
+        self.lights_toggle.destroy();
+
         self._allocator.destroy(self);
+    }
+
+    fn onVSyncToggle(self: *ui.Toggle) void {
+        settings.enable_vsync = self.toggled;
+    }
+    fn onLightsToggle(self: *ui.Toggle) void {
+        settings.enable_lights = self.toggled;
+    }
+    fn onGlowToggle(self: *ui.Toggle) void {
+        settings.enable_glow = self.toggled;
     }
 
     fn keyCallback(self: *ui.KeyMapper) void {
@@ -450,6 +562,10 @@ pub const OptionsUi = struct {
     }
     fn setGraphicsVis(self: *OptionsUi, val: bool) void {
         self.graphics_text.visible = val;
+
+        self.glow_toggle.visible = val;
+        self.vsync_toggle.visible = val;
+        self.lights_toggle.visible = val;
     }
     fn setHotkeysVis(self: *OptionsUi, val: bool) void {
         self.hotkeys_text.visible = val;

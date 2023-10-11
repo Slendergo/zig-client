@@ -1164,6 +1164,7 @@ pub const Toggle = struct {
     on_image_data: InteractableImageData,
     state: InteractableState = .none,
     toggled: bool = false,
+    text_data: ?TextData = null,
     state_change: ?*const fn (*Toggle) void,
     visible: bool = true,
     _disposed: bool = false,
