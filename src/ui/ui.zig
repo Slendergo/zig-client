@@ -1401,6 +1401,8 @@ pub fn removeAttachedUi(obj_id: i32, allocator: std.mem.Allocator) void {
 fn elemMove(elem: UiElement, x: f32, y: f32) void {
     switch (elem) {
         .container => |container| {
+            if (!container.visible)
+                return;
             for (container._elements.items()) |container_elem| {
                 elemMove(container_elem, x, y);
             }
@@ -1475,6 +1477,9 @@ pub fn mouseMove(x: f32, y: f32) void {
 fn elemPress(elem: UiElement, x: f32, y: f32, mods: zglfw.Mods) bool {
     switch (elem) {
         .container => |container| {
+            if (!container.visible)
+                return false;
+
             var cont_iter = std.mem.reverseIterator(container._elements.items());
             while (cont_iter.next()) |container_elem| {
                 if (elemPress(container_elem, x, y, mods))
@@ -1591,6 +1596,9 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
 fn elemRelease(elem: UiElement, x: f32, y: f32) void {
     switch (elem) {
         .container => |container| {
+            if (!container.visible)
+                return;
+
             for (container._elements.items()) |container_elem| {
                 elemRelease(container_elem, x, y);
             }
