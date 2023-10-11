@@ -1,6 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Objects>
   <Object type="0x0342" id="Bandit">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -10,7 +11,7 @@
     <UnlockLevel>0</UnlockLevel>
   </Object>
   <Object type="0x0343" id="Robin Hood">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -20,7 +21,7 @@
     <UnlockLevel>5</UnlockLevel>
   </Object>
   <Object type="0x0344" id="Merlin">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -30,7 +31,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x0345" id="Traditional">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -40,7 +41,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x0346" id="Juggernaut">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -50,7 +51,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x0347" id="Knight of the Round">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -60,7 +61,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x0348" id="Decorated Paladin">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -70,7 +71,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x034a" id="Skull Necromancer">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -80,7 +81,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x034b" id="Battle Huntress">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -90,7 +91,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x034c" id="Gem Mystic">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -100,7 +101,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x034d" id="Super Trickster">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -110,7 +111,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x034e" id="Sorcerer Mage">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -120,7 +121,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x034f" id="Shadow">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -130,7 +131,7 @@
     <UnlockLevel>10</UnlockLevel>
   </Object>
   <Object type="0x0350" id="Elder Wizard">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>
@@ -140,7 +141,7 @@
     <UnlockLevel>15</UnlockLevel>
   </Object>
   <Object type="0x0351" id="Robed Priest">
-    <Skin/>
+    <Skin />
     <Class>Skin</Class>
     <AnimatedTexture>
       <File>playerskins</File>

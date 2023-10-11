@@ -591,7 +591,7 @@ fn handleMapInfo(allocator: std.mem.Allocator) void {
         map.night_light_intensity = 0.0;
         map.server_time_offset = 0;
     }
-    map.random = utils.Random{ .seed = map.seed };
+    map.random.setSeed(map.seed);
 
     main.tick_frame = true;
 

@@ -8,8 +8,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x01</Index>
     </AnimatedTexture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skeletons_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkeletonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>50</MaxHitPoints>
     <Defense>0</Defense>
@@ -32,8 +32,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x02</Index>
     </AnimatedTexture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skeletons_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkeletonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>55</MaxHitPoints>
     <Defense>2</Defense>
@@ -56,8 +56,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x03</Index>
     </AnimatedTexture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skeletons_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkeletonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>60</MaxHitPoints>
     <Defense>4</Defense>
@@ -80,8 +80,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x04</Index>
     </AnimatedTexture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skeletons_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkeletonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>50</MaxHitPoints>
     <Defense>0</Defense>
@@ -104,8 +104,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x05</Index>
     </AnimatedTexture>
-    <HitSound>monster/skeletons_hit</HitSound>
-    <DeathSound>monster/skeletons_death</DeathSound>
+    <HitSound>monster/SkeletonsHit</HitSound>
+    <DeathSound>monster/SkeletonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>75</MaxHitPoints>
     <Defense>0</Defense>
@@ -129,8 +129,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x07</Index>
     </AnimatedTexture>
-    <HitSound>monster/mummies_hit</HitSound>
-    <DeathSound>monster/mummies_death</DeathSound>
+    <HitSound>monster/MummiesHit</HitSound>
+    <DeathSound>monster/MummiesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>140</MaxHitPoints>
     <Defense>0</Defense>
@@ -153,8 +153,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x08</Index>
     </AnimatedTexture>
-    <HitSound>monster/mummies_hit</HitSound>
-    <DeathSound>monster/mummies_death</DeathSound>
+    <HitSound>monster/MummiesHit</HitSound>
+    <DeathSound>monster/MummiesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>140</MaxHitPoints>
     <Defense>0</Defense>
@@ -177,8 +177,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x09</Index>
     </AnimatedTexture>
-    <HitSound>monster/mummies_hit</HitSound>
-    <DeathSound>monster/mummies_death</DeathSound>
+    <HitSound>monster/MummiesHit</HitSound>
+    <DeathSound>monster/MummiesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>140</MaxHitPoints>
     <Defense>0</Defense>
@@ -201,8 +201,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x0b</Index>
     </AnimatedTexture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>130</MaxHitPoints>
     <Defense>2</Defense>
@@ -226,8 +226,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x0c</Index>
     </AnimatedTexture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>150</MaxHitPoints>
     <Defense>4</Defense>
@@ -250,8 +250,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x0d</Index>
     </AnimatedTexture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>130</MaxHitPoints>
     <Defense>0</Defense>
@@ -275,8 +275,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x0e</Index>
     </AnimatedTexture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>130</MaxHitPoints>
     <Defense>2</Defense>
@@ -299,8 +299,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x0f</Index>
     </AnimatedTexture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>160</MaxHitPoints>
     <Defense>6</Defense>
@@ -323,8 +323,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x10</Index>
     </AnimatedTexture>
-    <HitSound>monster/ghosts_hit</HitSound>
-    <DeathSound>monster/ghosts_death</DeathSound>
+    <HitSound>monster/GhostsHit</HitSound>
+    <DeathSound>monster/GhostsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>180</MaxHitPoints>
     <Defense>8</Defense>
@@ -347,8 +347,8 @@
       <File>lofiChar16x16</File>
       <Index>0x41</Index>
     </Texture>
-    <HitSound>monster/flaming_skulls_hit</HitSound>
-    <DeathSound>monster/flaming_skulls_death</DeathSound>
+    <HitSound>monster/FlamingSkullsHit</HitSound>
+    <DeathSound>monster/FlamingSkullsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>7000</MaxHitPoints>
     <Defense>12</Defense>
@@ -390,8 +390,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x11</Index>
     </AnimatedTexture>
-    <HitSound>monster/demons_hit</HitSound>
-    <DeathSound>monster/demons_death</DeathSound>
+    <HitSound>monster/DemonsHit</HitSound>
+    <DeathSound>monster/DemonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>200</MaxHitPoints>
     <Defense>10</Defense>
@@ -416,8 +416,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x12</Index>
     </AnimatedTexture>
-    <HitSound>monster/demons_hit</HitSound>
-    <DeathSound>monster/demons_death</DeathSound>
+    <HitSound>monster/DemonsHit</HitSound>
+    <DeathSound>monster/DemonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>250</MaxHitPoints>
     <Defense>12</Defense>
@@ -440,8 +440,8 @@
       <File>chars8x8rHero1</File>
       <Index>0x13</Index>
     </AnimatedTexture>
-    <HitSound>monster/demons_hit</HitSound>
-    <DeathSound>monster/demons_death</DeathSound>
+    <HitSound>monster/DemonsHit</HitSound>
+    <DeathSound>monster/DemonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>260</MaxHitPoints>
     <Defense>14</Defense>
@@ -582,8 +582,8 @@
       <File>lofiChar16x16</File>
       <Index>0x42</Index>
     </Texture>
-    <HitSound>monster/cyclops_hit</HitSound>
-    <DeathSound>monster/cyclops_death</DeathSound>
+    <HitSound>monster/CyclopsHit</HitSound>
+    <DeathSound>monster/CyclopsDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>4500</MaxHitPoints>
     <Defense>8</Defense>
@@ -655,8 +655,8 @@
       <File>chars8x8rHero2</File>
       <Index>0x04</Index>
     </AnimatedTexture>
-    <HitSound>monster/cyclops_hit</HitSound>
-    <DeathSound>monster/cyclops_death</DeathSound>
+    <HitSound>monster/CyclopsHit</HitSound>
+    <DeathSound>monster/CyclopsDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>150</MaxHitPoints>
     <Defense>10</Defense>
@@ -679,8 +679,8 @@
       <File>chars8x8rHero2</File>
       <Index>0x05</Index>
     </AnimatedTexture>
-    <HitSound>monster/cyclops_hit</HitSound>
-    <DeathSound>monster/cyclops_death</DeathSound>
+    <HitSound>monster/CyclopsHit</HitSound>
+    <DeathSound>monster/CyclopsDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>300</MaxHitPoints>
     <Defense>20</Defense>
@@ -703,8 +703,8 @@
       <File>chars8x8rHero2</File>
       <Index>0x06</Index>
     </AnimatedTexture>
-    <HitSound>monster/cyclops_hit</HitSound>
-    <DeathSound>monster/cyclops_death</DeathSound>
+    <HitSound>monster/CyclopsHit</HitSound>
+    <DeathSound>monster/CyclopsDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>310</MaxHitPoints>
     <Defense>10</Defense>
@@ -727,8 +727,8 @@
       <File>chars8x8rHero2</File>
       <Index>0x07</Index>
     </AnimatedTexture>
-    <HitSound>monster/cyclops_hit</HitSound>
-    <DeathSound>monster/cyclops_death</DeathSound>
+    <HitSound>monster/CyclopsHit</HitSound>
+    <DeathSound>monster/CyclopsDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>320</MaxHitPoints>
     <Defense>20</Defense>
@@ -751,8 +751,8 @@
       <File>chars8x8rHero2</File>
       <Index>0x08</Index>
     </AnimatedTexture>
-    <HitSound>monster/cyclops_hit</HitSound>
-    <DeathSound>monster/cyclops_death</DeathSound>
+    <HitSound>monster/CyclopsHit</HitSound>
+    <DeathSound>monster/CyclopsDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>350</MaxHitPoints>
     <Defense>10</Defense>
@@ -774,8 +774,8 @@
       <File>chars8x8rBeach</File>
       <Index>8</Index>
     </AnimatedTexture>
-    <HitSound>monster/chicken_hit</HitSound>
-    <DeathSound>monster/chicken_death</DeathSound>
+    <HitSound>monster/ChickenHit</HitSound>
+    <DeathSound>monster/ChickenDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -787,8 +787,8 @@
       <File>chars8x8rBeach</File>
       <Index>8</Index>
     </AnimatedTexture>
-    <HitSound>monster/chicken_hit</HitSound>
-    <DeathSound>monster/chicken_death</DeathSound>
+    <HitSound>monster/ChickenHit</HitSound>
+    <DeathSound>monster/ChickenDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>30</MaxHitPoints>
     <Defense>0</Defense>
@@ -800,8 +800,8 @@
       <File>chars16x16rEncounters</File>
       <Index>2</Index>
     </AnimatedTexture>
-    <HitSound>monster/chicken_hit</HitSound>
-    <DeathSound>monster/chicken_death</DeathSound>
+    <HitSound>monster/ChickenHit</HitSound>
+    <DeathSound>monster/ChickenDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>60</MaxHitPoints>
     <Defense>0</Defense>
@@ -815,8 +815,8 @@
       <File>chars8x8rBeach</File>
       <Index>9</Index>
     </AnimatedTexture>
-    <HitSound>monster/chicken_hit</HitSound>
-    <DeathSound>monster/chicken_death</DeathSound>
+    <HitSound>monster/ChickenHit</HitSound>
+    <DeathSound>monster/ChickenDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -828,8 +828,8 @@
       <File>chars8x8rBeach</File>
       <Index>6</Index>
     </AnimatedTexture>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/pirates_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/PiratesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>10</MaxHitPoints>
     <Defense>0</Defense>
@@ -850,8 +850,8 @@
       <File>chars8x8rBeach</File>
       <Index>7</Index>
     </AnimatedTexture>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/pirates_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/PiratesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>10</MaxHitPoints>
     <Defense>0</Defense>
@@ -1043,8 +1043,8 @@
       <File>chars8x8rEncounters</File>
       <Index>50</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1069,8 +1069,8 @@
       <File>chars8x8rEncounters</File>
       <Index>51</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1095,8 +1095,8 @@
       <File>chars8x8rEncounters</File>
       <Index>52</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1123,8 +1123,8 @@
       <File>chars8x8rEncounters</File>
       <Index>53</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1148,8 +1148,8 @@
       <File>chars8x8rEncounters</File>
       <Index>54</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1173,8 +1173,8 @@
       <File>chars8x8rEncounters</File>
       <Index>55</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1199,8 +1199,8 @@
       <File>chars8x8rEncounters</File>
       <Index>56</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1226,8 +1226,8 @@
       <File>chars8x8rEncounters</File>
       <Index>57</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1254,8 +1254,8 @@
       <File>chars8x8rEncounters</File>
       <Index>58</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1280,8 +1280,8 @@
       <File>chars8x8rEncounters</File>
       <Index>59</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1308,8 +1308,8 @@
       <File>chars8x8rEncounters</File>
       <Index>60</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1334,8 +1334,8 @@
       <File>chars8x8rEncounters</File>
       <Index>61</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1359,8 +1359,8 @@
       <File>chars8x8rEncounters</File>
       <Index>62</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1385,8 +1385,8 @@
       <File>chars8x8rEncounters</File>
       <Index>63</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -1442,8 +1442,8 @@
         <Index>18</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/medusa_hit</HitSound>
-    <DeathSound>monster/undead_dwarves_hit</DeathSound>
+    <HitSound>monster/MedusaHit</HitSound>
+    <DeathSound>monster/UndeadDwarvesHit</DeathSound>
     <MaxHitPoints>3000</MaxHitPoints>
     <Defense>63</Defense>
     <XpMult>1.4</XpMult>

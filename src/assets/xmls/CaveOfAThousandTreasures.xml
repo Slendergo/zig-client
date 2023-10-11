@@ -7,8 +7,8 @@
       <File>chars16x16rEncounters</File>
       <Index>47</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>125</Size>
     <ShadowSize>50</ShadowSize>
     <MaxHitPoints>10000</MaxHitPoints>
@@ -105,8 +105,8 @@
       <File>chars16x16rEncounters</File>
       <Index>48</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>150</Size>
     <ShadowSize>50</ShadowSize>
     <MaxHitPoints>2000</MaxHitPoints>
@@ -187,8 +187,8 @@
         <Index>49</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/default_hit</HitSound>
-    <DeathSound>monster/dark_elves_death</DeathSound>
+    <HitSound>monster/DefaultHit</HitSound>
+    <DeathSound>monster/DarkElvesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>4000</MaxHitPoints>
     <Defense>15</Defense>
@@ -313,8 +313,8 @@
       <File>chars8x8rEncounters</File>
       <Index>41</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>125</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2000</MaxHitPoints>
@@ -379,8 +379,8 @@
         <Index>43</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>125</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>2500</MaxHitPoints>
@@ -419,8 +419,8 @@
       </AnimatedTexture>
       <Effect particle="SwirlingMist" cooldown="0.1">XMLEffect</Effect>
     </AltTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>225</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>25000</MaxHitPoints>
@@ -455,7 +455,7 @@
     </Texture>
     <SlotType>10</SlotType>
     <Description>A map that reveals the way to hidden treasure.</Description>
-    <Sound>use_key</Sound>
+    <Sound>UseKey</Sound>
     <Consumable />
     <Soulbound />
     <Activate id="Treasure Cave Portal">Create</Activate>
@@ -476,8 +476,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>43</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>150</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>3000</MaxHitPoints>
@@ -514,8 +514,8 @@
         <Index>0x212</Index>
       </Texture>
     </RandomTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>125</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>500</MaxHitPoints>
@@ -547,8 +547,8 @@
         <Index>0x216</Index>
       </Texture>
     </AltTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>250</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>1000</MaxHitPoints>
@@ -582,8 +582,8 @@
       <Index>44</Index>
     </AnimatedTexture>
     <Enemy />
-    <HitSound>monster/cubes_hit</HitSound>
-    <DeathSound>monster/cubes_death</DeathSound>
+    <HitSound>monster/CubesHit</HitSound>
+    <DeathSound>monster/CubesDeath</DeathSound>
     <Defense>5</Defense>
     <XpMult>0.0</XpMult>
     <MaxHitPoints>1000</MaxHitPoints>

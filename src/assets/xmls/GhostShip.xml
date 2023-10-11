@@ -25,8 +25,8 @@
         <Index>0x3f</Index>
       </Texture>
     </AltTexture>
-    <HitSound>monster/default_hit</HitSound>
-    <DeathSound>monster/dark_elves_death</DeathSound>
+    <HitSound>monster/DefaultHit</HitSound>
+    <DeathSound>monster/DarkElvesDeath</DeathSound>
     <Size>140</Size>
     <ShadowSize>70</ShadowSize>
     <MaxHitPoints>30000</MaxHitPoints>
@@ -39,8 +39,8 @@
       <File>chars8x8rEncounters</File>
       <Index>37</Index>
     </AnimatedTexture>
-    <HitSound>monster/default_hit</HitSound>
-    <DeathSound>monster/dark_elves_death</DeathSound>
+    <HitSound>monster/DefaultHit</HitSound>
+    <DeathSound>monster/DarkElvesDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>1000</MaxHitPoints>
@@ -53,8 +53,8 @@
       <File>chars16x16rEncounters</File>
       <Index>38</Index>
     </AnimatedTexture>
-    <HitSound>monster/traps_hit</HitSound>
-    <DeathSound>monster/traps_death</DeathSound>
+    <HitSound>monster/TrapsHit</HitSound>
+    <DeathSound>monster/TrapsDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>1000</MaxHitPoints>
@@ -80,8 +80,8 @@
       <File>chars16x16rEncounters</File>
       <Index>38</Index>
     </AnimatedTexture>
-    <HitSound>monster/traps_hit</HitSound>
-    <DeathSound>monster/traps_death</DeathSound>
+    <HitSound>monster/TrapsHit</HitSound>
+    <DeathSound>monster/TrapsDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>1000</MaxHitPoints>
@@ -106,8 +106,8 @@
       <File>chars8x8rEncounters</File>
       <Index>35</Index>
     </AnimatedTexture>
-    <HitSound>monster/dragons_hit</HitSound>
-    <DeathSound>monster/dragons_death</DeathSound>
+    <HitSound>monster/DragonsHit</HitSound>
+    <DeathSound>monster/DragonsDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>800</MaxHitPoints>
@@ -202,8 +202,8 @@
         <Index>0x3a</Index>
       </Texture>
     </AltTexture>
-    <HitSound>monster/sprites_hit</HitSound>
-    <DeathSound>monster/sprites_death</DeathSound>
+    <HitSound>monster/SpritesHit</HitSound>
+    <DeathSound>monster/SpritesDeath</DeathSound>
     <Size>0</Size>
     <MaxHitPoints>800</MaxHitPoints>
     <Defense>15</Defense>
@@ -227,8 +227,8 @@
       <File>chars16x16rEncounters</File>
       <Index>39</Index>
     </AnimatedTexture>
-    <HitSound>monster/flaming_skulls_hit</HitSound>
-    <DeathSound>monster/beholder_death</DeathSound>
+    <HitSound>monster/FlamingSkullsHit</HitSound>
+    <DeathSound>monster/BeholderDeath</DeathSound>
     <MaxHitPoints>2000</MaxHitPoints>
     <XpMult>0</XpMult>
     <Enemy />
@@ -256,8 +256,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>40</Index>
     </AnimatedTexture>
-    <HitSound>monster/sprites_hit</HitSound>
-    <DeathSound>monster/sprites_death</DeathSound>
+    <HitSound>monster/SpritesHit</HitSound>
+    <DeathSound>monster/SpritesDeath</DeathSound>
     <Size>0</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>6000</MaxHitPoints>
@@ -285,8 +285,8 @@
       <File>chars16x16rEncounters</File>
       <Index>37</Index>
     </AnimatedTexture>
-    <HitSound>monster/stone_walls_death</HitSound>
-    <DeathSound>monster/flaming_skulls_death</DeathSound>
+    <HitSound>monster/StoneWallsDeath</HitSound>
+    <DeathSound>monster/FlamingSkullsDeath</DeathSound>
     <Size>130</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>42000</MaxHitPoints>
@@ -378,8 +378,8 @@
         <Index>30</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/skull_shrine_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/SkullShrineDeath</DeathSound>
     <Size>0</Size>
     <MaxHitPoints>8000</MaxHitPoints>
     <StasisImmune />
@@ -443,8 +443,8 @@
     <Size>0</Size>
     <MaxHitPoints>1700</MaxHitPoints>
     <Defense>15</Defense>
-    <HitSound>monster/ghosts_death</HitSound>
-    <DeathSound>monster/flaming_skulls_hit</DeathSound>
+    <HitSound>monster/GhostsDeath</HitSound>
+    <DeathSound>monster/FlamingSkullsHit</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj3</File>
@@ -467,8 +467,8 @@
       <File>lofiObj3</File>
       <Index>0xac</Index>
     </Texture>
-    <HitSound>monster/traps_hit</HitSound>
-    <DeathSound>monster/flaming_skulls_hit</DeathSound>
+    <HitSound>monster/TrapsHit</HitSound>
+    <DeathSound>monster/FlamingSkullsHit</DeathSound>
     <ShadowSize>0</ShadowSize>
     <LightColor>0xd9b368</LightColor>
     <LightIntensity>0.15</LightIntensity>
@@ -501,8 +501,8 @@
       <File>lofiObj3</File>
       <Index>0xad</Index>
     </Texture>
-    <HitSound>monster/traps_hit</HitSound>
-    <DeathSound>spell/fire_nova</DeathSound>
+    <HitSound>monster/TrapsHit</HitSound>
+    <DeathSound>spell/FireNova</DeathSound>
     <MaxHitPoints>2000</MaxHitPoints>
     <XpMult>0.0</XpMult>
     <Size>120</Size>
@@ -518,7 +518,7 @@
     <MaxHitPoints>100</MaxHitPoints>
     <NoMiniMap />
     <ShadowSize>80</ShadowSize>
-    <DeathSound>weapon/obsidian_dagger</DeathSound>
+    <DeathSound>weapon/ObsidianDagger</DeathSound>
   </Object>
   <Object type="0x0e40" id="Red Key">
     <Class>Character</Class>
@@ -530,7 +530,7 @@
     <MaxHitPoints>100</MaxHitPoints>
     <NoMiniMap />
     <ShadowSize>80</ShadowSize>
-    <DeathSound>weapon/obsidian_dagger</DeathSound>
+    <DeathSound>weapon/ObsidianDagger</DeathSound>
   </Object>
   <Object type="0x0e3f" id="Green Key">
     <Class>Character</Class>
@@ -542,7 +542,7 @@
     <MaxHitPoints>100</MaxHitPoints>
     <NoMiniMap />
     <ShadowSize>80</ShadowSize>
-    <DeathSound>weapon/obsidian_dagger</DeathSound>
+    <DeathSound>weapon/ObsidianDagger</DeathSound>
   </Object>
   <Object type="0x0e3e" id="Purple Key">
     <Class>Character</Class>
@@ -554,7 +554,7 @@
     <MaxHitPoints>100</MaxHitPoints>
     <NoMiniMap />
     <ShadowSize>80</ShadowSize>
-    <DeathSound>weapon/obsidian_dagger</DeathSound>
+    <DeathSound>weapon/ObsidianDagger</DeathSound>
   </Object>
   <Object type="0x0e2e" id="Yellow Opener">
     <Class>Character</Class>
@@ -628,8 +628,8 @@
       <File>chars8x8rEncounters</File>
       <Index>36</Index>
     </AnimatedTexture>
-    <HitSound>monster/flaming_skulls_hit</HitSound>
-    <DeathSound>monster/beholder_death</DeathSound>
+    <HitSound>monster/FlamingSkullsHit</HitSound>
+    <DeathSound>monster/BeholderDeath</DeathSound>
     <MaxHitPoints>1200</MaxHitPoints>
     <XpMult>0</XpMult>
     <Enemy />
@@ -680,7 +680,7 @@
     <MaxHitPoints>500</MaxHitPoints>
     <Defense>30</Defense>
     <Z>0.33</Z>
-    <DeathSound>monster/flaming_skulls_hit</DeathSound>
+    <DeathSound>monster/FlamingSkullsHit</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj3</File>
@@ -706,8 +706,8 @@
     <MaxHitPoints>2300</MaxHitPoints>
     <Defense>50</Defense>
     <Z>0.15</Z>
-    <HitSound>monster/ghosts_death</HitSound>
-    <DeathSound>monster/flaming_skulls_hit</DeathSound>
+    <HitSound>monster/GhostsDeath</HitSound>
+    <DeathSound>monster/FlamingSkullsHit</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj3</File>
@@ -755,8 +755,8 @@
     <ShadowSize>85</ShadowSize>
     <MaxHitPoints>200</MaxHitPoints>
     <Defense>2</Defense>
-    <HitSound>monster/blobs_hit</HitSound>
-    <DeathSound>monster/blobs_death</DeathSound>
+    <HitSound>monster/BlobsHit</HitSound>
+    <DeathSound>monster/BlobsDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>invisible</File>
@@ -782,8 +782,8 @@
     <MaxHitPoints>1600</MaxHitPoints>
     <Defense>3</Defense>
     <Z>0.1</Z>
-    <HitSound>monster/cubes_death</HitSound>
-    <DeathSound>monster/dark_elves_death</DeathSound>
+    <HitSound>monster/CubesDeath</HitSound>
+    <DeathSound>monster/DarkElvesDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj3</File>
@@ -816,8 +816,8 @@
     <Size>110</Size>
     <MaxHitPoints>1200</MaxHitPoints>
     <Defense>17</Defense>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/undead_hobbits_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/UndeadHobbitsDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj3</File>
@@ -837,13 +837,13 @@
     <AnimatedTexture>
       <File>chars8x8rEncounters</File>
       <Index>32</Index>
-    </AnimatedTexture>	
-		<XpMult>1.0</XpMult>
+    </AnimatedTexture>
+    <XpMult>1.0</XpMult>
     <Size>110</Size>
     <MaxHitPoints>700</MaxHitPoints>
     <Defense>11</Defense>
-    <HitSound>monster/pirates_hit</HitSound>
-    <DeathSound>monster/undead_hobbits_death</DeathSound>
+    <HitSound>monster/PiratesHit</HitSound>
+    <DeathSound>monster/UndeadHobbitsDeath</DeathSound>
     <BloodProb>0.5</BloodProb>
     <BloodColor>0x50d71b</BloodColor>
     <Projectile id="0">
@@ -857,7 +857,7 @@
       <LifetimeMS>1700</LifetimeMS>
       <Size>80</Size>
     </Projectile>
-    </Object>
+  </Object>
   <Object type="0x0e31" id="Lil' Ghost Pirate">
     <Class>Character</Class>
     <Group>GhostShip Group</Group>
@@ -878,8 +878,8 @@
     <Size>0</Size>
     <MaxHitPoints>700</MaxHitPoints>
     <Defense>0</Defense>
-    <HitSound>monster/ghosts_death</HitSound>
-    <DeathSound>monster/flaming_skulls_hit</DeathSound>
+    <HitSound>monster/GhostsDeath</HitSound>
+    <DeathSound>monster/FlamingSkullsHit</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj3</File>
@@ -899,8 +899,8 @@
       <File>chars8x8rEncounters</File>
       <Index>34</Index>
     </AnimatedTexture>
-    <HitSound>monster/bats_hit</HitSound>
-    <DeathSound>monster/flayers_hit</DeathSound>
+    <HitSound>monster/BatsHit</HitSound>
+    <DeathSound>monster/FlayersHit</DeathSound>
     <XpMult>1.0</XpMult>
     <Size>100</Size>
     <MaxHitPoints>650</MaxHitPoints>

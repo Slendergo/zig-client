@@ -23,9 +23,12 @@ pub var rotate: i8 = 0;
 pub var mouse_x: f64 = 0.0;
 pub var mouse_y: f64 = 0.0;
 
+pub var selected_key_mapper: ?*ui.KeyMapper = null;
 pub var selected_input_field: ?*ui.InputField = null;
 pub var input_history: std.ArrayList([]const u8) = undefined;
 pub var input_history_idx: u16 = 0;
+
+pub var disable_input: bool = false;
 
 pub fn reset() void {
     move_up = 0.0;
@@ -53,6 +56,9 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     if (ui.current_screen != .in_game)
         return;
 
+    if (disable_input)
+        return;
+
     if (key == settings.move_up.getKey()) {
         move_up = 1.0;
     } else if (key == settings.move_down.getKey()) {
@@ -72,7 +78,8 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     } else if (key == settings.shoot.getKey()) {
         attacking = true;
     } else if (key == settings.options.getKey()) {
-        main.disconnect();
+        ui.showOptions();
+        //main.disconnect();
     } else if (key == settings.escape.getKey()) {
         tryEscape();
     } else if (key == settings.interact.getKey()) {
@@ -115,6 +122,9 @@ fn keyRelease(key: zglfw.Key) void {
     if (ui.current_screen != .in_game)
         return;
 
+    if (disable_input)
+        return;
+
     if (key == settings.move_up.getKey()) {
         move_up = 0.0;
     } else if (key == settings.move_down.getKey()) {
@@ -136,6 +146,9 @@ fn keyRelease(key: zglfw.Key) void {
 
 fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods) void {
     if (ui.current_screen != .in_game)
+        return;
+
+    if (disable_input)
         return;
 
     if (button == settings.move_up.getMouse()) {
@@ -200,6 +213,9 @@ fn mouseRelease(button: zglfw.MouseButton) void {
     if (ui.current_screen != .in_game)
         return;
 
+    if (disable_input)
+        return;
+
     if (button == settings.move_up.getMouse()) {
         move_up = 0.0;
     } else if (button == settings.move_down.getMouse()) {
@@ -238,8 +254,56 @@ pub fn charEvent(_: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
     }
 }
 
+fn handleKeyMapperKeyInput(key_mapper: *ui.KeyMapper, key: zglfw.Key) void {
+    switch (key) {
+        .escape => {
+            key_mapper.key = .unknown;
+
+            //I would like to change the key to show "None" after you hit esc
+            //but this gives me seg fault
+            //const name: []u8 = @constCast("None");
+
+            //for (0..key_mapper.text_data.backing_buffer.len) |i| {
+            //    if (i >= name.len)
+            //        break;
+
+            //    key_mapper.text_data.backing_buffer[i] = name[i];
+            //}
+            //key_mapper.text_data.text = key_mapper.text_data.backing_buffer;
+            return;
+        },
+        else => {
+            key_mapper.key = key;
+        },
+    }
+
+    const char_code = @intFromEnum(key_mapper.key);
+    if (char_code > std.math.maxInt(u8) or char_code < std.math.minInt(u8)) {
+        return;
+    }
+
+    const byte_code: u8 = @intCast(char_code);
+    if (!std.ascii.isASCII(byte_code))
+        return;
+
+    const tag_name: [:0]const u8 = @tagName(key);
+
+    for (0..key_mapper.text_data.backing_buffer.len) |i| {
+        if (i >= tag_name.len)
+            break;
+
+        key_mapper.text_data.backing_buffer[i] = tag_name[i];
+    }
+    key_mapper.text_data.text = key_mapper.text_data.backing_buffer;
+    key_mapper.set_key_callback(key_mapper);
+    selected_key_mapper = null;
+}
+
 pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
     if (action == .press or action == .repeat) {
+        if (selected_key_mapper) |key_mapper| {
+            handleKeyMapperKeyInput(key_mapper, key);
+        }
         if (selected_input_field) |input_field| {
             if (mods.control) {
                 switch (key) {

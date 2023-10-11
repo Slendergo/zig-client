@@ -7,8 +7,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>21</Index>
     </AnimatedTexture>
-    <HitSound>monster/minion_of_oryx_hit</HitSound>
-    <DeathSound>monster/minion_of_oryx_death</DeathSound>
+    <HitSound>monster/MinionOfOryxHit</HitSound>
+    <DeathSound>monster/MinionOfOryxDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>12</Defense>
@@ -66,8 +66,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>22</Index>
     </AnimatedTexture>
-    <HitSound>monster/minion_of_oryx_hit</HitSound>
-    <DeathSound>monster/minion_of_oryx_death</DeathSound>
+    <HitSound>monster/MinionOfOryxHit</HitSound>
+    <DeathSound>monster/MinionOfOryxDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>12</Defense>
@@ -80,8 +80,8 @@
       <File>lofiChar28x8</File>
       <Index>0xa0</Index>
     </Texture>
-    <HitSound>monster/minion_of_oryx_hit</HitSound>
-    <DeathSound>monster/minion_of_oryx_death</DeathSound>
+    <HitSound>monster/MinionOfOryxHit</HitSound>
+    <DeathSound>monster/MinionOfOryxDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>200</MaxHitPoints>
     <Defense>0</Defense>
@@ -103,8 +103,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>23</Index>
     </AnimatedTexture>
-    <HitSound>monster/minion_of_oryx_hit</HitSound>
-    <DeathSound>monster/minion_of_oryx_death</DeathSound>
+    <HitSound>monster/MinionOfOryxHit</HitSound>
+    <DeathSound>monster/MinionOfOryxDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>12</Defense>
@@ -117,8 +117,8 @@
       <File>lofiObj</File>
       <Index>0x97</Index>
     </Texture>
-    <HitSound>monster/minion_of_oryx_hit</HitSound>
-    <DeathSound>monster/minion_of_oryx_death</DeathSound>
+    <HitSound>monster/MinionOfOryxHit</HitSound>
+    <DeathSound>monster/MinionOfOryxDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>100</MaxHitPoints>
     <Defense>0</Defense>
@@ -151,8 +151,8 @@
     </RandomTexture>
     <Static />
     <OccupySquare />
-    <HitSound>monster/wooden_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/WoodenWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <MaxHitPoints>3000</MaxHitPoints>
     <StasisImmune />
     <Enemy />
@@ -312,8 +312,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>24</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>90</Size>
     <ShadowSize>0</ShadowSize>
     <MaxHitPoints>3000</MaxHitPoints>
@@ -327,8 +327,8 @@
       <File>chars16x16rEncounters</File>
       <Index>1</Index>
     </AnimatedTexture>
-    <HitSound>monster/minion_of_oryx_hit</HitSound>
-    <DeathSound>monster/minion_of_oryx_death</DeathSound>
+    <HitSound>monster/MinionOfOryxHit</HitSound>
+    <DeathSound>monster/MinionOfOryxDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>1500</MaxHitPoints>
     <Defense>18</Defense>

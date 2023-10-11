@@ -42,8 +42,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>39</Index>
     </AnimatedTexture>
-    <HitSound>monster/greater_pit_snakes_death</HitSound>
-    <DeathSound>monster/scorpions_death</DeathSound>
+    <HitSound>monster/GreaterPitSnakesDeath</HitSound>
+    <DeathSound>monster/ScorpionsDeath</DeathSound>
     <XpMult>1.0</XpMult>
     <Size>0</Size>
     <MaxHitPoints>5500</MaxHitPoints>
@@ -116,8 +116,8 @@
       <File>lofiChar216x16</File>
       <Index>0x33</Index>
     </Texture>
-    <HitSound>monster/snake_queen_hit</HitSound>
-    <DeathSound>monster/snake_queen_death</DeathSound>
+    <HitSound>monster/SnakeQueenHit</HitSound>
+    <DeathSound>monster/SnakeQueenDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>7500</MaxHitPoints>
     <Defense>19</Defense>
@@ -158,8 +158,8 @@
       <File>chars16x16dEncounters</File>
       <Index>2</Index>
     </AnimatedTexture>
-    <HitSound>monster/snakes_hit</HitSound>
-    <DeathSound>monster/snakes_death</DeathSound>
+    <HitSound>monster/SnakesHit</HitSound>
+    <DeathSound>monster/SnakesDeath</DeathSound>
     <Size>70</Size>
     <MaxHitPoints>5000</MaxHitPoints>
     <Defense>7</Defense>
@@ -186,8 +186,8 @@
       <File>chars8x8dEncounters</File>
       <Index>3</Index>
     </AnimatedTexture>
-    <HitSound>monster/snakes_hit</HitSound>
-    <DeathSound>monster/snakes_death</DeathSound>
+    <HitSound>monster/SnakesHit</HitSound>
+    <DeathSound>monster/SnakesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>1000</MaxHitPoints>
     <Defense>4</Defense>
@@ -215,8 +215,8 @@
       <File>lofiChar8x8</File>
       <Index>0xc5</Index>
     </Texture>
-    <HitSound>monster/pit_snakes_hit</HitSound>
-    <DeathSound>monster/pit_snakes_death</DeathSound>
+    <HitSound>monster/PitSnakesHit</HitSound>
+    <DeathSound>monster/PitSnakesDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -239,8 +239,8 @@
       <File>lofiChar8x8</File>
       <Index>0xc4</Index>
     </Texture>
-    <HitSound>monster/pit_snakes_hit</HitSound>
-    <DeathSound>monster/pit_snakes_death</DeathSound>
+    <HitSound>monster/PitSnakesHit</HitSound>
+    <DeathSound>monster/PitSnakesDeath</DeathSound>
     <Size>80</Size>
     <MaxHitPoints>5</MaxHitPoints>
     <Defense>0</Defense>
@@ -263,8 +263,8 @@
       <File>lofiChar8x8</File>
       <Index>0xed</Index>
     </Texture>
-    <HitSound>monster/pythons_hit</HitSound>
-    <DeathSound>monster/pythons_death</DeathSound>
+    <HitSound>monster/PythonsHit</HitSound>
+    <DeathSound>monster/PythonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>200</MaxHitPoints>
     <Defense>5</Defense>
@@ -286,8 +286,8 @@
       <File>lofiChar8x8</File>
       <Index>0xee</Index>
     </Texture>
-    <HitSound>monster/pythons_hit</HitSound>
-    <DeathSound>monster/pythons_death</DeathSound>
+    <HitSound>monster/PythonsHit</HitSound>
+    <DeathSound>monster/PythonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>200</MaxHitPoints>
     <Defense>20</Defense>
@@ -309,8 +309,8 @@
       <File>lofiChar8x8</File>
       <Index>0xef</Index>
     </Texture>
-    <HitSound>monster/pythons_hit</HitSound>
-    <DeathSound>monster/pythons_death</DeathSound>
+    <HitSound>monster/PythonsHit</HitSound>
+    <DeathSound>monster/PythonsDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>200</MaxHitPoints>
     <Defense>5</Defense>
@@ -333,8 +333,8 @@
       <File>lofiChar16x8</File>
       <Index>0x7f</Index>
     </Texture>
-    <HitSound>monster/greater_pit_snakes_hit</HitSound>
-    <DeathSound>monster/greater_pit_snakes_death</DeathSound>
+    <HitSound>monster/GreaterPitSnakesHit</HitSound>
+    <DeathSound>monster/GreaterPitSnakesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>500</MaxHitPoints>
     <Defense>10</Defense>
@@ -356,8 +356,8 @@
       <File>lofiChar216x8</File>
       <Index>0x58</Index>
     </Texture>
-    <HitSound>monster/greater_pit_snakes_hit</HitSound>
-    <DeathSound>monster/greater_pit_snakes_death</DeathSound>
+    <HitSound>monster/GreaterPitSnakesHit</HitSound>
+    <DeathSound>monster/GreaterPitSnakesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>500</MaxHitPoints>
     <Defense>10</Defense>

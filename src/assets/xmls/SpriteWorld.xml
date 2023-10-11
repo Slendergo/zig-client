@@ -8,8 +8,8 @@
       <File>chars8x8rMid</File>
       <Index>0x00</Index>
     </AnimatedTexture>
-    <HitSound>monster/sprites_hit</HitSound>
-    <DeathSound>monster/sprites_death</DeathSound>
+    <HitSound>monster/SpritesHit</HitSound>
+    <DeathSound>monster/SpritesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>100</MaxHitPoints>
     <Defense>0</Defense>
@@ -32,8 +32,8 @@
       <File>chars8x8rMid</File>
       <Index>0x01</Index>
     </AnimatedTexture>
-    <HitSound>monster/sprites_hit</HitSound>
-    <DeathSound>monster/sprites_death</DeathSound>
+    <HitSound>monster/SpritesHit</HitSound>
+    <DeathSound>monster/SpritesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>100</MaxHitPoints>
     <Defense>0</Defense>
@@ -59,8 +59,8 @@
       <File>chars8x8rMid</File>
       <Index>0x02</Index>
     </AnimatedTexture>
-    <HitSound>monster/sprites_hit</HitSound>
-    <DeathSound>monster/sprites_death</DeathSound>
+    <HitSound>monster/SpritesHit</HitSound>
+    <DeathSound>monster/SpritesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>100</MaxHitPoints>
     <Defense>0</Defense>
@@ -84,8 +84,8 @@
       <File>lofiChar28x8</File>
       <Index>0x30</Index>
     </Texture>
-    <HitSound>monster/sprites_hit</HitSound>
-    <DeathSound>monster/sprites_death</DeathSound>
+    <HitSound>monster/SpritesHit</HitSound>
+    <DeathSound>monster/SpritesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>100</MaxHitPoints>
     <Defense>0</Defense>
@@ -109,8 +109,8 @@
       <File>lofiChar28x8</File>
       <Index>0x31</Index>
     </Texture>
-    <HitSound>monster/sprites_hit</HitSound>
-    <DeathSound>monster/sprites_death</DeathSound>
+    <HitSound>monster/SpritesHit</HitSound>
+    <DeathSound>monster/SpritesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>100</MaxHitPoints>
     <Defense>0</Defense>
@@ -133,8 +133,8 @@
       <File>chars16x16dMountains1</File>
       <Index>0x01</Index>
     </AnimatedTexture>
-    <HitSound>monster/sprite_god_hit</HitSound>
-    <DeathSound>monster/sprite_god_death</DeathSound>
+    <HitSound>monster/SpriteGodHit</HitSound>
+    <DeathSound>monster/SpriteGodDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>2000</MaxHitPoints>
     <Defense>12</Defense>
@@ -169,8 +169,8 @@
       <File>lofiChar216x16</File>
       <Index>0x36</Index>
     </Texture>
-    <HitSound>monster/sprite_god_hit</HitSound>
-    <DeathSound>monster/sprite_god_death</DeathSound>
+    <HitSound>monster/SpriteGodHit</HitSound>
+    <DeathSound>monster/SpriteGodDeath</DeathSound>
     <MaxHitPoints>9000</MaxHitPoints>
     <Size>100</Size>
     <Defense>16</Defense>

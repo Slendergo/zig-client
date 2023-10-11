@@ -7,8 +7,8 @@
       <File>lofiChar16x16</File>
       <Index>0x48</Index>
     </Texture>
-    <HitSound>monster/ogres_hit</HitSound>
-    <DeathSound>monster/ogres_death</DeathSound>
+    <HitSound>monster/OgresHit</HitSound>
+    <DeathSound>monster/OgresDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>850</MaxHitPoints>
     <Defense>7</Defense>
@@ -60,8 +60,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x0b</Index>
     </AnimatedTexture>
-    <HitSound>monster/flayers_hit</HitSound>
-    <DeathSound>monster/flayers_death</DeathSound>
+    <HitSound>monster/FlayersHit</HitSound>
+    <DeathSound>monster/FlayersDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>140</MaxHitPoints>
     <Defense>8</Defense>
@@ -84,8 +84,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x0c</Index>
     </AnimatedTexture>
-    <HitSound>monster/flayers_hit</HitSound>
-    <DeathSound>monster/flayers_death</DeathSound>
+    <HitSound>monster/FlayersHit</HitSound>
+    <DeathSound>monster/FlayersDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>280</MaxHitPoints>
     <Defense>0</Defense>
@@ -108,8 +108,8 @@
       <File>lofiChar16x16</File>
       <Index>0x51</Index>
     </Texture>
-    <HitSound>monster/flayers_hit</HitSound>
-    <DeathSound>monster/flayers_death</DeathSound>
+    <HitSound>monster/FlayersHit</HitSound>
+    <DeathSound>monster/FlayersDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>1400</MaxHitPoints>
     <Defense>12</Defense>
@@ -145,8 +145,8 @@
       <File>chars8x8rMid</File>
       <Index>26</Index>
     </AnimatedTexture>
-    <HitSound>monster/demons_hit</HitSound>
-    <DeathSound>monster/demons_death</DeathSound>
+    <HitSound>monster/DemonsHit</HitSound>
+    <DeathSound>monster/DemonsDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj2</File>
@@ -176,8 +176,8 @@
       <File>chars8x8rMid</File>
       <Index>25</Index>
     </AnimatedTexture>
-    <HitSound>monster/demons_hit</HitSound>
-    <DeathSound>monster/demons_death</DeathSound>
+    <HitSound>monster/DemonsHit</HitSound>
+    <DeathSound>monster/DemonsDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj2</File>
@@ -206,8 +206,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x00</Index>
     </AnimatedTexture>
-    <HitSound>monster/undead_dwarves_hit</HitSound>
-    <DeathSound>monster/undead_dwarves_death</DeathSound>
+    <HitSound>monster/UndeadDwarvesHit</HitSound>
+    <DeathSound>monster/UndeadDwarvesDeath</DeathSound>
     <Size>90</Size>
     <MaxHitPoints>250</MaxHitPoints>
     <Defense>7</Defense>
@@ -230,8 +230,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x01</Index>
     </AnimatedTexture>
-    <HitSound>monster/undead_dwarves_hit</HitSound>
-    <DeathSound>monster/undead_dwarves_death</DeathSound>
+    <HitSound>monster/UndeadDwarvesHit</HitSound>
+    <DeathSound>monster/UndeadDwarvesDeath</DeathSound>
     <Size>90</Size>
     <MaxHitPoints>260</MaxHitPoints>
     <Defense>7</Defense>
@@ -254,8 +254,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x02</Index>
     </AnimatedTexture>
-    <HitSound>monster/undead_dwarves_hit</HitSound>
-    <DeathSound>monster/undead_dwarves_death</DeathSound>
+    <HitSound>monster/UndeadDwarvesHit</HitSound>
+    <DeathSound>monster/UndeadDwarvesDeath</DeathSound>
     <Size>90</Size>
     <MaxHitPoints>210</MaxHitPoints>
     <Defense>0</Defense>
@@ -280,8 +280,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x04</Index>
     </AnimatedTexture>
-    <HitSound>monster/undead_dwarves_hit</HitSound>
-    <DeathSound>monster/undead_dwarves_death</DeathSound>
+    <HitSound>monster/UndeadDwarvesHit</HitSound>
+    <DeathSound>monster/UndeadDwarvesDeath</DeathSound>
     <Size>90</Size>
     <MaxHitPoints>400</MaxHitPoints>
     <Defense>7</Defense>
@@ -304,8 +304,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x05</Index>
     </AnimatedTexture>
-    <HitSound>monster/undead_dwarves_hit</HitSound>
-    <DeathSound>monster/undead_dwarves_death</DeathSound>
+    <HitSound>monster/UndeadDwarvesHit</HitSound>
+    <DeathSound>monster/UndeadDwarvesDeath</DeathSound>
     <Size>90</Size>
     <MaxHitPoints>250</MaxHitPoints>
     <Defense>11</Defense>
@@ -328,8 +328,8 @@
       <File>lofiChar16x16</File>
       <Index>0x4b</Index>
     </Texture>
-    <HitSound>monster/dwarf_god_hit</HitSound>
-    <DeathSound>monster/dwarf_god_death</DeathSound>
+    <HitSound>monster/DwarfGodHit</HitSound>
+    <DeathSound>monster/DwarfGodDeath</DeathSound>
     <Size>90</Size>
     <MaxHitPoints>800</MaxHitPoints>
     <Defense>11</Defense>
@@ -366,8 +366,8 @@
       <File>chars8x8rMid</File>
       <Index>23</Index>
     </AnimatedTexture>
-    <HitSound>monster/orcs_hit</HitSound>
-    <DeathSound>monster/orcs_death</DeathSound>
+    <HitSound>monster/OrcsHit</HitSound>
+    <DeathSound>monster/OrcsDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj2</File>
@@ -395,8 +395,8 @@
       <File>chars8x8rMid</File>
       <Index>24</Index>
     </AnimatedTexture>
-    <HitSound>monster/orcs_hit</HitSound>
-    <DeathSound>monster/orcs_death</DeathSound>
+    <HitSound>monster/OrcsHit</HitSound>
+    <DeathSound>monster/OrcsDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj2</File>
@@ -423,8 +423,8 @@
       <File>chars8x8rMid</File>
       <Index>22</Index>
     </AnimatedTexture>
-    <HitSound>monster/orcs_hit</HitSound>
-    <DeathSound>monster/orcs_death</DeathSound>
+    <HitSound>monster/OrcsHit</HitSound>
+    <DeathSound>monster/OrcsDeath</DeathSound>
     <Projectile id="0">
       <Texture>
         <File>lofiObj2</File>
@@ -451,8 +451,8 @@
       <File>chars16x16dEncounters</File>
       <Index>9</Index>
     </AnimatedTexture>
-    <HitSound>monster/demons_hit</HitSound>
-    <DeathSound>monster/demons_death</DeathSound>
+    <HitSound>monster/DemonsHit</HitSound>
+    <DeathSound>monster/DemonsDeath</DeathSound>
     <MaxHitPoints>1600</MaxHitPoints>
     <Size>100</Size>
     <Defense>9</Defense>
@@ -702,8 +702,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x07</Index>
     </AnimatedTexture>
-    <HitSound>monster/ogres_hit</HitSound>
-    <DeathSound>monster/ogres_death</DeathSound>
+    <HitSound>monster/OgresHit</HitSound>
+    <DeathSound>monster/OgresDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>300</MaxHitPoints>
     <Defense>7</Defense>
@@ -726,8 +726,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x08</Index>
     </AnimatedTexture>
-    <HitSound>monster/ogres_hit</HitSound>
-    <DeathSound>monster/ogres_death</DeathSound>
+    <HitSound>monster/OgresHit</HitSound>
+    <DeathSound>monster/OgresDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>270</MaxHitPoints>
     <Defense>7</Defense>
@@ -750,8 +750,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x09</Index>
     </AnimatedTexture>
-    <HitSound>monster/ogres_hit</HitSound>
-    <DeathSound>monster/ogres_death</DeathSound>
+    <HitSound>monster/OgresHit</HitSound>
+    <DeathSound>monster/OgresDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>300</MaxHitPoints>
     <Defense>7</Defense>
@@ -775,8 +775,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x0a</Index>
     </AnimatedTexture>
-    <HitSound>monster/ogres_hit</HitSound>
-    <DeathSound>monster/ogres_death</DeathSound>
+    <HitSound>monster/OgresHit</HitSound>
+    <DeathSound>monster/OgresDeath</DeathSound>
     <Size>120</Size>
     <MaxHitPoints>500</MaxHitPoints>
     <Defense>7</Defense>
@@ -800,8 +800,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x0d</Index>
     </AnimatedTexture>
-    <HitSound>monster/night_elves_hit</HitSound>
-    <DeathSound>monster/night_elves_death</DeathSound>
+    <HitSound>monster/NightElvesHit</HitSound>
+    <DeathSound>monster/NightElvesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>240</MaxHitPoints>
     <Defense>0</Defense>
@@ -825,8 +825,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x0e</Index>
     </AnimatedTexture>
-    <HitSound>monster/night_elves_hit</HitSound>
-    <DeathSound>monster/night_elves_death</DeathSound>
+    <HitSound>monster/NightElvesHit</HitSound>
+    <DeathSound>monster/NightElvesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>280</MaxHitPoints>
     <Defense>2</Defense>
@@ -849,8 +849,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x0f</Index>
     </AnimatedTexture>
-    <HitSound>monster/night_elves_hit</HitSound>
-    <DeathSound>monster/night_elves_death</DeathSound>
+    <HitSound>monster/NightElvesHit</HitSound>
+    <DeathSound>monster/NightElvesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>220</MaxHitPoints>
     <Defense>0</Defense>
@@ -874,8 +874,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x10</Index>
     </AnimatedTexture>
-    <HitSound>monster/night_elves_hit</HitSound>
-    <DeathSound>monster/night_elves_death</DeathSound>
+    <HitSound>monster/NightElvesHit</HitSound>
+    <DeathSound>monster/NightElvesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>300</MaxHitPoints>
     <Defense>4</Defense>
@@ -901,8 +901,8 @@
       <File>chars8x8rHigh</File>
       <Index>0x12</Index>
     </AnimatedTexture>
-    <HitSound>monster/night_elves_hit</HitSound>
-    <DeathSound>monster/night_elves_death</DeathSound>
+    <HitSound>monster/NightElvesHit</HitSound>
+    <DeathSound>monster/NightElvesDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>180</MaxHitPoints>
     <Defense>5</Defense>
@@ -925,8 +925,8 @@
       <File>lofiChar16x16</File>
       <Index>0x49</Index>
     </Texture>
-    <HitSound>monster/lizard_god_hit</HitSound>
-    <DeathSound>monster/lizard_god_death</DeathSound>
+    <HitSound>monster/LizardGodHit</HitSound>
+    <DeathSound>monster/LizardGodDeath</DeathSound>
     <Size>100</Size>
     <MaxHitPoints>900</MaxHitPoints>
     <Defense>12</Defense>
@@ -950,8 +950,8 @@
       <File>lofiChar8x8</File>
       <Index>0xe5</Index>
     </Texture>
-    <HitSound>monster/eggs_hit</HitSound>
-    <DeathSound>monster/eggs_death</DeathSound>
+    <HitSound>monster/EggsHit</HitSound>
+    <DeathSound>monster/EggsDeath</DeathSound>
     <MaxHitPoints>75</MaxHitPoints>
     <Enemy />
     <BloodProb>0.5</BloodProb>
@@ -966,8 +966,8 @@
       <File>lofiChar8x8</File>
       <Index>0xe4</Index>
     </Texture>
-    <HitSound>monster/dragons_hit</HitSound>
-    <DeathSound>monster/dragons_death</DeathSound>
+    <HitSound>monster/DragonsHit</HitSound>
+    <DeathSound>monster/DragonsDeath</DeathSound>
     <MaxHitPoints>240</MaxHitPoints>
     <Enemy />
     <BloodProb>0.5</BloodProb>
@@ -991,8 +991,8 @@
       <File>lofiChar16x8</File>
       <Index>0x7c</Index>
     </Texture>
-    <HitSound>monster/dragons_hit</HitSound>
-    <DeathSound>monster/dragons_death</DeathSound>
+    <HitSound>monster/DragonsHit</HitSound>
+    <DeathSound>monster/DragonsDeath</DeathSound>
     <MaxHitPoints>300</MaxHitPoints>
     <Enemy />
     <BloodProb>0.5</BloodProb>
@@ -1016,8 +1016,8 @@
       <File>lofiChar16x16</File>
       <Index>0x47</Index>
     </Texture>
-    <HitSound>monster/dragons_hit</HitSound>
-    <DeathSound>monster/dragons_death</DeathSound>
+    <HitSound>monster/DragonsHit</HitSound>
+    <DeathSound>monster/DragonsDeath</DeathSound>
     <MaxHitPoints>400</MaxHitPoints>
     <Terrain>HighForest</Terrain>
     <Enemy />
@@ -1056,8 +1056,8 @@
         <Index>53</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/lizard_god_hit</HitSound>
-    <DeathSound>monster/lizard_god_death</DeathSound>
+    <HitSound>monster/LizardGodHit</HitSound>
+    <DeathSound>monster/LizardGodDeath</DeathSound>
     <Size>0</Size>
     <MaxHitPoints>4000</MaxHitPoints>
     <Defense>10</Defense>

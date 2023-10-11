@@ -8,8 +8,8 @@
     <MaxHitPoints>50</MaxHitPoints>
     <Defense>20</Defense>
     <XpMult>0.1</XpMult>
-    <HitSound>monster/wooden_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/WoodenWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <AnimatedTexture>
       <File>chars8x8rEncounters</File>
       <Index>20</Index>
@@ -43,8 +43,8 @@
     <MaxHitPoints>50</MaxHitPoints>
     <Defense>20</Defense>
     <XpMult>0.0</XpMult>
-    <HitSound>monster/wooden_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/WoodenWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Texture>
       <File>lofiEnvironment3</File>
       <Index>0x8a</Index>
@@ -87,8 +87,8 @@
     <Quest />
     <Level>8</Level>
     <XpMult>3.0</XpMult>
-    <HitSound>monster/wooden_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/WoodenWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <AnimatedTexture>
       <File>chars16x16rEncounters</File>
       <Index>15</Index>
@@ -158,8 +158,8 @@
         <Index>30</Index>
       </AnimatedTexture>
     </AltTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>140</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>4200</MaxHitPoints>
@@ -211,8 +211,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>31</Index>
     </AnimatedTexture>
-    <HitSound>monster/stone_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/StoneWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Size>120</Size>
     <ShadowSize>80</ShadowSize>
     <OccupySquare />
@@ -387,8 +387,8 @@
     </RandomTexture>
     <Static />
     <OccupySquare />
-    <HitSound>monster/trees_hit</HitSound>
-    <DeathSound>monster/tress_death</DeathSound>
+    <HitSound>monster/TreesHit</HitSound>
+    <DeathSound>monster/TressDeath</DeathSound>
   </Object>
   <Object type="0x0dcc" id="Totem Spirit">
     <Enemy />
@@ -398,8 +398,8 @@
       <Index>22</Index>
     </AnimatedTexture>
     <Flying />
-    <HitSound>monster/wooden_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/WoodenWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Size>80</Size>
     <ShadowSize>90</ShadowSize>
     <MaxHitPoints>125</MaxHitPoints>
@@ -424,8 +424,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>32</Index>
     </AnimatedTexture>
-    <HitSound>monster/wooden_walls_hit</HitSound>
-    <DeathSound>monster/stone_walls_death</DeathSound>
+    <HitSound>monster/WoodenWallsHit</HitSound>
+    <DeathSound>monster/StoneWallsDeath</DeathSound>
     <Size>130</Size>
     <ShadowSize>90</ShadowSize>
     <MaxHitPoints>900</MaxHitPoints>
@@ -449,8 +449,8 @@
       <File>chars16x8dEncounters</File>
       <Index>1</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>200</MaxHitPoints>
@@ -477,8 +477,8 @@
       <File>chars16x16dEncounters2</File>
       <Index>33</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>370</MaxHitPoints>
@@ -545,8 +545,8 @@
       <File>chars8x8rEncounters</File>
       <Index>23</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>250</MaxHitPoints>
@@ -573,8 +573,8 @@
       <File>chars8x8rEncounters</File>
       <Index>24</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>300</MaxHitPoints>
@@ -599,8 +599,8 @@
       <File>chars8x8rEncounters</File>
       <Index>25</Index>
     </AnimatedTexture>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>100</ShadowSize>
     <MaxHitPoints>300</MaxHitPoints>
@@ -663,8 +663,8 @@
         </Texture>
       </Frame>
     </Animation>
-    <HitSound>monster/slimes_death</HitSound>
-    <DeathSound>monster/flying_brain_death</DeathSound>
+    <HitSound>monster/SlimesDeath</HitSound>
+    <DeathSound>monster/FlyingBrainDeath</DeathSound>
     <Size>100</Size>
     <ShadowSize>0</ShadowSize>
     <LightColor>0xFA9632</LightColor>
@@ -796,8 +796,8 @@
     <StasisImmune />
     <Enemy />
     <XpMult>0.0</XpMult>
-    <HitSound>monster/trees_hit</HitSound>
-    <DeathSound>monster/tress_death</DeathSound>
+    <HitSound>monster/TreesHit</HitSound>
+    <DeathSound>monster/TressDeath</DeathSound>
   </Object>
   <Object type="0x0dd9" id="Jungle Rock">
     <Class>GameObject</Class>
@@ -821,8 +821,8 @@
     </RandomTexture>
     <Static />
     <OccupySquare />
-    <HitSound>monster/trees_hit</HitSound>
-    <DeathSound>monster/tress_death</DeathSound>
+    <HitSound>monster/TreesHit</HitSound>
+    <DeathSound>monster/TressDeath</DeathSound>
   </Object>
   <Object type="0x0dda" id="Jungle Tree Big">
     <Class>GameObject</Class>
@@ -846,7 +846,7 @@
     </RandomTexture>
     <Static />
     <OccupySquare />
-    <HitSound>monster/trees_hit</HitSound>
-    <DeathSound>monster/tress_death</DeathSound>
+    <HitSound>monster/TreesHit</HitSound>
+    <DeathSound>monster/TressDeath</DeathSound>
   </Object>
 </Objects>

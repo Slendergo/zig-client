@@ -14,6 +14,8 @@ const InGameScreen = @import("in_game.zig").InGameScreen;
 const CharSelectScreen = @import("char_select.zig").CharSelectScreen;
 const CharCreateScreen = @import("char_create.zig").CharCreateScreen;
 const EmptyScreen = @import("empty_screen.zig").EmptyScreen;
+const OptionsUi = @import("options_ui.zig").OptionsUi;
+const settings = @import("../settings.zig");
 
 // Assumes ARGB because flash scuff. Change later
 pub const RGBF32 = extern struct {
@@ -256,10 +258,77 @@ pub const Button = struct {
     }
 };
 
+pub const KeyMapper = struct {
+    x: f32,
+    y: f32,
+    //press_callback: *const fn () void,
+    set_key_callback: *const fn (*KeyMapper) void,
+    image_data: InteractableImageData,
+    text_data: TextData,
+    settings_button: *settings.Button,
+    key: zglfw.Key = zglfw.Key.unknown,
+    title_text_data: ?TextData = null,
+    state: InteractableState = .none,
+    visible: bool = true,
+    _disposed: bool = false,
+    _allocator: std.mem.Allocator = undefined,
+
+    pub fn create(allocator: std.mem.Allocator, data: KeyMapper) !*KeyMapper {
+        const should_lock = elements.isFull();
+        if (should_lock) {
+            while (!ui_lock.tryLock()) {}
+        }
+        defer if (should_lock) ui_lock.unlock();
+
+        var elem = try allocator.create(KeyMapper);
+        elem.* = data;
+        elem._allocator = allocator;
+        try elements.add(.{ .key_mapper = elem });
+        return elem;
+    }
+
+    pub fn imageData(self: KeyMapper) ImageData {
+        return self.image_data.current(self.state);
+    }
+
+    pub fn width(self: KeyMapper) f32 {
+        return @max(self.text_data.width(), switch (self.imageData()) {
+            .nine_slice => |nine_slice| return nine_slice.w,
+            .normal => |image_data| return image_data.width(),
+        });
+    }
+
+    pub fn height(self: KeyMapper) f32 {
+        return @max(self.text_data.height(), switch (self.imageData()) {
+            .nine_slice => |nine_slice| return nine_slice.h,
+            .normal => |image_data| return image_data.height(),
+        });
+    }
+
+    pub fn destroy(self: *KeyMapper) void {
+        if (self._disposed)
+            return;
+
+        self._disposed = true;
+
+        for (elements.items(), 0..) |element, i| {
+            if (element == .key_mapper and element.key_mapper == self) {
+                _ = elements.remove(i);
+                break;
+            }
+        }
+
+        self._allocator.free(self.text_data.backing_buffer);
+
+        self._allocator.destroy(self);
+    }
+};
+
 pub const CharacterBox = struct {
     x: f32,
     y: f32,
     id: u32,
+    obj_type: u16, //added so I don't have to make a NewCharacterBox struct rn
     press_callback: *const fn (*CharacterBox) void,
     image_data: InteractableImageData,
     state: InteractableState = .none,
@@ -1163,6 +1232,7 @@ pub const UiElement = union(enum) {
     container: *DisplayContainer,
     menu_bg: *MenuBackground,
     toggle: *Toggle,
+    key_mapper: *KeyMapper,
     // pointers on these would imply allocation, which is pointless and wasteful
     balloon: SpeechBalloon,
     status: StatusText,
@@ -1229,6 +1299,7 @@ pub fn resize(w: f32, h: f32) void {
 
 pub fn switchScreen(screen_type: ScreenType) void {
     menu_background.visible = screen_type != .in_game;
+    input.selected_key_mapper = null;
 
     switch (current_screen) {
         inline else => |screen| if (screen.inited) screen.deinit(),
@@ -1339,6 +1410,16 @@ pub fn mouseMove(x: f32, y: f32) void {
                     input_field.state = .none;
                 }
             },
+            .key_mapper => |key_mapper| {
+                if (!key_mapper.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
+                    key_mapper.state = .hovered;
+                } else {
+                    key_mapper.state = .none;
+                }
+            },
             else => {},
         }
     }
@@ -1383,7 +1464,7 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                 if (utils.isInBounds(x, y, button.x, button.y, button.width(), button.height())) {
                     button.state = .pressed;
                     button.press_callback();
-                    assets.playSfx("button_click");
+                    assets.playSfx("ButtonClick");
                     return true;
                 }
             },
@@ -1397,7 +1478,7 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                     if (toggle.state_change) |callback| {
                         callback(toggle);
                     }
-                    assets.playSfx("button_click");
+                    assets.playSfx("ButtonClick");
                     return true;
                 }
             },
@@ -1408,7 +1489,7 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                 if (utils.isInBounds(x, y, box.x, box.y, box.width(), box.height())) {
                     box.state = .pressed;
                     box.press_callback(box);
-                    assets.playSfx("button_click");
+                    assets.playSfx("ButtonClick");
                     return true;
                 }
             },
@@ -1420,6 +1501,21 @@ pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
                     input.selected_input_field = input_field;
                     input_field._last_input = 0;
                     input_field.state = .pressed;
+                    return true;
+                }
+            },
+            .key_mapper => |key_mapper| {
+                if (!key_mapper.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
+                    key_mapper.state = .pressed;
+                    input.selected_key_mapper = key_mapper;
+
+                    //Not needed at the moment
+                    //key_mapper.press_callback();
+
+                    assets.playSfx("ButtonClick");
                     return true;
                 }
             },
@@ -1470,6 +1566,14 @@ pub fn mouseRelease(x: f32, y: f32) void {
 
                 if (utils.isInBounds(x, y, input_field.x, input_field.y, input_field.width(), input_field.height())) {
                     input_field.state = .none;
+                }
+            },
+            .key_mapper => |key_mapper| {
+                if (!key_mapper.visible)
+                    continue;
+
+                if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
+                    key_mapper.state = .none;
                 }
             },
             else => {},
@@ -1564,4 +1668,35 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
     }
 
     elements_to_remove.clear();
+}
+
+var options_opened: bool = false;
+var options: *OptionsUi = undefined;
+
+pub fn hideOptions() void {
+    input.disable_input = false;
+    options_opened = false;
+    options.deinit();
+}
+
+pub fn showOptions() void {
+    if (options_opened) {
+        //Maybe remove this if we want
+        //to use ESC to remove key binds
+        hideOptions();
+        return;
+    }
+
+    input.disable_input = true;
+
+    options_opened = true;
+
+    options = OptionsUi.init(main._allocator, .{ .visible = true }) catch |e| {
+        std.log.err("Initializing in options failed: {any}", .{e});
+        return;
+    };
+}
+
+pub fn switchOptionsTab(tab: OptionsUi.Tabs) void {
+    options.switchTab(tab);
 }

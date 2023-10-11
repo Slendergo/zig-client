@@ -1,20 +1,9 @@
-# Information
-A zig client for a mmorpg bullet hell game
+# Setup
+This project tracks the latest master builds of Zig. Versions older than the latest one at the [Zig downloads page](https://ziglang.org/download/) might not work.
 
-## Compatiablilty 
-- Windows
-- Linux
-  
-## Prerequisites
-- zig
-- IDE (VSCode, Rider)
+Only compatible with the [provided server source](https://github.com/Slendergo/zig-server-compat).
 
-## Zig Setup
-### Windows
-  1) Download zig from {link}
-  2) Create folder in c:/ZigLang
-  3) Extract zip contents into folder
-  4) Create a Environment Variable for c:/ZigLang
-### Linux
-  1) TODO
+Change ```pub const app_engine_url = "http://127.0.0.1:8080/";``` in settings.zig in order to connect to a server that is not localhost.
 
+# Support
+General discussion and help is available over at https://discord.gg/2XdgUW29rw, in the #zig-help channel.

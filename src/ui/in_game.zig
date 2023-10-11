@@ -533,7 +533,7 @@ pub const InGameScreen = struct {
                         self.setInvItem(start_item, start_slot.idx);
                     }
 
-                    assets.playSfx("error");
+                    assets.playSfx("Error");
                     return;
                 }
 
@@ -566,7 +566,7 @@ pub const InGameScreen = struct {
                     .to_obj_type = end_item,
                 } });
 
-                assets.playSfx("inventory_move_item");
+                assets.playSfx("InventoryMoveItem");
             }
         }
     }
@@ -591,7 +591,7 @@ pub const InGameScreen = struct {
                         .time = main.current_time,
                         .use_type = game_data.UseType.default,
                     } });
-                    assets.playSfx("use_potion");
+                    assets.playSfx("UsePotion");
                 }
 
                 return;
@@ -678,7 +678,7 @@ pub const InGameScreen = struct {
                         .time = main.current_time,
                         .use_type = game_data.UseType.default,
                     } });
-                    assets.playSfx("use_potion");
+                    assets.playSfx("UsePotion");
                 }
 
                 return;

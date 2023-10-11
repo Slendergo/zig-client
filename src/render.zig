@@ -2530,6 +2530,48 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 },
             }
         },
+        .key_mapper => |key_mapper| {
+            if (!key_mapper.visible)
+                return ui_idx;
+
+            var w: f32 = 0;
+            var h: f32 = 0;
+
+            switch (key_mapper.imageData()) {
+                .nine_slice => |nine_slice| {
+                    w = nine_slice.w;
+                    h = nine_slice.h;
+                    ui_idx = drawNineSlice(ui_idx, key_mapper.x + x_offset, key_mapper.y + y_offset, nine_slice, draw_data);
+                },
+                .normal => |image_data| {
+                    w = image_data.width();
+                    h = image_data.height();
+                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                    ui_idx = drawQuad(ui_idx, key_mapper.x + x_offset, key_mapper.y + y_offset, w, h, image_data.atlas_data, draw_data, opts);
+                },
+            }
+
+            ui_idx = drawText(
+                ui_idx,
+                key_mapper.x + (w - key_mapper.text_data.width()) / 2 + x_offset,
+                key_mapper.y + (h - key_mapper.text_data.height()) / 2 + y_offset,
+                key_mapper.text_data,
+                draw_data,
+            );
+
+            if (key_mapper.title_text_data) |text_data| {
+                const len: f32 = @floatFromInt(text_data.text.len);
+                var offset: f32 = text_data.size * len;
+                offset = @max(@min(offset, 100), 20);
+                ui_idx = drawText(
+                    ui_idx,
+                    key_mapper.x + (w - text_data.width()) / 2 + x_offset - offset, //move it before the button
+                    key_mapper.y + (h - text_data.height()) / 2 + y_offset,
+                    text_data,
+                    draw_data,
+                );
+            }
+        },
         else => {},
     }
 
