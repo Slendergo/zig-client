@@ -63,7 +63,7 @@ pub const Square = struct {
         if (x > 0 and validPos(x - 1, y)) {
             const left_idx = x - 1 + y * width;
             const left_sq = squares[left_idx];
-            if (left_sq.tile_type != 0xFFFF and left_sq.tile_type != 0xFF and left_sq.props != null) {
+            if (left_sq.tile_type != 0xFFFF and left_sq.tile_type != 0xFF and left_sq.props != null and !left_sq.has_wall) {
                 const left_blend_prio = left_sq.props.?.blend_prio;
                 if (left_blend_prio > current_prio) {
                     square.left_blend_u = left_sq.atlas_data.tex_u;
@@ -87,7 +87,7 @@ pub const Square = struct {
         if (y > 0 and validPos(x, y - 1)) {
             const top_idx = x + (y - 1) * width;
             const top_sq = squares[top_idx];
-            if (top_sq.tile_type != 0xFFFF and top_sq.tile_type != 0xFF and top_sq.props != null) {
+            if (top_sq.tile_type != 0xFFFF and top_sq.tile_type != 0xFF and top_sq.props != null and !top_sq.has_wall) {
                 const top_blend_prio = top_sq.props.?.blend_prio;
                 if (top_blend_prio > current_prio) {
                     square.top_blend_u = top_sq.atlas_data.tex_u;
@@ -111,7 +111,7 @@ pub const Square = struct {
         if (x < std.math.maxInt(u32) and validPos(x + 1, y)) {
             const right_idx = x + 1 + y * width;
             const right_sq = squares[right_idx];
-            if (right_sq.tile_type != 0xFFFF and right_sq.tile_type != 0xFF and right_sq.props != null) {
+            if (right_sq.tile_type != 0xFFFF and right_sq.tile_type != 0xFF and right_sq.props != null and !right_sq.has_wall) {
                 const right_blend_prio = right_sq.props.?.blend_prio;
                 if (right_blend_prio > current_prio) {
                     square.right_blend_u = right_sq.atlas_data.tex_u;
@@ -135,7 +135,7 @@ pub const Square = struct {
         if (y < std.math.maxInt(u32) and validPos(x, y + 1)) {
             const bottom_idx = x + (y + 1) * width;
             const bottom_sq = squares[bottom_idx];
-            if (bottom_sq.tile_type != 0xFFFF and bottom_sq.tile_type != 0xFF and bottom_sq.props != null) {
+            if (bottom_sq.tile_type != 0xFFFF and bottom_sq.tile_type != 0xFF and bottom_sq.props != null and !bottom_sq.has_wall) {
                 const bottom_blend_prio = bottom_sq.props.?.blend_prio;
                 if (bottom_blend_prio > current_prio) {
                     square.bottom_blend_u = bottom_sq.atlas_data.tex_u;
@@ -167,10 +167,6 @@ pub const GameObject = struct {
     z: f32 = 0.0,
     screen_x: f32 = 0.0,
     screen_y: f32 = 0.0,
-    target_x: f32 = 0.0,
-    target_y: f32 = 0.0,
-    tick_x: f32 = 0.0,
-    tick_y: f32 = 0.0,
     name: []u8 = &[0]u8{},
     name_override: []u8 = &[0]u8{},
     size: f32 = 0,
@@ -200,6 +196,9 @@ pub const GameObject = struct {
     atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     top_atlas_data: assets.AtlasData = assets.AtlasData.fromRaw(0, 0, 0, 0),
     move_angle: f32 = std.math.nan(f32),
+    move_step: f32 = 0.0,
+    move_time_end: i64 = 0,
+    inv_dist: f32 = 0.0,
     facing: f32 = std.math.nan(f32),
     attack_start: i64 = 0,
     attack_angle: f32 = 0.0,
@@ -375,11 +374,12 @@ pub const GameObject = struct {
             if (self.is_wall and validPos(floor_x, floor_y)) {
                 self.x = @floor(self.x) + 0.5;
                 self.y = @floor(self.y) + 0.5;
-                self.target_x = -1;
-                self.target_y = -1;
+                self.move_angle = std.math.nan(f32);
 
                 const w: u32 = @intCast(width);
-                squares[floor_y * w + floor_x].has_wall = true;
+                const idx = floor_y * w + floor_x;
+                squares[idx].has_wall = true;
+                squares[idx].updateBlends();
             }
 
             if (class_props == .container) {
@@ -523,7 +523,7 @@ pub const GameObject = struct {
         }
     }
 
-    pub fn update(self: *GameObject, time: i64, _: f32) void {
+    pub fn update(self: *GameObject, time: i64, dt: f32) void {
         // todo: clean this up, reuse
         const attack_period = 300 * std.time.us_per_ms;
         if (main.current_time < self.attack_start + attack_period) {
@@ -532,8 +532,7 @@ pub const GameObject = struct {
             self.facing = self.attack_angle;
             self.action = assets.attack_action;
         } else if (!std.math.isNan(self.move_angle)) {
-            const inv_dist = 0.5 / utils.distSqr(self.tick_x, self.tick_y, self.target_x, self.target_y);
-            const move_period = (400 - @mod(inv_dist, 400)) * std.time.us_per_ms;
+            const move_period = (400 - @mod(self.inv_dist, 400)) * std.time.us_per_ms;
             const float_time: f32 = @floatFromInt(main.current_time);
             self.float_period = @mod(float_time, move_period) / move_period;
             self.facing = self.move_angle;
@@ -575,30 +574,9 @@ pub const GameObject = struct {
         self.screen_y = screen_pos.y + self.z * -camera.px_per_tile - (h - size * assets.padding) - 10;
         self.screen_x = screen_pos.x;
 
-        moveBlock: {
-            if (self.is_wall)
-                break :moveBlock;
-
-            if (self.target_x > 0 and self.target_y > 0) {
-                if (last_tick_time <= 0 or self.x <= 0 or self.y <= 0) {
-                    self.x = self.target_x;
-                    self.y = self.target_y;
-                    self.target_x = -1;
-                    self.target_y = -1;
-                    break :moveBlock;
-                }
-
-                const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / last_tick_ms;
-                if (scale_dt >= 1.0) {
-                    self.x = self.target_x;
-                    self.y = self.target_y;
-                    self.target_x = -1;
-                    self.target_y = -1;
-                    break :moveBlock;
-                }
-                self.x = scale_dt * self.target_x + (1.0 - scale_dt) * self.tick_x;
-                self.y = scale_dt * self.target_y + (1.0 - scale_dt) * self.tick_y;
-            }
+        if (!self.is_wall and !std.math.isNan(self.move_angle) and self.move_step > 0.0 and time < self.move_time_end) {
+            self.x += dt * self.move_step * @cos(self.move_angle);
+            self.y += dt * self.move_step * @sin(self.move_angle);
         }
 
         merchantBlock: {
@@ -636,10 +614,6 @@ pub const Player = struct {
     x: f32 = 0.0,
     y: f32 = 0.0,
     z: f32 = 0.0,
-    target_x: f32 = 0.0,
-    target_y: f32 = 0.0,
-    tick_x: f32 = 0.0,
-    tick_y: f32 = 0.0,
     screen_x: f32 = 0.0,
     screen_y: f32 = 0.0,
     name: []u8 = &[0]u8{},
@@ -691,6 +665,8 @@ pub const Player = struct {
     attack_angle: f32 = 0,
     next_bullet_id: u8 = 0,
     move_angle: f32 = std.math.nan(f32),
+    move_step: f32 = 0.0,
+    move_time_end: i64 = 0,
     facing: f32 = std.math.nan(f32),
     walk_speed_multiplier: f32 = 1.0,
     light_color: u32 = 0,
@@ -1273,34 +1249,9 @@ pub const Player = struct {
             return;
         }
 
-        moveBlock: {
-            if (self.target_x > 0 and self.target_y > 0) {
-                if (last_tick_time <= 0 or self.x <= 0 or self.y <= 0) {
-                    self.x = self.target_x;
-                    self.y = self.target_y;
-                    self.target_x = -1;
-                    self.target_y = -1;
-                    self.move_angle = std.math.nan(f32);
-                    self.x_dir = 0.0;
-                    self.y_dir = 0.0;
-                    break :moveBlock;
-                }
-
-                const scale_dt = @as(f32, @floatFromInt(time - last_tick_time)) / last_tick_ms;
-                if (scale_dt >= 1.0) {
-                    self.x = self.target_x;
-                    self.y = self.target_y;
-                    self.target_x = -1;
-                    self.target_y = -1;
-                    self.move_angle = std.math.nan(f32);
-                    self.x_dir = 0.0;
-                    self.y_dir = 0.0;
-                    break :moveBlock;
-                }
-
-                self.x = scale_dt * self.target_x + (1.0 - scale_dt) * self.tick_x;
-                self.y = scale_dt * self.target_y + (1.0 - scale_dt) * self.tick_y;
-            }
+        if (!std.math.isNan(self.move_angle) and self.move_step > 0.0 and time < self.move_time_end) {
+            self.x += dt * self.move_step * @cos(self.move_angle);
+            self.y += dt * self.move_step * @sin(self.move_angle);
         }
     }
 
@@ -1580,7 +1531,6 @@ pub const Projectile = struct {
         var min_dist = radius_sqr;
         var target: ?*GameObject = null;
 
-        // todo check multi_hit container
         for (entities.items()) |*en| {
             if (en.* == .object) {
                 if (en.object.is_enemy or en.object.occupy_square or en.object.enemy_occupy_square) {
@@ -1676,6 +1626,17 @@ pub const Projectile = struct {
         const last_y = self.y;
 
         self.updatePosition(elapsed, dt);
+        if (self.x < 0 or self.y < 0) {
+            if (self.damage_players)
+                network.queuePacket(.{ .square_hit = .{
+                    .time = time,
+                    .bullet_id = self.bullet_id,
+                    .obj_id = self.owner_id,
+                } });
+
+            return false;
+        }
+
         if (last_x == 0 and last_y == 0) {
             self.visual_angle = self.angle;
         } else {
@@ -1976,8 +1937,6 @@ pub var object_lock: std.Thread.RwLock = .{};
 pub var entities: utils.DynSlice(Entity) = undefined;
 pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
 pub var atlas_to_color_data: std.AutoHashMap(AtlasHashHack, []u32) = undefined;
-pub var last_tick_ms: f32 = 0.0;
-pub var last_tick_time: i64 = 0;
 pub var local_player_id: i32 = -1;
 pub var interactive_id = std.atomic.Atomic(i32).init(-1);
 pub var interactive_type = std.atomic.Atomic(game_data.ClassType).init(.game_object);
@@ -2077,6 +2036,9 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     move_records.deinit();
     atlas_to_color_data.deinit();
     minimap.deinit();
+
+    if (name.len > 0)
+        allocator.free(name);
 }
 
 pub fn getLightIntensity(time: i64) f32 {
@@ -2446,11 +2408,4 @@ inline fn getId(time: i64) i32 {
 
 inline fn getScore(id: i32, time: i64) i64 {
     return std.math.absInt(time - last_records_clear_time - id * 100);
-}
-
-// doesnt work atm Outputs: info: N~?ö? -> Nexus
-// name might need allocating?
-pub inline fn isNexus() bool {
-    // std.log.info("{s} -> {s}", .{ name, nexus_id_name });
-    return std.mem.eql(u8, name, nexus_id_name);
 }

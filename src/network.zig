@@ -528,15 +528,8 @@ fn handleGoto() void {
     if (map.findEntityRef(object_id)) |en| {
         if (en.* == .player) {
             const player = &en.player;
-            if (object_id == map.local_player_id) {
-                player.x = x;
-                player.y = y;
-            } else {
-                player.target_x = x;
-                player.target_y = y;
-                player.tick_x = player.x;
-                player.tick_y = player.y;
-            }
+            player.x = x;
+            player.y = y;
         }
     } else {
         std.log.err("Object id {d} not found while attempting to goto to pos x={d}, y={d}", .{ object_id, x, y });
@@ -576,7 +569,9 @@ fn handleMapInfo(allocator: std.mem.Allocator) void {
     const width: u32 = @intCast(@max(0, reader.read(i32)));
     const height: u32 = @intCast(@max(0, reader.read(i32)));
     map.setWH(width, height, allocator);
-    map.name = reader.read([]u8);
+    if (map.name.len > 0)
+        allocator.free(map.name);
+    map.name = allocator.dupe(u8, reader.read([]u8)) catch "";
     const display_name = reader.read([]u8);
     map.seed = reader.read(u32);
     const difficulty = reader.read(i32);
@@ -614,7 +609,7 @@ fn handleNameResult() void {
 
 fn handleNewTick(allocator: std.mem.Allocator) void {
     const tick_id = reader.read(i32);
-    const tick_time = reader.read(i32);
+    const tick_time: f32 = @floatFromInt(reader.read(i32));
 
     defer {
         if (main.tick_frame) {
@@ -653,21 +648,29 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
         const stats_byte_len = reader.read(u16);
         const next_obj_idx = reader.index + stats_byte_len;
 
+        const ms_time: i64 = @divFloor(main.current_time, std.time.us_per_ms);
+        const int_tick_time: i64 = @intFromFloat(tick_time);
+        const move_time_end = ms_time + int_tick_time;
+        
         if (map.findEntityRef(obj_id)) |en| {
             switch (en.*) {
                 .player => |*player| {
                     if (player.obj_id != map.local_player_id) {
-                        player.target_x = x;
-                        player.target_y = y;
-                        player.tick_x = player.x;
-                        player.tick_y = player.y;
                         const y_dt = y - player.y;
                         const x_dt = x - player.x;
-                        player.move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
 
-                        const float_tick_time = @as(f32, @floatFromInt(tick_time));
-                        player.x_dir = (player.target_x - player.tick_x) / float_tick_time;
-                        player.y_dir = (player.target_y - player.tick_y) / float_tick_time; // used for animation stuff for non "self" player
+                        if (!std.math.isNan(player.move_angle)) {
+                            const dist_sqr = y_dt * y_dt + x_dt * x_dt;
+                            player.move_step = @sqrt(dist_sqr) / tick_time;
+                            player.move_time_end = move_time_end;
+                            player.x_dir = x_dt / tick_time;
+                            player.y_dir = y_dt / tick_time; // used for animation stuff for non "self" player
+                        } else {
+                            player.x = x;
+                            player.y = y;
+                        }
+
+                        player.move_angle = if (y_dt <= 0 and x_dt <= 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
                     }
 
                     for (0..stats_len) |_| {
@@ -687,13 +690,21 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
                     continue;
                 },
                 .object => |*object| {
-                    object.target_x = x;
-                    object.target_y = y;
-                    object.tick_x = object.x;
-                    object.tick_y = object.y;
                     const y_dt = y - object.y;
                     const x_dt = x - object.x;
+
+                    if (!std.math.isNan(object.move_angle)) {
+                        const dist_sqr = y_dt * y_dt + x_dt * x_dt;
+                        object.move_step = @sqrt(dist_sqr) / tick_time;
+                        object.move_time_end = move_time_end;
+                        object.inv_dist = 0.5 / dist_sqr;
+                    } else {
+                        object.x = x;
+                        object.y = y;
+                    }
+
                     object.move_angle = if (y_dt == 0 and x_dt == 0) std.math.nan(f32) else std.math.atan2(f32, y_dt, x_dt);
+
                     for (0..stats_len) |_| {
                         const stat_id = reader.read(u8);
                         const stat = std.meta.intToEnum(game_data.StatType, stat_id) catch |e| {
@@ -717,10 +728,6 @@ fn handleNewTick(allocator: std.mem.Allocator) void {
         reader.index = next_obj_idx;
         std.log.err("Could not find object in NewTick (obj_id={d}, x={d}, y={d})", .{ obj_id, x, y });
     }
-
-    const ms_time = @divFloor(main.current_time, std.time.us_per_ms);
-    map.last_tick_ms = @floatFromInt(if (map.last_tick_time == 0) tick_time else ms_time - map.last_tick_time);
-    map.last_tick_time = ms_time;
 
     if (settings.log_packets == .all or settings.log_packets == .s2c or settings.log_packets == .s2c_tick)
         std.log.debug("Recv - NewTick: tick_id={d}, tick_time={d}, statuses_len={d}", .{ tick_id, tick_time, statuses_len });

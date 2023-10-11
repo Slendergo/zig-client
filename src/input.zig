@@ -263,7 +263,6 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Act
                         input_field.text_data.backing_buffer[input_field._index] = 0;
                         window.setClipboardString(input_field.text_data.backing_buffer[0..input_field._index :0]);
                         input_field.clear();
-                        input_field.inputUpdate();
                         return;
                     },
                     else => {},
@@ -274,7 +273,6 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Act
                 if (input_field.enter_callback) |enter_cb| {
                     enter_cb(input_field.text_data.text);
                     input_field.clear();
-                    input_field.inputUpdate();
                     input_field._last_input = -1;
                     selected_input_field = null;
                 }
@@ -417,9 +415,9 @@ pub fn scrollEvent(_: *zglfw.Window, _: f64, yoffset: f64) callconv(.C) void {
 }
 
 fn tryEscape() void {
-    if (map.isNexus()) {
+    if (std.mem.eql(u8, map.name, "Nexus"))
         return;
-    }
+    
     network.queuePacket(.{ .escape = .{} });
 }
 

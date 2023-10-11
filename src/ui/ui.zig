@@ -139,6 +139,7 @@ pub const InputField = struct {
     pub fn clear(self: *InputField) void {
         self.text_data.text = "";
         self._index = 0;
+        self.inputUpdate();
     }
 
     pub fn inputUpdate(self: *InputField) void {
@@ -903,11 +904,13 @@ pub const TextData = struct {
                 continue;
             }
 
+            const mod_char = if (self.password) '*' else char;
+
             const char_data = switch (current_type) {
-                .medium => assets.medium_chars[char],
-                .medium_italic => assets.medium_italic_chars[char],
-                .bold => assets.bold_chars[char],
-                .bold_italic => assets.bold_italic_chars[char],
+                .medium => assets.medium_chars[mod_char],
+                .medium_italic => assets.medium_italic_chars[mod_char],
+                .bold => assets.bold_chars[mod_char],
+                .bold_italic => assets.bold_italic_chars[mod_char],
             };
 
             x_pointer += char_data.x_advance * current_size;
@@ -981,11 +984,13 @@ pub const TextData = struct {
                 }
             }
 
+            const mod_char = if (self.password) '*' else char;
+
             const char_data = switch (self.text_type) {
-                .medium => assets.medium_chars[char],
-                .medium_italic => assets.medium_italic_chars[char],
-                .bold => assets.bold_chars[char],
-                .bold_italic => assets.bold_italic_chars[char],
+                .medium => assets.medium_chars[mod_char],
+                .medium_italic => assets.medium_italic_chars[mod_char],
+                .bold => assets.bold_chars[mod_char],
+                .bold_italic => assets.bold_italic_chars[mod_char],
             };
 
             const next_x_pointer = x_pointer + char_data.x_advance * size_scale;
@@ -1025,16 +1030,17 @@ pub const DisplayContainer = struct {
         return elem;
     }
 
-    pub fn createElement(self: *DisplayContainer, comptime ElemType: type, data: ElemType) !*ElemType {
+    pub fn createElement(self: *DisplayContainer, comptime data: anytype) !*@TypeOf(data) {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
         }
         defer if (should_lock) ui_lock.unlock();
 
-        var elem = try self._allocator.create(ElemType);
+        const data_type = @TypeOf(data);
+        var elem = try self._allocator.create(data_type);
         elem.* = data;
-        switch (ElemType) {
+        switch (data_type) {
             Image => try self._elements.add(.{ .image = elem }),
             Item => try self._elements.add(.{ .item = elem }),
             Bar => try self._elements.add(.{ .bar = elem }),
@@ -1075,9 +1081,6 @@ pub const DisplayContainer = struct {
                 .image => |image| image.destroy(),
                 .menu_bg => |menu_bg| menu_bg.destroy(),
                 .toggle => |toggle| toggle.destroy(),
-                // maybe don't assume that the allocator is the same?
-                .balloon => |*balloon| balloon.destroy(self._allocator),
-                .status => |*status| status.destroy(self._allocator),
                 else => {},
             }
         }
