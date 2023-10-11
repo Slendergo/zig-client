@@ -1099,17 +1099,16 @@ pub const DisplayContainer = struct {
         return elem;
     }
 
-    pub fn createElement(self: *DisplayContainer, comptime data: anytype) !*@TypeOf(data) {
+    pub fn createElement(self: *DisplayContainer, comptime T: type, data: T) !*T {
         const should_lock = elements.isFull();
         if (should_lock) {
             while (!ui_lock.tryLock()) {}
         }
         defer if (should_lock) ui_lock.unlock();
 
-        const data_type = @TypeOf(data);
-        var elem = try self._allocator.create(data_type);
+        var elem = try self._allocator.create(T);
         elem.* = data;
-        switch (data_type) {
+        switch (T) {
             Image => try self._elements.add(.{ .image = elem }),
             Item => try self._elements.add(.{ .item = elem }),
             Bar => try self._elements.add(.{ .bar = elem }),
@@ -1120,6 +1119,7 @@ pub const DisplayContainer = struct {
             DisplayContainer => try self._elements.add(.{ .container = elem }),
             MenuBackground => try self._elements.add(.{ .menu_bg = elem }),
             Toggle => try self._elements.add(.{ .toggle = elem }),
+            KeyMapper => try self._elements.add(.{ .key_mapper = elem }),
             else => @compileError("Element type not supported"),
         }
         return elem;
@@ -1140,16 +1140,53 @@ pub const DisplayContainer = struct {
 
         for (self._elements.items()) |*elem| {
             switch (elem.*) {
-                .container => |container| container.destroy(),
-                .bar => |bar| bar.destroy(),
-                .input_field => |input_field| input_field.destroy(),
-                .button => |button| button.destroy(),
-                .char_box => |box| box.destroy(),
-                .text => |text| text.destroy(),
-                .item => |item| item.destroy(),
-                .image => |image| image.destroy(),
-                .menu_bg => |menu_bg| menu_bg.destroy(),
-                .toggle => |toggle| toggle.destroy(),
+                .container => |container| {
+                    container.destroy();
+                    self._allocator.destroy(container);
+                },
+                .bar => |bar| {
+                    self._allocator.free(bar.text_data.backing_buffer);
+                    self._allocator.destroy(bar);
+                },
+                .input_field => |input_field| {
+                    self._allocator.free(input_field.text_data.backing_buffer);
+                    self._allocator.destroy(input_field);
+                },
+                .button => |button| {
+                    if (button.text_data) |text_data| {
+                        self._allocator.free(text_data.backing_buffer);
+                    }
+                    self._allocator.destroy(button);
+                },
+                .char_box => |box| {
+                    if (box.text_data) |text_data| {
+                        self._allocator.free(text_data.backing_buffer);
+                    }
+                    self._allocator.destroy(box);
+                },
+                .text => |text| {
+                    self._allocator.free(text.text_data.backing_buffer);
+                    self._allocator.destroy(text);
+                },
+                .item => |item| {
+                    if (item.tier_text) |text| {
+                        self._allocator.free(text.text_data.backing_buffer);
+                    }
+                    self._allocator.destroy(item);
+                },
+                .image => |image| {
+                    self._allocator.destroy(image);
+                },
+                .menu_bg => |menu_bg| {
+                    self._allocator.destroy(menu_bg);
+                },
+                .toggle => |toggle| {
+                    self._allocator.destroy(toggle);
+                },
+                .key_mapper => |key_mapper| {
+                    self._allocator.free(key_mapper.text_data.backing_buffer);
+                    self._allocator.destroy(key_mapper);
+                },
                 else => {},
             }
         }
