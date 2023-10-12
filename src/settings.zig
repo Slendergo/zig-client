@@ -232,6 +232,15 @@ pub fn init(allocator: std.mem.Allocator) !void {
     }
 }
 
+pub fn getKeyTexture(button: Button) assets.AtlasData {
+    const tex_list = assets.atlas_data.get("keyIndicators");
+    if (tex_list) |list| {
+        return list[key_tex_map.get(button) orelse unset_key_tex];
+    }
+    //probably a better way to do this
+    return assets.AtlasData{ .tex_v = 0, .tex_w = 0, .tex_h = 0, .tex_u = 0 };
+}
+
 pub fn deinit() void {
     key_tex_map.deinit();
 }

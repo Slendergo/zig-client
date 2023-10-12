@@ -2575,15 +2575,25 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
 
             if (key_mapper.listening) {
                 key_mapper.text_data.text = @constCast("listening");
+                ui_idx = drawText(
+                    ui_idx,
+                    key_mapper.x + (w - key_mapper.text_data.width()) / 2 + x_offset,
+                    key_mapper.y + (h - key_mapper.text_data.height()) / 2 + y_offset,
+                    key_mapper.text_data,
+                    draw_data,
+                );
+            } else {
+                ui_idx = drawQuad(
+                    ui_idx,
+                    key_mapper.x + x_offset, //+ (w - key_mapper.text_data.width()) / 2 + x_offset,
+                    key_mapper.y + y_offset, //+ (h - key_mapper.text_data.height()) / 2 + y_offset,
+                    w,
+                    h,
+                    settings.getKeyTexture(key_mapper.settings_button.*),
+                    draw_data,
+                    .{ .force_glow_off = true },
+                );
             }
-
-            ui_idx = drawText(
-                ui_idx,
-                key_mapper.x + (w - key_mapper.text_data.width()) / 2 + x_offset,
-                key_mapper.y + (h - key_mapper.text_data.height()) / 2 + y_offset,
-                key_mapper.text_data,
-                draw_data,
-            );
 
             if (key_mapper.title_text_data) |text_data| {
                 const len: f32 = @floatFromInt(text_data.text.len);
