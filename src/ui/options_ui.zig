@@ -63,7 +63,7 @@ pub const OptionsUi = struct {
 
         screen.tabs_cont = try ui.DisplayContainer.create(allocator, .{
             .x = 0,
-            .y = 50,
+            .y = 25,
         });
 
         screen.gen_cont = try ui.DisplayContainer.create(allocator, .{
@@ -149,15 +149,15 @@ pub const OptionsUi = struct {
             .press_callback = resetToDefaultsCallback,
         });
 
-        _ = try screen.main_cont.createElement(ui.UiText, .{ .x = buttons_x - 76, .y = 50, .text_data = .{
+        _ = try screen.main_cont.createElement(ui.UiText, .{ .x = buttons_x - 76, .y = 25, .text_data = .{
             .text = @constCast("Options"),
-            .size = 24,
+            .size = 32,
             .text_type = .bold,
             .backing_buffer = try allocator.alloc(u8, 8),
         } });
 
         var tab_x_offset: f32 = 50;
-        const tab_y: f32 = 100;
+        const tab_y: f32 = 50;
 
         _ = try screen.tabs_cont.createElement(ui.Button, .{
             .x = tab_x_offset,
@@ -177,7 +177,7 @@ pub const OptionsUi = struct {
             .press_callback = generalTabCallback,
         });
 
-        tab_x_offset += 100 + button_width;
+        tab_x_offset += button_width;
 
         _ = try screen.tabs_cont.createElement(ui.Button, .{
             .x = tab_x_offset,
@@ -197,7 +197,7 @@ pub const OptionsUi = struct {
             .press_callback = hotkeysTabCallback,
         });
 
-        tab_x_offset += 100 + button_width;
+        tab_x_offset += button_width;
 
         _ = try screen.tabs_cont.createElement(ui.Button, .{
             .x = tab_x_offset,
@@ -217,7 +217,7 @@ pub const OptionsUi = struct {
             .press_callback = graphicsTabCallback,
         });
 
-        tab_x_offset += 100 + button_width;
+        tab_x_offset += button_width;
 
         _ = try screen.tabs_cont.createElement(ui.Button, .{
             .x = tab_x_offset,
@@ -236,11 +236,15 @@ pub const OptionsUi = struct {
             },
             .press_callback = performanceTabCallback,
         });
+
+        //general tab
+
         const key_width: f32 = 50;
-        const key_y_spacer: f32 = 20 + button_height;
+        const key_y_spacer: f32 = button_height;
         const key_title_size: f32 = 18;
         var key_y: f32 = key_y_spacer;
         const magic: f32 = key_title_size * 9;
+        const right: f32 = width - key_width - magic;
 
         _ = try screen.gen_cont.createElement(ui.KeyMapper, .{
             .x = key_width + magic,
@@ -251,7 +255,7 @@ pub const OptionsUi = struct {
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
-                .text = @constCast(@tagName(settings.move_up.getKey())),
+                .text = @constCast(settings.move_up.getName()),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
@@ -278,7 +282,7 @@ pub const OptionsUi = struct {
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
-                .text = @constCast(@tagName(settings.move_down.getKey())),
+                .text = @constCast(settings.move_down.getName()),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
@@ -305,7 +309,7 @@ pub const OptionsUi = struct {
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
-                .text = @constCast(@tagName(settings.move_right.getKey())),
+                .text = @constCast(settings.move_right.getName()),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
@@ -332,7 +336,7 @@ pub const OptionsUi = struct {
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
-                .text = @constCast(@tagName(settings.move_left.getKey())),
+                .text = @constCast(settings.move_left.getName()),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
@@ -347,6 +351,145 @@ pub const OptionsUi = struct {
             .settings_button = &settings.move_left,
             .set_key_callback = keyCallback,
         });
+
+        key_y += key_y_spacer;
+
+        _ = try screen.gen_cont.createElement(ui.KeyMapper, .{
+            .x = key_width + magic,
+            .y = key_y,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast(settings.rotate_left.getName()),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .title_text_data = .{
+                .text = @constCast("Rotate left"),
+                .size = key_title_size,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .key = settings.rotate_left.getKey(),
+            .settings_button = &settings.rotate_left,
+            .set_key_callback = keyCallback,
+        });
+
+        key_y += key_y_spacer;
+
+        _ = try screen.gen_cont.createElement(ui.KeyMapper, .{
+            .x = key_width + magic,
+            .y = key_y,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast(settings.rotate_right.getName()),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .title_text_data = .{
+                .text = @constCast("Rotate right"),
+                .size = key_title_size,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .key = settings.rotate_right.getKey(),
+            .settings_button = &settings.rotate_right,
+            .set_key_callback = keyCallback,
+        });
+
+        key_y += key_y_spacer;
+
+        _ = try screen.gen_cont.createElement(ui.KeyMapper, .{
+            .x = key_width + magic,
+            .y = key_y,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast(settings.escape.getName()),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .title_text_data = .{
+                .text = @constCast("Escape"),
+                .size = key_title_size,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .key = settings.escape.getKey(),
+            .settings_button = &settings.escape,
+            .set_key_callback = keyCallback,
+        });
+
+        key_y += key_y_spacer;
+
+        _ = try screen.gen_cont.createElement(ui.KeyMapper, .{
+            .x = key_width + magic,
+            .y = key_y,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast(settings.interact.getName()),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .title_text_data = .{
+                .text = @constCast("Interact"),
+                .size = key_title_size,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .key = settings.interact.getKey(),
+            .mouse = settings.interact.getMouse(),
+            .settings_button = &settings.interact,
+            .set_key_callback = keyCallback,
+        });
+
+        key_y = key_y_spacer;
+
+        _ = try screen.gen_cont.createElement(ui.KeyMapper, .{
+            .x = right,
+            .y = key_y,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, key_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, key_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast(settings.shoot.getName()),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .title_text_data = .{
+                .text = @constCast("Shoot"),
+                .size = key_title_size,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .key = settings.shoot.getKey(),
+            .mouse = settings.shoot.getMouse(),
+            .settings_button = &settings.shoot,
+            .set_key_callback = keyCallback,
+        });
+
+        //graphics tab
 
         const toggle_data_base_off = assets.getUiData("toggleSliderBaseOff", 0);
         const toggle_data_hover_off = assets.getUiData("toggleSliderHoverOff", 0);
@@ -456,7 +599,18 @@ pub const OptionsUi = struct {
     }
 
     fn keyCallback(self: *ui.KeyMapper) void {
-        self.settings_button.key = self.key;
+        if (self.key == .unknown and self.mouse == .unknown) { //true if player presses esc during key setting
+            self.settings_button.* = settings.Button{ .key = .unknown };
+        } else if (self.key == .unknown) {
+            self.settings_button.* = settings.Button{ .mouse = self.mouse };
+        } else if (self.mouse == .unknown) {
+            self.settings_button.* = settings.Button{ .key = self.key };
+        }
+
+        //var newBut = settings.Button{ .key = self.key };
+        //but = newBut;
+
+        //self.settings_button.key = self.key;
     }
 
     fn closeCallback() void {

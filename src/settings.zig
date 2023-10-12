@@ -49,6 +49,25 @@ pub const Button = union(enum) {
             .mouse => |mouse| return mouse,
         }
     }
+
+    pub fn getName(self: Button) [:0]const u8 {
+        switch (self) {
+            .key => |key| return getKeyNameOrNone(key),
+            .mouse => |mouse| return getMouseNameOrNone(mouse),
+        }
+    }
+
+    fn getKeyNameOrNone(key: zglfw.Key) [:0]const u8 {
+        if (key == .unknown)
+            return "None";
+        return @tagName(key);
+    }
+
+    fn getMouseNameOrNone(mouse: zglfw.MouseButton) [:0]const u8 {
+        if (mouse == .unknown)
+            return "None";
+        return @tagName(mouse);
+    }
 };
 
 pub const build_version = "0.5";

@@ -2573,6 +2573,10 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 },
             }
 
+            if (key_mapper.listening) {
+                key_mapper.text_data.text = @constCast("listening");
+            }
+
             ui_idx = drawText(
                 ui_idx,
                 key_mapper.x + (w - key_mapper.text_data.width()) / 2 + x_offset,

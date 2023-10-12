@@ -267,9 +267,11 @@ pub const KeyMapper = struct {
     text_data: TextData,
     settings_button: *settings.Button,
     key: zglfw.Key = zglfw.Key.unknown,
+    mouse: zglfw.MouseButton = zglfw.MouseButton.unknown,
     title_text_data: ?TextData = null,
     state: InteractableState = .none,
     visible: bool = true,
+    listening: bool = false,
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
@@ -1584,8 +1586,12 @@ fn elemPress(elem: UiElement, x: f32, y: f32, mods: zglfw.Mods) bool {
 
             if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
                 key_mapper.state = .pressed;
-                input.selected_key_mapper = key_mapper;
 
+                if (input.selected_key_mapper == null)
+                {
+                    key_mapper.listening = true;
+                    input.selected_key_mapper = key_mapper;
+                }
                 //Not needed at the moment
                 //key_mapper.press_callback();
 
@@ -1770,7 +1776,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
     elements_to_remove.clear();
 }
 
-var options_opened: bool = false;
+pub var options_opened: bool = false;
 pub var options: *OptionsUi = undefined;
 
 pub fn hideOptions() void {

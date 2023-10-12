@@ -79,7 +79,7 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
         attacking = true;
     } else if (key == settings.options.getKey()) {
         ui.showOptions();
-        //main.disconnect();
+        keyRelease(key);
     } else if (key == settings.escape.getKey()) {
         tryEscape();
     } else if (key == settings.interact.getKey()) {
@@ -170,7 +170,8 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
     } else if (button == settings.shoot.getMouse()) {
         attacking = true;
     } else if (button == settings.options.getMouse()) {
-        main.disconnect();
+        ui.showOptions();
+        mouseRelease(button);
     } else if (button == settings.escape.getMouse()) {
         network.queuePacket(.{ .escape = .{} });
     } else if (button == settings.interact.getMouse()) {
@@ -254,22 +255,19 @@ pub fn charEvent(_: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
     }
 }
 
+fn handleKeyMapperMouseInput(key_mapper: *ui.KeyMapper, mouse: zglfw.MouseButton) void {
+    key_mapper.key = .unknown;
+    key_mapper.mouse = mouse;
+    const tag_name: [:0]const u8 = @tagName(key_mapper.mouse);
+    setKeyMapperText(key_mapper, tag_name);
+}
+
 fn handleKeyMapperKeyInput(key_mapper: *ui.KeyMapper, key: zglfw.Key) void {
+    key_mapper.mouse = .unknown;
     switch (key) {
         .escape => {
             key_mapper.key = .unknown;
-
-            //I would like to change the key to show "None" after you hit esc
-            //but this gives me seg fault
-            //const name: []u8 = @constCast("None");
-
-            //for (0..key_mapper.text_data.backing_buffer.len) |i| {
-            //    if (i >= name.len)
-            //        break;
-
-            //    key_mapper.text_data.backing_buffer[i] = name[i];
-            //}
-            //key_mapper.text_data.text = key_mapper.text_data.backing_buffer;
+            setKeyMapperText(key_mapper, "None");
             return;
         },
         else => {
@@ -286,15 +284,13 @@ fn handleKeyMapperKeyInput(key_mapper: *ui.KeyMapper, key: zglfw.Key) void {
     if (!std.ascii.isASCII(byte_code))
         return;
 
-    const tag_name: [:0]const u8 = @tagName(key);
+    const tag_name: [:0]const u8 = @tagName(key_mapper.key);
+    setKeyMapperText(key_mapper, tag_name);
+}
 
-    for (0..key_mapper.text_data.backing_buffer.len) |i| {
-        if (i >= tag_name.len)
-            break;
-
-        key_mapper.text_data.backing_buffer[i] = tag_name[i];
-    }
-    key_mapper.text_data.text = key_mapper.text_data.backing_buffer;
+fn setKeyMapperText(key_mapper: *ui.KeyMapper, tag_name: [:0]const u8) void {
+    key_mapper.listening = false;
+    key_mapper.text_data.text = @constCast(tag_name);
     key_mapper.set_key_callback(key_mapper);
     selected_key_mapper = null;
 }
@@ -423,6 +419,9 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
     }
 
     if (action == .press) {
+        if (selected_key_mapper) |key_mapper| {
+            handleKeyMapperMouseInput(key_mapper, button);
+        }
         if (!ui.mousePress(@floatCast(mouse_x), @floatCast(mouse_y), mods))
             mousePress(window, button, mods);
     } else if (action == .release) {
@@ -481,7 +480,7 @@ pub fn scrollEvent(_: *zglfw.Window, _: f64, yoffset: f64) callconv(.C) void {
 fn tryEscape() void {
     if (std.mem.eql(u8, map.name, "Nexus"))
         return;
-    
+
     network.queuePacket(.{ .escape = .{} });
 }
 
