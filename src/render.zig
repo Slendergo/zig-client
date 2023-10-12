@@ -752,22 +752,18 @@ fn drawMinimap(
     const dont_scissor = ui.ScissorRect.dont_scissor;
     const scaled_min_x = if (scissor.min_x != dont_scissor)
         (scissor.min_x + x - camera.screen_width / 2.0) * camera.clip_scale_x
-    else
-        -1.0;
+    else if (rotation == 0) @as(f32, -1.0) else @as(f32, -2.0);
     const scaled_max_x = if (scissor.max_x != dont_scissor)
         (scissor.max_x + x - camera.screen_width / 2.0) * camera.clip_scale_x
-    else
-        1.0;
+    else if (rotation == 0) @as(f32, 1.0) else @as(f32, 2.0);
 
     // have to flip these, y is inverted... should be fixed later
     const scaled_min_y = if (scissor.max_y != dont_scissor)
         -(scissor.max_y + y - camera.screen_height / 2.0) * camera.clip_scale_y
-    else
-        -1.0;
+    else if (rotation == 0) @as(f32, -1.0) else @as(f32, -2.0);
     const scaled_max_y = if (scissor.min_y != dont_scissor)
         -(scissor.min_y + y - camera.screen_height / 2.0) * camera.clip_scale_y
-    else
-        1.0;
+    else if (rotation == 0) @as(f32, 1.0) else @as(f32, 2.0);
 
     var x1 = -x_cos + x_sin + scaled_x;
     var tex_u1 = tex_u - tex_w_half;
@@ -951,22 +947,18 @@ fn drawMenuBackground(
     const dont_scissor = ui.ScissorRect.dont_scissor;
     const scaled_min_x = if (scissor.min_x != dont_scissor)
         (scissor.min_x + x - camera.screen_width / 2.0) * camera.clip_scale_x
-    else
-        -1.0;
+    else if (rotation == 0) @as(f32, -1.0) else @as(f32, -2.0);
     const scaled_max_x = if (scissor.max_x != dont_scissor)
         (scissor.max_x + x - camera.screen_width / 2.0) * camera.clip_scale_x
-    else
-        1.0;
+    else if (rotation == 0) @as(f32, 1.0) else @as(f32, 2.0);
 
     // have to flip these, y is inverted... should be fixed later
     const scaled_min_y = if (scissor.max_y != dont_scissor)
         -(scissor.max_y + y - camera.screen_height / 2.0) * camera.clip_scale_y
-    else
-        -1.0;
+    else if (rotation == 0) @as(f32, -1.0) else @as(f32, -2.0);
     const scaled_max_y = if (scissor.min_y != dont_scissor)
         -(scissor.min_y + y - camera.screen_height / 2.0) * camera.clip_scale_y
-    else
-        1.0;
+    else if (rotation == 0) @as(f32, 1.0) else @as(f32, 2.0);
 
     const tex_w = 1.0;
     const tex_h = 1.0;
@@ -1184,22 +1176,18 @@ fn drawQuad(
     const dont_scissor = ui.ScissorRect.dont_scissor;
     const scaled_min_x = if (opts.scissor.min_x != dont_scissor)
         (opts.scissor.min_x + x - camera.screen_width / 2.0) * camera.clip_scale_x
-    else
-        -1.0;
+    else if (opts.rotation == 0) @as(f32, -1.0) else @as(f32, -2.0);
     const scaled_max_x = if (opts.scissor.max_x != dont_scissor)
         (opts.scissor.max_x + x - camera.screen_width / 2.0) * camera.clip_scale_x
-    else
-        1.0;
+    else if (opts.rotation == 0) @as(f32, 1.0) else @as(f32, 2.0);
 
     // have to flip these, y is inverted... should be fixed later
     const scaled_min_y = if (opts.scissor.max_y != dont_scissor)
         -(opts.scissor.max_y + y - camera.screen_height / 2.0) * camera.clip_scale_y
-    else
-        -1.0;
+    else if (opts.rotation == 0) @as(f32, -1.0) else @as(f32, -2.0);
     const scaled_max_y = if (opts.scissor.min_y != dont_scissor)
         -(opts.scissor.min_y + y - camera.screen_height / 2.0) * camera.clip_scale_y
-    else
-        1.0;
+    else if (opts.rotation == 0) @as(f32, 1.0) else @as(f32, 2.0);
 
     var x1 = -x_cos + x_sin + scaled_x;
     var tex_u1 = atlas_data.tex_u;
