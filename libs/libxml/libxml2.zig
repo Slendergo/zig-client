@@ -169,7 +169,7 @@ pub fn create(
     }
 
     // C files
-    ret.addCSourceFiles(srcs, flags.items);
+    ret.addCSourceFiles(.{ .files = srcs, .flags = flags.items });
 
     ret.addIncludePath(.{ .path = include_dir });
     ret.addIncludePath(.{ .path = override_include_dir });
