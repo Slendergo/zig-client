@@ -1112,11 +1112,11 @@ fn drawMenuBackground(
 
 const QuadOptions = struct {
     rotation: f32 = 0.0,
-    base_color: u32 = 0,
+    base_color: u32 = std.math.maxInt(u32),
     base_color_intensity: f32 = 0.0,
     alpha_mult: f32 = 1.0,
     shadow_texel_mult: f32 = 0.0,
-    shadow_color: u32 = 0,
+    shadow_color: u32 = std.math.maxInt(u32),
     force_glow_off: bool = false,
     ui_quad: bool = false,
     scissor: ui.ScissorRect = .{},
@@ -1151,11 +1151,11 @@ fn drawQuad(
     }
 
     var base_rgb = ui.RGBF32.fromValues(0.0, 0.0, 0.0);
-    if (opts.base_color != 0)
+    if (opts.base_color != std.math.maxInt(u32))
         base_rgb = ui.RGBF32.fromInt(opts.base_color);
 
     var shadow_rgb = ui.RGBF32.fromValues(0.0, 0.0, 0.0);
-    if (opts.shadow_color != 0)
+    if (opts.shadow_color != std.math.maxInt(u32))
         shadow_rgb = ui.RGBF32.fromInt(opts.shadow_color);
 
     const texel_w = assets.base_texel_w * opts.shadow_texel_mult;
@@ -1469,11 +1469,11 @@ fn drawQuadVerts(
     }
 
     var base_rgb = ui.RGBF32.fromValues(-1.0, -1.0, -1.0);
-    if (opts.base_color != -1)
+    if (opts.base_color != std.math.maxInt(u32))
         base_rgb = ui.RGBF32.fromInt(opts.base_color);
 
     var shadow_rgb = ui.RGBF32.fromValues(0.0, 0.0, 0.0);
-    if (opts.shadow_color != -1)
+    if (opts.shadow_color != std.math.maxInt(u32))
         shadow_rgb = ui.RGBF32.fromInt(opts.shadow_color);
 
     const texel_w = assets.base_texel_w * opts.shadow_texel_mult;
@@ -2182,7 +2182,13 @@ fn drawNineSlice(
 ) u16 {
     var idx_new = idx;
 
-    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+    const opts = QuadOptions{
+        .alpha_mult = image_data.alpha,
+        .ui_quad = true,
+        .scissor = image_data.scissor,
+        .base_color = image_data.color,
+        .base_color_intensity = image_data.color_intensity,
+    };
 
     const w = image_data.w;
     const h = image_data.h;
@@ -2283,7 +2289,13 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
             const w = image_data.width();
             const h = image_data.height();
 
-            const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+            const opts = QuadOptions{
+                .alpha_mult = image_data.alpha,
+                .ui_quad = true,
+                .scissor = image_data.scissor,
+                .base_color = image_data.color,
+                .base_color_intensity = image_data.color_intensity,
+            };
             ui_idx = drawQuad(ui_idx, balloon._screen_x + x_offset, balloon._screen_y + y_offset, w, h, image_data.atlas_data, draw_data, opts);
 
             const decor_offset = h / 10;
@@ -2302,7 +2314,13 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
             switch (image.image_data) {
                 .nine_slice => |nine_slice| ui_idx = drawNineSlice(ui_idx, image.x + x_offset, image.y + y_offset, nine_slice, draw_data),
                 .normal => |image_data| {
-                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                    const opts = QuadOptions{
+                        .alpha_mult = image_data.alpha,
+                        .ui_quad = true,
+                        .scissor = image_data.scissor,
+                        .base_color = image_data.color,
+                        .base_color_intensity = image_data.color_intensity,
+                    };
                     ui_idx = drawQuad(ui_idx, image.x + x_offset, image.y + y_offset, image_data.width(), image_data.height(), image_data.atlas_data, draw_data, opts);
                 },
             }
@@ -2362,7 +2380,14 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                     ui_idx = drawNineSlice(ui_idx, item.x + x_offset, item.y + y_offset, nine_slice, draw_data);
                 },
                 .normal => |image_data| {
-                    const opts = QuadOptions{ .shadow_texel_mult = 2.0 / image_data.scale_x, .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                    const opts = QuadOptions{
+                        .shadow_texel_mult = 2.0 / image_data.scale_x,
+                        .alpha_mult = image_data.alpha,
+                        .ui_quad = true,
+                        .scissor = image_data.scissor,
+                        .base_color = image_data.color,
+                        .base_color_intensity = image_data.color_intensity,
+                    };
                     ui_idx = drawQuad(ui_idx, item.x + x_offset, item.y + y_offset, image_data.width(), image_data.height(), image_data.atlas_data, draw_data, opts);
                 },
             }
@@ -2391,7 +2416,13 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                     var atlas_data = image_data.atlas_data;
                     var scale: f32 = 1.0;
 
-                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                    const opts = QuadOptions{
+                        .alpha_mult = image_data.alpha,
+                        .ui_quad = true,
+                        .scissor = image_data.scissor,
+                        .base_color = image_data.color,
+                        .base_color_intensity = image_data.color_intensity,
+                    };
                     ui_idx = drawQuad(ui_idx, bar.x + x_offset, bar.y + y_offset, w * scale, image_data.height(), atlas_data, draw_data, opts);
                 },
             }
@@ -2420,7 +2451,13 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 .normal => |image_data| {
                     w = image_data.width();
                     h = image_data.height();
-                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                    const opts = QuadOptions{
+                        .alpha_mult = image_data.alpha,
+                        .ui_quad = true,
+                        .scissor = image_data.scissor,
+                        .base_color = image_data.color,
+                        .base_color_intensity = image_data.color_intensity,
+                    };
                     ui_idx = drawQuad(ui_idx, button.x + x_offset, button.y + y_offset, w, h, image_data.atlas_data, draw_data, opts);
                 },
             }
@@ -2451,7 +2488,13 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 .normal => |image_data| {
                     w = image_data.width();
                     h = image_data.height();
-                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                    const opts = QuadOptions{
+                        .alpha_mult = image_data.alpha,
+                        .ui_quad = true,
+                        .scissor = image_data.scissor,
+                        .base_color = image_data.color,
+                        .base_color_intensity = image_data.color_intensity,
+                    };
                     ui_idx = drawQuad(
                         ui_idx,
                         char_box.x + x_offset,
@@ -2497,7 +2540,13 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 .normal => |image_data| {
                     w = image_data.width();
                     h = image_data.height();
-                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                    const opts = QuadOptions{
+                        .alpha_mult = image_data.alpha,
+                        .ui_quad = true,
+                        .scissor = image_data.scissor,
+                        .base_color = image_data.color,
+                        .base_color_intensity = image_data.color_intensity,
+                    };
                     ui_idx = drawQuad(ui_idx, input_field.x + x_offset, input_field.y + y_offset, w, h, image_data.atlas_data, draw_data, opts);
                 },
             }
@@ -2512,7 +2561,13 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 switch (input_field.cursor_image_data) {
                     .nine_slice => |nine_slice| ui_idx = drawNineSlice(ui_idx, cursor_x, text_y, nine_slice, draw_data),
                     .normal => |image_data| {
-                        const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                        const opts = QuadOptions{
+                            .alpha_mult = image_data.alpha,
+                            .ui_quad = true,
+                            .scissor = image_data.scissor,
+                            .base_color = image_data.color,
+                            .base_color_intensity = image_data.color_intensity,
+                        };
                         ui_idx = drawQuad(ui_idx, cursor_x, text_y, image_data.width(), image_data.height(), image_data.atlas_data, draw_data, opts);
                     },
                 }
@@ -2534,7 +2589,13 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 .normal => |image_data| {
                     w = image_data.width();
                     h = image_data.height();
-                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                    const opts = QuadOptions{
+                        .alpha_mult = image_data.alpha,
+                        .ui_quad = true,
+                        .scissor = image_data.scissor,
+                        .base_color = image_data.color,
+                        .base_color_intensity = image_data.color_intensity,
+                    };
                     ui_idx = drawQuad(ui_idx, toggle.x + x_offset, toggle.y + y_offset, image_data.width(), image_data.height(), image_data.atlas_data, draw_data, opts);
                 },
             }
@@ -2568,7 +2629,13 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 .normal => |image_data| {
                     w = image_data.width();
                     h = image_data.height();
-                    const opts = QuadOptions{ .alpha_mult = image_data.alpha, .ui_quad = true, .scissor = image_data.scissor };
+                    const opts = QuadOptions{
+                        .alpha_mult = image_data.alpha,
+                        .ui_quad = true,
+                        .scissor = image_data.scissor,
+                        .base_color = image_data.color,
+                        .base_color_intensity = image_data.color_intensity,
+                    };
                     ui_idx = drawQuad(ui_idx, key_mapper.x + x_offset, key_mapper.y + y_offset, w, h, image_data.atlas_data, draw_data, opts);
                 },
             }

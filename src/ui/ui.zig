@@ -423,6 +423,8 @@ pub const NineSliceImageData = struct {
     w: f32,
     h: f32,
     alpha: f32 = 1.0,
+    color: u32 = std.math.maxInt(u32),
+    color_intensity: f32 = 0,
     atlas_data: [9]assets.AtlasData,
     scissor: ScissorRect = .{},
 
@@ -490,6 +492,8 @@ pub const NormalImageData = struct {
     scale_x: f32 = 1.0,
     scale_y: f32 = 1.0,
     alpha: f32 = 1.0,
+    color: u32 = std.math.maxInt(u32),
+    color_intensity: f32 = 0,
     atlas_data: assets.AtlasData,
     scissor: ScissorRect = .{},
 
@@ -1587,8 +1591,7 @@ fn elemPress(elem: UiElement, x: f32, y: f32, mods: zglfw.Mods) bool {
             if (utils.isInBounds(x, y, key_mapper.x, key_mapper.y, key_mapper.width(), key_mapper.height())) {
                 key_mapper.state = .pressed;
 
-                if (input.selected_key_mapper == null)
-                {
+                if (input.selected_key_mapper == null) {
                     key_mapper.listening = true;
                     input.selected_key_mapper = key_mapper;
                 }
