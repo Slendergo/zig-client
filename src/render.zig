@@ -3254,7 +3254,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                                     screen_pos.y + h + 5,
                                     button_w,
                                     button_h,
-                                    settings.interact_key_tex,
+                                    settings.getKeyTexture(settings.interact),
                                     draw_data,
                                     .{ .force_glow_off = true },
                                 );
