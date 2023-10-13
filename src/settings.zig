@@ -79,7 +79,7 @@ pub const rotate_speed = 0.002;
 pub const enable_tracy = false;
 pub const unset_key_tex: u16 = 0x68;
 pub var key_tex_map: std.AutoHashMap(Button, u16) = undefined;
-//pub var interact_key_tex: assets.AtlasData = undefined;
+pub var interact_key_tex: assets.AtlasData = undefined;
 pub var inv_0 = Button{ .key = .one };
 pub var inv_1 = Button{ .key = .two };
 pub var inv_2 = Button{ .key = .three };
@@ -114,6 +114,7 @@ pub var enable_glow = true;
 pub var enable_lights = true;
 pub var enable_vsync = true;
 pub var always_show_xp_gain = true;
+pub var stats_enabled = true;
 pub var fps_cap: f32 = 360.0; // 0 to disable
 pub var selected_cursor = CursorType.aztec;
 pub var aa_type = AaType.msaa4x;
@@ -226,10 +227,10 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try key_tex_map.put(.{ .key = .left_super }, if (builtin.os.tag == .windows) 0x0b else 0x30);
     try key_tex_map.put(.{ .key = .right_super }, if (builtin.os.tag == .windows) 0x0b else 0x30);
 
-    //const tex_list = assets.atlas_data.get("keyIndicators");
-    //if (tex_list) |list| {
-    //    interact_key_tex = list[key_tex_map.get(interact) orelse unset_key_tex];
-    //}
+    const tex_list = assets.atlas_data.get("keyIndicators");
+    if (tex_list) |list| {
+        interact_key_tex = list[key_tex_map.get(interact) orelse unset_key_tex];
+    }
 }
 
 pub fn getKeyTexture(button: Button) assets.AtlasData {
@@ -237,11 +238,13 @@ pub fn getKeyTexture(button: Button) assets.AtlasData {
     if (tex_list) |list| {
         return list[key_tex_map.get(button) orelse unset_key_tex];
     }
-    //probably a better way to do this
-    return assets.AtlasData{ .tex_v = 0, .tex_w = 0, .tex_h = 0, .tex_u = 0 };
+
+    return .{ .tex_v = 0, .tex_w = 0, .tex_h = 0, .tex_u = 0 };
 }
 
 pub fn deinit() void {
+    save();
+    
     key_tex_map.deinit();
 }
 

@@ -264,7 +264,6 @@ pub const KeyMapper = struct {
     //press_callback: *const fn () void,
     set_key_callback: *const fn (*KeyMapper) void,
     image_data: InteractableImageData,
-    text_data: TextData,
     settings_button: *settings.Button,
     key: zglfw.Key = zglfw.Key.unknown,
     mouse: zglfw.MouseButton = zglfw.MouseButton.unknown,
@@ -294,17 +293,17 @@ pub const KeyMapper = struct {
     }
 
     pub fn width(self: KeyMapper) f32 {
-        return @max(self.text_data.width(), switch (self.imageData()) {
+        return switch (self.imageData()) {
             .nine_slice => |nine_slice| return nine_slice.w,
             .normal => |image_data| return image_data.width(),
-        });
+        };
     }
 
     pub fn height(self: KeyMapper) f32 {
-        return @max(self.text_data.height(), switch (self.imageData()) {
+        return switch (self.imageData()) {
             .nine_slice => |nine_slice| return nine_slice.h,
             .normal => |image_data| return image_data.height(),
-        });
+        };
     }
 
     pub fn destroy(self: *KeyMapper) void {
@@ -320,9 +319,9 @@ pub const KeyMapper = struct {
             }
         }
 
-        self._allocator.free(self.text_data.backing_buffer);
         if (self.title_text_data) |title_text| {
-            self._allocator.free(title_text.backing_buffer);
+            if (title_text.backing_buffer.len > 0)
+                self._allocator.free(title_text.backing_buffer);
         }
 
         self._allocator.destroy(self);
@@ -1117,10 +1116,6 @@ pub const DisplayContainer = struct {
 
         var elem = try self._allocator.create(T);
         elem.* = data;
-        if (T == DisplayContainer) {
-            elem._allocator = self._allocator;
-            elem._elements = try utils.DynSlice(UiElement).init(8, self._allocator);
-        }
         switch (T) {
             Image => try self._elements.add(.{ .image = elem }),
             Item => try self._elements.add(.{ .item = elem }),
@@ -1129,7 +1124,11 @@ pub const DisplayContainer = struct {
             Button => try self._elements.add(.{ .button = elem }),
             UiText => try self._elements.add(.{ .text = elem }),
             CharacterBox => try self._elements.add(.{ .char_box = elem }),
-            DisplayContainer => try self._elements.add(.{ .container = elem }),
+            DisplayContainer => {
+                elem._allocator = self._allocator;
+                elem._elements = try utils.DynSlice(UiElement).init(8, self._allocator);
+                try self._elements.add(.{ .container = elem });
+            },
             MenuBackground => try self._elements.add(.{ .menu_bg = elem }),
             Toggle => try self._elements.add(.{ .toggle = elem }),
             KeyMapper => try self._elements.add(.{ .key_mapper = elem }),
@@ -1194,14 +1193,15 @@ pub const DisplayContainer = struct {
                 },
                 .toggle => |toggle| {
                     if (toggle.text_data) |text_data| {
-                        self._allocator.free(text_data.backing_buffer);
+                        if (text_data.backing_buffer.len > 0)
+                            self._allocator.free(text_data.backing_buffer);
                     }
                     self._allocator.destroy(toggle);
                 },
                 .key_mapper => |key_mapper| {
-                    self._allocator.free(key_mapper.text_data.backing_buffer);
                     if (key_mapper.title_text_data) |title_text| {
-                        self._allocator.free(title_text.backing_buffer);
+                        if (title_text.backing_buffer.len > 0)
+                            self._allocator.free(title_text.backing_buffer);
                     }
                     self._allocator.destroy(key_mapper);
                 },
@@ -1217,12 +1217,12 @@ pub const DisplayContainer = struct {
 pub const Toggle = struct {
     x: f32,
     y: f32,
+    toggled: *bool,
     off_image_data: InteractableImageData,
     on_image_data: InteractableImageData,
     state: InteractableState = .none,
-    toggled: bool = false,
     text_data: ?TextData = null,
-    state_change: ?*const fn (*Toggle) void,
+    state_change: ?*const fn (*Toggle) void = null,
     visible: bool = true,
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
@@ -1242,7 +1242,7 @@ pub const Toggle = struct {
     }
 
     pub fn imageData(self: Toggle) ImageData {
-        return if (self.toggled)
+        return if (self.toggled.*)
             self.on_image_data.current(self.state)
         else
             self.off_image_data.current(self.state);
@@ -1276,7 +1276,8 @@ pub const Toggle = struct {
         }
 
         if (self.text_data) |text_data| {
-            self._allocator.free(text_data.backing_buffer);
+            if (text_data.backing_buffer.len > 0)
+                self._allocator.free(text_data.backing_buffer);
         }
 
         self._allocator.destroy(self);
@@ -1554,7 +1555,7 @@ fn elemPress(elem: UiElement, x: f32, y: f32, mods: zglfw.Mods) bool {
 
             if (utils.isInBounds(x, y, toggle.x, toggle.y, toggle.width(), toggle.height())) {
                 toggle.state = .pressed;
-                toggle.toggled = !toggle.toggled;
+                toggle.toggled.* = !toggle.toggled.*;
                 if (toggle.state_change) |callback| {
                     callback(toggle);
                 }
@@ -1608,10 +1609,18 @@ fn elemPress(elem: UiElement, x: f32, y: f32, mods: zglfw.Mods) bool {
     return false;
 }
 
-pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods) bool {
+pub fn mousePress(x: f32, y: f32, mods: zglfw.Mods, button: zglfw.MouseButton) bool {
     if (input.selected_input_field) |input_field| {
         input_field._last_input = -1;
         input.selected_input_field = null;
+    }
+
+    if (input.selected_key_mapper) |key_mapper| {
+        key_mapper.key = .unknown;
+        key_mapper.mouse = button;
+        key_mapper.listening = false;
+        key_mapper.set_key_callback(key_mapper);
+        input.selected_key_mapper = null;
     }
 
     var elem_iter = std.mem.reverseIterator(elements.items());

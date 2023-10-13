@@ -425,8 +425,7 @@ pub const AccountScreen = struct {
                 .hover = .{ .normal = .{ .atlas_data = check_box_hover_on } },
                 .press = .{ .normal = .{ .atlas_data = check_box_press_on } },
             },
-            .state_change = saveEmailChanged,
-            .toggled = settings.save_email,
+            .toggled = &settings.save_email,
         });
 
         screen.save_email_text = try ui.UiText.create(allocator, .{
@@ -505,10 +504,6 @@ pub const AccountScreen = struct {
     pub fn resize(_: *AccountScreen, _: f32, _: f32) void {}
 
     pub fn update(_: *AccountScreen, _: i64, _: f32) !void {}
-
-    fn saveEmailChanged(toggle: *ui.Toggle) void {
-        settings.save_email = toggle.toggled;
-    }
 
     fn loginCallback() void {
         const current_screen = ui.current_screen.main_menu;

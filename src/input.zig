@@ -115,6 +115,8 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
         ui.current_screen.in_game.useItem(if (mods.control) 10 + 8 else 10);
     } else if (key == settings.inv_7.getKey()) {
         ui.current_screen.in_game.useItem(if (mods.control) 11 + 8 else 11);
+    } else if (key == settings.toggle_stats.getKey()) {
+        settings.stats_enabled = !settings.stats_enabled;
     }
 }
 
@@ -207,6 +209,8 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
         ui.current_screen.in_game.useItem(if (mods.control) 10 + 8 else 10);
     } else if (button == settings.inv_7.getMouse()) {
         ui.current_screen.in_game.useItem(if (mods.control) 11 + 8 else 11);
+    } else if (button == settings.toggle_stats.getMouse()) {
+        settings.stats_enabled = !settings.stats_enabled;
     }
 }
 
@@ -255,51 +259,16 @@ pub fn charEvent(_: *zglfw.Window, char: zglfw.Char) callconv(.C) void {
     }
 }
 
-fn handleKeyMapperMouseInput(key_mapper: *ui.KeyMapper, mouse: zglfw.MouseButton) void {
-    key_mapper.key = .unknown;
-    key_mapper.mouse = mouse;
-    const tag_name: [:0]const u8 = @tagName(key_mapper.mouse);
-    setKeyMapperText(key_mapper, tag_name);
-}
-
-fn handleKeyMapperKeyInput(key_mapper: *ui.KeyMapper, key: zglfw.Key) void {
-    key_mapper.mouse = .unknown;
-    switch (key) {
-        .escape => {
-            key_mapper.key = .unknown;
-            setKeyMapperText(key_mapper, "None");
-            return;
-        },
-        else => {
-            key_mapper.key = key;
-        },
-    }
-
-    const char_code = @intFromEnum(key_mapper.key);
-    if (char_code > std.math.maxInt(u8) or char_code < std.math.minInt(u8)) {
-        return;
-    }
-
-    const byte_code: u8 = @intCast(char_code);
-    if (!std.ascii.isASCII(byte_code))
-        return;
-
-    const tag_name: [:0]const u8 = @tagName(key_mapper.key);
-    setKeyMapperText(key_mapper, tag_name);
-}
-
-fn setKeyMapperText(key_mapper: *ui.KeyMapper, tag_name: [:0]const u8) void {
-    key_mapper.listening = false;
-    key_mapper.text_data.text = @constCast(tag_name);
-    key_mapper.set_key_callback(key_mapper);
-    selected_key_mapper = null;
-}
-
 pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Action, mods: zglfw.Mods) callconv(.C) void {
     if (action == .press or action == .repeat) {
         if (selected_key_mapper) |key_mapper| {
-            handleKeyMapperKeyInput(key_mapper, key);
+            key_mapper.mouse = .unknown;
+            key_mapper.key = key;
+            key_mapper.listening = false;
+            key_mapper.set_key_callback(key_mapper);
+            selected_key_mapper = null;
         }
+
         if (selected_input_field) |input_field| {
             if (mods.control) {
                 switch (key) {
@@ -419,10 +388,7 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
     }
 
     if (action == .press) {
-        if (selected_key_mapper) |key_mapper| {
-            handleKeyMapperMouseInput(key_mapper, button);
-        }
-        if (!ui.mousePress(@floatCast(mouse_x), @floatCast(mouse_y), mods))
+        if (!ui.mousePress(@floatCast(mouse_x), @floatCast(mouse_y), mods, button))
             mousePress(window, button, mods);
     } else if (action == .release) {
         ui.mouseRelease(@floatCast(mouse_x), @floatCast(mouse_y));
