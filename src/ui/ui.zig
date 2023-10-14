@@ -261,7 +261,6 @@ pub const Button = struct {
 pub const KeyMapper = struct {
     x: f32,
     y: f32,
-    //press_callback: *const fn () void,
     set_key_callback: *const fn (*KeyMapper) void,
     image_data: InteractableImageData,
     settings_button: *settings.Button,
@@ -1596,8 +1595,6 @@ fn elemPress(elem: UiElement, x: f32, y: f32, mods: zglfw.Mods) bool {
                     key_mapper.listening = true;
                     input.selected_key_mapper = key_mapper;
                 }
-                //Not needed at the moment
-                //key_mapper.press_callback();
 
                 assets.playSfx("ButtonClick");
                 return true;

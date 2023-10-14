@@ -77,7 +77,7 @@ pub const print_atlas = false;
 pub const print_ui_atlas = false;
 pub const rotate_speed = 0.002;
 pub const enable_tracy = false;
-pub const unset_key_tex: u16 = 0x68;
+pub const unset_key_tex_idx: u16 = 0x68;
 pub var key_tex_map: std.AutoHashMap(Button, u16) = undefined;
 pub var interact_key_tex: assets.AtlasData = undefined;
 pub var inv_0 = Button{ .key = .one };
@@ -229,22 +229,21 @@ pub fn init(allocator: std.mem.Allocator) !void {
 
     const tex_list = assets.atlas_data.get("keyIndicators");
     if (tex_list) |list| {
-        interact_key_tex = list[key_tex_map.get(interact) orelse unset_key_tex];
+        interact_key_tex = list[key_tex_map.get(interact) orelse unset_key_tex_idx];
     }
 }
 
 pub fn getKeyTexture(button: Button) assets.AtlasData {
     const tex_list = assets.atlas_data.get("keyIndicators");
-    if (tex_list) |list| {
-        return list[key_tex_map.get(button) orelse unset_key_tex];
-    }
+    if (tex_list == null)
+        @panic("Key texture parsing failed, the keyIndicators sheet is missing");
 
-    return .{ .tex_v = 0, .tex_w = 0, .tex_h = 0, .tex_u = 0 };
+    return tex_list.?[key_tex_map.get(button) orelse unset_key_tex_idx];
 }
 
 pub fn deinit() void {
     save();
-    
+
     key_tex_map.deinit();
 }
 

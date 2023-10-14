@@ -55,25 +55,25 @@ pub const OptionsUi = struct {
         });
 
         screen.general_tab = try ui.DisplayContainer.create(allocator, .{
-            .x = 300,
+            .x = 100,
             .y = 150,
             .visible = screen.selected_tab_type == .general,
         });
 
         screen.keys_tab = try ui.DisplayContainer.create(allocator, .{
-            .x = 300,
+            .x = 100,
             .y = 150,
             .visible = screen.selected_tab_type == .hotkeys,
         });
 
         screen.graphics_tab = try ui.DisplayContainer.create(allocator, .{
-            .x = 300,
+            .x = 100,
             .y = 150,
             .visible = screen.selected_tab_type == .graphics,
         });
 
         screen.misc_tab = try ui.DisplayContainer.create(allocator, .{
-            .x = 300,
+            .x = 100,
             .y = 150,
             .visible = screen.selected_tab_type == .misc,
         });
@@ -136,7 +136,7 @@ pub const OptionsUi = struct {
                 .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
             },
             .text_data = .{
-                .text = @constCast("Reset to default"),
+                .text = @constCast("Defaults"),
                 .size = 16,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
@@ -164,7 +164,7 @@ pub const OptionsUi = struct {
             .press_callback = generalTabCallback,
         });
 
-        tab_x_offset += button_width;
+        tab_x_offset += button_width + 10;
 
         _ = try screen.tabs.createElement(ui.Button, .{
             .x = tab_x_offset,
@@ -183,7 +183,7 @@ pub const OptionsUi = struct {
             .press_callback = hotkeysTabCallback,
         });
 
-        tab_x_offset += button_width;
+        tab_x_offset += button_width + 10;
 
         _ = try screen.tabs.createElement(ui.Button, .{
             .x = tab_x_offset,
@@ -202,6 +202,25 @@ pub const OptionsUi = struct {
             .press_callback = graphicsTabCallback,
         });
 
+        tab_x_offset += button_width + 10;
+
+        _ = try screen.tabs.createElement(ui.Button, .{
+            .x = tab_x_offset,
+            .y = tab_y,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, button_width, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, button_width, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast("Misc"),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .press_callback = miscTabCallback,
+        });
+
         try addKeyMap(screen.general_tab, &settings.move_up, "Move Up", "");
         try addKeyMap(screen.general_tab, &settings.move_down, "Move Down", "");
         try addKeyMap(screen.general_tab, &settings.move_right, "Move Right", "");
@@ -216,14 +235,14 @@ pub const OptionsUi = struct {
         try addKeyMap(screen.general_tab, &settings.reset_camera, "Reset Camera", "This resets the camera's angle to the default of 0");
         try addKeyMap(screen.general_tab, &settings.toggle_stats, "Toggle Stats", "This toggles whether to show misc. stats like the FPS counter");
 
-        try addKeyMap(screen.keys_tab, &settings.inv_0, "Use Inventory 0", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
-        try addKeyMap(screen.keys_tab, &settings.inv_1, "Use Inventory 1", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
-        try addKeyMap(screen.keys_tab, &settings.inv_2, "Use Inventory 2", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
-        try addKeyMap(screen.keys_tab, &settings.inv_3, "Use Inventory 3", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
-        try addKeyMap(screen.keys_tab, &settings.inv_4, "Use Inventory 4", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
-        try addKeyMap(screen.keys_tab, &settings.inv_5, "Use Inventory 5", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
-        try addKeyMap(screen.keys_tab, &settings.inv_6, "Use Inventory 6", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
-        try addKeyMap(screen.keys_tab, &settings.inv_7, "Use Inventory 7", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
+        try addKeyMap(screen.keys_tab, &settings.inv_0, "Use Inventory 1", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
+        try addKeyMap(screen.keys_tab, &settings.inv_1, "Use Inventory 2", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
+        try addKeyMap(screen.keys_tab, &settings.inv_2, "Use Inventory 3", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
+        try addKeyMap(screen.keys_tab, &settings.inv_3, "Use Inventory 4", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
+        try addKeyMap(screen.keys_tab, &settings.inv_4, "Use Inventory 5", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
+        try addKeyMap(screen.keys_tab, &settings.inv_5, "Use Inventory 6", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
+        try addKeyMap(screen.keys_tab, &settings.inv_6, "Use Inventory 7", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
+        try addKeyMap(screen.keys_tab, &settings.inv_7, "Use Inventory 8", "This will either consume or equip the item at the given slot. Backpack slots can be accessed by pressing this key in combination with CTRL");
 
         try addToggle(screen.graphics_tab, &settings.enable_vsync, "V-Sync", "Toggles vertical syncing, which can reduce screen tearing");
         try addToggle(screen.graphics_tab, &settings.enable_lights, "Lights", "Toggles lights, which can reduce frame rates");
@@ -358,12 +377,16 @@ pub const OptionsUi = struct {
         switchTab(.general);
     }
 
+    fn hotkeysTabCallback() void {
+        switchTab(.hotkeys);
+    }
+
     fn graphicsTabCallback() void {
         switchTab(.graphics);
     }
 
-    fn hotkeysTabCallback() void {
-        switchTab(.hotkeys);
+    fn miscTabCallback() void {
+        switchTab(.misc);
     }
 
     fn disconnectCallback() void {
@@ -376,6 +399,7 @@ pub const OptionsUi = struct {
         ui.options.general_tab.visible = tab == .general;
         ui.options.keys_tab.visible = tab == .hotkeys;
         ui.options.graphics_tab.visible = tab == .graphics;
+        ui.options.misc_tab.visible = tab == .misc;
 
         switch (tab) {
             .general => positionElements(ui.options.general_tab),
