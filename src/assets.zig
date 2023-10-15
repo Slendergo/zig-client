@@ -877,6 +877,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addUiImage("lofiObj6", "sheets/LofiObj6.png", 8, 8, &ctx, allocator);
     try addUiImage("keyIndicators", "sheets/KeyIndicators.png", 100, 100, &ctx, allocator);
     try addUiImage("errorTexture", "sheets/ErrorTexture.png", imply_size, imply_size, &ctx, allocator);
+    try addUiImage("basicPanel", "ui/BasicPanel.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("chatboxBackground", "ui/chat/ChatboxBackground.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("chatboxInput", "ui/chat/ChatboxInput.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("chatboxCursor", "ui/chat/ChatboxCursor.png", imply_size, imply_size, &ui_ctx, allocator);

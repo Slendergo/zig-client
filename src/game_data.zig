@@ -45,6 +45,11 @@ pub const ClassType = enum(u8) {
     spider_web,
     stalagmite,
     wall,
+    vault_chest,
+    bounty_board,
+    market_place,
+    wiki,
+    guild_list,
 
     const map = std.ComptimeStringMap(ClassType, .{
         .{ "CaveWall", .cave_wall },
@@ -71,10 +76,21 @@ pub const ClassType = enum(u8) {
         .{ "SpiderWeb", .spider_web },
         .{ "Stalagmite", .stalagmite },
         .{ "Wall", .wall },
+        .{ "VaultChest", .vault_chest }, //one page vault (use api to get item info?)
+        .{ "MarketObject", .market_place }, //market place duh
+        .{ "WikiObject", .wiki }, //simple list of all items
     });
 
     pub fn fromString(str: []const u8) ClassType {
         return map.get(str) orelse .game_object;
+    }
+
+    pub fn isInteractive(class: ClassType) bool {
+        return class == .portal or class == .container or class == .vault_chest or class == .market_place or class == .wiki or class == .guild_board or class == .guild_chronicle or class == .guild_register or class == .guild_merchant;
+    }
+
+    pub fn hasPanel(class: ClassType) bool {
+        return class == .vault_chest or class == .bounty_board or class == .wiki or class == .guild_board or class == .guild_chronicle or class == .guild_merchant or class == .guild_register;
     }
 };
 

@@ -2264,15 +2264,15 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                 }
             },
             .object => |*object| {
-                const is_container = object.class == .container;
-                if (!interactive_set and (object.class == .portal or is_container)) {
+                if (ui.current_screen == .in_game and !interactive_set and object.class.isInteractive()) { //(object.class == .portal or is_container)) {
                     const dt_x = cam_x - object.x;
                     const dt_y = cam_y - object.y;
                     if (dt_x * dt_x + dt_y * dt_y < 1) {
                         interactive_id.store(object.obj_id, .Release);
                         interactive_type.store(object.class, .Release);
 
-                        if (is_container and ui.current_screen == .in_game) {
+                        const is_container = object.class == .container;
+                        if (is_container) {
                             if (ui.current_screen.in_game.container_id != object.obj_id) {
                                 inline for (0..8) |idx| {
                                     ui.current_screen.in_game.setContainerItem(object.inventory[idx], idx);
@@ -2281,6 +2281,10 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
 
                             ui.current_screen.in_game.container_id = object.obj_id;
                             ui.current_screen.in_game.setContainerVisible(true);
+                        }
+
+                        if (object.class.hasPanel()) {
+                            ui.current_screen.in_game.showPanel(object.class);
                         }
 
                         interactive_set = true;
@@ -2327,6 +2331,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
 
         ui.current_screen.in_game.container_id = -1;
         ui.current_screen.in_game.setContainerVisible(false);
+        ui.current_screen.in_game.hidePanels();
     }
 
     var remove_iter = std.mem.reverseIterator(entity_indices_to_remove.items());

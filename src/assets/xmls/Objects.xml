@@ -247,7 +247,7 @@
     <SlotTypes>0, 0, 0, 0, 0, 0, 0, 0</SlotTypes>
   </Object>
   <Object type="0x0504" id="Vault Chest">
-    <Class>Container</Class>
+    <Class>VaultChest</Class>
     <Container />
     <CanPutNormalObjects />
     <CanPutSoulboundObjects />
