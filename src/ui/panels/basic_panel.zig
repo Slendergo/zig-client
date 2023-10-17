@@ -91,7 +91,7 @@ pub const BasicPanel = struct {
     }
 
     pub fn resize(self: *BasicPanel, screen_w: f32, screen_h: f32, w: f32, h: f32) void {
-        self.cont.x = screen_w - w - w - 10;
-        self.cont.y = screen_h - h - 10;
+        self.cont.x = screen_w - w - w;
+        self.cont.y = screen_h - (h / 2) - 10;
     }
 };

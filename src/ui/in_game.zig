@@ -137,15 +137,6 @@ pub const InGameScreen = struct {
         screen.* = .{ ._allocator = allocator };
 
         const inventory_data = assets.getUiData("playerInventory", 0);
-
-        screen.screen_controller = try screen_controller.init(allocator);
-        screen.panel_controller = try panel_controller.init(allocator, .{
-            .x = camera.screen_width,
-            .y = camera.screen_height,
-            .width = inventory_data.texWRaw() + 10,
-            .height = inventory_data.texHRaw() + 10,
-        });
-
         screen.parseItemRects();
 
         const minimap_data = assets.getUiData("minimap", 0);
@@ -348,6 +339,15 @@ pub const InGameScreen = struct {
             .y = screen.minimap_decor.y + screen.minimap_decor.height() + 10,
             .text_data = fps_text_data,
         });
+
+        screen.panel_controller = try panel_controller.init(allocator, .{
+            .x = camera.screen_width,
+            .y = camera.screen_height,
+            .width = inventory_data.texWRaw() + 10,
+            .height = inventory_data.texHRaw() + 10,
+        });
+
+        screen.screen_controller = try screen_controller.init(allocator);
 
         screen.inited = true;
         return screen;

@@ -1800,7 +1800,7 @@ pub fn showOptions() void {
     }
 
     input.disable_input = true;
-
+    input.reset();
     options_opened = true;
 
     options = OptionsUi.init(main._allocator) catch |e| {

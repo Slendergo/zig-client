@@ -79,7 +79,6 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
         attacking = true;
     } else if (key == settings.options.getKey()) {
         ui.showOptions();
-        keyRelease(key);
     } else if (key == settings.escape.getKey()) {
         tryEscape();
     } else if (key == settings.interact.getKey()) {
@@ -171,7 +170,6 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
         attacking = true;
     } else if (button == settings.options.getMouse()) {
         ui.showOptions();
-        mouseRelease(button);
     } else if (button == settings.escape.getMouse()) {
         network.queuePacket(.{ .escape = .{} });
     } else if (button == settings.interact.getMouse()) {

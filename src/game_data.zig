@@ -46,10 +46,8 @@ pub const ClassType = enum(u8) {
     stalagmite,
     wall,
     vault_chest,
-    bounty_board,
     market_place,
     wiki,
-    guild_list,
 
     const map = std.ComptimeStringMap(ClassType, .{
         .{ "CaveWall", .cave_wall },
@@ -90,7 +88,7 @@ pub const ClassType = enum(u8) {
     }
 
     pub fn hasPanel(class: ClassType) bool {
-        return class == .vault_chest or class == .bounty_board or class == .wiki or class == .guild_board or class == .guild_chronicle or class == .guild_merchant or class == .guild_register;
+        return class == .vault_chest or class == .wiki or class == .guild_board or class == .guild_chronicle or class == .guild_merchant or class == .guild_register;
     }
 };
 

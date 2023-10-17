@@ -914,6 +914,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addUiImage("playerStatusBarStatIcon", "ui/PlayerStatusBarStatIcon.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("playerStatusBarXp", "ui/PlayerStatusBarXp.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("optionsBackground", "ui/OptionsBackground.png", imply_size, imply_size, &ui_ctx, allocator);
+    try addUiImage("itemRow", "ui/ItemRow.png", imply_size, imply_size, &ui_ctx, allocator);
     if (settings.print_ui_atlas)
         try zstbi.Image.writeToFile(ui_atlas, "ui_atlas.png", .png);
 
