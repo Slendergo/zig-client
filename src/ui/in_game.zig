@@ -3,12 +3,12 @@ const ui = @import("ui.zig");
 const assets = @import("../assets.zig");
 const camera = @import("../camera.zig");
 const network = @import("../network.zig");
-const xml = @import("../xml.zig");
 const main = @import("../main.zig");
 const utils = @import("../utils.zig");
 const game_data = @import("../game_data.zig");
 const map = @import("../map.zig");
 const input = @import("../input.zig");
+const settings = @import("../settings.zig");
 
 const screen_controller = @import("screens/screen_controller.zig").ScreenController;
 const panel_controller = @import("panels/panel_controller.zig").PanelController;
@@ -425,6 +425,8 @@ pub const InGameScreen = struct {
     }
 
     pub fn update(self: *InGameScreen, _: i64, _: f32) !void {
+        self.fps_text.visible = settings.stats_enabled;
+
         if (map.localPlayerConst()) |local_player| {
             if (self.last_level != local_player.level) {
                 self.level_text.text_data.text = try std.fmt.bufPrint(self.level_text.text_data.backing_buffer, "{d}", .{local_player.level});

@@ -2,10 +2,7 @@ const std = @import("std");
 const ui = @import("ui.zig");
 const assets = @import("../assets.zig");
 const camera = @import("../camera.zig");
-const requests = @import("../requests.zig");
-const xml = @import("../xml.zig");
 const main = @import("../main.zig");
-const utils = @import("../utils.zig");
 const game_data = @import("../game_data.zig");
 
 pub const CharCreateScreen = struct {
