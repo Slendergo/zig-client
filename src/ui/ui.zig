@@ -1086,10 +1086,23 @@ pub const TextData = struct {
 pub const DisplayContainer = struct {
     x: f32,
     y: f32,
+    width: f32 = 0,
+    height: f32 = 0,
     visible: bool = true,
+    draggable: bool = false,
+
     _elements: utils.DynSlice(UiElement) = undefined,
     _disposed: bool = false,
     _allocator: std.mem.Allocator = undefined,
+
+    _drag_start_x: f32 = 0,
+    _drag_start_y: f32 = 0,
+    _drag_offset_x: f32 = 0,
+    _drag_offset_y: f32 = 0,
+    _is_dragging: bool = false,
+    _clamp_x: bool = false,
+    _clamp_y: bool = false,
+    _clamp_to_screen: bool = false,
 
     pub fn create(allocator: std.mem.Allocator, data: DisplayContainer) !*DisplayContainer {
         const should_lock = elements.isFull();
@@ -1430,6 +1443,34 @@ fn elemMove(elem: UiElement, x: f32, y: f32) void {
             if (!container.visible)
                 return;
 
+            if (container._is_dragging) {
+                if (!container._clamp_x) {
+                    container.x = x + container._drag_offset_x;
+                    if (container._clamp_to_screen) {
+                        if (container.x > 0) {
+                            container.x = 0;
+                        }
+                        const bottom_x = container.x + container.width;
+                        if (bottom_x < camera.screen_width) {
+                            container.x = container.width;
+                        }
+                    }
+                }
+                if (!container._clamp_y) {
+                    container.y = y + container._drag_offset_y;
+                    if (container._clamp_to_screen) {
+                        if (container.y > 0) {
+                            container.y = 0;
+                        }
+
+                        const bottom_y = container.y + container.height;
+                        if (bottom_y < camera.screen_height) {
+                            container.y = bottom_y;
+                        }
+                    }
+                }
+            }
+
             for (container._elements.items()) |container_elem| {
                 elemMove(container_elem, x - container.x, y - container.y);
             }
@@ -1511,6 +1552,14 @@ fn elemPress(elem: UiElement, x: f32, y: f32, mods: zglfw.Mods) bool {
             while (cont_iter.next()) |container_elem| {
                 if (elemPress(container_elem, x - container.x, y - container.y, mods))
                     return true;
+            }
+
+            if (container.draggable and utils.isInBounds(x, y, container.x, container.y, container.width, container.height)) {
+                container._is_dragging = true;
+                container._drag_start_x = container.x;
+                container._drag_start_y = container.y;
+                container._drag_offset_x = container.x - x;
+                container._drag_offset_y = container.y - y;
             }
         },
         .item => |item| {
@@ -1634,6 +1683,9 @@ fn elemRelease(elem: UiElement, x: f32, y: f32) void {
         .container => |container| {
             if (!container.visible)
                 return;
+
+            if (container._is_dragging)
+                container._is_dragging = false;
 
             for (container._elements.items()) |container_elem| {
                 elemRelease(container_elem, x - container.x, y - container.y);

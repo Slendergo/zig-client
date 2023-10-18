@@ -523,7 +523,7 @@ pub const InGameScreen = struct {
         }
     }
 
-    fn swapSlots(self: *InGameScreen, start_slot: Slot, end_slot: Slot) void {
+    pub fn swapSlots(self: *InGameScreen, start_slot: Slot, end_slot: Slot) void {
         const int_id = map.interactive_id.load(.Acquire);
 
         if (end_slot.idx == 255) {
