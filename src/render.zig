@@ -2713,9 +2713,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     const cam_x = camera.x.load(.Acquire);
     const cam_y = camera.y.load(.Acquire);
 
-    inGamePass: {
+    GamePass: {
         if (!main.tick_frame or !map.validPos(@intFromFloat(cam_x), @intFromFloat(cam_y)))
-            break :inGamePass;
+            break :GamePass;
 
         groundPass: {
             const pipeline = gctx.lookupResource(ground_pipeline) orelse break :groundPass;

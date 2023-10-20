@@ -184,8 +184,8 @@ fn renderTick(allocator: std.mem.Allocator) !void {
         commands.release();
 
         // this has to be updated on render thread to avoid headaches (gctx sharing)
-        if (ui.current_screen == .in_game and ui.current_screen.in_game.inited and settings.stats_enabled)
-            try ui.current_screen.in_game.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
+        if (ui.current_screen == .game and ui.current_screen.game.inited and settings.stats_enabled)
+            try ui.current_screen.game.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
 
         minimapUpdate: {
             if (need_minimap_update) {

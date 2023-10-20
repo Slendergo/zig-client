@@ -1327,7 +1327,7 @@ pub const ScreenType = enum {
     register,
     char_select,
     char_create,
-    in_game,
+    game,
 };
 
 pub const Screen = union(ScreenType) {
@@ -1336,7 +1336,7 @@ pub const Screen = union(ScreenType) {
     register: *AccountRegisterScreen,
     char_select: *CharSelectScreen,
     char_create: *CharCreateScreen,
-    in_game: *GameScreen,
+    game: *GameScreen,
 };
 
 pub var ui_lock: std.Thread.Mutex = .{};
@@ -1383,7 +1383,7 @@ pub fn resize(w: f32, h: f32) void {
 }
 
 pub fn switchScreen(screen_type: ScreenType) void {
-    menu_background.visible = screen_type != .in_game;
+    menu_background.visible = screen_type != .game;
     input.selected_key_mapper = null;
 
     switch (current_screen) {
@@ -1417,8 +1417,8 @@ pub fn switchScreen(screen_type: ScreenType) void {
                 return;
             } };
         },
-        .in_game => {
-            current_screen = .{ .in_game = GameScreen.init(main._allocator) catch |e| {
+        .game => {
+            current_screen = .{ .game = GameScreen.init(main._allocator) catch |e| {
                 std.log.err("Initializing in game screen failed: {any}", .{e});
                 return;
             } };

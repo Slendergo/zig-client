@@ -60,10 +60,10 @@ pub const PanelController = struct {
     }
 
     pub fn basicPanelCallback() void {
-        var sc = ui.current_screen.in_game.screen_controller;
-        var self = ui.current_screen.in_game.panel_controller;
+        var sc = ui.current_screen.game.screen_controller;
+        var self = ui.current_screen.game.panel_controller;
 
-        sc.showScreen(ui.current_screen.in_game.interact_class);
+        sc.showScreen(ui.current_screen.game.interact_class);
         self.hidePanels();
     }
 

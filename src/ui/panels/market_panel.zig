@@ -179,7 +179,7 @@ pub const MarketPanel = struct {
     }
 
     fn closeCallback() void {
-        ui.current_screen.in_game.screen_controller.hideScreens();
+        ui.current_screen.game.screen_controller.hideScreens();
     }
 
     pub fn resize(_: *MarketPanel, _: f32, _: f32) void {}

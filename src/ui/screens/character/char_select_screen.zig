@@ -99,7 +99,7 @@ pub const CharSelectScreen = struct {
         } else {
             std.log.err("No servers found", .{});
         }
-        ui.switchScreen(.in_game);
+        ui.switchScreen(.game);
     }
 
     fn newCharCallback() void {

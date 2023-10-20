@@ -82,7 +82,7 @@ pub const WikiPanel = struct {
     }
 
     fn closeCallback() void {
-        ui.current_screen.in_game.screen_controller.hideScreens();
+        ui.current_screen.game.screen_controller.hideScreens();
     }
 
     pub fn resize(_: *WikiPanel, _: f32, _: f32) void {}

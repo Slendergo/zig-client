@@ -39,7 +39,7 @@ pub const GameScreen = struct {
         }
 
         fn findContainerSlotId(screen: GameScreen, x: f32, y: f32) u8 {
-            if (!ui.current_screen.in_game.container_visible)
+            if (!ui.current_screen.game.container_visible)
                 return 255;
 
             for (0..8) |i| {
@@ -412,13 +412,13 @@ pub const GameScreen = struct {
         self.fps_text.y = self.minimap_decor.y + self.minimap_decor.height() + 10;
 
         for (0..20) |idx| {
-            self.inventory_items[idx].x = self.inventory_decor.x + ui.current_screen.in_game.inventory_pos_data[idx].x + (ui.current_screen.in_game.inventory_pos_data[idx].w - self.inventory_items[idx].width() + assets.padding * 2) / 2;
-            self.inventory_items[idx].y = self.inventory_decor.y + ui.current_screen.in_game.inventory_pos_data[idx].y + (ui.current_screen.in_game.inventory_pos_data[idx].h - self.inventory_items[idx].height() + assets.padding * 2) / 2;
+            self.inventory_items[idx].x = self.inventory_decor.x + ui.current_screen.game.inventory_pos_data[idx].x + (ui.current_screen.game.inventory_pos_data[idx].w - self.inventory_items[idx].width() + assets.padding * 2) / 2;
+            self.inventory_items[idx].y = self.inventory_decor.y + ui.current_screen.game.inventory_pos_data[idx].y + (ui.current_screen.game.inventory_pos_data[idx].h - self.inventory_items[idx].height() + assets.padding * 2) / 2;
         }
 
         for (0..8) |idx| {
-            self.container_items[idx].x = self.container_decor.x + ui.current_screen.in_game.container_pos_data[idx].x + (ui.current_screen.in_game.container_pos_data[idx].w - self.container_items[idx].width() + assets.padding * 2) / 2;
-            self.container_items[idx].y = self.container_decor.y + ui.current_screen.in_game.container_pos_data[idx].y + (ui.current_screen.in_game.container_pos_data[idx].h - self.container_items[idx].height() + assets.padding * 2) / 2;
+            self.container_items[idx].x = self.container_decor.x + ui.current_screen.game.container_pos_data[idx].x + (ui.current_screen.game.container_pos_data[idx].w - self.container_items[idx].width() + assets.padding * 2) / 2;
+            self.container_items[idx].y = self.container_decor.y + ui.current_screen.game.container_pos_data[idx].y + (ui.current_screen.game.container_pos_data[idx].h - self.container_items[idx].height() + assets.padding * 2) / 2;
         }
 
         self.panel_controller.resize(w, h);
@@ -602,7 +602,7 @@ pub const GameScreen = struct {
         if (item._item < 0)
             return;
 
-        const start_slot = Slot.findSlotId(ui.current_screen.in_game.*, item.x + 4, item.y + 4);
+        const start_slot = Slot.findSlotId(ui.current_screen.game.*, item.x + 4, item.y + 4);
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             if (props.consumable and !start_slot.is_container) {
                 while (!map.object_lock.tryLockShared()) {}
@@ -626,14 +626,14 @@ pub const GameScreen = struct {
         }
 
         if (start_slot.is_container) {
-            const end_slot = Slot.nextAvailableSlot(ui.current_screen.in_game.*);
+            const end_slot = Slot.nextAvailableSlot(ui.current_screen.game.*);
             if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
                 item.x = item._drag_start_x;
                 item.y = item._drag_start_y;
                 return;
             }
 
-            ui.current_screen.in_game.swapSlots(start_slot, end_slot);
+            ui.current_screen.game.swapSlots(start_slot, end_slot);
         } else {
             if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
                 while (!map.object_lock.tryLockShared()) {}
@@ -649,7 +649,7 @@ pub const GameScreen = struct {
                         return;
                     }
 
-                    ui.current_screen.in_game.swapSlots(start_slot, end_slot);
+                    ui.current_screen.game.swapSlots(start_slot, end_slot);
                 }
             }
         }
@@ -663,7 +663,7 @@ pub const GameScreen = struct {
         if (input_text.len > 0) {
             network.queuePacket(.{ .player_text = .{ .text = input_text } });
 
-            const current_screen = ui.current_screen.in_game;
+            const current_screen = ui.current_screen.game;
             const text_copy = current_screen._allocator.dupe(u8, input_text) catch unreachable;
             input.input_history.append(text_copy) catch unreachable;
             input.input_history_idx = @intCast(input.input_history.items.len);
@@ -673,7 +673,7 @@ pub const GameScreen = struct {
     fn interactCallback() void {}
 
     fn itemDragEndCallback(item: *ui.Item) void {
-        var current_screen = ui.current_screen.in_game;
+        var current_screen = ui.current_screen.game;
         const start_slot = Slot.findSlotId(current_screen.*, item._drag_start_x + 4, item._drag_start_y + 4);
         const end_slot = Slot.findSlotId(current_screen.*, item.x - item._drag_offset_x, item.y - item._drag_offset_y);
         if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
@@ -689,7 +689,7 @@ pub const GameScreen = struct {
         if (item._item < 0)
             return;
 
-        const current_screen = ui.current_screen.in_game.*;
+        const current_screen = ui.current_screen.game.*;
         const slot = Slot.findSlotId(current_screen, item.x + 4, item.y + 4);
 
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {

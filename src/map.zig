@@ -2264,7 +2264,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                 }
             },
             .object => |*object| {
-                if (ui.current_screen == .in_game and !interactive_set and object.class.isInteractive()) { //(object.class == .portal or is_container)) {
+                if (ui.current_screen == .game and !interactive_set and object.class.isInteractive()) { //(object.class == .portal or is_container)) {
                     const dt_x = cam_x - object.x;
                     const dt_y = cam_y - object.y;
                     if (dt_x * dt_x + dt_y * dt_y < 1) {
@@ -2273,18 +2273,18 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
 
                         const is_container = object.class == .container;
                         if (is_container) {
-                            if (ui.current_screen.in_game.container_id != object.obj_id) {
+                            if (ui.current_screen.game.container_id != object.obj_id) {
                                 inline for (0..8) |idx| {
-                                    ui.current_screen.in_game.setContainerItem(object.inventory[idx], idx);
+                                    ui.current_screen.game.setContainerItem(object.inventory[idx], idx);
                                 }
                             }
 
-                            ui.current_screen.in_game.container_id = object.obj_id;
-                            ui.current_screen.in_game.setContainerVisible(true);
+                            ui.current_screen.game.container_id = object.obj_id;
+                            ui.current_screen.game.setContainerVisible(true);
                         }
 
                         if (object.class.hasPanel()) {
-                            ui.current_screen.in_game.showPanel(object.class);
+                            ui.current_screen.game.showPanel(object.class);
                         }
 
                         interactive_set = true;
@@ -2322,16 +2322,16 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
         }
     }
 
-    if (!interactive_set and ui.current_screen == .in_game) {
-        if (ui.current_screen.in_game.container_id != -1) {
+    if (!interactive_set and ui.current_screen == .game) {
+        if (ui.current_screen.game.container_id != -1) {
             inline for (0..8) |idx| {
-                ui.current_screen.in_game.setContainerItem(-1, idx);
+                ui.current_screen.game.setContainerItem(-1, idx);
             }
         }
 
-        ui.current_screen.in_game.container_id = -1;
-        ui.current_screen.in_game.setContainerVisible(false);
-        ui.current_screen.in_game.hidePanels();
+        ui.current_screen.game.container_id = -1;
+        ui.current_screen.game.setContainerVisible(false);
+        ui.current_screen.game.hidePanels();
     }
 
     var remove_iter = std.mem.reverseIterator(entity_indices_to_remove.items());
