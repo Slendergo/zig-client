@@ -13,8 +13,6 @@ const settings = @import("../../settings.zig");
 const sc = @import("../controllers/screen_controller.zig");
 const PanelController = @import("../controllers/panel_controller.zig").PanelController;
 
-const NineSlice = ui.NineSliceImageData;
-
 pub const GameScreen = struct {
     pub const Slot = struct {
         idx: u8,

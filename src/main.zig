@@ -102,6 +102,7 @@ pub var render_thread: std.Thread = undefined;
 pub var tick_render = true;
 pub var tick_frame = false;
 pub var sent_hello = false;
+pub var editing_map = false;
 pub var need_minimap_update = false;
 pub var need_force_update = false;
 pub var minimap_update_min_x: u32 = 4096;
@@ -431,7 +432,7 @@ pub fn main() !void {
 
         zglfw.pollEvents();
 
-        if (tick_frame) {
+        if (tick_frame or editing_map) {
             const dt = time - last_update;
             map.update(time, dt, allocator);
             try screen_controller.update(time, dt, allocator);

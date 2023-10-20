@@ -24,6 +24,7 @@ pub const ScreenType = enum {
     char_select,
     char_create,
     game,
+    editor,
 };
 
 pub const Screen = union(ScreenType) {
@@ -33,6 +34,7 @@ pub const Screen = union(ScreenType) {
     char_select: *CharSelectScreen,
     char_create: *CharCreateScreen,
     game: *GameScreen,
+    editor: *MapEditorScreen,
 };
 
 pub var ui_lock: std.Thread.Mutex = .{};
@@ -71,7 +73,7 @@ pub fn deinit() void {
 }
 
 pub fn switchScreen(screen_type: ScreenType) void {
-    menu_background.visible = screen_type != .game;
+    menu_background.visible = screen_type != .game; // and screen_type != .editor;
     input.selected_key_mapper = null;
 
     switch (current_screen) {
@@ -108,6 +110,12 @@ pub fn switchScreen(screen_type: ScreenType) void {
         .game => {
             current_screen = .{ .game = GameScreen.init(main._allocator) catch |e| {
                 std.log.err("Initializing in game screen failed: {any}", .{e});
+                return;
+            } };
+        },
+        .editor => {
+            current_screen = .{ .editor = MapEditorScreen.init(main._allocator) catch |e| {
+                std.log.err("Initializing in editor screen failed: {any}", .{e});
                 return;
             } };
         },

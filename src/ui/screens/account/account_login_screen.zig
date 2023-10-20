@@ -18,6 +18,7 @@ pub const AccountLoginScreen = struct {
     confirm_button: *ui.Button = undefined,
     save_email_text: *ui.UiText = undefined,
     save_email_toggle: *ui.Toggle = undefined,
+    editor_button: *ui.Button = undefined,
     inited: bool = false,
 
     _allocator: std.mem.Allocator = undefined,
@@ -186,8 +187,28 @@ pub const AccountLoginScreen = struct {
             .press_callback = registerCallback,
         });
 
+        screen.editor_button = try ui.Button.create(allocator, .{
+            .x = screen.password_input.x + (input_w - 200) / 2,
+            .y = 550,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, 200, 35, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_hover, 200, 35, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_press, 200, 35, 6, 6, 7, 7, 1.0) },
+            },
+            .text_data = .{
+                .text = @constCast("Editor"),
+                .size = 16,
+                .text_type = .bold,
+                .backing_buffer = try allocator.alloc(u8, 8),
+            },
+            .press_callback = enableEditorCallback,
+        });
         screen.inited = true;
         return screen;
+    }
+
+    pub fn enableEditorCallback() void {
+        screen_controller.switchScreen(.editor);
     }
 
     pub fn deinit(self: *AccountLoginScreen) void {
@@ -202,6 +223,7 @@ pub const AccountLoginScreen = struct {
         self.confirm_button.destroy();
         self.save_email_text.destroy();
         self.save_email_toggle.destroy();
+        self.editor_button.destroy();
 
         self._allocator.destroy(self);
     }
