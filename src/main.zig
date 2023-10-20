@@ -289,6 +289,22 @@ pub fn disconnect() void {
     screen_controller.switchScreen(.char_select);
 }
 
+// This is effectively just raw_c_allocator wrapped in the Tracy stuff
+fn tracyAlloc(_: *anyopaque, len: usize, _: u8, _: usize) ?[*]u8 {
+    const malloc = std.c.malloc(len);
+    ztracy.Alloc(malloc, len);
+    return @as(?[*]u8, @ptrCast(malloc));
+}
+
+fn tracyResize(_: *anyopaque, buf: []u8, _: u8, new_len: usize, _: usize) bool {
+    return new_len <= buf.len;
+}
+
+fn tracyFree(_: *anyopaque, buf: []u8, _: u8, _: usize) void {
+    ztracy.Free(buf.ptr);
+    std.c.free(buf.ptr);
+}
+
 pub fn main() !void {
     // needed for tracy to register
     var main_zone: ztracy.ZoneCtx = undefined;
@@ -303,7 +319,17 @@ pub fn main() !void {
     var gpa = if (is_debug) std.heap.GeneralPurposeAllocator(.{}){} else {};
     defer _ = if (is_debug) gpa.deinit();
 
-    var allocator = switch (builtin.mode) {
+    const tracy_allocator_vtable = std.mem.Allocator.VTable{
+        .alloc = tracyAlloc,
+        .resize = tracyResize,
+        .free = tracyFree,
+    };
+    const tracy_allocator = std.mem.Allocator{
+        .ptr = undefined,
+        .vtable = &tracy_allocator_vtable,
+    };
+
+    var allocator = if (settings.enable_tracy) tracy_allocator else switch (builtin.mode) {
         .Debug => gpa.allocator(),
         .ReleaseSafe => std.heap.c_allocator,
         .ReleaseFast, .ReleaseSmall => std.heap.raw_c_allocator,
