@@ -54,7 +54,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 }
 
 fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
-    if (sc.current_screen != .game)
+    if (sc.current_screen != .game and sc.current_screen != .editor)
         return;
 
     if (disable_input)
@@ -121,7 +121,7 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
 }
 
 fn keyRelease(key: zglfw.Key) void {
-    if (sc.current_screen != .game)
+    if (sc.current_screen != .game and sc.current_screen != .editor)
         return;
 
     if (disable_input)
@@ -147,7 +147,7 @@ fn keyRelease(key: zglfw.Key) void {
 }
 
 fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods) void {
-    if (sc.current_screen != .game)
+    if (sc.current_screen != .game and sc.current_screen != .editor)
         return;
 
     if (disable_input)
@@ -171,7 +171,7 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
         camera.angle = 0;
     } else if (button == settings.shoot.getMouse()) {
         attacking = true;
-    } else if (button == settings.options.getMouse()) { 
+    } else if (button == settings.options.getMouse()) {
         sc.current_screen.game.panel_controller.setOptionsVisible(true);
     } else if (button == settings.escape.getMouse()) {
         network.queuePacket(.{ .escape = .{} });
@@ -214,7 +214,7 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
 }
 
 fn mouseRelease(button: zglfw.MouseButton) void {
-    if (sc.current_screen != .game)
+    if (sc.current_screen != .game and sc.current_screen != .editor)
         return;
 
     if (disable_input)

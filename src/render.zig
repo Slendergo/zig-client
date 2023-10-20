@@ -2715,7 +2715,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     const cam_y = camera.y.load(.Acquire);
 
     GamePass: {
-        if (!main.tick_frame or !map.validPos(@intFromFloat(cam_x), @intFromFloat(cam_y)))
+        if ((!main.tick_frame and sc.current_screen == .game or !main.editing_map and sc.current_screen == .editor) or !map.validPos(@intFromFloat(cam_x), @intFromFloat(cam_y)))
             break :GamePass;
 
         groundPass: {

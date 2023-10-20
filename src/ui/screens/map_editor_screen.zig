@@ -2,6 +2,7 @@ const Allocator = @import("std").mem.Allocator;
 
 const assets = @import("../../assets.zig");
 const camera = @import("../../camera.zig");
+const main = @import("../../main.zig");
 const map = @import("../../map.zig");
 const ui = @import("../ui.zig");
 
@@ -18,6 +19,7 @@ pub const MapEditorScreen = struct {
     _allocator: Allocator,
     inited: bool = false,
 
+    map_size: u32 = 128,
     map_size_64: bool = false,
     map_size_128: bool = true,
     map_size_256: bool = false,
@@ -313,7 +315,6 @@ pub const MapEditorScreen = struct {
         screen.size_text_visual_64.visible = true;
         screen.size_text_visual_128.visible = false;
         screen.size_text_visual_256.visible = false;
-
         screen.map_size_64 = true;
         screen.map_size_128 = false;
         screen.map_size_256 = false;
@@ -324,7 +325,6 @@ pub const MapEditorScreen = struct {
         screen.size_text_visual_64.visible = false;
         screen.size_text_visual_128.visible = true;
         screen.size_text_visual_256.visible = false;
-
         screen.map_size_64 = false;
         screen.map_size_128 = true;
         screen.map_size_256 = false;
@@ -335,7 +335,6 @@ pub const MapEditorScreen = struct {
         screen.size_text_visual_64.visible = false;
         screen.size_text_visual_128.visible = false;
         screen.size_text_visual_256.visible = true;
-
         screen.map_size_64 = false;
         screen.map_size_128 = false;
         screen.map_size_256 = true;
@@ -343,14 +342,44 @@ pub const MapEditorScreen = struct {
 
     fn newCallback() void {
         const screen = sc.current_screen.editor;
-
         screen.new_container.visible = true;
         screen.buttons_container.visible = false;
     }
 
     fn newCreateCallback() void {
         const screen = sc.current_screen.editor;
-        screen.reset();
+
+        screen.buttons_container.visible = true;
+        screen.new_container.visible = false;
+
+        map.setWH(screen.map_size, screen.map_size, screen._allocator);
+
+        map.local_player_id = 0xFFFF;
+
+        const center = @as(f32, @floatFromInt(screen.map_size)) / 2.0 + 0.5;
+
+        // set every tile in map
+        for (0..screen.map_size) |y| {
+            for (0..screen.map_size) |x| {
+                map.setSquare(@as(u32, @intCast(x)), @as(u32, @intCast(y)), 0x36);
+            }
+        }
+
+        // wizard
+        var player = map.Player{
+            .x = center,
+            .y = center,
+            .obj_id = map.local_player_id,
+            .obj_type = 0x030e,
+            .size = 100,
+            .speed = 75,
+        };
+
+        player.addToMap(screen._allocator);
+
+        main.editing_map = true;
+
+        sc.menu_background.visible = false; // hack
     }
 
     fn newCloseCallback() void {
@@ -378,16 +407,25 @@ pub const MapEditorScreen = struct {
         screen.size_text_visual_128.visible = true;
         screen.size_text_visual_256.visible = false;
 
+        screen.map_size = 128;
         screen.map_size_64 = false;
         screen.map_size_128 = true;
         screen.map_size_256 = false;
+
+        sc.menu_background.visible = true; // hack
     }
 
     pub fn deinit(self: *MapEditorScreen) void {
+        sc.menu_background.visible = true; // hack
         self.reset();
 
         self.new_container.destroy();
         self.buttons_container.destroy();
+
+        if (main.editing_map) {
+            main.editing_map = false;
+            map.dispose(self._allocator);
+        }
 
         self._allocator.destroy(self);
     }
