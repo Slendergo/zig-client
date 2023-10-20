@@ -80,7 +80,7 @@ pub const MapEditorScreen = struct {
                 .text = @constCast("New"),
                 .size = 16,
                 .text_type = .bold,
-                .backing_buffer = &[0]u8{},
+                .backing_buffer = try allocator.alloc(u8, 8),
             },
             .press_callback = newCallback,
         });
@@ -99,7 +99,7 @@ pub const MapEditorScreen = struct {
                 .text = @constCast("Open"),
                 .size = 16,
                 .text_type = .bold,
-                .backing_buffer = &[0]u8{},
+                .backing_buffer = try allocator.alloc(u8, 8),
             },
             .press_callback = openCallback,
         });
@@ -118,7 +118,7 @@ pub const MapEditorScreen = struct {
                 .text = @constCast("Save"),
                 .size = 16,
                 .text_type = .bold,
-                .backing_buffer = &[0]u8{},
+                .backing_buffer = try allocator.alloc(u8, 8),
             },
             .press_callback = saveCallback,
         });
@@ -137,7 +137,7 @@ pub const MapEditorScreen = struct {
                 .text = @constCast("Exit"),
                 .size = 16,
                 .text_type = .bold,
-                .backing_buffer = &[0]u8{},
+                .backing_buffer = try allocator.alloc(u8, 8),
             },
             .press_callback = exitCallback,
         });
@@ -271,7 +271,7 @@ pub const MapEditorScreen = struct {
                 .text = @constCast("Create"),
                 .size = 16,
                 .text_type = .bold,
-                .backing_buffer = &[0]u8{},
+                .backing_buffer = try allocator.alloc(u8, 8),
             },
             .press_callback = newCreateCallback,
         };
@@ -288,7 +288,7 @@ pub const MapEditorScreen = struct {
                 .text = @constCast("Cancel"),
                 .size = 16,
                 .text_type = .bold,
-                .backing_buffer = &[0]u8{},
+                .backing_buffer = try allocator.alloc(u8, 8),
             },
             .press_callback = newCloseCallback,
         };
@@ -386,9 +386,6 @@ pub const MapEditorScreen = struct {
     pub fn deinit(self: *MapEditorScreen) void {
         self.reset();
 
-        self.size_text_visual_64.destroy();
-        self.size_text_visual_128.destroy();
-        self.size_text_visual_256.destroy();
         self.new_container.destroy();
         self.buttons_container.destroy();
 
