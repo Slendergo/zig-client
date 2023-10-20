@@ -10,6 +10,7 @@ const game_data = @import("../../game_data.zig");
 const map = @import("../../map.zig");
 const input = @import("../../input.zig");
 const PanelController = @import("../controllers/panel_controller.zig").PanelController;
+const sc = @import("../controllers/screen_controller.zig");
 const NineSlice = ui.NineSliceImageData;
 
 pub const BasicPanel = struct {
@@ -82,8 +83,8 @@ pub const BasicPanel = struct {
     }
 
     pub fn deinit(self: *BasicPanel) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!sc.ui_lock.tryLock()) {}
+        defer sc.ui_lock.unlock();
 
         self.cont.destroy();
 

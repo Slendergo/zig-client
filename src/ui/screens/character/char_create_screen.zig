@@ -4,6 +4,7 @@ const assets = @import("../../../assets.zig");
 const camera = @import("../../../camera.zig");
 const main = @import("../../../main.zig");
 const game_data = @import("../../../game_data.zig");
+const screen_controller = @import("../../controllers/screen_controller.zig");
 
 pub const CharCreateScreen = struct {
     inited: bool = false,
@@ -50,8 +51,8 @@ pub const CharCreateScreen = struct {
     }
 
     pub fn deinit(self: *CharCreateScreen) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!screen_controller.ui_lock.tryLock()) {}
+        defer screen_controller.ui_lock.unlock();
 
         for (self.boxes.items) |box| {
             box.destroy();
@@ -76,6 +77,6 @@ pub const CharCreateScreen = struct {
         } else {
             std.log.err("No servers found", .{});
         }
-        ui.switchScreen(.game);
+        screen_controller.switchScreen(.game);
     }
 };

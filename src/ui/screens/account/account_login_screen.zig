@@ -7,6 +7,7 @@ const xml = @import("../../../xml.zig");
 const main = @import("../../../main.zig");
 const utils = @import("../../../utils.zig");
 const settings = @import("../../../settings.zig");
+const screen_controller = @import("../../controllers/screen_controller.zig");
 
 pub const AccountLoginScreen = struct {
     email_text: *ui.UiText = undefined,
@@ -190,8 +191,8 @@ pub const AccountLoginScreen = struct {
     }
 
     pub fn deinit(self: *AccountLoginScreen) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!screen_controller.ui_lock.tryLock()) {}
+        defer screen_controller.ui_lock.unlock();
 
         self.email_text.destroy();
         self.email_input.destroy();
@@ -210,7 +211,7 @@ pub const AccountLoginScreen = struct {
     pub fn update(_: *AccountLoginScreen, _: i64, _: f32) !void {}
 
     fn loginCallback() void {
-        const current_screen = ui.current_screen.main_menu;
+        const current_screen = screen_controller.current_screen.main_menu;
         _ = login(
             current_screen._allocator,
             current_screen.email_input.text_data.text,
@@ -221,7 +222,7 @@ pub const AccountLoginScreen = struct {
     }
 
     fn registerCallback() void {
-        ui.switchScreen(.register);
+        screen_controller.switchScreen(.register);
     }
 };
 
@@ -279,9 +280,9 @@ fn login(allocator: std.mem.Allocator, email: []const u8, password: []const u8) 
     }
 
     if (main.character_list.len > 0) {
-        ui.switchScreen(.char_select);
+        screen_controller.switchScreen(.char_select);
     } else {
-        ui.switchScreen(.char_create);
+        screen_controller.switchScreen(.char_create);
     }
 
     return true;

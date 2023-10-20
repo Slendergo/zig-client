@@ -11,6 +11,7 @@ const assets = @import("assets.zig");
 const ui = @import("ui/ui.zig");
 const zstbi = @import("zstbi");
 const particles = @import("particles.zig");
+const sc = @import("ui/controllers//screen_controller.zig");
 
 pub const move_threshold = 0.4;
 pub const min_move_speed = 0.004;
@@ -2029,14 +2030,14 @@ pub fn disposeEntity(allocator: std.mem.Allocator, en: *map.Entity) void {
                 square.has_wall = false;
             }
 
-            ui.removeAttachedUi(obj.obj_id, allocator);
+            sc.removeAttachedUi(obj.obj_id, allocator);
             allocator.free(obj.name_override);
         },
         .projectile => |*projectile| {
             projectile.hit_list.deinit();
         },
         .player => |player| {
-            ui.removeAttachedUi(player.obj_id, allocator);
+            sc.removeAttachedUi(player.obj_id, allocator);
             allocator.free(player.name_override);
             allocator.free(player.guild);
         },
@@ -2264,7 +2265,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                 }
             },
             .object => |*object| {
-                if (ui.current_screen == .game and !interactive_set and object.class.isInteractive()) { //(object.class == .portal or is_container)) {
+                if (sc.current_screen == .game and !interactive_set and object.class.isInteractive()) { //(object.class == .portal or is_container)) {
                     const dt_x = cam_x - object.x;
                     const dt_y = cam_y - object.y;
                     if (dt_x * dt_x + dt_y * dt_y < 1) {
@@ -2273,18 +2274,18 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
 
                         const is_container = object.class == .container;
                         if (is_container) {
-                            if (ui.current_screen.game.container_id != object.obj_id) {
+                            if (sc.current_screen.game.container_id != object.obj_id) {
                                 inline for (0..8) |idx| {
-                                    ui.current_screen.game.setContainerItem(object.inventory[idx], idx);
+                                    sc.current_screen.game.setContainerItem(object.inventory[idx], idx);
                                 }
                             }
 
-                            ui.current_screen.game.container_id = object.obj_id;
-                            ui.current_screen.game.setContainerVisible(true);
+                            sc.current_screen.game.container_id = object.obj_id;
+                            sc.current_screen.game.setContainerVisible(true);
                         }
 
                         if (object.class.hasPanel()) {
-                            ui.current_screen.game.showPanel(object.class);
+                            sc.current_screen.game.showPanel(object.class);
                         }
 
                         interactive_set = true;
@@ -2322,16 +2323,16 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
         }
     }
 
-    if (!interactive_set and ui.current_screen == .game) {
-        if (ui.current_screen.game.container_id != -1) {
+    if (!interactive_set and sc.current_screen == .game) {
+        if (sc.current_screen.game.container_id != -1) {
             inline for (0..8) |idx| {
-                ui.current_screen.game.setContainerItem(-1, idx);
+                sc.current_screen.game.setContainerItem(-1, idx);
             }
         }
 
-        ui.current_screen.game.container_id = -1;
-        ui.current_screen.game.setContainerVisible(false);
-        ui.current_screen.game.hidePanels();
+        sc.current_screen.game.container_id = -1;
+        sc.current_screen.game.setContainerVisible(false);
+        sc.current_screen.game.panel_controller.hidePanels();
     }
 
     var remove_iter = std.mem.reverseIterator(entity_indices_to_remove.items());

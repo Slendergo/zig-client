@@ -20,6 +20,7 @@ const ui = @import("ui/ui.zig");
 const render = @import("render.zig");
 const ztracy = @import("ztracy");
 const zaudio = @import("zaudio");
+const screen_controller = @import("ui/controllers/screen_controller.zig");
 
 pub const ServerData = struct {
     name: [:0]const u8 = "",
@@ -118,7 +119,7 @@ fn onResize(_: *zglfw.Window, w: i32, h: i32) callconv(.C) void {
     camera.clip_scale_x = 2.0 / float_w;
     camera.clip_scale_y = 2.0 / float_h;
 
-    ui.resize(float_w, float_h);
+    screen_controller.resize(float_w, float_h);
 }
 
 fn networkTick(allocator: *std.mem.Allocator) void {
@@ -184,8 +185,8 @@ fn renderTick(allocator: std.mem.Allocator) !void {
         commands.release();
 
         // this has to be updated on render thread to avoid headaches (gctx sharing)
-        if (ui.current_screen == .game and ui.current_screen.game.inited and settings.stats_enabled)
-            try ui.current_screen.game.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
+        if (screen_controller.current_screen == .game and screen_controller.current_screen.game.inited and settings.stats_enabled)
+            try screen_controller.current_screen.game.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
 
         minimapUpdate: {
             if (need_minimap_update) {
@@ -285,7 +286,7 @@ pub fn disconnect() void {
     clear();
     input.reset();
 
-    ui.switchScreen(.char_select);
+    screen_controller.switchScreen(.char_select);
 }
 
 pub fn main() !void {
@@ -343,10 +344,10 @@ pub fn main() !void {
     input.init(allocator);
     defer input.deinit(allocator);
 
-    try ui.init(allocator);
-    defer ui.deinit();
+    try screen_controller.init(allocator);
+    defer screen_controller.deinit();
 
-    ui.switchScreen(.main_menu);
+    screen_controller.switchScreen(.main_menu);
 
     zglfw.WindowHint.set(.client_api, @intFromEnum(zglfw.ClientApi.no_api));
     const window = zglfw.Window.create(1280, 720, "Client", null) catch |e| {
@@ -407,7 +408,7 @@ pub fn main() !void {
         if (tick_frame) {
             const dt = time - last_update;
             map.update(time, dt, allocator);
-            try ui.update(time, dt, allocator);
+            try screen_controller.update(time, dt, allocator);
         }
 
         last_update = time;

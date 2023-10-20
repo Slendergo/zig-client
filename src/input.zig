@@ -9,6 +9,7 @@ const ui = @import("ui/ui.zig");
 const assets = @import("assets.zig");
 const network = @import("network.zig");
 const game_data = @import("game_data.zig");
+const sc = @import("ui/controllers/screen_controller.zig");
 
 var move_up: f32 = 0.0;
 var move_down: f32 = 0.0;
@@ -53,7 +54,7 @@ pub fn deinit(allocator: std.mem.Allocator) void {
 }
 
 fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
-    if (ui.current_screen != .game)
+    if (sc.current_screen != .game)
         return;
 
     if (disable_input)
@@ -78,7 +79,7 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     } else if (key == settings.shoot.getKey()) {
         attacking = true;
     } else if (key == settings.options.getKey()) {
-        ui.showOptions();
+        sc.current_screen.game.panel_controller.setOptionsVisible(true);
     } else if (key == settings.escape.getKey()) {
         tryEscape();
     } else if (key == settings.interact.getKey()) {
@@ -92,35 +93,35 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     } else if (key == settings.ability.getKey()) {
         useAbility();
     } else if (key == settings.chat.getKey()) {
-        selected_input_field = ui.current_screen.game.chat_input;
+        selected_input_field = sc.current_screen.game.chat_input;
         selected_input_field.?._last_input = 0;
     } else if (key == settings.chat_cmd.getKey()) {
         charEvent(window, .slash);
-        selected_input_field = ui.current_screen.game.chat_input;
+        selected_input_field = sc.current_screen.game.chat_input;
         selected_input_field.?._last_input = 0;
     } else if (key == settings.inv_0.getKey()) {
-        ui.current_screen.game.useItem(if (mods.control) 4 + 8 else 4);
+        sc.current_screen.game.useItem(if (mods.control) 4 + 8 else 4);
     } else if (key == settings.inv_1.getKey()) {
-        ui.current_screen.game.useItem(if (mods.control) 5 + 8 else 5);
+        sc.current_screen.game.useItem(if (mods.control) 5 + 8 else 5);
     } else if (key == settings.inv_2.getKey()) {
-        ui.current_screen.game.useItem(if (mods.control) 6 + 8 else 6);
+        sc.current_screen.game.useItem(if (mods.control) 6 + 8 else 6);
     } else if (key == settings.inv_3.getKey()) {
-        ui.current_screen.game.useItem(if (mods.control) 7 + 8 else 7);
+        sc.current_screen.game.useItem(if (mods.control) 7 + 8 else 7);
     } else if (key == settings.inv_4.getKey()) {
-        ui.current_screen.game.useItem(if (mods.control) 8 + 8 else 8);
+        sc.current_screen.game.useItem(if (mods.control) 8 + 8 else 8);
     } else if (key == settings.inv_5.getKey()) {
-        ui.current_screen.game.useItem(if (mods.control) 9 + 8 else 9);
+        sc.current_screen.game.useItem(if (mods.control) 9 + 8 else 9);
     } else if (key == settings.inv_6.getKey()) {
-        ui.current_screen.game.useItem(if (mods.control) 10 + 8 else 10);
+        sc.current_screen.game.useItem(if (mods.control) 10 + 8 else 10);
     } else if (key == settings.inv_7.getKey()) {
-        ui.current_screen.game.useItem(if (mods.control) 11 + 8 else 11);
+        sc.current_screen.game.useItem(if (mods.control) 11 + 8 else 11);
     } else if (key == settings.toggle_stats.getKey()) {
         settings.stats_enabled = !settings.stats_enabled;
     }
 }
 
 fn keyRelease(key: zglfw.Key) void {
-    if (ui.current_screen != .game)
+    if (sc.current_screen != .game)
         return;
 
     if (disable_input)
@@ -146,7 +147,7 @@ fn keyRelease(key: zglfw.Key) void {
 }
 
 fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods) void {
-    if (ui.current_screen != .game)
+    if (sc.current_screen != .game)
         return;
 
     if (disable_input)
@@ -170,8 +171,8 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
         camera.angle = 0;
     } else if (button == settings.shoot.getMouse()) {
         attacking = true;
-    } else if (button == settings.options.getMouse()) {
-        ui.showOptions();
+    } else if (button == settings.options.getMouse()) { 
+        sc.current_screen.game.panel_controller.setOptionsVisible(true);
     } else if (button == settings.escape.getMouse()) {
         network.queuePacket(.{ .escape = .{} });
     } else if (button == settings.interact.getMouse()) {
@@ -185,35 +186,35 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
     } else if (button == settings.ability.getMouse()) {
         useAbility();
     } else if (button == settings.chat.getMouse()) {
-        selected_input_field = ui.current_screen.game.chat_input;
+        selected_input_field = sc.current_screen.game.chat_input;
         selected_input_field.?._last_input = 0;
     } else if (button == settings.chat_cmd.getMouse()) {
         charEvent(window, .slash);
-        selected_input_field = ui.current_screen.game.chat_input;
+        selected_input_field = sc.current_screen.game.chat_input;
         selected_input_field.?._last_input = 0;
     } else if (button == settings.inv_0.getMouse()) {
-        ui.current_screen.game.useItem(if (mods.control) 4 + 8 else 4);
+        sc.current_screen.game.useItem(if (mods.control) 4 + 8 else 4);
     } else if (button == settings.inv_1.getMouse()) {
-        ui.current_screen.game.useItem(if (mods.control) 5 + 8 else 5);
+        sc.current_screen.game.useItem(if (mods.control) 5 + 8 else 5);
     } else if (button == settings.inv_2.getMouse()) {
-        ui.current_screen.game.useItem(if (mods.control) 6 + 8 else 6);
+        sc.current_screen.game.useItem(if (mods.control) 6 + 8 else 6);
     } else if (button == settings.inv_3.getMouse()) {
-        ui.current_screen.game.useItem(if (mods.control) 7 + 8 else 7);
+        sc.current_screen.game.useItem(if (mods.control) 7 + 8 else 7);
     } else if (button == settings.inv_4.getMouse()) {
-        ui.current_screen.game.useItem(if (mods.control) 8 + 8 else 8);
+        sc.current_screen.game.useItem(if (mods.control) 8 + 8 else 8);
     } else if (button == settings.inv_5.getMouse()) {
-        ui.current_screen.game.useItem(if (mods.control) 9 + 8 else 9);
+        sc.current_screen.game.useItem(if (mods.control) 9 + 8 else 9);
     } else if (button == settings.inv_6.getMouse()) {
-        ui.current_screen.game.useItem(if (mods.control) 10 + 8 else 10);
+        sc.current_screen.game.useItem(if (mods.control) 10 + 8 else 10);
     } else if (button == settings.inv_7.getMouse()) {
-        ui.current_screen.game.useItem(if (mods.control) 11 + 8 else 11);
+        sc.current_screen.game.useItem(if (mods.control) 11 + 8 else 11);
     } else if (button == settings.toggle_stats.getMouse()) {
         settings.stats_enabled = !settings.stats_enabled;
     }
 }
 
 fn mouseRelease(button: zglfw.MouseButton) void {
-    if (ui.current_screen != .game)
+    if (sc.current_screen != .game)
         return;
 
     if (disable_input)
@@ -386,10 +387,10 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
     }
 
     if (action == .press) {
-        if (!ui.mousePress(@floatCast(mouse_x), @floatCast(mouse_y), mods, button))
+        if (!sc.mousePress(@floatCast(mouse_x), @floatCast(mouse_y), mods, button))
             mousePress(window, button, mods);
     } else if (action == .release) {
-        ui.mouseRelease(@floatCast(mouse_x), @floatCast(mouse_y));
+        sc.mouseRelease(@floatCast(mouse_x), @floatCast(mouse_y));
         mouseRelease(button);
     }
 
@@ -429,7 +430,7 @@ pub fn mouseMoveEvent(_: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) void 
     mouse_x = xpos;
     mouse_y = ypos;
 
-    ui.mouseMove(@floatCast(mouse_x), @floatCast(mouse_y));
+    sc.mouseMove(@floatCast(mouse_x), @floatCast(mouse_y));
 }
 
 pub fn scrollEvent(_: *zglfw.Window, _: f64, yoffset: f64) callconv(.C) void {

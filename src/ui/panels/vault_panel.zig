@@ -9,8 +9,10 @@ const utils = @import("../../utils.zig");
 const game_data = @import("../../game_data.zig");
 const map = @import("../../map.zig");
 const input = @import("../../input.zig");
-const ScreenController = @import("../controllers/screen_controller.zig").ScreenController;
+
+const PanelController = @import("../controllers/panel_controller.zig").PanelController;
 const GameScreen = @import("../screens/game_screen.zig").GameScreen;
+const sc = @import("../controllers/screen_controller.zig");
 const NineSlice = ui.NineSliceImageData;
 
 var pre_width_x: f32 = 0;
@@ -207,8 +209,8 @@ pub const VaultPanel = struct {
     }
 
     pub fn deinit(self: *VaultPanel) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!sc.ui_lock.tryLock()) {}
+        defer sc.ui_lock.unlock();
 
         self.cont.destroy();
         self.number_text = undefined;
@@ -227,7 +229,7 @@ pub const VaultPanel = struct {
     }
 
     fn closeCallback() void {
-        ui.current_screen.game.screen_controller.hideScreens();
+        sc.current_screen.game.panel_controller.hidePanels();
     }
     fn nextCallback() void {
         current_page += 1;
@@ -235,9 +237,9 @@ pub const VaultPanel = struct {
         if (current_page == max_pages)
             current_page = 9;
 
-        ui.current_screen.game.screen_controller.vault.updatePageText();
+        sc.current_screen.game.panel_controller.vault.updatePageText();
         for (0..items_per_page) |i| {
-            ui.current_screen.game.screen_controller.vault.setVaultItem(0xa3c, @as(u8, @intCast(i)));
+            sc.current_screen.game.panel_controller.vault.setVaultItem(0xa3c, @as(u8, @intCast(i)));
         }
     }
     fn prevCallback() void {
@@ -246,9 +248,9 @@ pub const VaultPanel = struct {
         if (current_page == 0)
             current_page = 1;
 
-        ui.current_screen.game.screen_controller.vault.updatePageText();
+        sc.current_screen.game.panel_controller.vault.updatePageText();
         for (0..items_per_page) |i| {
-            ui.current_screen.game.screen_controller.vault.setVaultItem(0xa83, @as(u8, @intCast(i)));
+            sc.current_screen.game.panel_controller.vault.setVaultItem(0xa83, @as(u8, @intCast(i)));
         }
     }
 
@@ -340,7 +342,7 @@ pub const VaultPanel = struct {
     }
 
     fn itemDragEndCallback(item: *ui.Item) void {
-        const current_screen = ui.current_screen.game.screen_controller.vault;
+        const current_screen = sc.current_screen.game.panel_controller.vault;
         const start_slot = findSlotId(current_screen.*, item._drag_start_x + 4, item._drag_start_y + 4);
         const end_slot = findSlotId(current_screen.*, item.x - item._drag_offset_x, item.y - item._drag_offset_y);
 
@@ -357,7 +359,7 @@ pub const VaultPanel = struct {
         if (item._item < 0)
             return;
 
-        const start_slot = findSlotId(ui.current_screen.game.screen_controller.vault.*, item.x + 4, item.y + 4);
+        const start_slot = findSlotId(sc.current_screen.game.panel_controller.vault.*, item.x + 4, item.y + 4);
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             if (props.consumable and !start_slot.is_container) {
                 while (!map.object_lock.tryLockShared()) {}
@@ -381,14 +383,14 @@ pub const VaultPanel = struct {
         }
 
         if (start_slot.is_container) {
-            const end_slot = nextAvailableSlot(ui.current_screen.game.screen_controller.vault.*);
+            const end_slot = nextAvailableSlot(sc.current_screen.game.panel_controller.vault.*);
             if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
                 item.x = item._drag_start_x;
                 item.y = item._drag_start_y;
                 return;
             }
 
-            ui.current_screen.game.screen_controller.vault.swapSlots(start_slot, end_slot);
+            sc.current_screen.game.panel_controller.vault.swapSlots(start_slot, end_slot);
         } else {
             if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
                 while (!map.object_lock.tryLockShared()) {}
@@ -404,7 +406,7 @@ pub const VaultPanel = struct {
                         return;
                     }
 
-                    ui.current_screen.game.swapSlots(start_slot, end_slot);
+                    sc.current_screen.game.swapSlots(start_slot, end_slot);
                 }
             }
         }
@@ -413,7 +415,7 @@ pub const VaultPanel = struct {
         if (item._item < 0)
             return;
 
-        const current_screen = ui.current_screen.game.screen_controller.vault;
+        const current_screen = sc.current_screen.game.panel_controller.vault;
         const slot = findSlotId(current_screen.*, item.x + 4, item.y + 4);
 
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
@@ -440,7 +442,7 @@ pub const VaultPanel = struct {
     }
 
     pub fn swapSlots(self: *VaultPanel, start_slot: GameScreen.Slot, end_slot: GameScreen.Slot) void {
-        const igs = ui.current_screen.game;
+        const igs = sc.current_screen.game;
 
         if (end_slot.idx == 255) {
             if (start_slot.is_container) {

@@ -5,7 +5,9 @@ const camera = @import("../../camera.zig");
 const main = @import("../../main.zig");
 const settings = @import("../../settings.zig");
 
+const PanelController = @import("../controllers/panel_controller.zig").PanelController;
 const NineSlice = ui.NineSliceImageData;
+const sc = @import("../controllers/screen_controller.zig");
 
 pub const TabType = enum {
     general,
@@ -15,7 +17,7 @@ pub const TabType = enum {
 };
 
 pub const OptionsPanel = struct {
-    visible: bool = true,
+    visible: bool = false,
     inited: bool = false,
     selected_tab_type: TabType = .general,
     main: *ui.DisplayContainer = undefined,
@@ -43,40 +45,43 @@ pub const OptionsPanel = struct {
         screen.main = try ui.DisplayContainer.create(allocator, .{
             .x = 0,
             .y = 0,
+            .visible = screen.visible,
         });
 
         screen.buttons = try ui.DisplayContainer.create(allocator, .{
             .x = 0,
             .y = buttons_y,
+            .visible = screen.visible,
         });
 
         screen.tabs = try ui.DisplayContainer.create(allocator, .{
             .x = 0,
             .y = 25,
+            .visible = screen.visible,
         });
 
         screen.general_tab = try ui.DisplayContainer.create(allocator, .{
             .x = 100,
             .y = 150,
-            .visible = screen.selected_tab_type == .general,
+            .visible = screen.visible and screen.selected_tab_type == .general,
         });
 
         screen.keys_tab = try ui.DisplayContainer.create(allocator, .{
             .x = 100,
             .y = 150,
-            .visible = screen.selected_tab_type == .hotkeys,
+            .visible = screen.visible and screen.selected_tab_type == .hotkeys,
         });
 
         screen.graphics_tab = try ui.DisplayContainer.create(allocator, .{
             .x = 100,
             .y = 150,
-            .visible = screen.selected_tab_type == .graphics,
+            .visible = screen.visible and screen.selected_tab_type == .graphics,
         });
 
         screen.misc_tab = try ui.DisplayContainer.create(allocator, .{
             .x = 100,
             .y = 150,
-            .visible = screen.selected_tab_type == .misc,
+            .visible = screen.visible and screen.selected_tab_type == .misc,
         });
 
         const options_background = assets.getUiData("optionsBackground", 0);
@@ -263,8 +268,8 @@ pub const OptionsPanel = struct {
     }
 
     pub fn deinit(self: *OptionsPanel) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!sc.ui_lock.tryLock()) {}
+        defer sc.ui_lock.unlock();
 
         self.main.destroy();
         self.buttons.destroy();
@@ -367,7 +372,7 @@ pub const OptionsPanel = struct {
     }
 
     fn closeCallback() void {
-        ui.hideOptions();
+        sc.current_screen.game.panel_controller.setOptionsVisible(false);
     }
 
     fn resetToDefaultsCallback() void {
@@ -396,17 +401,36 @@ pub const OptionsPanel = struct {
     }
 
     pub fn switchTab(tab: TabType) void {
-        ui.options.selected_tab_type = tab;
-        ui.options.general_tab.visible = tab == .general;
-        ui.options.keys_tab.visible = tab == .hotkeys;
-        ui.options.graphics_tab.visible = tab == .graphics;
-        ui.options.misc_tab.visible = tab == .misc;
+        var self = sc.current_screen.game.panel_controller.options;
+
+        self.selected_tab_type = tab;
+        self.general_tab.visible = tab == .general;
+        self.keys_tab.visible = tab == .hotkeys;
+        self.graphics_tab.visible = tab == .graphics;
+        self.misc_tab.visible = tab == .misc;
 
         switch (tab) {
-            .general => positionElements(ui.options.general_tab),
-            .hotkeys => positionElements(ui.options.keys_tab),
-            .graphics => positionElements(ui.options.graphics_tab),
-            .misc => positionElements(ui.options.misc_tab),
+            .general => positionElements(self.general_tab),
+            .hotkeys => positionElements(self.keys_tab),
+            .graphics => positionElements(self.graphics_tab),
+            .misc => positionElements(self.misc_tab),
         }
     }
+
+    pub fn setVisible(self: *OptionsPanel, val: bool) void {
+        self.main.visible = val;
+        self.buttons.visible = val;
+        self.tabs.visible = val;
+
+        if (val) {
+            switchTab(.general);
+        } else {
+            self.general_tab.visible = false;
+            self.keys_tab.visible = false;
+            self.graphics_tab.visible = false;
+            self.misc_tab.visible = false;
+        }
+    }
+
+    pub fn resize(_: *OptionsPanel, _: f32, _: f32) void {}
 };

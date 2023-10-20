@@ -11,6 +11,11 @@ const map = @import("../../map.zig");
 const input = @import("../../input.zig");
 
 const BasicPanel = @import("../panels/basic_panel.zig").BasicPanel;
+const VaultPanel = @import("../panels/vault_panel.zig").VaultPanel;
+const MarketPanel = @import("../panels/market_panel.zig").MarketPanel;
+const WikiPanel = @import("../panels/wiki_panel.zig").WikiPanel;
+const OptionsPanel = @import("../panels/options_panel.zig").OptionsPanel;
+const screen_controller = @import("screen_controller.zig");
 
 const NineSlice = ui.NineSliceImageData;
 
@@ -21,7 +26,12 @@ pub const PanelController = struct {
     height: f32 = 0,
     inited: bool = false,
     _allocator: std.mem.Allocator = undefined,
+
     basic_panel: *BasicPanel = undefined,
+    vault: *VaultPanel = undefined,
+    market: *MarketPanel = undefined,
+    wiki: *WikiPanel = undefined,
+    options: *OptionsPanel = undefined,
 
     pub fn init(allocator: std.mem.Allocator, data: PanelController) !*PanelController {
         var controller = try allocator.create(PanelController);
@@ -36,20 +46,38 @@ pub const PanelController = struct {
             .visible = false,
         });
 
+        controller.vault = try VaultPanel.init(allocator, .{ .visible = false }); //just to be explicit
+        controller.market = try MarketPanel.init(allocator, .{ .visible = false });
+        controller.wiki = try WikiPanel.init(allocator, .{ .visible = false });
+
+        //Options always last
+        controller.options = try OptionsPanel.init(allocator);
+
         controller.inited = true;
         return controller;
     }
 
     pub fn deinit(self: *PanelController) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!screen_controller.ui_lock.tryLock()) {}
+        defer screen_controller.ui_lock.unlock();
 
         self.basic_panel.deinit();
+        self.vault.deinit();
+        self.market.deinit();
+        self.wiki.deinit();
+        self.options.deinit();
 
         self._allocator.destroy(self);
     }
 
     pub fn hidePanels(self: *PanelController) void {
+        self.basic_panel.setVisible(false);
+        self.vault.setVisible(false);
+        self.market.setVisible(false);
+        self.wiki.setVisible(false);
+    }
+
+    fn hideSmallPanels(self: *PanelController) void {
         self.basic_panel.setVisible(false);
     }
 
@@ -59,15 +87,45 @@ pub const PanelController = struct {
         self.basic_panel.setVisible(true);
     }
 
-    pub fn basicPanelCallback() void {
-        var sc = ui.current_screen.game.screen_controller;
-        var self = ui.current_screen.game.panel_controller;
+    pub fn showPanel(self: *PanelController, class_type: game_data.ClassType) void {
+        input.disable_input = true;
+        input.reset();
 
-        sc.showScreen(ui.current_screen.game.interact_class);
+        self.hideSmallPanels();
+        switch (class_type) {
+            .vault_chest => {
+                self.vault.setVisible(true);
+            },
+            .market_place => {
+                self.market.setVisible(true);
+            },
+            .wiki => {
+                self.wiki.setVisible(true);
+            },
+            else => {
+                self.hidePanels();
+                std.log.err("screen_controller:: {} screen not implemented", .{class_type});
+            },
+        }
+    }
+
+    pub fn basicPanelCallback() void {
+        var game_screen = screen_controller.current_screen.game;
+        var self = game_screen.panel_controller;
+        self.showPanel(game_screen.interact_class);
         self.hidePanels();
     }
 
     pub fn resize(self: *PanelController, w: f32, h: f32) void {
         self.basic_panel.resize(w, h, self.width, self.height);
+        self.vault.resize(w, h);
+        self.market.resize(w, h);
+        self.wiki.resize(w, h);
+        self.options.resize(w, h);
+    }
+
+    pub fn setOptionsVisible(self: *PanelController, vis: bool) void {
+        self.options.setVisible(vis);
+        input.disable_input = vis;
     }
 };

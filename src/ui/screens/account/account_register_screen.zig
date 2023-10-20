@@ -8,6 +8,8 @@ const main = @import("../../../main.zig");
 const utils = @import("../../../utils.zig");
 const settings = @import("../../../settings.zig");
 
+const screen_controller = @import("../../controllers/screen_controller.zig");
+
 pub const AccountRegisterScreen = struct {
     username_text: *ui.UiText = undefined,
     username_input: *ui.InputField = undefined,
@@ -247,8 +249,8 @@ pub const AccountRegisterScreen = struct {
     }
 
     pub fn deinit(self: *AccountRegisterScreen) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!screen_controller.ui_lock.tryLock()) {}
+        defer screen_controller.ui_lock.unlock();
 
         self.username_text.destroy();
         self.username_input.destroy();
@@ -332,16 +334,16 @@ pub const AccountRegisterScreen = struct {
         }
 
         if (main.character_list.len > 0) {
-            ui.switchScreen(.char_select);
+            screen_controller.switchScreen(.char_select);
         } else {
-            ui.switchScreen(.char_create);
+            screen_controller.switchScreen(.char_create);
         }
 
         return true;
     }
 
     fn registerCallback() void {
-        const current_screen = ui.current_screen.register;
+        const current_screen = screen_controller.current_screen.register;
         _ = register(
             current_screen.email_input.text_data.text,
             current_screen.password_input.text_data.text,
@@ -362,6 +364,6 @@ pub const AccountRegisterScreen = struct {
     }
 
     fn backCallback() void {
-        ui.switchScreen(.main_menu);
+        screen_controller.switchScreen(.main_menu);
     }
 };

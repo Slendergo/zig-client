@@ -11,6 +11,7 @@ const zstbi = @import("zstbi");
 const ui = @import("ui/ui.zig");
 const main = @import("main.zig");
 const zgui = @import("zgui");
+const sc = @import("ui/controllers/screen_controller.zig");
 
 const VertexField = extern struct {
     x: f32,
@@ -3439,11 +3440,11 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             .bind_group = bind_group,
         };
 
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!sc.ui_lock.tryLock()) {}
+        defer sc.ui_lock.unlock();
 
         var ui_idx: u16 = 0;
-        for (ui.elements.items()) |elem| {
+        for (sc.elements.items()) |elem| {
             switch (elem) {
                 .container => |container| {
                     if (!container.visible)

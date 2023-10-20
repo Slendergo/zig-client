@@ -9,7 +9,8 @@ const utils = @import("../../utils.zig");
 const game_data = @import("../../game_data.zig");
 const map = @import("../../map.zig");
 const input = @import("../../input.zig");
-const ScreenController = @import("../controllers/screen_controller.zig").ScreenController;
+const PanelController = @import("../controllers/panel_controller.zig").PanelController;
+const sc = @import("../controllers/screen_controller.zig");
 const NineSlice = ui.NineSliceImageData;
 
 pub const MarketPanel = struct {
@@ -170,8 +171,8 @@ pub const MarketPanel = struct {
     }
 
     pub fn deinit(self: *MarketPanel) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!sc.ui_lock.tryLock()) {}
+        defer sc.ui_lock.unlock();
 
         self.cont.destroy();
 
@@ -179,7 +180,7 @@ pub const MarketPanel = struct {
     }
 
     fn closeCallback() void {
-        ui.current_screen.game.screen_controller.hideScreens();
+        sc.current_screen.game.panel_controller.hidePanels();
     }
 
     pub fn resize(_: *MarketPanel, _: f32, _: f32) void {}

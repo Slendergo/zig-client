@@ -9,7 +9,9 @@ const utils = @import("../../utils.zig");
 const game_data = @import("../../game_data.zig");
 const map = @import("../../map.zig");
 const input = @import("../../input.zig");
-const ScreenController = @import("../controllers/screen_controller.zig").ScreenController;
+
+const screen_controller = @import("../controllers/screen_controller.zig");
+const PanelController = @import("../controllers/panel_controller.zig").PanelController;
 const NineSlice = ui.NineSliceImageData;
 
 pub const WikiPanel = struct {
@@ -73,8 +75,8 @@ pub const WikiPanel = struct {
     }
 
     pub fn deinit(self: *WikiPanel) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!screen_controller.ui_lock.tryLock()) {}
+        defer screen_controller.ui_lock.unlock();
 
         self.cont.destroy();
 
@@ -82,7 +84,7 @@ pub const WikiPanel = struct {
     }
 
     fn closeCallback() void {
-        ui.current_screen.game.screen_controller.hideScreens();
+        screen_controller.current_screen.game.panel_controller.hidePanels();
     }
 
     pub fn resize(_: *WikiPanel, _: f32, _: f32) void {}
