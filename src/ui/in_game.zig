@@ -479,9 +479,9 @@ pub const InGameScreen = struct {
         }
     }
 
-    pub fn updateFpsText(_: *InGameScreen, _: f64, _: f32) !void {
-        //self.fps_text.text_data.text = try std.fmt.bufPrint(self.fps_text.text_data.backing_buffer, "FPS: {d:.1}\nMemory: {d:.1} MB", .{ fps, mem });
-        //self.fps_text.x = camera.screen_width - self.fps_text.text_data.width() - 10;
+    pub fn updateFpsText(self: *InGameScreen, fps: f64, mem: f32) !void {
+        self.fps_text.text_data.text = try std.fmt.bufPrint(self.fps_text.text_data.backing_buffer, "FPS: {d:.1}\nMemory: {d:.1} MB", .{ fps, mem });
+        self.fps_text.x = camera.screen_width - self.fps_text.text_data.width() - 10;
     }
 
     fn parseItemRects(self: *InGameScreen) void {
