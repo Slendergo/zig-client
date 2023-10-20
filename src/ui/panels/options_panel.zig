@@ -1,9 +1,10 @@
 const std = @import("std");
-const ui = @import("ui.zig");
-const assets = @import("../assets.zig");
-const camera = @import("../camera.zig");
-const main = @import("../main.zig");
-const settings = @import("../settings.zig");
+const ui = @import("../ui.zig");
+const assets = @import("../../assets.zig");
+const camera = @import("../../camera.zig");
+const main = @import("../../main.zig");
+const settings = @import("../../settings.zig");
+
 const NineSlice = ui.NineSliceImageData;
 
 pub const TabType = enum {
@@ -13,7 +14,7 @@ pub const TabType = enum {
     misc,
 };
 
-pub const OptionsUi = struct {
+pub const OptionsPanel = struct {
     visible: bool = true,
     inited: bool = false,
     selected_tab_type: TabType = .general,
@@ -26,8 +27,8 @@ pub const OptionsUi = struct {
     misc_tab: *ui.DisplayContainer = undefined,
     _allocator: std.mem.Allocator = undefined,
 
-    pub fn init(allocator: std.mem.Allocator) !*OptionsUi {
-        var screen = try allocator.create(OptionsUi);
+    pub fn init(allocator: std.mem.Allocator) !*OptionsPanel {
+        var screen = try allocator.create(OptionsPanel);
         screen.* = .{ ._allocator = allocator };
 
         const button_width = 150;
@@ -261,7 +262,7 @@ pub const OptionsUi = struct {
         return screen;
     }
 
-    pub fn deinit(self: *OptionsUi) void {
+    pub fn deinit(self: *OptionsPanel) void {
         while (!ui.ui_lock.tryLock()) {}
         defer ui.ui_lock.unlock();
 

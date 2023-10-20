@@ -9,7 +9,7 @@ const utils = @import("../../utils.zig");
 const game_data = @import("../../game_data.zig");
 const map = @import("../../map.zig");
 const input = @import("../../input.zig");
-const panel_controller = @import("panel_controller.zig").PanelController;
+const PanelController = @import("../controllers/panel_controller.zig").PanelController;
 const NineSlice = ui.NineSliceImageData;
 
 pub const BasicPanel = struct {
@@ -70,7 +70,7 @@ pub const BasicPanel = struct {
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
-            .press_callback = panel_controller.basicPanelCallback,
+            .press_callback = PanelController.basicPanelCallback,
         });
 
         panel.inited = true;

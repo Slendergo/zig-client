@@ -9,7 +9,9 @@ const utils = @import("../../utils.zig");
 const game_data = @import("../../game_data.zig");
 const map = @import("../../map.zig");
 const input = @import("../../input.zig");
-const basic_panel = @import("basic_panel.zig").BasicPanel;
+
+const BasicPanel = @import("../panels/basic_panel.zig").BasicPanel;
+
 const NineSlice = ui.NineSliceImageData;
 
 pub const PanelController = struct {
@@ -19,14 +21,14 @@ pub const PanelController = struct {
     height: f32 = 0,
     inited: bool = false,
     _allocator: std.mem.Allocator = undefined,
-    basic_panel: *basic_panel = undefined,
+    basic_panel: *BasicPanel = undefined,
 
     pub fn init(allocator: std.mem.Allocator, data: PanelController) !*PanelController {
         var controller = try allocator.create(PanelController);
         controller.* = .{ ._allocator = allocator };
         controller.* = data;
 
-        controller.basic_panel = try basic_panel.init(allocator, .{
+        controller.basic_panel = try BasicPanel.init(allocator, .{
             .x = controller.x - controller.width,
             .y = controller.y - (controller.height / 2) - 5,
             .width = controller.width,
@@ -58,7 +60,6 @@ pub const PanelController = struct {
     }
 
     pub fn basicPanelCallback() void {
-        
         var sc = ui.current_screen.in_game.screen_controller;
         var self = ui.current_screen.in_game.panel_controller;
 

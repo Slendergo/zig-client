@@ -184,7 +184,7 @@ fn renderTick(allocator: std.mem.Allocator) !void {
         commands.release();
 
         // this has to be updated on render thread to avoid headaches (gctx sharing)
-        if (ui.current_screen == .in_game and ui.current_screen.in_game.inited)
+        if (ui.current_screen == .in_game and ui.current_screen.in_game.inited and settings.stats_enabled)
             try ui.current_screen.in_game.updateFpsText(gctx.stats.fps, try utils.currentMemoryUse());
 
         minimapUpdate: {
@@ -200,7 +200,7 @@ fn renderTick(allocator: std.mem.Allocator) !void {
                 const h = max_y - min_y;
                 if (w <= 0 or h <= 0)
                     break :minimapUpdate;
-                    
+
                 const comp_len = map.minimap.num_components * map.minimap.bytes_per_component;
                 const copy = allocator.alloc(u8, w * h * comp_len) catch |e| {
                     std.log.err("Minimap alloc failed: {any}", .{e});

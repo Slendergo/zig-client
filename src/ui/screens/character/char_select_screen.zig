@@ -1,8 +1,8 @@
 const std = @import("std");
-const ui = @import("ui.zig");
-const assets = @import("../assets.zig");
-const camera = @import("../camera.zig");
-const main = @import("../main.zig");
+const ui = @import("../../ui.zig");
+const assets = @import("../../../assets.zig");
+const camera = @import("../../../camera.zig");
+const main = @import("../../../main.zig");
 
 pub const CharSelectScreen = struct {
     boxes: std.ArrayList(*ui.CharacterBox) = undefined,

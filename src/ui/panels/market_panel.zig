@@ -9,10 +9,10 @@ const utils = @import("../../utils.zig");
 const game_data = @import("../../game_data.zig");
 const map = @import("../../map.zig");
 const input = @import("../../input.zig");
-const screen_controller = @import("screen_controller.zig").ScreenController;
+const ScreenController = @import("../controllers/screen_controller.zig").ScreenController;
 const NineSlice = ui.NineSliceImageData;
 
-pub const MarketScreen = struct {
+pub const MarketPanel = struct {
     inited: bool = false,
     _allocator: std.mem.Allocator = undefined,
     visible: bool = false,
@@ -20,8 +20,8 @@ pub const MarketScreen = struct {
     item_cont: *ui.DisplayContainer = undefined,
     items: std.ArrayList(*ui.Item) = undefined,
 
-    pub fn init(allocator: std.mem.Allocator, data: MarketScreen) !*MarketScreen {
-        var screen = try allocator.create(MarketScreen);
+    pub fn init(allocator: std.mem.Allocator, data: MarketPanel) !*MarketPanel {
+        var screen = try allocator.create(MarketPanel);
         screen.* = .{ ._allocator = allocator };
         screen.* = data;
 
@@ -165,11 +165,11 @@ pub const MarketScreen = struct {
 
     fn itemCallback(_: *ui.Item) void {}
 
-    pub fn setVisible(self: *MarketScreen, val: bool) void {
+    pub fn setVisible(self: *MarketPanel, val: bool) void {
         self.cont.visible = val;
     }
 
-    pub fn deinit(self: *MarketScreen) void {
+    pub fn deinit(self: *MarketPanel) void {
         while (!ui.ui_lock.tryLock()) {}
         defer ui.ui_lock.unlock();
 
@@ -182,5 +182,5 @@ pub const MarketScreen = struct {
         ui.current_screen.in_game.screen_controller.hideScreens();
     }
 
-    pub fn resize(_: *MarketScreen, _: f32, _: f32) void {}
+    pub fn resize(_: *MarketPanel, _: f32, _: f32) void {}
 };

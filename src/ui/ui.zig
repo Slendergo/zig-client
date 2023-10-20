@@ -8,13 +8,21 @@ const main = @import("../main.zig");
 const game_data = @import("../game_data.zig");
 const network = @import("../network.zig");
 const zglfw = @import("zglfw");
-const AccountScreen = @import("account.zig").AccountScreen;
-const AccountRegisterScreen = @import("account.zig").AccountRegisterScreen;
-const InGameScreen = @import("in_game.zig").InGameScreen;
-const CharSelectScreen = @import("char_select.zig").CharSelectScreen;
-const CharCreateScreen = @import("char_create.zig").CharCreateScreen;
-const EmptyScreen = @import("empty_screen.zig").EmptyScreen;
-const OptionsUi = @import("options_ui.zig").OptionsUi;
+
+const AccountLoginScreen = @import("screens/account/account_login_screen.zig").AccountLoginScreen;
+const AccountRegisterScreen = @import("screens/account/account_register_screen.zig").AccountRegisterScreen;
+
+const CharCreateScreen = @import("screens/character/char_create_screen.zig").CharCreateScreen;
+const CharSelectScreen = @import("screens/character/char_select_screen.zig").CharSelectScreen;
+
+const MapEditorScreen = @import("screens/map_editor_screen.zig").MapEditorScreen;
+
+const GameScreen = @import("screens/game_screen.zig").GameScreen;
+
+const EmptyScreen = @import("screens/empty_screen.zig").EmptyScreen;
+
+const OptionsPanel = @import("panels/options_panel.zig").OptionsPanel;
+
 const settings = @import("../settings.zig");
 
 // Assumes ARGB because flash scuff. Change later
@@ -1324,11 +1332,11 @@ pub const ScreenType = enum {
 
 pub const Screen = union(ScreenType) {
     empty: *EmptyScreen,
-    main_menu: *AccountScreen,
+    main_menu: *AccountLoginScreen,
     register: *AccountRegisterScreen,
     char_select: *CharSelectScreen,
     char_create: *CharCreateScreen,
-    in_game: *InGameScreen,
+    in_game: *GameScreen,
 };
 
 pub var ui_lock: std.Thread.Mutex = .{};
@@ -1386,7 +1394,7 @@ pub fn switchScreen(screen_type: ScreenType) void {
     switch (screen_type) {
         .empty => current_screen = .{ .empty = EmptyScreen.init(main._allocator) catch unreachable },
         .main_menu => {
-            current_screen = .{ .main_menu = AccountScreen.init(main._allocator) catch |e| {
+            current_screen = .{ .main_menu = AccountLoginScreen.init(main._allocator) catch |e| {
                 std.log.err("Initializing login screen failed: {any}", .{e});
                 return;
             } };
@@ -1410,7 +1418,7 @@ pub fn switchScreen(screen_type: ScreenType) void {
             } };
         },
         .in_game => {
-            current_screen = .{ .in_game = InGameScreen.init(main._allocator) catch |e| {
+            current_screen = .{ .in_game = GameScreen.init(main._allocator) catch |e| {
                 std.log.err("Initializing in game screen failed: {any}", .{e});
                 return;
             } };
@@ -1838,7 +1846,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) !void {
 }
 
 pub var options_opened: bool = false;
-pub var options: *OptionsUi = undefined;
+pub var options: *OptionsPanel = undefined;
 
 pub fn hideOptions() void {
     if (!options_opened)
@@ -1861,7 +1869,7 @@ pub fn showOptions() void {
     input.reset();
     options_opened = true;
 
-    options = OptionsUi.init(main._allocator) catch |e| {
+    options = OptionsPanel.init(main._allocator) catch |e| {
         std.log.err("Initializing in options failed: {any}", .{e});
         return;
     };

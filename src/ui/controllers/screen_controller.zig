@@ -1,7 +1,9 @@
 const std = @import("std");
-const vault_screen = @import("vault_screen.zig").VaultScreen;
-const market_screen = @import("market_screen.zig").MarketScreen;
-const wiki_screen = @import("wiki_screen.zig").WikiScreen;
+
+const VaultPanel = @import("../panels/vault_panel.zig").VaultPanel;
+const MarketPanel = @import("../panels/market_panel.zig").MarketPanel;
+const WikiPanel = @import("../panels/wiki_panel.zig").WikiPanel;
+
 const ui = @import("../ui.zig");
 const input = @import("../../input.zig");
 const game_data = @import("../../game_data.zig");
@@ -12,17 +14,17 @@ pub const ScreenController = struct {
     inited: bool = false,
     _allocator: std.mem.Allocator = undefined,
 
-    vault: *vault_screen = undefined,
-    market: *market_screen = undefined,
-    wiki: *wiki_screen = undefined,
+    vault: *VaultPanel = undefined,
+    market: *MarketPanel = undefined,
+    wiki: *WikiPanel = undefined,
 
     pub fn init(allocator: std.mem.Allocator) !*ScreenController {
         var controller = try allocator.create(ScreenController);
         controller.* = .{ ._allocator = allocator };
 
-        controller.vault = try vault_screen.init(allocator, .{ .visible = false }); //just to be explicit
-        controller.market = try market_screen.init(allocator, .{ .visible = false });
-        controller.wiki = try wiki_screen.init(allocator, .{ .visible = false });
+        controller.vault = try VaultPanel.init(allocator, .{ .visible = false }); //just to be explicit
+        controller.market = try MarketPanel.init(allocator, .{ .visible = false });
+        controller.wiki = try WikiPanel.init(allocator, .{ .visible = false });
 
         return controller;
     }
