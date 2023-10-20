@@ -158,59 +158,6 @@ pub const MapEditorScreen = struct {
             .image_data = .{ .nine_slice = NineSlice.fromAtlasData(background_data_base, new_container_width, new_container_height, 8, 8, 32, 32, 1.0) },
         });
 
-        const check_padding: f32 = 5;
-
-        const size_64: ui.Toggle = .{
-            .x = (new_container_width / 2) - ((check_padding + check_box_base_on.texHRaw()) / 2) * 3,
-            .y = (new_container_height - check_box_base_on.texHRaw()) / 2 - (check_padding * 2),
-            .off_image_data = .{
-                .base = .{ .normal = .{ .atlas_data = check_box_base_off } },
-                .hover = .{ .normal = .{ .atlas_data = check_box_hover_off } },
-                .press = .{ .normal = .{ .atlas_data = check_box_press_off } },
-            },
-            .on_image_data = .{
-                .base = .{ .normal = .{ .atlas_data = check_box_base_on } },
-                .hover = .{ .normal = .{ .atlas_data = check_box_hover_on } },
-                .press = .{ .normal = .{ .atlas_data = check_box_press_on } },
-            },
-            .toggled = &screen.map_size_64,
-            .state_change = mapState64Changed,
-        };
-
-        const size_128: ui.Toggle = .{
-            .x = size_64.x + size_64.width() + 5,
-            .y = size_64.y,
-            .off_image_data = .{
-                .base = .{ .normal = .{ .atlas_data = check_box_base_off } },
-                .hover = .{ .normal = .{ .atlas_data = check_box_hover_off } },
-                .press = .{ .normal = .{ .atlas_data = check_box_press_off } },
-            },
-            .on_image_data = .{
-                .base = .{ .normal = .{ .atlas_data = check_box_base_on } },
-                .hover = .{ .normal = .{ .atlas_data = check_box_hover_on } },
-                .press = .{ .normal = .{ .atlas_data = check_box_press_on } },
-            },
-            .toggled = &screen.map_size_128,
-            .state_change = mapState128Changed,
-        };
-
-        const size_256: ui.Toggle = .{
-            .x = size_128.x + size_128.width() + 5,
-            .y = size_128.y,
-            .off_image_data = .{
-                .base = .{ .normal = .{ .atlas_data = check_box_base_off } },
-                .hover = .{ .normal = .{ .atlas_data = check_box_hover_off } },
-                .press = .{ .normal = .{ .atlas_data = check_box_press_off } },
-            },
-            .on_image_data = .{
-                .base = .{ .normal = .{ .atlas_data = check_box_base_on } },
-                .hover = .{ .normal = .{ .atlas_data = check_box_hover_on } },
-                .press = .{ .normal = .{ .atlas_data = check_box_press_on } },
-            },
-            .toggled = &screen.map_size_256,
-            .state_change = mapState256Changed,
-        };
-
         var text_size_64: ui.UiText = .{
             .x = new_container_width / 2,
             .y = 32,
@@ -258,6 +205,59 @@ pub const MapEditorScreen = struct {
         };
         text_size_256.x -= text_size_256.text_data.width() / 2;
         text_size_256.y -= text_size_256.text_data.height() / 2;
+
+        const check_padding: f32 = 5;
+
+        const size_64: ui.Toggle = .{
+            .x = (new_container_width / 2) - ((check_padding + check_box_base_on.texHRaw()) / 2) * 3,
+            .y = (new_container_height - check_box_base_on.texHRaw()) / 2 - check_padding,
+            .off_image_data = .{
+                .base = .{ .normal = .{ .atlas_data = check_box_base_off } },
+                .hover = .{ .normal = .{ .atlas_data = check_box_hover_off } },
+                .press = .{ .normal = .{ .atlas_data = check_box_press_off } },
+            },
+            .on_image_data = .{
+                .base = .{ .normal = .{ .atlas_data = check_box_base_on } },
+                .hover = .{ .normal = .{ .atlas_data = check_box_hover_on } },
+                .press = .{ .normal = .{ .atlas_data = check_box_press_on } },
+            },
+            .toggled = &screen.map_size_64,
+            .state_change = mapState64Changed,
+        };
+
+        const size_128: ui.Toggle = .{
+            .x = size_64.x + size_64.width() + 5,
+            .y = size_64.y,
+            .off_image_data = .{
+                .base = .{ .normal = .{ .atlas_data = check_box_base_off } },
+                .hover = .{ .normal = .{ .atlas_data = check_box_hover_off } },
+                .press = .{ .normal = .{ .atlas_data = check_box_press_off } },
+            },
+            .on_image_data = .{
+                .base = .{ .normal = .{ .atlas_data = check_box_base_on } },
+                .hover = .{ .normal = .{ .atlas_data = check_box_hover_on } },
+                .press = .{ .normal = .{ .atlas_data = check_box_press_on } },
+            },
+            .toggled = &screen.map_size_128,
+            .state_change = mapState128Changed,
+        };
+
+        const size_256: ui.Toggle = .{
+            .x = size_128.x + size_128.width() + 5,
+            .y = size_128.y,
+            .off_image_data = .{
+                .base = .{ .normal = .{ .atlas_data = check_box_base_off } },
+                .hover = .{ .normal = .{ .atlas_data = check_box_hover_off } },
+                .press = .{ .normal = .{ .atlas_data = check_box_press_off } },
+            },
+            .on_image_data = .{
+                .base = .{ .normal = .{ .atlas_data = check_box_base_on } },
+                .hover = .{ .normal = .{ .atlas_data = check_box_hover_on } },
+                .press = .{ .normal = .{ .atlas_data = check_box_press_on } },
+            },
+            .toggled = &screen.map_size_256,
+            .state_change = mapState256Changed,
+        };
 
         const login_button: ui.Button = .{
             .x = (screen.new_container.width - (button_width * 2)) / 2 - (button_padding / 2),
