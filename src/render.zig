@@ -2903,7 +2903,8 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         }
                     },
                     .player => |player| {
-                        if (player.dead or !camera.visibleInCamera(player.x, player.y)) {
+                        // hack just dont render players
+                        if (sc.current_screen == .editor or player.dead or !camera.visibleInCamera(player.x, player.y)) {
                             continue;
                         }
 

@@ -1203,51 +1203,67 @@ pub const Player = struct {
         if (self.obj_id == local_player_id) {
             const floor_x: u32 = @intFromFloat(@floor(self.x));
             const floor_y: u32 = @intFromFloat(@floor(self.y));
-            if (validPos(floor_x, floor_y)) {
-                const current_square = squares[floor_y * width + floor_x];
-                if (current_square.props) |props| {
-                    const slide_amount = props.slide_amount;
-                    if (!std.math.isNan(self.move_angle)) {
-                        const move_angle = camera.angle + self.move_angle;
-                        const move_speed = self.moveSpeedMultiplier();
-                        const vec_x = move_speed * @cos(move_angle);
-                        const vec_y = move_speed * @sin(move_angle);
 
-                        if (slide_amount > 0.0) {
-                            self.x_dir *= slide_amount;
-                            self.y_dir *= slide_amount;
+            // janky editor movement
 
-                            const max_move_length = vec_x * vec_x + vec_y * vec_y;
-                            const move_length = self.x_dir * self.x_dir + self.y_dir * self.y_dir;
-                            if (move_length < max_move_length) {
-                                self.x_dir += vec_x * -1.0 * (slide_amount - 1.0);
-                                self.y_dir += vec_y * -1.0 * (slide_amount - 1.0);
+            if (sc.current_screen == .editor) {
+                if (!std.math.isNan(self.move_angle)) {
+                    const move_angle = camera.angle + self.move_angle;
+                    const move_speed = self.moveSpeedMultiplier();
+                    const new_x = self.x + move_speed * @cos(move_angle) * dt;
+                    const new_y = self.y + move_speed * @sin(move_angle) * dt;
+
+                    self.x = @max(0, @min(new_x, @as(f32, @floatFromInt(width - 1))));
+                    self.y = @max(0, @min(new_y, @as(f32, @floatFromInt(height - 1))));
+                }
+            } else {
+                if (validPos(floor_x, floor_y)) {
+                    const current_square = squares[floor_y * width + floor_x];
+                    if (current_square.props) |props| {
+                        const slide_amount = if (sc.current_screen == .editor) 0.0 else props.slide_amount; // remove slide from editor
+                        if (!std.math.isNan(self.move_angle)) {
+                            const move_angle = camera.angle + self.move_angle;
+                            const move_speed = self.moveSpeedMultiplier();
+                            const vec_x = move_speed * @cos(move_angle);
+                            const vec_y = move_speed * @sin(move_angle);
+
+                            if (slide_amount > 0.0) {
+                                self.x_dir *= slide_amount;
+                                self.y_dir *= slide_amount;
+
+                                const max_move_length = vec_x * vec_x + vec_y * vec_y;
+                                const move_length = self.x_dir * self.x_dir + self.y_dir * self.y_dir;
+                                if (move_length < max_move_length) {
+                                    self.x_dir += vec_x * -1.0 * (slide_amount - 1.0);
+                                    self.y_dir += vec_y * -1.0 * (slide_amount - 1.0);
+                                }
+                            } else {
+                                self.x_dir = vec_x;
+                                self.y_dir = vec_y;
                             }
                         } else {
-                            self.x_dir = vec_x;
-                            self.y_dir = vec_y;
+                            const move_length_sqr = self.x_dir * self.x_dir + self.y_dir * self.y_dir;
+                            const min_move_len_sqr = 0.00012 * 0.00012;
+                            if (move_length_sqr > min_move_len_sqr and slide_amount > 0.0) {
+                                self.x_dir *= slide_amount;
+                                self.y_dir *= slide_amount;
+                            } else {
+                                self.x_dir = 0.0;
+                                self.y_dir = 0.0;
+                            }
                         }
-                    } else {
-                        const move_length_sqr = self.x_dir * self.x_dir + self.y_dir * self.y_dir;
-                        const min_move_len_sqr = 0.00012 * 0.00012;
-                        if (move_length_sqr > min_move_len_sqr and slide_amount > 0.0) {
-                            self.x_dir *= slide_amount;
-                            self.y_dir *= slide_amount;
-                        } else {
-                            self.x_dir = 0.0;
-                            self.y_dir = 0.0;
+
+                        if (props.push) {
+                            self.x_dir -= props.anim_dx / 1000.0;
+                            self.y_dir -= props.anim_dy / 1000.0;
                         }
                     }
 
-                    if (props.push) {
-                        self.x_dir -= props.anim_dx / 1000.0;
-                        self.y_dir -= props.anim_dy / 1000.0;
-                    }
+                    const next_x = self.x + self.x_dir * dt;
+                    const next_y = self.y + self.y_dir * dt;
+
+                    modifyMove(self, next_x, next_y, &self.x, &self.y);
                 }
-
-                const next_x = self.x + self.x_dir * dt;
-                const next_y = self.y + self.y_dir * dt;
-                modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
 
             if (!self.condition.invulnerable and !self.condition.invincible and
@@ -1375,7 +1391,7 @@ pub const Player = struct {
     }
 
     fn isWalkable(x: f32, y: f32) bool {
-        if (x < 0 or y < 0)
+        if (x < 0 or y < 0 or x >= @as(f32, @floatFromInt(map.width)) or y >= @as(f32, @floatFromInt(map.height)))
             return false;
 
         const square = getSquare(x, y);
@@ -1385,9 +1401,8 @@ pub const Player = struct {
     }
 
     fn isFullOccupy(x: f32, y: f32) bool {
-        if (x < 0 or y < 0)
+        if (x < 0 or y < 0 or x >= @as(f32, @floatFromInt(map.width)) or y >= @as(f32, @floatFromInt(map.height)))
             return true;
-
         return getSquare(x, y).full_occupy;
     }
 
@@ -2372,6 +2387,14 @@ pub fn setSquare(x: u32, y: u32, tile_type: u16) void {
     };
 
     texParse: {
+        if (tile_type == 0xFFFC) // editor tile
+        {
+            var data = assets.editor_tile;
+            data.removePadding();
+            square.atlas_data = data;
+            break :texParse;
+        }
+
         if (game_data.ground_type_to_tex_data.get(tile_type)) |tex_list| {
             if (tex_list.len == 0) {
                 std.log.err("Square with type {d} has an empty texture list, parsing failed", .{tile_type});

@@ -77,9 +77,17 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     } else if (key == settings.reset_camera.getKey()) {
         camera.angle = 0;
     } else if (key == settings.shoot.getKey()) {
-        attacking = true;
+        if (sc.current_screen == .game) {
+            attacking = true;
+        }
     } else if (key == settings.options.getKey()) {
-        sc.current_screen.game.panel_controller.setOptionsVisible(true);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.panel_controller.setOptionsVisible(true);
+        }
+
+        if (sc.current_screen == .editor) {
+            sc.switchScreen(.main_menu);
+        }
     } else if (key == settings.escape.getKey()) {
         tryEscape();
     } else if (key == settings.interact.getKey()) {
@@ -142,7 +150,9 @@ fn keyRelease(key: zglfw.Key) void {
     } else if (key == settings.walk.getKey()) {
         walking_speed_multiplier = 1.0;
     } else if (key == settings.shoot.getKey()) {
-        attacking = false;
+        if (sc.current_screen == .game) {
+            attacking = false;
+        }
     }
 }
 
@@ -170,11 +180,19 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
     } else if (button == settings.reset_camera.getMouse()) {
         camera.angle = 0;
     } else if (button == settings.shoot.getMouse()) {
-        attacking = true;
+        if (sc.current_screen == .game) {
+            attacking = true;
+        }
     } else if (button == settings.options.getMouse()) {
-        sc.current_screen.game.panel_controller.setOptionsVisible(true);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.panel_controller.setOptionsVisible(true);
+        }
+
+        if (sc.current_screen == .editor) {
+            sc.switchScreen(.main_menu);
+        }
     } else if (button == settings.escape.getMouse()) {
-        network.queuePacket(.{ .escape = .{} });
+        tryEscape();
     } else if (button == settings.interact.getMouse()) {
         const int_id = map.interactive_id.load(.Acquire);
         if (int_id != -1) {
@@ -235,7 +253,9 @@ fn mouseRelease(button: zglfw.MouseButton) void {
     } else if (button == settings.walk.getMouse()) {
         walking_speed_multiplier = 1.0;
     } else if (button == settings.shoot.getMouse()) {
-        attacking = false;
+        if (sc.current_screen == .game) {
+            attacking = false;
+        }
     }
 }
 
@@ -387,9 +407,17 @@ pub fn mouseEvent(window: *zglfw.Window, button: zglfw.MouseButton, action: zglf
     }
 
     if (action == .press) {
-        if (!sc.mousePress(@floatCast(mouse_x), @floatCast(mouse_y), mods, button))
+        if (!sc.mousePress(@floatCast(mouse_x), @floatCast(mouse_y), mods, button)) {
             mousePress(window, button, mods);
+
+            if (sc.current_screen == .editor) {
+                sc.current_screen.editor.onMousePress(@floatCast(mouse_x), @floatCast(mouse_y), mods, button);
+            }
+        }
     } else if (action == .release) {
+        if (sc.current_screen == .editor) {
+            sc.current_screen.editor.onMouseRelease(@floatCast(mouse_x), @floatCast(mouse_y), mods, button);
+        }
         sc.mouseRelease(@floatCast(mouse_x), @floatCast(mouse_y));
         mouseRelease(button);
     }
@@ -443,7 +471,7 @@ pub fn scrollEvent(_: *zglfw.Window, _: f64, yoffset: f64) callconv(.C) void {
 }
 
 fn tryEscape() void {
-    if (std.mem.eql(u8, map.name, "Nexus"))
+    if (sc.current_screen != .game or std.mem.eql(u8, map.name, "Nexus"))
         return;
 
     network.queuePacket(.{ .escape = .{} });
