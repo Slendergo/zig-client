@@ -948,9 +948,9 @@ pub const MapEditorScreen = struct {
     pub fn onMousePress(self: *MapEditorScreen, x: f64, y: f64, mods: zglfw.Mods, button: zglfw.MouseButton) void {
         _ = mods;
 
-        self.action = if (button == self.place_key_settings) .place else if (button == self.erase_key_settings) .erase else .none;
+        self.action = if (button == self.place_key_settings.getMouse()) .place else if (button == self.erase_key_settings.getMouse()) .erase else .none;
 
-        if (button == self.sample_key_settings) {
+        if (button == self.sample_key_settings.getMouse()) {
             // only used for visual naming on the statistics
             self.action = .sample;
 
@@ -1008,7 +1008,7 @@ pub const MapEditorScreen = struct {
         //     //etc
         // }
 
-        if (key == self.cycle_down_setting) {
+        if (key == self.cycle_down_setting.getKey()) {
             if (self.layer == .ground) {
                 if (self.tile_list_index == 0) { // todo remove this garbage system of index checks xd
                     self.tile_list_index = 7;
@@ -1026,7 +1026,7 @@ pub const MapEditorScreen = struct {
             }
         }
 
-        if (key == self.cycle_up_setting) {
+        if (key == self.cycle_up_setting.getKey()) {
             if (self.layer == .ground) {
                 self.tile_list_index = (self.tile_list_index + 1) % 8;
                 self.object_type_to_place[@intFromEnum(self.layer)] = self.tile_list[self.tile_list_index];
@@ -1037,23 +1037,23 @@ pub const MapEditorScreen = struct {
         }
 
         // redo undo | has a bug where it just stops when holding need to find out why but its not the end of the world if it happens
-        if (key == self.undo_key_setting) {
+        if (key == self.undo_key_setting.getKey()) {
             self.action = .undo;
         }
 
-        if (key == self.redo_key_setting) {
+        if (key == self.redo_key_setting.getKey()) {
             self.action = .redo;
         }
 
-        if (key == self.ground_key_setting) {
+        if (key == self.ground_key_setting.getKey()) {
             self.layer = .ground;
         }
 
-        if (key == self.object_key_setting) {
+        if (key == self.object_key_setting.getKey()) {
             self.layer = .object;
         }
 
-        if (key == self.region_key_setting) {
+        if (key == self.region_key_setting.getKey()) {
             self.layer = .region;
         }
     }
