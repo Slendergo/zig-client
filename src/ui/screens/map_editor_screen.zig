@@ -1113,6 +1113,7 @@ pub const MapEditorScreen = struct {
                 .obj_id = self.simulated_object_id_next,
                 .obj_type = value,
                 .size = 100,
+                .alpha = 0.8,
             };
 
             obj.addToMap(self._allocator);

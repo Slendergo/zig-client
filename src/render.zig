@@ -2941,7 +2941,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         screen_pos.x += x_offset;
                         screen_pos.y += player.z * -camera.px_per_tile - (h - size * assets.padding);
 
-                        var alpha_mult: f32 = 1.0;
+                        var alpha_mult: f32 = player.alpha;
                         if (player.condition.invisible)
                             alpha_mult = 0.6;
 
@@ -3180,7 +3180,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         screen_pos.x += x_offset;
                         screen_pos.y += bo.z * -camera.px_per_tile - (h - size * assets.padding);
 
-                        var alpha_mult: f32 = 1.0;
+                        var alpha_mult: f32 = bo.alpha;
                         if (bo.condition.invisible)
                             alpha_mult = 0.6;
 
