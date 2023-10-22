@@ -1,6 +1,7 @@
 const std = @import("std");
 const Allocator = @import("std").mem.Allocator;
 const zglfw = @import("zglfw");
+const nfd = @import("nfd");
 const assets = @import("../../assets.zig");
 const camera = @import("../../camera.zig");
 const main = @import("../../main.zig");
@@ -926,12 +927,30 @@ pub const MapEditorScreen = struct {
         screen.reset();
     }
 
-    // todo c FileDialog stuff
-    // not sure how it works on linxu might have to do two implementations
-    // or i can just half ass it and load from a folder from the directory
-    // or i can make a custom dropdown
-    fn openCallback() void {}
-    fn saveCallback() void {}
+    fn openCallback() void {
+        // if (main.editing_map) {} // maybe a popup to ask to save?
+
+        const file_path = nfd.openFileDialog("pmap", null) catch return;
+        if (file_path) |path| {
+            defer nfd.freePath(path);
+            std.debug.print("openFileDialog result: {s}\n", .{path});
+
+            // todo: read map
+            //const file = std.fs.openFileAbsolute(file_path) catch return;
+        }
+    }
+
+    fn saveCallback() void {
+        if (!main.editing_map) return;
+
+        const file_path = nfd.saveFileDialog(".pmap", null) catch return;
+        if (file_path) |path| {
+            defer nfd.freePath(path);
+            std.debug.print("saveFileDialog result: {s}\n", .{path});
+
+            // todo: write map
+        }
+    }
 
     pub fn exitCallback() void {
         sc.switchScreen(.main_menu);
