@@ -5,8 +5,11 @@ const assets = @import("../../assets.zig");
 const camera = @import("../../camera.zig");
 const main = @import("../../main.zig");
 const input = @import("../../input.zig");
+const utils = @import("../../utils.zig");
 const map = @import("../../map.zig");
 const ui = @import("../ui.zig");
+const game_data = @import("../../game_data.zig");
+const settings = @import("../../settings.zig");
 
 const sc = @import("../controllers/screen_controller.zig");
 const NineSlice = ui.NineSliceImageData;
@@ -14,41 +17,246 @@ const NineSlice = ui.NineSliceImageData;
 const button_container_width = 420;
 const button_container_height = 190;
 
-const new_container_width = 325;
+const new_container_width = 345;
 const new_container_height = 175;
 
+// 0xFFFF is -1 in unsigned for those who dont know
+// 0xFFFC is Editor Specific Empty Tile
+
 const MapEditorTile = struct {
-    object_type: i32 = -1, // some other todo to make this look neater xD
+    object_type: u16 = 0xFFFF,
+    object_id: i32 = -1, // used to keep track of what entity exists on this tile, used for removing from world on erase
     ground_type: u16 = 0xFFFC, // void tile
     region_type: i32 = -1, // todo make enum struct
 };
 
-const EditorAction = enum(u8) { none = 0, place = 1, erase = 2, place_random = 3, erase_random = 4 };
+pub const EditorCommand = union(enum) {
+    place_tile: EditorPlaceTileCommand,
+    erase_tile: EditorEraseTileCommand,
+    place_object: EditorPlaceObjectCommand,
+    erase_object: EditorEraseObjectCommand,
+};
+
+const EditorAction = enum(u8) {
+    none = 0,
+    place = 1,
+    erase = 2,
+    place_random = 3,
+    erase_random = 4,
+    undo = 5,
+    redo = 6,
+    sample = 7,
+};
+
+const EditorLayer = enum(u8) {
+    ground = 0,
+    object = 1,
+    region = 2,
+};
+
+const EditorPlaceTileCommand = struct {
+    screen: *MapEditorScreen,
+    x: u32,
+    y: u32,
+    new_type: u16,
+    old_type: u16,
+
+    pub fn execute(self: EditorPlaceTileCommand) void {
+        self.screen.setTile(self.x, self.y, self.new_type);
+    }
+
+    pub fn unexecute(self: EditorPlaceTileCommand) void {
+        self.screen.setTile(self.x, self.y, self.old_type);
+    }
+};
+
+const EditorEraseTileCommand = struct {
+    screen: *MapEditorScreen,
+    x: u32,
+    y: u32,
+    old_type: u16,
+
+    pub fn execute(self: EditorEraseTileCommand) void {
+        self.screen.setTile(self.x, self.y, 0xFFFC);
+    }
+
+    pub fn unexecute(self: EditorEraseTileCommand) void {
+        self.screen.setTile(self.x, self.y, self.old_type);
+    }
+};
+
+const EditorPlaceObjectCommand = struct {
+    screen: *MapEditorScreen,
+    x: u32,
+    y: u32,
+    new_type: u16,
+    old_type: u16,
+
+    pub fn execute(self: EditorPlaceObjectCommand) void {
+        self.screen.setObject(self.x, self.y, self.new_type);
+    }
+
+    pub fn unexecute(self: EditorPlaceObjectCommand) void {
+        self.screen.setObject(self.x, self.y, self.old_type);
+    }
+};
+
+const EditorEraseObjectCommand = struct {
+    screen: *MapEditorScreen,
+    x: u32,
+    y: u32,
+    old_type: u16,
+
+    pub fn execute(self: EditorEraseObjectCommand) void {
+        self.screen.setObject(self.x, self.y, 0xFFFF);
+    }
+
+    pub fn unexecute(self: EditorEraseObjectCommand) void {
+        self.screen.setObject(self.x, self.y, self.old_type);
+    }
+};
+
+const CommandQueue = struct {
+    command_list: std.ArrayList(EditorCommand) = undefined,
+    current_position: u32 = 0,
+
+    pub fn init(self: *CommandQueue, allocator: Allocator) void {
+        self.command_list = std.ArrayList(EditorCommand).init(allocator);
+    }
+
+    pub fn deinit(self: *CommandQueue) void {
+        self.command_list.deinit();
+    }
+
+    // might be useful for multiple commands at once tool?
+    // otherwise ill just make a command that executes the fill, of more than one object
+    pub fn addCommandMultiple(self: *CommandQueue, commands: []EditorCommand) void {
+        for (commands) |command| {
+            self.addCommand(command);
+        }
+    }
+
+    pub fn addCommand(self: *CommandQueue, command: EditorCommand) void {
+        var i = self.command_list.items.len; // might be a better method for this
+        while (i > self.current_position) {
+            _ = self.command_list.pop();
+            i -= 1;
+        }
+
+        switch (command) {
+            inline else => |c| c.execute(),
+        }
+
+        self.command_list.append(command) catch return;
+        self.current_position += 1;
+    }
+
+    pub fn undo(self: *CommandQueue) void {
+        if (self.current_position == 0) {
+            return;
+        }
+
+        self.current_position -= 1;
+
+        const command = self.command_list.items[self.current_position];
+        switch (command) {
+            inline else => |c| c.unexecute(),
+        }
+    }
+
+    pub fn redo(self: *CommandQueue) void {
+        if (self.current_position == self.command_list.items.len) {
+            return;
+        }
+
+        const command = self.command_list.items[self.current_position];
+        switch (command) {
+            inline else => |c| c.execute(),
+        }
+
+        self.current_position += 1;
+    }
+};
+
+// Grounds
+// 0xFFFC -> No Tile
+// 0x48 -> Grass
+// 0x36 -> Red Quad
+// 0x35 -> Red Closed
+// 0x74 -> White Floor
+// 0x70 -> Lava
+// 0x72 -> Water
+// 0x1c -> Dirt
+// 0x0c -> Brown Lines
+
+// Objects
+// 0xFFFF -> No Object
+// 0x0600 -> Pirate
 
 pub const MapEditorScreen = struct {
     _allocator: Allocator,
     inited: bool = false,
+
+    simulated_object_id_next: i32 = -1,
 
     map_size: u32 = 128,
     map_size_64: bool = false,
     map_size_128: bool = true,
     map_size_256: bool = false,
     map_tile_data: []MapEditorTile = &[0]MapEditorTile{},
+
+    command_queue: CommandQueue = undefined,
+
     action: EditorAction = .none,
+    layer: EditorLayer = .ground,
+    object_type_to_place: [3]u16 = .{ 0x48, 0x600, 0 }, //0x600, 0 },
+
+    // todo dynamic ui system to fetch from assets
+
+    tile_list_index: u8 = 0,
+    tile_list: [8]u16 = .{ 0x48, 0x36, 0x35, 0x74, 0x70, 0x72, 0x1c, 0x0c },
+
+    object_list: [2]u16 = .{ 0x600, 0x01c5 },
+    object_list_index: u8 = 0,
+
+    // end todo here
 
     size_text_visual_64: *ui.UiText = undefined,
     size_text_visual_128: *ui.UiText = undefined,
     size_text_visual_256: *ui.UiText = undefined,
 
     text_statistics: *ui.UiText = undefined,
+    fps_text: *ui.UiText = undefined,
 
     new_container: *ui.DisplayContainer = undefined,
 
     buttons_container: *ui.DisplayContainer = undefined,
 
+    // static values might make it changable in options menu later on but for now there manually set
+    // 11 keys atm
+    // room for one more
+    place_key_settings: settings.Button = .{ .mouse = .left },
+    sample_key_settings: settings.Button = .{ .mouse = .middle },
+    erase_key_settings: settings.Button = .{ .mouse = .right },
+    random_key_setting: settings.Button = .{ .key = .t },
+
+    undo_key_setting: settings.Button = .{ .key = .u },
+    redo_key_setting: settings.Button = .{ .key = .r },
+
+    ground_key_setting: settings.Button = .{ .key = .F1 },
+    object_key_setting: settings.Button = .{ .key = .F2 },
+    region_key_setting: settings.Button = .{ .key = .F3 },
+
+    cycle_up_setting: settings.Button = .{ .key = .one },
+    cycle_down_setting: settings.Button = .{ .key = .two },
+
     pub fn init(allocator: Allocator) !*MapEditorScreen {
         var screen = try allocator.create(MapEditorScreen);
         screen.* = .{ ._allocator = allocator };
+
+        // might need redoing
+        screen.command_queue = CommandQueue{};
+        screen.command_queue.init(allocator);
 
         const button_data_base = assets.getUiData("buttonBase", 0);
         const button_data_hover = assets.getUiData("buttonHover", 0);
@@ -75,7 +283,21 @@ pub const MapEditorScreen = struct {
                 .size = 12,
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 512),
+                .color = 0x00FFFF00,
             },
+        });
+
+        const fps_text_data = ui.TextData{
+            .text = "",
+            .size = 12,
+            .text_type = .bold,
+            .backing_buffer = try allocator.alloc(u8, 32),
+            .color = 0x00FFFF00,
+        };
+        screen.fps_text = try ui.UiText.create(allocator, .{
+            .x = camera.screen_width - fps_text_data.width() - 10,
+            .y = 16,
+            .text_data = fps_text_data,
         });
 
         // buttons container (bottom left)
@@ -95,7 +317,7 @@ pub const MapEditorScreen = struct {
 
         var button_offset: f32 = button_padding;
 
-        _ = try screen.buttons_container.createElement(ui.Button, .{
+        const new_button: ui.Button = .{
             .x = button_padding,
             .y = button_offset,
             .image_data = .{
@@ -110,7 +332,9 @@ pub const MapEditorScreen = struct {
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
             .press_callback = newCallback,
-        });
+        };
+
+        _ = try screen.buttons_container.createElement(ui.Button, new_button);
 
         button_offset += button_height + button_padding;
 
@@ -331,9 +555,248 @@ pub const MapEditorScreen = struct {
         _ = try screen.new_container.createElement(ui.Button, login_button);
         _ = try screen.new_container.createElement(ui.Button, cancel_button);
 
+        //
+
+        // try addKeyMap(screen.general_tab, &settings.move_up, "Move Up", "");
+        // fn addKeyMap(target_tab: *ui.DisplayContainer, button: *settings.Button, title) !void {
+
+        const place_key: ui.KeyMapper = .{
+            .x = new_button.x + new_button.width() + button_padding,
+            .y = new_button.y,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Place"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.place_key_settings.getKey(),
+            .mouse = screen.place_key_settings.getMouse(),
+            .settings_button = &screen.place_key_settings,
+            .set_key_callback = noAction,
+        };
+
+        const sample_key: ui.KeyMapper = .{
+            .x = place_key.x,
+            .y = place_key.y + new_button.height() + button_padding,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Sample"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.sample_key_settings.getKey(),
+            .mouse = screen.sample_key_settings.getMouse(),
+            .settings_button = &screen.sample_key_settings,
+            .set_key_callback = noAction,
+        };
+
+        const erase_key: ui.KeyMapper = .{
+            .x = sample_key.x,
+            .y = sample_key.y + sample_key.height() + button_padding,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Erase"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.erase_key_settings.getKey(),
+            .mouse = screen.erase_key_settings.getMouse(),
+            .settings_button = &screen.erase_key_settings,
+            .set_key_callback = noAction,
+        };
+
+        const random_key: ui.KeyMapper = .{
+            .x = erase_key.x,
+            .y = erase_key.y + erase_key.height() + button_padding,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Random"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.random_key_setting.getKey(),
+            .mouse = screen.random_key_setting.getMouse(),
+            .settings_button = &screen.random_key_setting,
+            .set_key_callback = noAction,
+        };
+
+        const undo_key: ui.KeyMapper = .{
+            .x = place_key.x + random_key.width() + button_padding, // random has longest text so we use that one as offset
+            .y = place_key.y,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Undo"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.undo_key_setting.getKey(),
+            .mouse = screen.undo_key_setting.getMouse(),
+            .settings_button = &screen.undo_key_setting,
+            .set_key_callback = noAction,
+        };
+
+        const redo_key: ui.KeyMapper = .{
+            .x = undo_key.x,
+            .y = undo_key.y + undo_key.height() + button_padding,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Redo"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.redo_key_setting.getKey(),
+            .mouse = screen.redo_key_setting.getMouse(),
+            .settings_button = &screen.redo_key_setting,
+            .set_key_callback = noAction,
+        };
+
+        const ground_layer: ui.KeyMapper = .{
+            .x = redo_key.x,
+            .y = redo_key.y + redo_key.height() + button_padding,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Ground"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.ground_key_setting.getKey(),
+            .mouse = screen.ground_key_setting.getMouse(),
+            .settings_button = &screen.ground_key_setting,
+            .set_key_callback = noAction,
+        };
+
+        const object_layer: ui.KeyMapper = .{
+            .x = ground_layer.x,
+            .y = ground_layer.y + ground_layer.height() + button_padding,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Object"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.object_key_setting.getKey(),
+            .mouse = screen.object_key_setting.getMouse(),
+            .settings_button = &screen.object_key_setting,
+            .set_key_callback = noAction,
+        };
+
+        const region_layer: ui.KeyMapper = .{
+            .x = ground_layer.x + ground_layer.width() + button_padding,
+            .y = undo_key.y,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Region"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.region_key_setting.getKey(),
+            .mouse = screen.region_key_setting.getMouse(),
+            .settings_button = &screen.region_key_setting,
+            .set_key_callback = noAction,
+        };
+
+        const cycle_next: ui.KeyMapper = .{
+            .x = region_layer.x,
+            .y = region_layer.y + region_layer.height() + button_padding,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Next"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.cycle_up_setting.getKey(),
+            .mouse = screen.cycle_up_setting.getMouse(),
+            .settings_button = &screen.cycle_up_setting,
+            .set_key_callback = noAction,
+        };
+
+        const cycle_prev: ui.KeyMapper = .{
+            .x = cycle_next.x,
+            .y = cycle_next.y + cycle_next.height() + button_padding,
+            .image_data = .{
+                .base = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .hover = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+                .press = .{ .nine_slice = NineSlice.fromAtlasData(button_data_base, button_height, button_height, 6, 6, 7, 7, 1.0) },
+            },
+            .title_text_data = .{
+                .text = @constCast("Prev"),
+                .size = 12,
+                .text_type = .bold,
+                .backing_buffer = &[0]u8{},
+            },
+            .key = screen.cycle_down_setting.getKey(),
+            .mouse = screen.cycle_down_setting.getMouse(),
+            .settings_button = &screen.cycle_down_setting,
+            .set_key_callback = noAction,
+        };
+
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, place_key);
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, sample_key);
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, erase_key);
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, random_key);
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, undo_key);
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, redo_key);
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, ground_layer);
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, object_layer);
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, region_layer);
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, cycle_next);
+        _ = try screen.buttons_container.createElement(ui.KeyMapper, cycle_prev);
+
         screen.inited = true;
         return screen;
     }
+
+    fn noAction(_: *ui.KeyMapper) void {}
 
     fn mapState64Changed(_: *ui.Toggle) void {
         const screen = sc.current_screen.editor;
@@ -380,8 +843,6 @@ pub const MapEditorScreen = struct {
         screen.buttons_container.visible = true;
         screen.new_container.visible = false;
 
-        // todo differently
-
         map.setWH(screen.map_size, screen.map_size, screen._allocator);
 
         if (screen.map_tile_data.len == 0) {
@@ -390,21 +851,9 @@ pub const MapEditorScreen = struct {
             screen.map_tile_data = screen._allocator.realloc(screen.map_tile_data, screen.map_size * screen.map_size) catch return;
         }
 
-        map.local_player_id = 0xFFFC; // special editor tile
+        map.local_player_id = 0xFFFC;
 
         const center = @as(f32, @floatFromInt(screen.map_size)) / 2.0 + 0.5;
-
-        // set every tile in map
-        // for (0..screen.map_size) |y| {
-        //     for (0..screen.map_size) |x| {
-        //         const index = y * screen.map_size + x;
-        //         const t: u16 = if (((x) + (y)) & 16 == 0) 0x36 else 0x35;
-        //         screen.map_tile_data[index] = MapEditorTile{
-        //             .ground_type = t,
-        //         };
-        //         map.setSquare(@as(u32, @intCast(x)), @as(u32, @intCast(y)), t);
-        //     }
-        // }
 
         for (0..screen.map_size) |y| {
             for (0..screen.map_size) |x| {
@@ -414,7 +863,7 @@ pub const MapEditorScreen = struct {
             }
         }
 
-        // wizard
+        // simulate wizard
         var player = map.Player{
             .x = center,
             .y = center,
@@ -422,38 +871,10 @@ pub const MapEditorScreen = struct {
             .obj_type = 0x030e,
             .size = 100,
             // .speed = 75,
-            .speed = 300,
+            .speed = 300, // mabye make it so we can adjust speed locally like shift slows down
         };
 
         player.addToMap(screen._allocator);
-
-        // temp
-
-        // pirate
-
-        var obj = map.GameObject{
-            .x = center,
-            .y = center,
-            .obj_id = 0,
-            .obj_type = 0x600,
-            .size = 100,
-        };
-
-        obj.addToMap(screen._allocator);
-
-        // pirate
-
-        var wall = map.GameObject{
-            .x = center + 1,
-            .y = center,
-            .obj_id = 0,
-            .obj_type = 0x01c5,
-            // .size = 100,
-        };
-
-        wall.addToMap(screen._allocator);
-
-        // end of temp
 
         main.editing_map = true;
 
@@ -465,19 +886,19 @@ pub const MapEditorScreen = struct {
         screen.reset();
     }
 
-    fn openCallback() void {
-        // todo c FileDialog stuff
-    }
-
-    fn saveCallback() void {
-        // todo c FileDialog stuff
-    }
+    // todo c FileDialog stuff
+    // not sure how it works on linxu might have to do two implementations
+    // or i can just half ass it and load from a folder from the directory
+    // or i can make a custom dropdown
+    fn openCallback() void {}
+    fn saveCallback() void {}
 
     pub fn exitCallback() void {
         sc.switchScreen(.main_menu);
     }
 
     fn reset(screen: *MapEditorScreen) void {
+        screen.simulated_object_id_next = -1;
         screen.buttons_container.visible = true;
         screen.new_container.visible = false;
 
@@ -495,8 +916,12 @@ pub const MapEditorScreen = struct {
 
     pub fn deinit(self: *MapEditorScreen) void {
         sc.menu_background.visible = true; // hack
+
+        self.command_queue.deinit();
+
         self.reset();
 
+        self.fps_text.destroy();
         self.text_statistics.destroy();
         self.new_container.destroy();
         self.buttons_container.destroy();
@@ -521,37 +946,193 @@ pub const MapEditorScreen = struct {
     }
 
     pub fn onMousePress(self: *MapEditorScreen, x: f64, y: f64, mods: zglfw.Mods, button: zglfw.MouseButton) void {
-        _ = y;
-        _ = x;
         _ = mods;
 
-        self.action = if (button == .left) .place else if (button == .right) .erase else .none;
+        self.action = if (button == self.place_key_settings) .place else if (button == self.erase_key_settings) .erase else .none;
+
+        if (button == self.sample_key_settings) {
+            // only used for visual naming on the statistics
+            self.action = .sample;
+
+            const _x: f32 = @floatCast(x);
+            const _y: f32 = @floatCast(y);
+
+            var world_point = camera.screenToWorld(_x, _y);
+            world_point.x = @max(0, @min(world_point.x, @as(f32, @floatFromInt(self.map_size - 1))));
+            world_point.y = @max(0, @min(world_point.y, @as(f32, @floatFromInt(self.map_size - 1))));
+
+            const floor_x: u32 = @intFromFloat(@floor(world_point.x));
+            const floor_y: u32 = @intFromFloat(@floor(world_point.y));
+
+            const current_tile = self.map_tile_data[floor_y * self.map_size + floor_x];
+            const layer = @intFromEnum(self.layer);
+
+            // todo add region to the sample logic
+
+            if (self.layer == .ground) {
+                if (current_tile.ground_type != 0xFFFC) {
+                    for (0..8) |i| {
+                        if (self.tile_list[i] == current_tile.ground_type) {
+                            self.tile_list_index = @as(u8, @intCast(i));
+                            self.object_type_to_place[layer] = current_tile.ground_type;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                if (current_tile.object_type != 0xFFFF) {
+                    for (0..2) |i| {
+                        if (self.object_list[i] == current_tile.object_type) {
+                            self.object_list_index = @as(u8, @intCast(i));
+                            self.object_type_to_place[layer] = current_tile.object_type;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    pub fn onMouseRelease(self: *MapEditorScreen, x: f64, y: f64, mods: zglfw.Mods, button: zglfw.MouseButton) void {
-        _ = button;
-        _ = mods;
-        _ = y;
-        _ = x;
-
+    pub fn onMouseRelease(self: *MapEditorScreen, _: f64, _: f64, _: zglfw.Mods, _: zglfw.MouseButton) void {
         self.action = .none;
     }
 
-    fn placeTile(self: *MapEditorScreen, x: u32, y: u32, value: u16) void {
+    pub fn onKeyPress(self: *MapEditorScreen, key: zglfw.Key, mods: zglfw.Mods) void {
+        _ = mods;
+
+        // could convert into as witch statement
+
+        // switch (key) {
+        //     self.cycle_down_setting => {},
+        //     else => {},
+        //     //etc
+        // }
+
+        if (key == self.cycle_down_setting) {
+            if (self.layer == .ground) {
+                if (self.tile_list_index == 0) { // todo remove this garbage system of index checks xd
+                    self.tile_list_index = 7;
+                } else {
+                    self.tile_list_index -= 1;
+                }
+                self.object_type_to_place[@intFromEnum(self.layer)] = self.tile_list[self.tile_list_index];
+            } else {
+                if (self.object_list_index == 0) {
+                    self.object_list_index = 1; // 0, 1 so 2 is 1 confusing ik
+                } else {
+                    self.object_list_index -= 1;
+                }
+                self.object_type_to_place[@intFromEnum(self.layer)] = self.object_list[self.object_list_index];
+            }
+        }
+
+        if (key == self.cycle_up_setting) {
+            if (self.layer == .ground) {
+                self.tile_list_index = (self.tile_list_index + 1) % 8;
+                self.object_type_to_place[@intFromEnum(self.layer)] = self.tile_list[self.tile_list_index];
+            } else {
+                self.object_list_index = (self.object_list_index + 1) % 2; // hmmmm
+                self.object_type_to_place[@intFromEnum(self.layer)] = self.object_list[self.object_list_index];
+            }
+        }
+
+        // redo undo | has a bug where it just stops when holding need to find out why but its not the end of the world if it happens
+        if (key == self.undo_key_setting) {
+            self.action = .undo;
+        }
+
+        if (key == self.redo_key_setting) {
+            self.action = .redo;
+        }
+
+        if (key == self.ground_key_setting) {
+            self.layer = .ground;
+        }
+
+        if (key == self.object_key_setting) {
+            self.layer = .object;
+        }
+
+        if (key == self.region_key_setting) {
+            self.layer = .region;
+        }
+    }
+
+    pub fn onKeyRelease(self: *MapEditorScreen, key: zglfw.Key) void {
+        _ = key;
+        if (self.action == .redo or self.action == .undo) {
+            self.action = .none;
+        }
+    }
+
+    fn setTile(self: *MapEditorScreen, x: u32, y: u32, value: u16) void {
         const index = y * self.map_size + x;
+        if (self.map_tile_data[index].ground_type == value) {
+            return;
+        }
+
         self.map_tile_data[index].ground_type = value;
         map.setSquare(x, y, value);
     }
 
-    fn removeTile(self: *MapEditorScreen, x: u32, y: u32) void {
+    fn getTile(self: *MapEditorScreen, x: f32, y: f32) MapEditorTile {
+        const floor_x: u32 = @intFromFloat(@floor(x));
+        const floor_y: u32 = @intFromFloat(@floor(y));
+        return self.map_tile_data[floor_y * self.map_size + floor_x];
+    }
+
+    fn setObject(self: *MapEditorScreen, x: u32, y: u32, value: u16) void {
         const index = y * self.map_size + x;
-        self.map_tile_data[index].ground_type = 0xFFFC;
-        map.setSquare(x, y, 0xFFFC);
+
+        if (self.map_tile_data[index].object_type == value) {
+            return;
+        }
+
+        if (value == 0xFFFF) {
+            if (map.removeEntity(self.map_tile_data[index].object_id)) |en| {
+                map.disposeEntity(self._allocator, en);
+            }
+
+            self.map_tile_data[index].object_type = value;
+            self.map_tile_data[index].object_id = value;
+        } else {
+            if (self.map_tile_data[index].object_id != -1) {
+                if (map.removeEntity(self.map_tile_data[index].object_id)) |en| {
+                    map.disposeEntity(self._allocator, en);
+                }
+            }
+
+            self.simulated_object_id_next += 1;
+
+            self.map_tile_data[index].object_type = value;
+            self.map_tile_data[index].object_id = self.simulated_object_id_next;
+
+            var obj = map.GameObject{
+                .x = @as(f32, @floatFromInt(x)) + 0.5,
+                .y = @as(f32, @floatFromInt(y)) + 0.5,
+                .obj_id = self.simulated_object_id_next,
+                .obj_type = value,
+                .size = 100,
+            };
+
+            obj.addToMap(self._allocator);
+        }
+    }
+
+    fn setRegion(self: *MapEditorScreen, x: u32, y: u32, value: i32) void {
+        const index = y * self.map_size + x;
+        self.map_tile_data[index].region_type = value;
     }
 
     pub fn update(self: *MapEditorScreen, time: i64, dt: f32) !void {
         _ = dt;
         _ = time;
+        // map.server_time_offset += @intFromFloat(dt * std.time.us_per_ms * 16);
+
+        // map.day_light_intensity = 0.4;
+        // map.night_light_intensity = 0.8;
+        // map.bg_light_color = 0;
+        // map.bg_light_intensity = 0.15;
 
         // update statistics
 
@@ -570,20 +1151,130 @@ pub const MapEditorScreen = struct {
         const floor_x: u32 = @intFromFloat(@floor(world_point.x));
         const floor_y: u32 = @intFromFloat(@floor(world_point.y));
 
+        const current_tile = self.map_tile_data[floor_y * self.map_size + floor_x];
+        const type_to_place = self.object_type_to_place[@intFromEnum(self.layer)];
+
         switch (self.action) {
             .none => {},
             .place => {
-                self.placeTile(floor_x, floor_y, 0x48);
+                switch (self.layer) {
+                    .ground => {
+                        if (current_tile.ground_type != type_to_place) {
+                            self.command_queue.addCommand(.{ .place_tile = .{
+                                .screen = self,
+                                .x = floor_x,
+                                .y = floor_y,
+                                .new_type = type_to_place,
+                                .old_type = current_tile.ground_type,
+                            } });
+                        }
+                    },
+                    .object => {
+                        if (current_tile.object_type != type_to_place) {
+                            self.command_queue.addCommand(.{ .place_object = .{
+                                .screen = self,
+                                .x = floor_x,
+                                .y = floor_y,
+                                .new_type = type_to_place,
+                                .old_type = current_tile.object_type,
+                            } });
+                        }
+                    },
+                    .region => {
+                        self.setRegion(floor_x, floor_y, type_to_place); // todo enum stuff},
+                    },
+                }
             },
             .erase => {
-                self.removeTile(floor_x, floor_y);
+                switch (self.layer) {
+                    .ground => {
+                        if (current_tile.ground_type != 0xFFFC) {
+                            self.command_queue.addCommand(.{ .erase_tile = .{
+                                .screen = self,
+                                .x = floor_x,
+                                .y = floor_y,
+                                .old_type = current_tile.ground_type,
+                            } });
+                        }
+                    },
+                    .object => {
+                        if (current_tile.object_type != 0xFFFF) {
+                            self.command_queue.addCommand(.{ .erase_object = .{
+                                .screen = self,
+                                .x = floor_x,
+                                .y = floor_y,
+                                .old_type = current_tile.object_type,
+                            } });
+                        }
+                    },
+                    .region => {
+                        self.setRegion(floor_x, floor_y, 0); // .none);
+                    },
+                }
             },
+            .undo => {
+                self.command_queue.undo();
+            },
+            .redo => {
+                self.command_queue.redo();
+            },
+            // todo rest
             else => {},
         }
 
         const index = floor_y * self.map_size + floor_x;
         const data = self.map_tile_data[index];
 
-        self.text_statistics.text_data.text = try std.fmt.bufPrint(self.text_statistics.text_data.backing_buffer, "Size: ({d}x{d})\nFloor: ({d}, {d}),\nObject Type: {d}\nGround Type: {d},\nRegion Type: {d}\n\nPosition ({d:.1}, {d:.1}),\nWorld Coordinate ({d:.1}, {d:.1})", .{ self.map_size, self.map_size, floor_x, floor_y, data.object_type, data.ground_type, data.region_type, cam_x, cam_y, world_point.x, world_point.y });
+        var place_name: []const u8 = "Unknown";
+        switch (self.layer) {
+            .ground => {
+                if (game_data.ground_type_to_props.getPtr(type_to_place)) |props| {
+                    place_name = props.obj_id;
+                }
+            },
+            .object => {
+                if (game_data.obj_type_to_props.getPtr(type_to_place)) |props| {
+                    place_name = props.obj_id;
+                }
+            },
+            .region => {
+                // todo
+            },
+        }
+
+        var hover_ground_name: []const u8 = "(Empty)";
+        if (game_data.ground_type_to_props.getPtr(data.ground_type)) |props| {
+            hover_ground_name = props.obj_id;
+        }
+
+        var hover_obj_name: []const u8 = "(Empty)";
+        if (game_data.obj_type_to_props.getPtr(data.object_type)) |props| {
+            hover_obj_name = props.obj_id;
+        }
+
+        const layer_name = if (self.layer == .ground) "Ground" else if (self.layer == .object) "Object" else "Region";
+        const mode = if (self.action == .none) "None" else if (self.action == .place) "Placing" else if (self.action == .erase) "Erasing" else if (self.action == .sample) "Sampling" else if (self.action == .undo) "Undoing" else if (self.action == .redo) "Redoing" else "Idle";
+
+        self.text_statistics.text_data.text = try std.fmt.bufPrint(self.text_statistics.text_data.backing_buffer, "Size: ({d}x{d})\n\nLayer: {s}\nPlacing: {s}\n\nMode:{s}\n\nGround Type: {s}\nObject Type: {s}\nRegion Type: {d}\n\nPosition ({d:.1}, {d:.1}),\nFloor: ({d}, {d})\nWorld Coordinate ({d:.1}, {d:.1})", .{
+            self.map_size,
+            self.map_size,
+            layer_name,
+            place_name,
+            mode,
+            hover_ground_name,
+            hover_obj_name,
+            data.region_type, // todo enum stuff and assets xml stuff if not already done?
+            cam_x,
+            cam_y,
+            floor_x,
+            floor_y,
+            world_point.x,
+            world_point.y,
+        });
+    }
+
+    pub fn updateFpsText(self: *MapEditorScreen, fps: f64, mem: f32) !void {
+        self.fps_text.text_data.text = try std.fmt.bufPrint(self.fps_text.text_data.backing_buffer, "FPS: {d:.1}\nMemory: {d:.1} MB", .{ fps, mem });
+        self.fps_text.x = camera.screen_width - self.fps_text.text_data.width() - 10;
     }
 };

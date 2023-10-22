@@ -53,6 +53,8 @@ pub fn deinit(allocator: std.mem.Allocator) void {
     input_history.deinit();
 }
 
+// todo isolate the ingame and editor logic
+
 fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
     if (sc.current_screen != .game and sc.current_screen != .editor)
         return;
@@ -108,21 +110,37 @@ fn keyPress(window: *zglfw.Window, key: zglfw.Key, mods: zglfw.Mods) void {
         selected_input_field = sc.current_screen.game.chat_input;
         selected_input_field.?._last_input = 0;
     } else if (key == settings.inv_0.getKey()) {
-        sc.current_screen.game.useItem(if (mods.control) 4 + 8 else 4);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 4 + 8 else 4);
+        }
     } else if (key == settings.inv_1.getKey()) {
-        sc.current_screen.game.useItem(if (mods.control) 5 + 8 else 5);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 5 + 8 else 5);
+        }
     } else if (key == settings.inv_2.getKey()) {
-        sc.current_screen.game.useItem(if (mods.control) 6 + 8 else 6);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 6 + 8 else 6);
+        }
     } else if (key == settings.inv_3.getKey()) {
-        sc.current_screen.game.useItem(if (mods.control) 7 + 8 else 7);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 7 + 8 else 7);
+        }
     } else if (key == settings.inv_4.getKey()) {
-        sc.current_screen.game.useItem(if (mods.control) 8 + 8 else 8);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 8 + 8 else 8);
+        }
     } else if (key == settings.inv_5.getKey()) {
-        sc.current_screen.game.useItem(if (mods.control) 9 + 8 else 9);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 9 + 8 else 9);
+        }
     } else if (key == settings.inv_6.getKey()) {
-        sc.current_screen.game.useItem(if (mods.control) 10 + 8 else 10);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 10 + 8 else 10);
+        }
     } else if (key == settings.inv_7.getKey()) {
-        sc.current_screen.game.useItem(if (mods.control) 11 + 8 else 11);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 11 + 8 else 11);
+        }
     } else if (key == settings.toggle_stats.getKey()) {
         settings.stats_enabled = !settings.stats_enabled;
     }
@@ -202,30 +220,52 @@ fn mousePress(window: *zglfw.Window, button: zglfw.MouseButton, mods: zglfw.Mods
             }
         }
     } else if (button == settings.ability.getMouse()) {
-        useAbility();
+        if (sc.current_screen == .game) {
+            useAbility();
+        }
     } else if (button == settings.chat.getMouse()) {
-        selected_input_field = sc.current_screen.game.chat_input;
-        selected_input_field.?._last_input = 0;
+        if (sc.current_screen == .game) {
+            selected_input_field = sc.current_screen.game.chat_input;
+            selected_input_field.?._last_input = 0;
+        }
     } else if (button == settings.chat_cmd.getMouse()) {
-        charEvent(window, .slash);
-        selected_input_field = sc.current_screen.game.chat_input;
-        selected_input_field.?._last_input = 0;
+        if (sc.current_screen == .game) {
+            charEvent(window, .slash);
+            selected_input_field = sc.current_screen.game.chat_input;
+            selected_input_field.?._last_input = 0;
+        }
     } else if (button == settings.inv_0.getMouse()) {
-        sc.current_screen.game.useItem(if (mods.control) 4 + 8 else 4);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 4 + 8 else 4);
+        }
     } else if (button == settings.inv_1.getMouse()) {
-        sc.current_screen.game.useItem(if (mods.control) 5 + 8 else 5);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 5 + 8 else 5);
+        }
     } else if (button == settings.inv_2.getMouse()) {
-        sc.current_screen.game.useItem(if (mods.control) 6 + 8 else 6);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 6 + 8 else 6);
+        }
     } else if (button == settings.inv_3.getMouse()) {
-        sc.current_screen.game.useItem(if (mods.control) 7 + 8 else 7);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 7 + 8 else 7);
+        }
     } else if (button == settings.inv_4.getMouse()) {
-        sc.current_screen.game.useItem(if (mods.control) 8 + 8 else 8);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 8 + 8 else 8);
+        }
     } else if (button == settings.inv_5.getMouse()) {
-        sc.current_screen.game.useItem(if (mods.control) 9 + 8 else 9);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 9 + 8 else 9);
+        }
     } else if (button == settings.inv_6.getMouse()) {
-        sc.current_screen.game.useItem(if (mods.control) 10 + 8 else 10);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 10 + 8 else 10);
+        }
     } else if (button == settings.inv_7.getMouse()) {
-        sc.current_screen.game.useItem(if (mods.control) 11 + 8 else 11);
+        if (sc.current_screen == .game) {
+            sc.current_screen.game.useItem(if (mods.control) 11 + 8 else 11);
+        }
     } else if (button == settings.toggle_stats.getMouse()) {
         settings.stats_enabled = !settings.stats_enabled;
     }
@@ -376,8 +416,14 @@ pub fn keyEvent(window: *zglfw.Window, key: zglfw.Key, _: i32, action: zglfw.Act
 
     if (action == .press) {
         keyPress(window, key, mods);
+        if (sc.current_screen == .editor) {
+            sc.current_screen.editor.onKeyPress(key, mods);
+        }
     } else if (action == .release) {
         keyRelease(key);
+        if (sc.current_screen == .editor) {
+            sc.current_screen.editor.onKeyRelease(key);
+        }
     }
 
     updateState();

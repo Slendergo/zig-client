@@ -1266,7 +1266,7 @@ pub const Player = struct {
                 }
             }
 
-            if (!self.condition.invulnerable and !self.condition.invincible and
+            if (sc.current_screen != .editor and !self.condition.invulnerable and !self.condition.invincible and
                 !self.condition.stasis and time - self.last_ground_damage_time >= 500)
             {
                 if (validPos(floor_x, floor_y)) {
@@ -2392,6 +2392,7 @@ pub fn setSquare(x: u32, y: u32, tile_type: u16) void {
             var data = assets.editor_tile;
             data.removePadding();
             square.atlas_data = data;
+            square.updateBlends();
             break :texParse;
         }
 

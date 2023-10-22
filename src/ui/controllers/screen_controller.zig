@@ -43,7 +43,7 @@ pub var elements_to_remove: utils.DynSlice(*ui.UiElement) = undefined;
 pub var current_screen: Screen = undefined;
 
 pub var menu_background: *ui.MenuBackground = undefined;
-// var menu_background: *ui.MenuBackground = undefined;
+// var menu_background: *ui.MenuBackground = undefined; // this was pub i changed it since to access it in editor
 
 pub fn init(allocator: std.mem.Allocator) !void {
     elements = try utils.DynSlice(ui.UiElement).init(64, allocator);

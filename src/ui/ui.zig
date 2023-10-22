@@ -287,9 +287,10 @@ pub const KeyMapper = struct {
     }
 
     pub fn width(self: KeyMapper) f32 {
+        const extra = if (self.title_text_data) |t| t.width() else 0;
         return switch (self.imageData()) {
-            .nine_slice => |nine_slice| return nine_slice.w,
-            .normal => |image_data| return image_data.width(),
+            .nine_slice => |nine_slice| return nine_slice.w + extra,
+            .normal => |image_data| return image_data.width() + extra,
         };
     }
 

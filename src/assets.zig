@@ -237,7 +237,6 @@ pub var error_data_player: AnimPlayerData = undefined;
 pub var light_w: f32 = 1.0;
 pub var light_h: f32 = 1.0;
 pub var editor_tile: AtlasData = undefined;
-pub var editor_tile_selected: AtlasData = undefined;
 
 fn isImageEmpty(img: zstbi.Image, x: usize, y: usize, w: u32, h: u32) bool {
     for (y..y + h) |loop_y| {
@@ -822,7 +821,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addImage("wallBackface", "WallBackface.png", 8, 8, &ctx, allocator);
     try addImage("particles", "Particles.png", 8, 8, &ctx, allocator);
     try addImage("editorTileBase", "EditorTileBase.png", 8, 8, &ctx, allocator);
-    try addImage("editorTileSelected", "EditorTileSelected.png", 8, 8, &ctx, allocator);
 
     try addAnimEnemy("chars8x8dEncounters", "Chars8x8dEncounters.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dHero1", "Chars8x8dHero1.png", 8, 8, 48, 8, &ctx, allocator);
@@ -953,10 +951,6 @@ pub fn init(allocator: std.mem.Allocator) !void {
 
     if (atlas_data.get("editorTileBase")) |editor_tile_tex| {
         editor_tile = editor_tile_tex[0x0];
-    }
-
-    if (atlas_data.get("editorTileSelected")) |editor_tile_selected_tex| {
-        editor_tile_selected = editor_tile_selected_tex[0x0];
     }
 
     if (atlas_data.get("bars")) |bars| {
