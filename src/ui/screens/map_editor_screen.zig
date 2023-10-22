@@ -197,6 +197,7 @@ pub const MapEditorScreen = struct {
     _allocator: Allocator,
     inited: bool = false,
 
+    selected_object_visual_id: i32 = -1,
     simulated_object_id_next: i32 = -1,
 
     map_size: u32 = 128,
@@ -876,9 +877,48 @@ pub const MapEditorScreen = struct {
 
         player.addToMap(screen._allocator);
 
+        screen.modifySelectionObjectVisual();
+
         main.editing_map = true;
 
         sc.menu_background.visible = false; // hack
+    }
+
+    fn modifySelectionObjectVisual(self: *MapEditorScreen) void {
+        // remove current object
+        if (self.selected_object_visual_id != -1) {
+            if (map.removeEntity(self.selected_object_visual_id)) |en| {
+                map.disposeEntity(self._allocator, en);
+            }
+        }
+
+        // make a new object
+
+        self.simulated_object_id_next += 1;
+        self.selected_object_visual_id = self.simulated_object_id_next;
+
+        const place_type = self.object_type_to_place[@intFromEnum(self.layer)];
+
+        const _x: f32 = @floatCast(input.mouse_x);
+        const _y: f32 = @floatCast(input.mouse_y);
+
+        var world_point = camera.screenToWorld(_x, _y);
+        world_point.x = @max(0, @min(world_point.x, @as(f32, @floatFromInt(self.map_size - 1))));
+        world_point.y = @max(0, @min(world_point.y, @as(f32, @floatFromInt(self.map_size - 1))));
+
+        const floor_x: u32 = @intFromFloat(@floor(world_point.x));
+        const floor_y: u32 = @intFromFloat(@floor(world_point.y));
+
+        var obj = map.GameObject{
+            .x = @as(f32, @floatFromInt(floor_x)) + 0.5,
+            .y = @as(f32, @floatFromInt(floor_y)) + 0.5,
+            .obj_id = self.selected_object_visual_id,
+            .obj_type = place_type,
+            .size = 100,
+            .alpha = 0.6,
+        };
+
+        obj.addToMap(self._allocator);
     }
 
     fn newCloseCallback() void {
@@ -898,6 +938,7 @@ pub const MapEditorScreen = struct {
     }
 
     fn reset(screen: *MapEditorScreen) void {
+        screen.selected_object_visual_id = -1;
         screen.simulated_object_id_next = -1;
         screen.buttons_container.visible = true;
         screen.new_container.visible = false;
@@ -1024,6 +1065,7 @@ pub const MapEditorScreen = struct {
                 }
                 self.object_type_to_place[@intFromEnum(self.layer)] = self.object_list[self.object_list_index];
             }
+            self.modifySelectionObjectVisual();
         }
 
         if (key == self.cycle_up_setting.getKey()) {
@@ -1034,6 +1076,7 @@ pub const MapEditorScreen = struct {
                 self.object_list_index = (self.object_list_index + 1) % 2; // hmmmm
                 self.object_type_to_place[@intFromEnum(self.layer)] = self.object_list[self.object_list_index];
             }
+            self.modifySelectionObjectVisual();
         }
 
         // redo undo | has a bug where it just stops when holding need to find out why but its not the end of the world if it happens
@@ -1047,14 +1090,17 @@ pub const MapEditorScreen = struct {
 
         if (key == self.ground_key_setting.getKey()) {
             self.layer = .ground;
+            self.modifySelectionObjectVisual();
         }
 
         if (key == self.object_key_setting.getKey()) {
             self.layer = .object;
+            self.modifySelectionObjectVisual();
         }
 
         if (key == self.region_key_setting.getKey()) {
             self.layer = .region;
+            self.modifySelectionObjectVisual();
         }
     }
 
@@ -1113,7 +1159,7 @@ pub const MapEditorScreen = struct {
                 .obj_id = self.simulated_object_id_next,
                 .obj_type = value,
                 .size = 100,
-                .alpha = 0.8,
+                .alpha = 1.0,
             };
 
             obj.addToMap(self._allocator);
@@ -1135,8 +1181,6 @@ pub const MapEditorScreen = struct {
         // map.bg_light_color = 0;
         // map.bg_light_intensity = 0.15;
 
-        // update statistics
-
         // todo unwackify it
 
         const cam_x = camera.x.load(.Acquire);
@@ -1149,8 +1193,22 @@ pub const MapEditorScreen = struct {
         world_point.x = @max(0, @min(world_point.x, @as(f32, @floatFromInt(self.map_size - 1))));
         world_point.y = @max(0, @min(world_point.y, @as(f32, @floatFromInt(self.map_size - 1))));
 
+        // update visual
+
         const floor_x: u32 = @intFromFloat(@floor(world_point.x));
         const floor_y: u32 = @intFromFloat(@floor(world_point.y));
+
+        if (self.selected_object_visual_id != -1) {
+            if (map.findEntityRef(self.selected_object_visual_id)) |en| {
+                switch (en.*) {
+                    .object => |*object| {
+                        object.x = @as(f32, @floatFromInt(floor_x)) + 0.5;
+                        object.y = @as(f32, @floatFromInt(floor_y)) + 0.5;
+                    },
+                    else => {},
+                }
+            }
+        }
 
         const current_tile = self.map_tile_data[floor_y * self.map_size + floor_x];
         const type_to_place = self.object_type_to_place[@intFromEnum(self.layer)];

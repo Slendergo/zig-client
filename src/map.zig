@@ -395,6 +395,26 @@ pub const GameObject = struct {
 
         self.class = game_data.obj_type_to_class.get(self.obj_type) orelse .game_object;
 
+        if (sc.current_screen == .editor) {
+            if (sc.current_screen.editor.layer == .ground) {
+                if (game_data.ground_type_to_tex_data.get(self.obj_type)) |tex_list| {
+                    if (tex_list.len == 0) {
+                        self.atlas_data = assets.error_data;
+                    } else {
+                        const tex = if (tex_list.len == 1) tex_list[0] else tex_list[utils.rng.next() % tex_list.len];
+                        if (assets.atlas_data.get(tex.sheet)) |data| {
+                            var ground_data = data[tex.index];
+                            ground_data.removePadding();
+                            self.atlas_data = ground_data;
+                        } else {
+                            self.atlas_data = assets.error_data;
+                        }
+                    }
+                }
+                self.draw_on_ground = true;
+            }
+        }
+
         entities.add(.{ .object = self.* }) catch |e| {
             std.log.err("Could not add object to map (obj_id={d}, obj_type={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.obj_type, self.x, self.y, e });
         };
