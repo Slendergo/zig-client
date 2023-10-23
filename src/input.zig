@@ -505,6 +505,12 @@ pub fn mouseMoveEvent(_: *zglfw.Window, xpos: f64, ypos: f64) callconv(.C) void 
     mouse_y = ypos;
 
     sc.mouseMove(@floatCast(mouse_x), @floatCast(mouse_y));
+
+    if (sc.current_screen == .editor) {
+        if (main.editing_map) {
+            sc.current_screen.editor.onMouseMove(@floatCast(mouse_x), @floatCast(mouse_y));
+        }
+    }
 }
 
 pub fn scrollEvent(_: *zglfw.Window, _: f64, yoffset: f64) callconv(.C) void {

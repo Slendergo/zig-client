@@ -62,6 +62,17 @@ const EditorPlaceTileCommand = struct {
     old_type: u16,
 
     pub fn execute(self: EditorPlaceTileCommand) void {
+        // todo make EditorPlaceTilesCommand -> supports multiple
+        // for (self.screen.active_brush._visual_objects.items()) |id| {
+        //     if (map.findEntityRef(id)) |en| {
+        //         if (en.* == .object) {
+        //             const o = &en.object;
+        //             const xx = @as(u32, @intFromFloat(@floor(o.x)));
+        //             const yy = @as(u32, @intFromFloat(@floor(o.y)));
+        //             self.screen.setTile(xx, yy, self.new_type);
+        //         }
+        //     }
+        // }
         self.screen.setTile(self.x, self.y, self.new_type);
     }
 
@@ -122,6 +133,10 @@ const CommandQueue = struct {
 
     pub fn init(self: *CommandQueue, allocator: Allocator) void {
         self.command_list = std.ArrayList(EditorCommand).init(allocator);
+    }
+
+    pub fn reset(self: *CommandQueue) void {
+        self.command_list.clearAndFree();
     }
 
     pub fn deinit(self: *CommandQueue) void {
@@ -193,12 +208,138 @@ const CommandQueue = struct {
 // 0xFFFF -> No Object
 // 0x0600 -> Pirate
 
+pub const EditorBrushType = enum(u8) {
+    rectangle = 0,
+    circle = 1,
+    line = 2,
+};
+
+pub const EditorBrush = struct {
+    size: i8 = 1,
+    brush_type: EditorBrushType = .rectangle,
+
+    _visual_objects: utils.DynSlice(i32) = undefined,
+
+    _screen: *MapEditorScreen = undefined,
+    _last_x: i32 = 0,
+    _last_y: i32 = 0,
+    _need_update: bool = false,
+
+    pub fn init(self: *EditorBrush, allocator: Allocator, screen: *MapEditorScreen) void {
+        self._visual_objects = utils.DynSlice(i32).init(5 * 5, allocator) catch return; // max brush size if 5 * 5
+        self._screen = screen;
+    }
+
+    pub fn reset(self: *EditorBrush) void {
+        self.size = 1;
+        self.brush_type = .rectangle;
+        self._visual_objects.clear();
+        self._need_update = false;
+        self._last_x = 0;
+        self._last_y = 0;
+    }
+
+    pub fn update(self: *EditorBrush) void {
+        self._need_update = true;
+    }
+
+    pub fn deinit(self: *EditorBrush) void {
+        self._visual_objects.deinit();
+    }
+
+    pub fn increaseSize(self: *EditorBrush) void {
+        self.size = if (self.size + 1 > 5) 1 else self.size + 1;
+        self._need_update = true;
+    }
+
+    pub fn decreaseSize(self: *EditorBrush) void {
+        self.size = if (self.size - 1 <= 0) 5 else self.size - 1;
+        self._need_update = true;
+    }
+
+    fn updateVisual(self: *EditorBrush, center_x: u32, center_y: u32, place_type: u16) void {
+        const casted_x = @as(i32, @intCast(center_x));
+        const casted_y = @as(i32, @intCast(center_y));
+
+        if (!self._need_update) {
+            const dx = (casted_x - self._last_x);
+            const dy = (casted_y - self._last_y);
+            if (dx != 0 or dy != 0) {
+                const dx_cast = @as(f32, @floatFromInt(dx));
+                const dy_cast = @as(f32, @floatFromInt(dy));
+
+                for (self._visual_objects.items()) |obj_id| {
+                    if (map.findEntityRef(obj_id)) |en| {
+                        if (en.* == .object) {
+                            const o = &en.object;
+                            o.x += dx_cast;
+                            o.y += dy_cast;
+                        }
+                    }
+                }
+                self._last_x = casted_x;
+                self._last_y = casted_y;
+            }
+            return;
+        }
+
+        self._need_update = false;
+
+        for (self._visual_objects.items()) |obj_id| {
+            if (map.removeEntity(obj_id)) |en| {
+                map.disposeEntity(self._screen._allocator, en);
+            }
+        }
+        self._visual_objects.clear();
+
+        var x: i32 = -self.size;
+        while (x <= self.size) {
+            var y: i32 = -self.size;
+            while (y <= self.size) {
+                const offset_x = casted_x + x;
+                const offset_y = casted_y + y;
+
+                if (self.brush_type == .circle and x * x + y * y > self.size * self.size) {
+                    y += 1;
+                    continue;
+                }
+
+                if (offset_x < 0 or offset_y < 0 or offset_x >= self._screen.map_size or offset_y >= self._screen.map_size) {
+                    y += 1;
+                    continue;
+                }
+
+                self._screen.simulated_object_id_next += 1;
+
+                var obj = map.GameObject{
+                    .x = @as(f32, @floatFromInt(offset_x)) + 0.5,
+                    .y = @as(f32, @floatFromInt(offset_y)) + 0.5,
+                    .obj_id = self._screen.simulated_object_id_next,
+                    .obj_type = place_type,
+                    .size = 100,
+                    .alpha = 0.6,
+                };
+                obj.addToMap(self._screen._allocator);
+
+                self._visual_objects.add(obj.obj_id) catch return;
+
+                y += 1;
+            }
+
+            x += 1;
+        }
+
+        self._last_x = casted_x;
+        self._last_y = casted_y;
+    }
+};
+
 pub const MapEditorScreen = struct {
     _allocator: Allocator,
     inited: bool = false,
 
-    selected_object_visual_id: i32 = -1,
     simulated_object_id_next: i32 = -1,
+    editor_ready: bool = false,
 
     map_size: u32 = 128,
     map_size_64: bool = false,
@@ -209,7 +350,10 @@ pub const MapEditorScreen = struct {
     command_queue: CommandQueue = undefined,
 
     action: EditorAction = .none,
-    layer: EditorLayer = .ground,
+    active_layer: EditorLayer = .ground,
+
+    active_brush: EditorBrush = undefined,
+
     object_type_to_place: [3]u16 = .{ 0x48, 0x600, 0 }, //0x600, 0 },
 
     // todo dynamic ui system to fetch from assets
@@ -258,6 +402,9 @@ pub const MapEditorScreen = struct {
         // might need redoing
         screen.command_queue = CommandQueue{};
         screen.command_queue.init(allocator);
+
+        screen.active_brush = EditorBrush{};
+        screen.active_brush.init(allocator, screen); // wtf
 
         const button_data_base = assets.getUiData("buttonBase", 0);
         const button_data_hover = assets.getUiData("buttonHover", 0);
@@ -836,6 +983,8 @@ pub const MapEditorScreen = struct {
         const screen = sc.current_screen.editor;
         screen.new_container.visible = true;
         screen.buttons_container.visible = false;
+
+        screen.active_brush.reset();
     }
 
     fn newCreateCallback() void {
@@ -877,48 +1026,9 @@ pub const MapEditorScreen = struct {
 
         player.addToMap(screen._allocator);
 
-        screen.modifySelectionObjectVisual();
-
         main.editing_map = true;
 
         sc.menu_background.visible = false; // hack
-    }
-
-    fn modifySelectionObjectVisual(self: *MapEditorScreen) void {
-        // remove current object
-        if (self.selected_object_visual_id != -1) {
-            if (map.removeEntity(self.selected_object_visual_id)) |en| {
-                map.disposeEntity(self._allocator, en);
-            }
-        }
-
-        // make a new object
-
-        self.simulated_object_id_next += 1;
-        self.selected_object_visual_id = self.simulated_object_id_next;
-
-        const place_type = self.object_type_to_place[@intFromEnum(self.layer)];
-
-        const _x: f32 = @floatCast(input.mouse_x);
-        const _y: f32 = @floatCast(input.mouse_y);
-
-        var world_point = camera.screenToWorld(_x, _y);
-        world_point.x = @max(0, @min(world_point.x, @as(f32, @floatFromInt(self.map_size - 1))));
-        world_point.y = @max(0, @min(world_point.y, @as(f32, @floatFromInt(self.map_size - 1))));
-
-        const floor_x: u32 = @intFromFloat(@floor(world_point.x));
-        const floor_y: u32 = @intFromFloat(@floor(world_point.y));
-
-        var obj = map.GameObject{
-            .x = @as(f32, @floatFromInt(floor_x)) + 0.5,
-            .y = @as(f32, @floatFromInt(floor_y)) + 0.5,
-            .obj_id = self.selected_object_visual_id,
-            .obj_type = place_type,
-            .size = 100,
-            .alpha = 0.6,
-        };
-
-        obj.addToMap(self._allocator);
     }
 
     fn newCloseCallback() void {
@@ -938,8 +1048,11 @@ pub const MapEditorScreen = struct {
     }
 
     fn reset(screen: *MapEditorScreen) void {
-        screen.selected_object_visual_id = -1;
-        screen.simulated_object_id_next = -1;
+        // todo mabye need the command_queue and brush recreation?
+
+        screen.command_queue.reset();
+        screen.active_brush.reset();
+
         screen.buttons_container.visible = true;
         screen.new_container.visible = false;
 
@@ -959,6 +1072,7 @@ pub const MapEditorScreen = struct {
         sc.menu_background.visible = true; // hack
 
         self.command_queue.deinit();
+        self.active_brush.deinit();
 
         self.reset();
 
@@ -986,6 +1100,29 @@ pub const MapEditorScreen = struct {
         self.buttons_container.y = height - self.buttons_container.height;
     }
 
+    // flickering is happening
+    // todo figure out why and fix
+    // cba to find out why now
+    // more noticable on larger brush sizes
+    // might need different approach for doing brush visualization ngl
+
+    pub fn onMouseMove(self: *MapEditorScreen, x: f32, y: f32) void {
+        _ = y;
+        _ = x;
+        _ = self;
+        // const _x: f32 = @floatCast(x);
+        // const _y: f32 = @floatCast(y);
+
+        // var world_point = camera.screenToWorld(_x, _y);
+        // world_point.x = @max(0, @min(world_point.x, @as(f32, @floatFromInt(self.map_size - 1))));
+        // world_point.y = @max(0, @min(world_point.y, @as(f32, @floatFromInt(self.map_size - 1))));
+
+        // const floor_x: u32 = @intFromFloat(@floor(world_point.x));
+        // const floor_y: u32 = @intFromFloat(@floor(world_point.y));
+
+        // self.active_brush.update(floor_x, floor_y);
+    }
+
     pub fn onMousePress(self: *MapEditorScreen, x: f64, y: f64, mods: zglfw.Mods, button: zglfw.MouseButton) void {
         _ = mods;
 
@@ -1006,11 +1143,11 @@ pub const MapEditorScreen = struct {
             const floor_y: u32 = @intFromFloat(@floor(world_point.y));
 
             const current_tile = self.map_tile_data[floor_y * self.map_size + floor_x];
-            const layer = @intFromEnum(self.layer);
+            const layer = @intFromEnum(self.active_layer);
 
             // todo add region to the sample logic
 
-            if (self.layer == .ground) {
+            if (self.active_layer == .ground) {
                 if (current_tile.ground_type != 0xFFFC) {
                     for (0..8) |i| {
                         if (self.tile_list[i] == current_tile.ground_type) {
@@ -1049,34 +1186,49 @@ pub const MapEditorScreen = struct {
         //     //etc
         // }
 
+        if (key == .F4) {
+            self.active_brush.increaseSize();
+        }
+        if (key == .F5) {
+            self.active_brush.decreaseSize();
+        }
+        if (key == .F6) {
+            // todo add line
+            if (self.active_brush.brush_type == .circle) {
+                self.active_brush.brush_type = .rectangle;
+            } else {
+                self.active_brush.brush_type = .circle;
+            }
+        }
+
         if (key == self.cycle_down_setting.getKey()) {
-            if (self.layer == .ground) {
+            if (self.active_layer == .ground) {
                 if (self.tile_list_index == 0) { // todo remove this garbage system of index checks xd
                     self.tile_list_index = 7;
                 } else {
                     self.tile_list_index -= 1;
                 }
-                self.object_type_to_place[@intFromEnum(self.layer)] = self.tile_list[self.tile_list_index];
+                self.object_type_to_place[@intFromEnum(self.active_layer)] = self.tile_list[self.tile_list_index];
             } else {
                 if (self.object_list_index == 0) {
                     self.object_list_index = 1; // 0, 1 so 2 is 1 confusing ik
                 } else {
                     self.object_list_index -= 1;
                 }
-                self.object_type_to_place[@intFromEnum(self.layer)] = self.object_list[self.object_list_index];
+                self.object_type_to_place[@intFromEnum(self.active_layer)] = self.object_list[self.object_list_index];
             }
-            self.modifySelectionObjectVisual();
+            self.active_brush.update();
         }
 
         if (key == self.cycle_up_setting.getKey()) {
-            if (self.layer == .ground) {
+            if (self.active_layer == .ground) {
                 self.tile_list_index = (self.tile_list_index + 1) % 8;
-                self.object_type_to_place[@intFromEnum(self.layer)] = self.tile_list[self.tile_list_index];
+                self.object_type_to_place[@intFromEnum(self.active_layer)] = self.tile_list[self.tile_list_index];
             } else {
                 self.object_list_index = (self.object_list_index + 1) % 2; // hmmmm
-                self.object_type_to_place[@intFromEnum(self.layer)] = self.object_list[self.object_list_index];
+                self.object_type_to_place[@intFromEnum(self.active_layer)] = self.object_list[self.object_list_index];
             }
-            self.modifySelectionObjectVisual();
+            self.active_brush.update();
         }
 
         // redo undo | has a bug where it just stops when holding need to find out why but its not the end of the world if it happens
@@ -1089,18 +1241,15 @@ pub const MapEditorScreen = struct {
         }
 
         if (key == self.ground_key_setting.getKey()) {
-            self.layer = .ground;
-            self.modifySelectionObjectVisual();
+            self.active_layer = .ground;
         }
 
         if (key == self.object_key_setting.getKey()) {
-            self.layer = .object;
-            self.modifySelectionObjectVisual();
+            self.active_layer = .object;
         }
 
         if (key == self.region_key_setting.getKey()) {
-            self.layer = .region;
-            self.modifySelectionObjectVisual();
+            self.active_layer = .region;
         }
     }
 
@@ -1174,6 +1323,7 @@ pub const MapEditorScreen = struct {
     pub fn update(self: *MapEditorScreen, time: i64, dt: f32) !void {
         _ = dt;
         _ = time;
+
         // map.server_time_offset += @intFromFloat(dt * std.time.us_per_ms * 16);
 
         // map.day_light_intensity = 0.4;
@@ -1193,30 +1343,18 @@ pub const MapEditorScreen = struct {
         world_point.x = @max(0, @min(world_point.x, @as(f32, @floatFromInt(self.map_size - 1))));
         world_point.y = @max(0, @min(world_point.y, @as(f32, @floatFromInt(self.map_size - 1))));
 
-        // update visual
-
         const floor_x: u32 = @intFromFloat(@floor(world_point.x));
         const floor_y: u32 = @intFromFloat(@floor(world_point.y));
 
-        if (self.selected_object_visual_id != -1) {
-            if (map.findEntityRef(self.selected_object_visual_id)) |en| {
-                switch (en.*) {
-                    .object => |*object| {
-                        object.x = @as(f32, @floatFromInt(floor_x)) + 0.5;
-                        object.y = @as(f32, @floatFromInt(floor_y)) + 0.5;
-                    },
-                    else => {},
-                }
-            }
-        }
-
         const current_tile = self.map_tile_data[floor_y * self.map_size + floor_x];
-        const type_to_place = self.object_type_to_place[@intFromEnum(self.layer)];
+        const type_to_place = self.object_type_to_place[@intFromEnum(self.active_layer)];
+
+        self.active_brush.updateVisual(floor_x, floor_y, type_to_place);
 
         switch (self.action) {
             .none => {},
             .place => {
-                switch (self.layer) {
+                switch (self.active_layer) {
                     .ground => {
                         if (current_tile.ground_type != type_to_place) {
                             self.command_queue.addCommand(.{ .place_tile = .{
@@ -1245,7 +1383,7 @@ pub const MapEditorScreen = struct {
                 }
             },
             .erase => {
-                switch (self.layer) {
+                switch (self.active_layer) {
                     .ground => {
                         if (current_tile.ground_type != 0xFFFC) {
                             self.command_queue.addCommand(.{ .erase_tile = .{
@@ -1285,7 +1423,7 @@ pub const MapEditorScreen = struct {
         const data = self.map_tile_data[index];
 
         var place_name: []const u8 = "Unknown";
-        switch (self.layer) {
+        switch (self.active_layer) {
             .ground => {
                 if (game_data.ground_type_to_props.getPtr(type_to_place)) |props| {
                     place_name = props.obj_id;
@@ -1311,15 +1449,16 @@ pub const MapEditorScreen = struct {
             hover_obj_name = props.obj_id;
         }
 
-        const layer_name = if (self.layer == .ground) "Ground" else if (self.layer == .object) "Object" else "Region";
+        const layer_name = if (self.active_layer == .ground) "Ground" else if (self.active_layer == .object) "Object" else "Region";
         const mode = if (self.action == .none) "None" else if (self.action == .place) "Placing" else if (self.action == .erase) "Erasing" else if (self.action == .sample) "Sampling" else if (self.action == .undo) "Undoing" else if (self.action == .redo) "Redoing" else "Idle";
 
-        self.text_statistics.text_data.text = try std.fmt.bufPrint(self.text_statistics.text_data.backing_buffer, "Size: ({d}x{d})\n\nLayer: {s}\nPlacing: {s}\n\nMode:{s}\n\nGround Type: {s}\nObject Type: {s}\nRegion Type: {d}\n\nPosition ({d:.1}, {d:.1}),\nFloor: ({d}, {d})\nWorld Coordinate ({d:.1}, {d:.1})", .{
+        self.text_statistics.text_data.text = try std.fmt.bufPrint(self.text_statistics.text_data.backing_buffer, "Size: ({d}x{d})\n\nLayer: {s}\nPlacing: {s}\n\nMode:{s}\nBrush Size {d}\n\nGround Type: {s}\nObject Type: {s}\nRegion Type: {d}\n\nPosition ({d:.1}, {d:.1}),\nFloor: ({d}, {d})\nWorld Coordinate ({d:.1}, {d:.1})", .{
             self.map_size,
             self.map_size,
             layer_name,
             place_name,
             mode,
+            self.active_brush.size,
             hover_ground_name,
             hover_obj_name,
             data.region_type, // todo enum stuff and assets xml stuff if not already done?

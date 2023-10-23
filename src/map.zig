@@ -396,7 +396,7 @@ pub const GameObject = struct {
         self.class = game_data.obj_type_to_class.get(self.obj_type) orelse .game_object;
 
         if (sc.current_screen == .editor) {
-            if (sc.current_screen.editor.layer == .ground) {
+            if (sc.current_screen.editor.active_layer == .ground) {
                 if (game_data.ground_type_to_tex_data.get(self.obj_type)) |tex_list| {
                     if (tex_list.len == 0) {
                         self.atlas_data = assets.error_data;
