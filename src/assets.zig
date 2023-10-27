@@ -236,6 +236,7 @@ pub var error_data_enemy: AnimEnemyData = undefined;
 pub var error_data_player: AnimPlayerData = undefined;
 pub var light_w: f32 = 1.0;
 pub var light_h: f32 = 1.0;
+pub var editor_tile: AtlasData = undefined;
 
 fn isImageEmpty(img: zstbi.Image, x: usize, y: usize, w: u32, h: u32) bool {
     for (y..y + h) |loop_y| {
@@ -819,6 +820,8 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addImage("stars", "Stars.png", 8, 8, &ctx, allocator);
     try addImage("wallBackface", "WallBackface.png", 8, 8, &ctx, allocator);
     try addImage("particles", "Particles.png", 8, 8, &ctx, allocator);
+    try addImage("editorTileBase", "EditorTileBase.png", 8, 8, &ctx, allocator);
+
     try addAnimEnemy("chars8x8dEncounters", "Chars8x8dEncounters.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dHero1", "Chars8x8dHero1.png", 8, 8, 48, 8, &ctx, allocator);
     try addAnimEnemy("chars8x8dBeach", "Chars8x8dBeach.png", 8, 8, 48, 8, &ctx, allocator);
@@ -915,6 +918,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try addUiImage("playerStatusBarXp", "ui/PlayerStatusBarXp.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("optionsBackground", "ui/OptionsBackground.png", imply_size, imply_size, &ui_ctx, allocator);
     try addUiImage("itemRow", "ui/ItemRow.png", imply_size, imply_size, &ui_ctx, allocator);
+
     if (settings.print_ui_atlas)
         try zstbi.Image.writeToFile(ui_atlas, "ui_atlas.png", .png);
 
@@ -943,6 +947,10 @@ pub fn init(allocator: std.mem.Allocator) !void {
 
     if (atlas_data.get("particle")) |particles| {
         particle_data = particles[0x0];
+    }
+
+    if (atlas_data.get("editorTileBase")) |editor_tile_tex| {
+        editor_tile = editor_tile_tex[0x0];
     }
 
     if (atlas_data.get("bars")) |bars| {

@@ -11,6 +11,7 @@ const assets = @import("assets.zig");
 const ui = @import("ui/ui.zig");
 const zstbi = @import("zstbi");
 const particles = @import("particles.zig");
+const sc = @import("ui/controllers//screen_controller.zig");
 
 pub const move_threshold = 0.4;
 pub const min_move_speed = 0.004;
@@ -167,6 +168,7 @@ pub const GameObject = struct {
     z: f32 = 0.0,
     screen_x: f32 = 0.0,
     screen_y: f32 = 0.0,
+    alpha: f32 = 1.0,
     name: []u8 = &[0]u8{},
     name_override: []u8 = &[0]u8{},
     size: f32 = 0,
@@ -392,6 +394,26 @@ pub const GameObject = struct {
         }
 
         self.class = game_data.obj_type_to_class.get(self.obj_type) orelse .game_object;
+
+        if (sc.current_screen == .editor) {
+            if (sc.current_screen.editor.active_layer == .ground) {
+                if (game_data.ground_type_to_tex_data.get(self.obj_type)) |tex_list| {
+                    if (tex_list.len == 0) {
+                        self.atlas_data = assets.error_data;
+                    } else {
+                        const tex = if (tex_list.len == 1) tex_list[0] else tex_list[utils.rng.next() % tex_list.len];
+                        if (assets.atlas_data.get(tex.sheet)) |data| {
+                            var ground_data = data[tex.index];
+                            ground_data.removePadding();
+                            self.atlas_data = ground_data;
+                        } else {
+                            self.atlas_data = assets.error_data;
+                        }
+                    }
+                }
+                self.draw_on_ground = true;
+            }
+        }
 
         entities.add(.{ .object = self.* }) catch |e| {
             std.log.err("Could not add object to map (obj_id={d}, obj_type={d}, x={d}, y={d}): {any}", .{ self.obj_id, self.obj_type, self.x, self.y, e });
@@ -642,6 +664,7 @@ pub const Player = struct {
     z: f32 = 0.0,
     screen_x: f32 = 0.0,
     screen_y: f32 = 0.0,
+    alpha: f32 = 1.0,
     name: []u8 = &[0]u8{},
     name_override: []u8 = &[0]u8{},
     name_chosen: bool = false,
@@ -1202,54 +1225,70 @@ pub const Player = struct {
         if (self.obj_id == local_player_id) {
             const floor_x: u32 = @intFromFloat(@floor(self.x));
             const floor_y: u32 = @intFromFloat(@floor(self.y));
-            if (validPos(floor_x, floor_y)) {
-                const current_square = squares[floor_y * width + floor_x];
-                if (current_square.props) |props| {
-                    const slide_amount = props.slide_amount;
-                    if (!std.math.isNan(self.move_angle)) {
-                        const move_angle = camera.angle + self.move_angle;
-                        const move_speed = self.moveSpeedMultiplier();
-                        const vec_x = move_speed * @cos(move_angle);
-                        const vec_y = move_speed * @sin(move_angle);
 
-                        if (slide_amount > 0.0) {
-                            self.x_dir *= slide_amount;
-                            self.y_dir *= slide_amount;
+            // janky editor movement
 
-                            const max_move_length = vec_x * vec_x + vec_y * vec_y;
-                            const move_length = self.x_dir * self.x_dir + self.y_dir * self.y_dir;
-                            if (move_length < max_move_length) {
-                                self.x_dir += vec_x * -1.0 * (slide_amount - 1.0);
-                                self.y_dir += vec_y * -1.0 * (slide_amount - 1.0);
+            if (sc.current_screen == .editor) {
+                if (!std.math.isNan(self.move_angle)) {
+                    const move_angle = camera.angle + self.move_angle;
+                    const move_speed = self.moveSpeedMultiplier();
+                    const new_x = self.x + move_speed * @cos(move_angle) * dt;
+                    const new_y = self.y + move_speed * @sin(move_angle) * dt;
+
+                    self.x = @max(0, @min(new_x, @as(f32, @floatFromInt(width - 1))));
+                    self.y = @max(0, @min(new_y, @as(f32, @floatFromInt(height - 1))));
+                }
+            } else {
+                if (validPos(floor_x, floor_y)) {
+                    const current_square = squares[floor_y * width + floor_x];
+                    if (current_square.props) |props| {
+                        const slide_amount = if (sc.current_screen == .editor) 0.0 else props.slide_amount; // remove slide from editor
+                        if (!std.math.isNan(self.move_angle)) {
+                            const move_angle = camera.angle + self.move_angle;
+                            const move_speed = self.moveSpeedMultiplier();
+                            const vec_x = move_speed * @cos(move_angle);
+                            const vec_y = move_speed * @sin(move_angle);
+
+                            if (slide_amount > 0.0) {
+                                self.x_dir *= slide_amount;
+                                self.y_dir *= slide_amount;
+
+                                const max_move_length = vec_x * vec_x + vec_y * vec_y;
+                                const move_length = self.x_dir * self.x_dir + self.y_dir * self.y_dir;
+                                if (move_length < max_move_length) {
+                                    self.x_dir += vec_x * -1.0 * (slide_amount - 1.0);
+                                    self.y_dir += vec_y * -1.0 * (slide_amount - 1.0);
+                                }
+                            } else {
+                                self.x_dir = vec_x;
+                                self.y_dir = vec_y;
                             }
                         } else {
-                            self.x_dir = vec_x;
-                            self.y_dir = vec_y;
+                            const move_length_sqr = self.x_dir * self.x_dir + self.y_dir * self.y_dir;
+                            const min_move_len_sqr = 0.00012 * 0.00012;
+                            if (move_length_sqr > min_move_len_sqr and slide_amount > 0.0) {
+                                self.x_dir *= slide_amount;
+                                self.y_dir *= slide_amount;
+                            } else {
+                                self.x_dir = 0.0;
+                                self.y_dir = 0.0;
+                            }
                         }
-                    } else {
-                        const move_length_sqr = self.x_dir * self.x_dir + self.y_dir * self.y_dir;
-                        const min_move_len_sqr = 0.00012 * 0.00012;
-                        if (move_length_sqr > min_move_len_sqr and slide_amount > 0.0) {
-                            self.x_dir *= slide_amount;
-                            self.y_dir *= slide_amount;
-                        } else {
-                            self.x_dir = 0.0;
-                            self.y_dir = 0.0;
+
+                        if (props.push) {
+                            self.x_dir -= props.anim_dx / 1000.0;
+                            self.y_dir -= props.anim_dy / 1000.0;
                         }
                     }
 
-                    if (props.push) {
-                        self.x_dir -= props.anim_dx / 1000.0;
-                        self.y_dir -= props.anim_dy / 1000.0;
-                    }
+                    const next_x = self.x + self.x_dir * dt;
+                    const next_y = self.y + self.y_dir * dt;
+
+                    modifyMove(self, next_x, next_y, &self.x, &self.y);
                 }
-
-                const next_x = self.x + self.x_dir * dt;
-                const next_y = self.y + self.y_dir * dt;
-                modifyMove(self, next_x, next_y, &self.x, &self.y);
             }
 
-            if (!self.condition.invulnerable and !self.condition.invincible and
+            if (sc.current_screen != .editor and !self.condition.invulnerable and !self.condition.invincible and
                 !self.condition.stasis and time - self.last_ground_damage_time >= 500)
             {
                 if (validPos(floor_x, floor_y)) {
@@ -1374,7 +1413,7 @@ pub const Player = struct {
     }
 
     fn isWalkable(x: f32, y: f32) bool {
-        if (x < 0 or y < 0)
+        if (x < 0 or y < 0 or x >= @as(f32, @floatFromInt(map.width)) or y >= @as(f32, @floatFromInt(map.height)))
             return false;
 
         const square = getSquare(x, y);
@@ -1384,9 +1423,8 @@ pub const Player = struct {
     }
 
     fn isFullOccupy(x: f32, y: f32) bool {
-        if (x < 0 or y < 0)
+        if (x < 0 or y < 0 or x >= @as(f32, @floatFromInt(map.width)) or y >= @as(f32, @floatFromInt(map.height)))
             return true;
-
         return getSquare(x, y).full_occupy;
     }
 
@@ -2029,14 +2067,14 @@ pub fn disposeEntity(allocator: std.mem.Allocator, en: *map.Entity) void {
                 square.has_wall = false;
             }
 
-            ui.removeAttachedUi(obj.obj_id, allocator);
+            sc.removeAttachedUi(obj.obj_id, allocator);
             allocator.free(obj.name_override);
         },
         .projectile => |*projectile| {
             projectile.hit_list.deinit();
         },
         .player => |player| {
-            ui.removeAttachedUi(player.obj_id, allocator);
+            sc.removeAttachedUi(player.obj_id, allocator);
             allocator.free(player.name_override);
             allocator.free(player.guild);
         },
@@ -2264,7 +2302,7 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
                 }
             },
             .object => |*object| {
-                if (ui.current_screen == .in_game and !interactive_set and object.class.isInteractive()) { //(object.class == .portal or is_container)) {
+                if (sc.current_screen == .game and !interactive_set and object.class.isInteractive()) { //(object.class == .portal or is_container)) {
                     const dt_x = cam_x - object.x;
                     const dt_y = cam_y - object.y;
                     if (dt_x * dt_x + dt_y * dt_y < 1) {
@@ -2273,18 +2311,18 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
 
                         const is_container = object.class == .container;
                         if (is_container) {
-                            if (ui.current_screen.in_game.container_id != object.obj_id) {
+                            if (sc.current_screen.game.container_id != object.obj_id) {
                                 inline for (0..8) |idx| {
-                                    ui.current_screen.in_game.setContainerItem(object.inventory[idx], idx);
+                                    sc.current_screen.game.setContainerItem(object.inventory[idx], idx);
                                 }
                             }
 
-                            ui.current_screen.in_game.container_id = object.obj_id;
-                            ui.current_screen.in_game.setContainerVisible(true);
+                            sc.current_screen.game.container_id = object.obj_id;
+                            sc.current_screen.game.setContainerVisible(true);
                         }
 
                         if (object.class.hasPanel()) {
-                            ui.current_screen.in_game.showPanel(object.class);
+                            sc.current_screen.game.showPanel(object.class);
                         }
 
                         interactive_set = true;
@@ -2322,16 +2360,16 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
         }
     }
 
-    if (!interactive_set and ui.current_screen == .in_game) {
-        if (ui.current_screen.in_game.container_id != -1) {
+    if (!interactive_set and sc.current_screen == .game) {
+        if (sc.current_screen.game.container_id != -1) {
             inline for (0..8) |idx| {
-                ui.current_screen.in_game.setContainerItem(-1, idx);
+                sc.current_screen.game.setContainerItem(-1, idx);
             }
         }
 
-        ui.current_screen.in_game.container_id = -1;
-        ui.current_screen.in_game.setContainerVisible(false);
-        ui.current_screen.in_game.hidePanels();
+        sc.current_screen.game.container_id = -1;
+        sc.current_screen.game.setContainerVisible(false);
+        sc.current_screen.game.panel_controller.hidePanels();
     }
 
     var remove_iter = std.mem.reverseIterator(entity_indices_to_remove.items());
@@ -2371,6 +2409,15 @@ pub fn setSquare(x: u32, y: u32, tile_type: u16) void {
     };
 
     texParse: {
+        if (tile_type == 0xFFFC) // editor tile
+        {
+            var data = assets.editor_tile;
+            data.removePadding();
+            square.atlas_data = data;
+            square.updateBlends();
+            break :texParse;
+        }
+
         if (game_data.ground_type_to_tex_data.get(tile_type)) |tex_list| {
             if (tex_list.len == 0) {
                 std.log.err("Square with type {d} has an empty texture list, parsing failed", .{tile_type});

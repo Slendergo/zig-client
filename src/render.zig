@@ -11,6 +11,7 @@ const zstbi = @import("zstbi");
 const ui = @import("ui/ui.zig");
 const main = @import("main.zig");
 const zgui = @import("zgui");
+const sc = @import("ui/controllers/screen_controller.zig");
 
 const VertexField = extern struct {
     x: f32,
@@ -502,7 +503,7 @@ const DrawData = struct {
     bind_group: zgpu.wgpu.BindGroup,
 };
 
-fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_data: assets.AtlasData, draw_data: DrawData) u16 {
+fn drawWall(idx: u16, x: f32, y: f32, alpha: f32, atlas_data: assets.AtlasData, top_atlas_data: assets.AtlasData, draw_data: DrawData) u16 {
     var idx_new: u16 = idx;
     var atlas_data_new = atlas_data;
 
@@ -537,6 +538,11 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
 
     const pi_div_2 = std.math.pi / 2.0;
     const bound_angle = utils.halfBound(camera.angle);
+
+    const base_color_intensity_sides = 0.25;
+    const base_color_intensity_top = 0.1;
+    const color = 0x000000;
+
     topSide: {
         if (bound_angle >= pi_div_2 and bound_angle <= std.math.pi or bound_angle >= -std.math.pi and bound_angle <= -pi_div_2 and floor_y > 0) {
             if (!map.validPos(floor_x, floor_y - 1)) {
@@ -567,7 +573,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 y3,
                 atlas_data_new,
                 draw_data,
-                .{ .base_color = 0x000000, .base_color_intensity = 0.25 },
+                .{ .base_color = color, .base_color_intensity = base_color_intensity_sides, .alpha_mult = alpha },
             );
         }
     }
@@ -603,7 +609,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 y1,
                 atlas_data_new,
                 draw_data,
-                .{ .base_color = 0x000000, .base_color_intensity = 0.25 },
+                .{ .base_color = color, .base_color_intensity = base_color_intensity_sides, .alpha_mult = alpha },
             );
         }
     }
@@ -639,7 +645,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 y3,
                 atlas_data_new,
                 draw_data,
-                .{ .base_color = 0x000000, .base_color_intensity = 0.25 },
+                .{ .base_color = color, .base_color_intensity = base_color_intensity_sides, .alpha_mult = alpha },
             );
         }
     }
@@ -675,7 +681,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
                 y4,
                 atlas_data_new,
                 draw_data,
-                .{ .base_color = 0x000000, .base_color_intensity = 0.25 },
+                .{ .base_color = color, .base_color_intensity = base_color_intensity_sides, .alpha_mult = alpha },
             );
         }
     }
@@ -692,7 +698,7 @@ fn drawWall(idx: u16, x: f32, y: f32, atlas_data: assets.AtlasData, top_atlas_da
         top_y4,
         top_atlas_data,
         draw_data,
-        .{ .base_color = 0x000000, .base_color_intensity = 0.1 },
+        .{ .base_color = color, .base_color_intensity = base_color_intensity_top, .alpha_mult = alpha },
     );
 
     return idx_new;
@@ -2713,9 +2719,9 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
     const cam_x = camera.x.load(.Acquire);
     const cam_y = camera.y.load(.Acquire);
 
-    inGamePass: {
-        if (!main.tick_frame or !map.validPos(@intFromFloat(cam_x), @intFromFloat(cam_y)))
-            break :inGamePass;
+    GamePass: {
+        if ((!main.tick_frame and sc.current_screen == .game or !main.editing_map and sc.current_screen == .editor) or !map.validPos(@intFromFloat(cam_x), @intFromFloat(cam_y)))
+            break :GamePass;
 
         groundPass: {
             const pipeline = gctx.lookupResource(ground_pipeline) orelse break :groundPass;
@@ -2902,7 +2908,8 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         }
                     },
                     .player => |player| {
-                        if (player.dead or !camera.visibleInCamera(player.x, player.y)) {
+                        // hack just dont render players
+                        if (sc.current_screen == .editor or player.dead or !camera.visibleInCamera(player.x, player.y)) {
                             continue;
                         }
 
@@ -2939,7 +2946,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         screen_pos.x += x_offset;
                         screen_pos.y += player.z * -camera.px_per_tile - (h - size * assets.padding);
 
-                        var alpha_mult: f32 = 1.0;
+                        var alpha_mult: f32 = player.alpha;
                         if (player.condition.invisible)
                             alpha_mult = 0.6;
 
@@ -3135,14 +3142,13 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                                 tile_size,
                                 bo.atlas_data,
                                 draw_data,
-                                .{ .rotation = camera.angle },
+                                .{ .rotation = camera.angle, .alpha_mult = bo.alpha },
                             );
-
                             continue;
                         }
 
                         if (bo.is_wall) {
-                            idx = drawWall(idx, bo.x, bo.y, bo.atlas_data, bo.top_atlas_data, draw_data);
+                            idx = drawWall(idx, bo.x, bo.y, bo.alpha, bo.atlas_data, bo.top_atlas_data, draw_data);
                             continue;
                         }
 
@@ -3178,7 +3184,7 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
                         screen_pos.x += x_offset;
                         screen_pos.y += bo.z * -camera.px_per_tile - (h - size * assets.padding);
 
-                        var alpha_mult: f32 = 1.0;
+                        var alpha_mult: f32 = bo.alpha;
                         if (bo.condition.invisible)
                             alpha_mult = 0.6;
 
@@ -3439,11 +3445,11 @@ pub fn draw(time: i64, gctx: *zgpu.GraphicsContext, back_buffer: zgpu.wgpu.Textu
             .bind_group = bind_group,
         };
 
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!sc.ui_lock.tryLock()) {}
+        defer sc.ui_lock.unlock();
 
         var ui_idx: u16 = 0;
-        for (ui.elements.items()) |elem| {
+        for (sc.elements.items()) |elem| {
             switch (elem) {
                 .container => |container| {
                     if (!container.visible)

@@ -1,25 +1,24 @@
 const std = @import("std");
-const ui = @import("ui.zig");
-const assets = @import("../assets.zig");
-const camera = @import("../camera.zig");
-const network = @import("../network.zig");
-const main = @import("../main.zig");
-const utils = @import("../utils.zig");
-const game_data = @import("../game_data.zig");
-const map = @import("../map.zig");
-const input = @import("../input.zig");
-const settings = @import("../settings.zig");
+const ui = @import("../ui.zig");
+const assets = @import("../../assets.zig");
+const camera = @import("../../camera.zig");
+const network = @import("../../network.zig");
+const main = @import("../../main.zig");
+const utils = @import("../../utils.zig");
+const game_data = @import("../../game_data.zig");
+const map = @import("../../map.zig");
+const input = @import("../../input.zig");
+const settings = @import("../../settings.zig");
 
-const screen_controller = @import("screens/screen_controller.zig").ScreenController;
-const panel_controller = @import("panels/panel_controller.zig").PanelController;
-const NineSlice = ui.NineSliceImageData;
+const sc = @import("../controllers/screen_controller.zig");
+const PanelController = @import("../controllers/panel_controller.zig").PanelController;
 
-pub const InGameScreen = struct {
+pub const GameScreen = struct {
     pub const Slot = struct {
         idx: u8,
         is_container: bool = false,
 
-        fn findInvSlotId(screen: InGameScreen, x: f32, y: f32) u8 {
+        fn findInvSlotId(screen: GameScreen, x: f32, y: f32) u8 {
             for (0..20) |i| {
                 const data = screen.inventory_pos_data[i];
                 if (utils.isInBounds(
@@ -37,8 +36,8 @@ pub const InGameScreen = struct {
             return 255;
         }
 
-        fn findContainerSlotId(screen: InGameScreen, x: f32, y: f32) u8 {
-            if (!ui.current_screen.in_game.container_visible)
+        fn findContainerSlotId(screen: GameScreen, x: f32, y: f32) u8 {
+            if (!sc.current_screen.game.container_visible)
                 return 255;
 
             for (0..8) |i| {
@@ -58,7 +57,7 @@ pub const InGameScreen = struct {
             return 255;
         }
 
-        pub fn findSlotId(screen: InGameScreen, x: f32, y: f32) Slot {
+        pub fn findSlotId(screen: GameScreen, x: f32, y: f32) Slot {
             const inv_slot = findInvSlotId(screen, x, y);
             if (inv_slot != 255) {
                 return Slot{ .idx = inv_slot };
@@ -80,7 +79,7 @@ pub const InGameScreen = struct {
             return Slot{ .idx = 255 };
         }
 
-        pub fn nextAvailableSlot(screen: InGameScreen) Slot {
+        pub fn nextAvailableSlot(screen: GameScreen) Slot {
             for (0..20) |idx| {
                 if (screen.inventory_items[idx]._item == -1)
                     return Slot{ .idx = @intCast(idx) };
@@ -129,11 +128,10 @@ pub const InGameScreen = struct {
     _allocator: std.mem.Allocator = undefined,
 
     interact_class: game_data.ClassType = game_data.ClassType.game_object,
-    screen_controller: *screen_controller = undefined,
-    panel_controller: *panel_controller = undefined,
+    panel_controller: *PanelController = undefined,
 
-    pub fn init(allocator: std.mem.Allocator) !*InGameScreen {
-        var screen = try allocator.create(InGameScreen);
+    pub fn init(allocator: std.mem.Allocator) !*GameScreen {
+        var screen = try allocator.create(GameScreen);
         screen.* = .{ ._allocator = allocator };
 
         const inventory_data = assets.getUiData("playerInventory", 0);
@@ -340,22 +338,20 @@ pub const InGameScreen = struct {
             .text_data = fps_text_data,
         });
 
-        screen.panel_controller = try panel_controller.init(allocator, .{
+        screen.panel_controller = try PanelController.init(allocator, .{
             .x = camera.screen_width,
             .y = camera.screen_height,
             .width = inventory_data.texWRaw() + 10,
             .height = inventory_data.texHRaw() + 10,
         });
 
-        screen.screen_controller = try screen_controller.init(allocator);
-
         screen.inited = true;
         return screen;
     }
 
-    pub fn deinit(self: *InGameScreen) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+    pub fn deinit(self: *GameScreen) void {
+        while (!sc.ui_lock.tryLock()) {}
+        defer sc.ui_lock.unlock();
 
         self.minimap_decor.destroy();
         self.inventory_decor.destroy();
@@ -379,13 +375,12 @@ pub const InGameScreen = struct {
             item.destroy();
         }
 
-        self.screen_controller.deinit();
         self.panel_controller.deinit();
 
         self._allocator.destroy(self);
     }
 
-    pub fn resize(self: *InGameScreen, w: f32, h: f32) void {
+    pub fn resize(self: *GameScreen, w: f32, h: f32) void {
         self.minimap_decor.x = w - self.minimap_decor.width() - 10;
         self.inventory_decor.x = w - self.inventory_decor.width() - 10;
         self.inventory_decor.y = h - self.inventory_decor.height() - 10;
@@ -411,20 +406,19 @@ pub const InGameScreen = struct {
         self.fps_text.y = self.minimap_decor.y + self.minimap_decor.height() + 10;
 
         for (0..20) |idx| {
-            self.inventory_items[idx].x = self.inventory_decor.x + ui.current_screen.in_game.inventory_pos_data[idx].x + (ui.current_screen.in_game.inventory_pos_data[idx].w - self.inventory_items[idx].width() + assets.padding * 2) / 2;
-            self.inventory_items[idx].y = self.inventory_decor.y + ui.current_screen.in_game.inventory_pos_data[idx].y + (ui.current_screen.in_game.inventory_pos_data[idx].h - self.inventory_items[idx].height() + assets.padding * 2) / 2;
+            self.inventory_items[idx].x = self.inventory_decor.x + sc.current_screen.game.inventory_pos_data[idx].x + (sc.current_screen.game.inventory_pos_data[idx].w - self.inventory_items[idx].width() + assets.padding * 2) / 2;
+            self.inventory_items[idx].y = self.inventory_decor.y + sc.current_screen.game.inventory_pos_data[idx].y + (sc.current_screen.game.inventory_pos_data[idx].h - self.inventory_items[idx].height() + assets.padding * 2) / 2;
         }
 
         for (0..8) |idx| {
-            self.container_items[idx].x = self.container_decor.x + ui.current_screen.in_game.container_pos_data[idx].x + (ui.current_screen.in_game.container_pos_data[idx].w - self.container_items[idx].width() + assets.padding * 2) / 2;
-            self.container_items[idx].y = self.container_decor.y + ui.current_screen.in_game.container_pos_data[idx].y + (ui.current_screen.in_game.container_pos_data[idx].h - self.container_items[idx].height() + assets.padding * 2) / 2;
+            self.container_items[idx].x = self.container_decor.x + sc.current_screen.game.container_pos_data[idx].x + (sc.current_screen.game.container_pos_data[idx].w - self.container_items[idx].width() + assets.padding * 2) / 2;
+            self.container_items[idx].y = self.container_decor.y + sc.current_screen.game.container_pos_data[idx].y + (sc.current_screen.game.container_pos_data[idx].h - self.container_items[idx].height() + assets.padding * 2) / 2;
         }
 
         self.panel_controller.resize(w, h);
-        self.screen_controller.resize(w, h);
     }
 
-    pub fn update(self: *InGameScreen, _: i64, _: f32) !void {
+    pub fn update(self: *GameScreen, _: i64, _: f32) !void {
         self.fps_text.visible = settings.stats_enabled;
 
         if (map.localPlayerConst()) |local_player| {
@@ -479,12 +473,12 @@ pub const InGameScreen = struct {
         }
     }
 
-    pub fn updateFpsText(self: *InGameScreen, fps: f64, mem: f32) !void {
+    pub fn updateFpsText(self: *GameScreen, fps: f64, mem: f32) !void {
         self.fps_text.text_data.text = try std.fmt.bufPrint(self.fps_text.text_data.backing_buffer, "FPS: {d:.1}\nMemory: {d:.1} MB", .{ fps, mem });
         self.fps_text.x = camera.screen_width - self.fps_text.text_data.width() - 10;
     }
 
-    fn parseItemRects(self: *InGameScreen) void {
+    fn parseItemRects(self: *GameScreen) void {
         for (0..20) |i| {
             const hori_idx: f32 = @floatFromInt(@mod(i, 4));
             const vert_idx: f32 = @floatFromInt(@divFloor(i, 4));
@@ -523,7 +517,7 @@ pub const InGameScreen = struct {
         }
     }
 
-    pub fn swapSlots(self: *InGameScreen, start_slot: Slot, end_slot: Slot) void {
+    pub fn swapSlots(self: *GameScreen, start_slot: Slot, end_slot: Slot) void {
         const int_id = map.interactive_id.load(.Acquire);
 
         if (end_slot.idx == 255) {
@@ -601,7 +595,7 @@ pub const InGameScreen = struct {
         if (item._item < 0)
             return;
 
-        const start_slot = Slot.findSlotId(ui.current_screen.in_game.*, item.x + 4, item.y + 4);
+        const start_slot = Slot.findSlotId(sc.current_screen.game.*, item.x + 4, item.y + 4);
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
             if (props.consumable and !start_slot.is_container) {
                 while (!map.object_lock.tryLockShared()) {}
@@ -625,14 +619,14 @@ pub const InGameScreen = struct {
         }
 
         if (start_slot.is_container) {
-            const end_slot = Slot.nextAvailableSlot(ui.current_screen.in_game.*);
+            const end_slot = Slot.nextAvailableSlot(sc.current_screen.game.*);
             if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
                 item.x = item._drag_start_x;
                 item.y = item._drag_start_y;
                 return;
             }
 
-            ui.current_screen.in_game.swapSlots(start_slot, end_slot);
+            sc.current_screen.game.swapSlots(start_slot, end_slot);
         } else {
             if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
                 while (!map.object_lock.tryLockShared()) {}
@@ -648,7 +642,7 @@ pub const InGameScreen = struct {
                         return;
                     }
 
-                    ui.current_screen.in_game.swapSlots(start_slot, end_slot);
+                    sc.current_screen.game.swapSlots(start_slot, end_slot);
                 }
             }
         }
@@ -662,7 +656,7 @@ pub const InGameScreen = struct {
         if (input_text.len > 0) {
             network.queuePacket(.{ .player_text = .{ .text = input_text } });
 
-            const current_screen = ui.current_screen.in_game;
+            const current_screen = sc.current_screen.game;
             const text_copy = current_screen._allocator.dupe(u8, input_text) catch unreachable;
             input.input_history.append(text_copy) catch unreachable;
             input.input_history_idx = @intCast(input.input_history.items.len);
@@ -672,7 +666,7 @@ pub const InGameScreen = struct {
     fn interactCallback() void {}
 
     fn itemDragEndCallback(item: *ui.Item) void {
-        var current_screen = ui.current_screen.in_game;
+        var current_screen = sc.current_screen.game;
         const start_slot = Slot.findSlotId(current_screen.*, item._drag_start_x + 4, item._drag_start_y + 4);
         const end_slot = Slot.findSlotId(current_screen.*, item.x - item._drag_offset_x, item.y - item._drag_offset_y);
         if (start_slot.idx == end_slot.idx and start_slot.is_container == end_slot.is_container) {
@@ -688,7 +682,7 @@ pub const InGameScreen = struct {
         if (item._item < 0)
             return;
 
-        const current_screen = ui.current_screen.in_game.*;
+        const current_screen = sc.current_screen.game.*;
         const slot = Slot.findSlotId(current_screen, item.x + 4, item.y + 4);
 
         if (game_data.item_type_to_props.get(@intCast(item._item))) |props| {
@@ -714,11 +708,11 @@ pub const InGameScreen = struct {
         }
     }
 
-    pub fn useItem(self: *InGameScreen, idx: u8) void {
+    pub fn useItem(self: *GameScreen, idx: u8) void {
         itemDoubleClickCallback(self.inventory_items[idx]);
     }
 
-    pub fn setContainerItem(self: *InGameScreen, item: i32, idx: u8) void {
+    pub fn setContainerItem(self: *GameScreen, item: i32, idx: u8) void {
         if (item == -1) {
             self.container_items[idx]._item = -1;
             self.container_items[idx].visible = false;
@@ -777,7 +771,7 @@ pub const InGameScreen = struct {
         self.container_items[idx].y = self.container_decor.y + self.container_pos_data[idx].y + (self.container_pos_data[idx].h - self.container_items[idx].height() + assets.padding * 2) / 2;
     }
 
-    pub fn setInvItem(self: *InGameScreen, item: i32, idx: u8) void {
+    pub fn setInvItem(self: *GameScreen, item: i32, idx: u8) void {
         if (item == -1) {
             self.inventory_items[idx]._item = -1;
             self.inventory_items[idx].visible = false;
@@ -835,12 +829,12 @@ pub const InGameScreen = struct {
         self.inventory_items[idx].y = self.inventory_decor.y + self.inventory_pos_data[idx].y + (self.inventory_pos_data[idx].h - self.inventory_items[idx].height() + assets.padding * 2) / 2;
     }
 
-    pub inline fn setContainerVisible(self: *InGameScreen, visible: bool) void {
+    pub inline fn setContainerVisible(self: *GameScreen, visible: bool) void {
         self.container_visible = visible;
         self.container_decor.visible = visible;
     }
 
-    pub fn showPanel(self: *InGameScreen, class_type: game_data.ClassType) void {
+    pub fn showPanel(self: *GameScreen, class_type: game_data.ClassType) void {
         self.interact_class = class_type;
         const text_size: f32 = 16;
         switch (self.interact_class) {
@@ -867,13 +861,5 @@ pub const InGameScreen = struct {
             },
             else => {},
         }
-    }
-
-    pub fn hidePanels(self: *InGameScreen) void {
-        self.panel_controller.hidePanels();
-    }
-
-    pub fn hideScreens(self: *InGameScreen) void {
-        self.screen_controller.hideScreens();
     }
 };

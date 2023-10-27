@@ -9,16 +9,18 @@ const utils = @import("../../utils.zig");
 const game_data = @import("../../game_data.zig");
 const map = @import("../../map.zig");
 const input = @import("../../input.zig");
-const screen_controller = @import("screen_controller.zig").ScreenController;
+
+const screen_controller = @import("../controllers/screen_controller.zig");
+const PanelController = @import("../controllers/panel_controller.zig").PanelController;
 const NineSlice = ui.NineSliceImageData;
 
-pub const WikiScreen = struct {
+pub const WikiPanel = struct {
     inited: bool = false,
     _allocator: std.mem.Allocator = undefined,
     visible: bool = false,
     cont: *ui.DisplayContainer = undefined,
-    pub fn init(allocator: std.mem.Allocator, data: WikiScreen) !*WikiScreen {
-        var screen = try allocator.create(WikiScreen);
+    pub fn init(allocator: std.mem.Allocator, data: WikiPanel) !*WikiPanel {
+        var screen = try allocator.create(WikiPanel);
         screen.* = .{ ._allocator = allocator };
         screen.* = data;
 
@@ -68,13 +70,13 @@ pub const WikiScreen = struct {
         return screen;
     }
 
-    pub fn setVisible(self: *WikiScreen, val: bool) void {
+    pub fn setVisible(self: *WikiPanel, val: bool) void {
         self.cont.visible = val;
     }
 
-    pub fn deinit(self: *WikiScreen) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+    pub fn deinit(self: *WikiPanel) void {
+        while (!screen_controller.ui_lock.tryLock()) {}
+        defer screen_controller.ui_lock.unlock();
 
         self.cont.destroy();
 
@@ -82,8 +84,8 @@ pub const WikiScreen = struct {
     }
 
     fn closeCallback() void {
-        ui.current_screen.in_game.screen_controller.hideScreens();
+        screen_controller.current_screen.game.panel_controller.hidePanels();
     }
 
-    pub fn resize(_: *WikiScreen, _: f32, _: f32) void {}
+    pub fn resize(_: *WikiPanel, _: f32, _: f32) void {}
 };

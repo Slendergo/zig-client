@@ -9,7 +9,8 @@ const utils = @import("../../utils.zig");
 const game_data = @import("../../game_data.zig");
 const map = @import("../../map.zig");
 const input = @import("../../input.zig");
-const panel_controller = @import("panel_controller.zig").PanelController;
+const PanelController = @import("../controllers/panel_controller.zig").PanelController;
+const sc = @import("../controllers/screen_controller.zig");
 const NineSlice = ui.NineSliceImageData;
 
 pub const BasicPanel = struct {
@@ -70,7 +71,7 @@ pub const BasicPanel = struct {
                 .text_type = .bold,
                 .backing_buffer = try allocator.alloc(u8, 8),
             },
-            .press_callback = panel_controller.basicPanelCallback,
+            .press_callback = PanelController.basicPanelCallback,
         });
 
         panel.inited = true;
@@ -82,8 +83,8 @@ pub const BasicPanel = struct {
     }
 
     pub fn deinit(self: *BasicPanel) void {
-        while (!ui.ui_lock.tryLock()) {}
-        defer ui.ui_lock.unlock();
+        while (!sc.ui_lock.tryLock()) {}
+        defer sc.ui_lock.unlock();
 
         self.cont.destroy();
 

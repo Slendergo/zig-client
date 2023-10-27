@@ -1,5 +1,6 @@
 const std = @import("std");
 const libxml2 = @import("libs/libxml/libxml2.zig");
+const nfd = @import("libs/nfd-zig/build.zig");
 const zglfw = @import("libs/zglfw/build.zig");
 const zgpu = @import("libs/zgpu/build.zig");
 const zpool = @import("libs/zpool/build.zig");
@@ -20,6 +21,14 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     exe.want_lto = false; // remove later
+
+    exe.addModule("nfd", nfd.getModule(b));
+
+    const nfd_lib = nfd.makeLib(b, target, optimize);
+    if (nfd_lib.target_info.target.os.tag == .macos) {
+        nfd_lib.defineCMacro("__kernel_ptr_semantics", "");
+    }
+    exe.linkLibrary(nfd_lib);
 
     const libxml = try libxml2.create(b, target, optimize, .{
         .iconv = false,
