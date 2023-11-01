@@ -2,6 +2,7 @@ const std = @import("std");
 const zglfw = @import("zglfw");
 const builtin = @import("builtin");
 const assets = @import("assets.zig");
+const ini = @import("ini");
 
 pub const LogType = enum(u8) {
     all = 0,
@@ -121,6 +122,7 @@ pub var aa_type = AaType.msaa4x;
 pub var save_email = true;
 
 pub fn init(allocator: std.mem.Allocator) !void {
+    _ = try createFile();
     key_tex_map = std.AutoHashMap(Button, u16).init(allocator);
     try key_tex_map.put(.{ .mouse = .left }, 0x2e);
     try key_tex_map.put(.{ .mouse = .right }, 0x3b);
@@ -231,6 +233,8 @@ pub fn init(allocator: std.mem.Allocator) !void {
     if (tex_list) |list| {
         interact_key_tex = list[key_tex_map.get(interact) orelse unset_key_tex_idx];
     }
+
+    _ = try parseSettings(allocator);
 }
 
 pub fn getKeyTexture(button: Button) assets.AtlasData {
@@ -242,12 +246,50 @@ pub fn getKeyTexture(button: Button) assets.AtlasData {
 }
 
 pub fn deinit() void {
-    save();
-
     key_tex_map.deinit();
 }
 
-pub fn save() void {}
+fn parseSettings(allocator: std.mem.Allocator) !void {
+    const file = try std.fs.cwd().openFile("settings.ini", .{});
+    defer file.close();
+
+    var parser = ini.parse(allocator, file.reader());
+    defer parser.deinit();
+
+    var writer = std.io.getStdOut().writer();
+    while (try parser.next()) |record| {
+        switch (record) {
+            .section => |heading| try writer.print("[{s}]\n", .{heading}),
+            .property => |kv| try writer.print("{s} = {s}\n", .{ kv.key, kv.value }),
+            .enumeration => |value| try writer.print("{s}\n", .{value}),
+        }
+    }
+}
+
+fn createFile() !void {
+    const value = "[Movement]\nMOVE_UP=w\nMOVE_DOWN=s\nMOVE_LEFT=a\nMOVE_RIGHT=d\n";
+
+    var file = std.fs.cwd().createFile("settings.ini", .{ .exclusive = true }) catch |e|
+        switch (e) {
+        error.PathAlreadyExists => {
+            std.log.info("settings file already exists", .{});
+            return;
+        },
+        else => return e,
+    };
+    defer file.close();
+    std.log.info("write file here", .{});
+    _ = try file.write(value);
+}
+
+pub fn save() !void {
+    const value = "[Movement]\nMOVE_UP=t\nMOVE_DOWN=g\nMOVE_LEFT=f\nMOVE_RIGHT=h\n";
+
+    var file = try std.fs.cwd().createFile("settings.ini", .{});
+    defer file.close();
+
+    _ = try file.write(value);
+}
 
 pub fn resetToDefault() void {
     inv_0 = .{ .key = .one };

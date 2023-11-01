@@ -8,6 +8,7 @@ const zstbi = @import("libs/zstbi/build.zig");
 const zstbrp = @import("libs/zstbrp/build.zig");
 const ztracy = @import("libs/ztracy/build.zig");
 const zaudio = @import("libs/zaudio/build.zig");
+const ini = @import("libs/ini/build.zig");
 const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) !void {
@@ -60,6 +61,8 @@ pub fn build(b: *std.Build) !void {
             .disable_robustness = builtin.mode != .Debug,
         },
     });
+
+    ini.link(ini.getModule(b), exe);
 
     zglfw_pkg.link(exe);
     zgpu_pkg.link(exe);

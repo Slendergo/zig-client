@@ -369,10 +369,14 @@ pub const OptionsPanel = struct {
 
         if (self.settings_button == &settings.interact)
             settings.interact_key_tex = settings.getKeyTexture(settings.interact);
+
+        trySave();
     }
 
     fn closeCallback() void {
         sc.current_screen.game.panel_controller.setOptionsVisible(false);
+
+        trySave();
     }
 
     fn resetToDefaultsCallback() void {
@@ -398,6 +402,13 @@ pub const OptionsPanel = struct {
     fn disconnectCallback() void {
         closeCallback();
         main.disconnect();
+    }
+
+    fn trySave() void {
+        settings.save() catch |err| {
+            std.debug.print("Caught error. {any}", .{err});
+            return;
+        };
     }
 
     pub fn switchTab(tab: TabType) void {
