@@ -125,7 +125,7 @@ const data_fmt =
     \\always_show_xp_gain={s}
     \\stats_enabled={s}
     \\save_email{s}
-    \\[Other] # Values are saved as 100 times higher because of conversn (ex. 30 / 100 = 0.3)
+    \\[Other] # Values are saved as 100 times higher because of conversion (ex. 30 / 100 = 0.3)
     \\fps_cap={d} # disabled when its 0
     \\music_volume={d} # between 0 - 100
     \\sfx_volume={d} # between 0 - 100
