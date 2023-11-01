@@ -3,6 +3,7 @@ const zglfw = @import("zglfw");
 const builtin = @import("builtin");
 const assets = @import("assets.zig");
 const ini = @import("ini");
+const main = @import("main.zig");
 
 pub const LogType = enum(u8) {
     all = 0,
@@ -69,7 +70,42 @@ pub const Button = union(enum) {
             return "None";
         return @tagName(mouse);
     }
+
+    pub fn getSettingsName(self: Button) ![]u8 {
+        switch (self) {
+            .key => |key| {
+                const name = getKeyNameOrNone(key);
+                var result = try main._allocator.alloc(u8, 1 + name.len);
+                std.mem.copy(u8, result[0..], "K");
+                std.mem.copy(u8, result[name.len..], name);
+                return result;
+            },
+            .mouse => |mouse| {
+                const name = getMouseNameOrNone(mouse);
+                var result = try main._allocator.alloc(u8, 1 + name.len);
+                std.mem.copy(u8, result[0..], "M");
+                std.mem.copy(u8, result[name.len..], name);
+                return result;
+            },
+        }
+    }
+
+    pub fn getSettingsInt(self: Button) i32 {
+        switch (self) {
+            .key => |key| return @intFromEnum(key),
+            .mouse => |mouse| return @intFromEnum(mouse),
+        }
+    }
 };
+
+const data_fmt =
+    \\[Settings]
+    \\move_left={d}
+    \\move_right={d}
+    \\move_down={d}
+    \\move_up={d}
+    \\shoot={d}
+;
 
 pub const build_version = "0.5";
 pub const app_engine_url = "http://127.0.0.1:8080/";
@@ -80,6 +116,7 @@ pub const rotate_speed = 0.002;
 pub const enable_tracy = false;
 pub const unset_key_tex_idx: u16 = 0x68;
 pub var key_tex_map: std.AutoHashMap(Button, u16) = undefined;
+pub var name_key_map: std.StringHashMap(*Button) = undefined;
 pub var interact_key_tex: assets.AtlasData = undefined;
 pub var inv_0 = Button{ .key = .one };
 pub var inv_1 = Button{ .key = .two };
@@ -122,8 +159,10 @@ pub var aa_type = AaType.msaa4x;
 pub var save_email = true;
 
 pub fn init(allocator: std.mem.Allocator) !void {
-    _ = try createFile();
+    _ = try createFile(allocator);
     key_tex_map = std.AutoHashMap(Button, u16).init(allocator);
+    name_key_map = std.StringHashMap(*Button).init(allocator);
+
     try key_tex_map.put(.{ .mouse = .left }, 0x2e);
     try key_tex_map.put(.{ .mouse = .right }, 0x3b);
     try key_tex_map.put(.{ .mouse = .middle }, 0x3a);
@@ -234,6 +273,12 @@ pub fn init(allocator: std.mem.Allocator) !void {
         interact_key_tex = list[key_tex_map.get(interact) orelse unset_key_tex_idx];
     }
 
+    try name_key_map.put("move_up", &move_up);
+    try name_key_map.put("move_down", &move_down);
+    try name_key_map.put("move_right", &move_right);
+    try name_key_map.put("move_left", &move_left);
+    try name_key_map.put("shoot", &shoot);
+
     _ = try parseSettings(allocator);
 }
 
@@ -259,36 +304,69 @@ fn parseSettings(allocator: std.mem.Allocator) !void {
     var writer = std.io.getStdOut().writer();
     while (try parser.next()) |record| {
         switch (record) {
-            .section => |heading| try writer.print("[{s}]\n", .{heading}),
-            .property => |kv| try writer.print("{s} = {s}\n", .{ kv.key, kv.value }),
-            .enumeration => |value| try writer.print("{s}\n", .{value}),
+            .property => |kv| {
+                //try writer.print("{s} = {s}\n", .{ kv.key, kv.value });
+
+                if (name_key_map.get(kv.key)) |button| {
+                    const value: i32 = try std.fmt.parseInt(
+                        i32,
+                        kv.value,
+                        10,
+                    );
+                    //Mouse value
+                    var key: zglfw.Key = .unknown;
+                    var mouse_button: zglfw.MouseButton = .unknown;
+
+                    if (value >= 0 and value < 8) {
+                        mouse_button = @enumFromInt(value);
+                        button.* = .{ .mouse = mouse_button };
+                        //try writer.print("Bound {d} to mouse {s}\n", .{ value, kv.key });
+                    } else if (value > -1) {
+                        key = @enumFromInt(value);
+                        button.* = .{ .key = key };
+                        //try writer.print("Bound {d} to key {s}\n", .{ value, kv.key });
+                    } else {
+                        //try writer.print("Value {d} is not valid\n", .{value});
+                        continue;
+                    }
+                } else {
+                    try writer.print("Settings key {s} doesn't exist in string map\n", .{kv.key});
+                }
+            },
+            else => continue,
         }
     }
 }
 
-fn createFile() !void {
-    const value = "[Movement]\nMOVE_UP=w\nMOVE_DOWN=s\nMOVE_LEFT=a\nMOVE_RIGHT=d\n";
-
+//Saves default values to file
+//Probably not needed?
+fn createFile(allocator: std.mem.Allocator) !void {
     var file = std.fs.cwd().createFile("settings.ini", .{ .exclusive = true }) catch |e|
         switch (e) {
         error.PathAlreadyExists => {
-            std.log.info("settings file already exists", .{});
+            std.log.info("settings file already exists, not overwriting", .{});
             return;
         },
         else => return e,
     };
     defer file.close();
-    std.log.info("write file here", .{});
-    _ = try file.write(value);
+
+    const arr = try allocator.alloc(u8, 1024);
+    _ = try file.write(try formatData(arr));
 }
 
-pub fn save() !void {
-    const value = "[Movement]\nMOVE_UP=t\nMOVE_DOWN=g\nMOVE_LEFT=f\nMOVE_RIGHT=h\n";
-
+//happens when options ui is closed or key mapper values get changed
+//overwrites ini file with latest settings values
+pub fn save(backing_arr: []u8) !void {
     var file = try std.fs.cwd().createFile("settings.ini", .{});
     defer file.close();
 
-    _ = try file.write(value);
+    _ = try file.write(try formatData(backing_arr));
+}
+
+//formats data_fmt with settings values
+fn formatData(backing_arr: []u8) ![]u8 {
+    return try std.fmt.bufPrint(backing_arr, data_fmt, .{ move_left.getSettingsInt(), move_right.getSettingsInt(), move_down.getSettingsInt(), move_up.getSettingsInt(), shoot.getSettingsInt() });
 }
 
 pub fn resetToDefault() void {

@@ -28,10 +28,13 @@ pub const OptionsPanel = struct {
     graphics_tab: *ui.DisplayContainer = undefined,
     misc_tab: *ui.DisplayContainer = undefined,
     _allocator: std.mem.Allocator = undefined,
+    settings_arr: []u8 = undefined,
 
     pub fn init(allocator: std.mem.Allocator) !*OptionsPanel {
         var screen = try allocator.create(OptionsPanel);
         screen.* = .{ ._allocator = allocator };
+
+        screen.settings_arr = try allocator.alloc(u8, 1024);
 
         const button_width = 150;
         const button_height = 50;
@@ -405,7 +408,8 @@ pub const OptionsPanel = struct {
     }
 
     fn trySave() void {
-        settings.save() catch |err| {
+        var self = sc.current_screen.game.panel_controller.options;
+        settings.save(self.settings_arr) catch |err| {
             std.debug.print("Caught error. {any}", .{err});
             return;
         };
