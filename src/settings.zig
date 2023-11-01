@@ -71,25 +71,6 @@ pub const Button = union(enum) {
         return @tagName(mouse);
     }
 
-    pub fn getSettingsName(self: Button) ![]u8 {
-        switch (self) {
-            .key => |key| {
-                const name = getKeyNameOrNone(key);
-                var result = try main._allocator.alloc(u8, 1 + name.len);
-                std.mem.copy(u8, result[0..], "K");
-                std.mem.copy(u8, result[name.len..], name);
-                return result;
-            },
-            .mouse => |mouse| {
-                const name = getMouseNameOrNone(mouse);
-                var result = try main._allocator.alloc(u8, 1 + name.len);
-                std.mem.copy(u8, result[0..], "M");
-                std.mem.copy(u8, result[name.len..], name);
-                return result;
-            },
-        }
-    }
-
     pub fn getSettingsInt(self: Button) i32 {
         switch (self) {
             .key => |key| return @intFromEnum(key),
@@ -98,6 +79,10 @@ pub const Button = union(enum) {
     }
 };
 
+//Format of the .ini file
+//Name SHOULD be the same as the Button variable name its refering to
+//Name and *Button variable MUST be assigned to name_key_map inside of the init fn
+//name=value
 const data_fmt =
     \\[Settings]
     \\move_left={d}
@@ -294,6 +279,7 @@ pub fn deinit() void {
     key_tex_map.deinit();
 }
 
+//Parses settings.ini file and sets found values to proper Button variables
 fn parseSettings(allocator: std.mem.Allocator) !void {
     const file = try std.fs.cwd().openFile("settings.ini", .{});
     defer file.close();
@@ -338,7 +324,7 @@ fn parseSettings(allocator: std.mem.Allocator) !void {
     }
 }
 
-//Saves default values to file
+//Saves default values to file to make sure a file exists
 //Probably not needed?
 fn createFile(allocator: std.mem.Allocator) !void {
     var file = std.fs.cwd().createFile("settings.ini", .{ .exclusive = true }) catch |e|
@@ -355,7 +341,7 @@ fn createFile(allocator: std.mem.Allocator) !void {
     _ = try file.write(try formatData(arr));
 }
 
-//happens when options ui is closed or key mapper values get changed
+//Called when options ui is closed or key mapper values get changed
 //overwrites ini file with latest settings values
 pub fn save(backing_arr: []u8) !void {
     var file = try std.fs.cwd().createFile("settings.ini", .{});
@@ -365,6 +351,8 @@ pub fn save(backing_arr: []u8) !void {
 }
 
 //formats data_fmt with settings values
+//Add Button values here
+//The order MATTERS! Same order as data_fmt
 fn formatData(backing_arr: []u8) ![]u8 {
     return try std.fmt.bufPrint(backing_arr, data_fmt, .{ move_left.getSettingsInt(), move_right.getSettingsInt(), move_down.getSettingsInt(), move_up.getSettingsInt(), shoot.getSettingsInt() });
 }
