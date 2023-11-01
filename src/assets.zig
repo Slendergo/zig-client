@@ -992,6 +992,8 @@ pub fn init(allocator: std.mem.Allocator) !void {
     if (ui_atlas_data.get("errorTexture")) |error_tex| {
         ui_error_data = error_tex[0x0];
     }
+
+    settings.assetsLoaded();
 }
 
 pub inline fn getUiData(comptime name: []const u8, idx: usize) AtlasData {

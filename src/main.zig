@@ -357,14 +357,14 @@ pub fn main() !void {
     zaudio.init(allocator);
     defer zaudio.deinit();
 
+    try settings.init(allocator);
+    defer settings.deinit();
+
     try assets.init(allocator);
     defer assets.deinit(allocator);
 
     try game_data.init(allocator);
     defer game_data.deinit(allocator);
-
-    try settings.init(allocator);
-    defer settings.deinit();
 
     requests.init(allocator);
     defer requests.deinit();

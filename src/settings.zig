@@ -81,15 +81,54 @@ pub const Button = union(enum) {
 
 //Format of the .ini file
 //Name SHOULD be the same as the Button variable name its refering to
-//Name and *Button variable MUST be assigned to name_key_map inside of the init fn
+//Name and *Button variable MUST be assigned to one of the name_*type*_map inside of the init fn
 //name=value
-const data_fmt =
-    \\[Settings]
+const key_fmt =
+    \\# Delete this file to reset all your settings to default
+    \\[Keys] #only numerical key values here. 0 - 7 is mouse, -1 is disabled
     \\move_left={d}
     \\move_right={d}
     \\move_down={d}
     \\move_up={d}
+    \\walk={d}
+    \\reset_camera={d}
+    \\toggle_centering={d}
+    \\rotate_left={d}
+    \\rotate_right={d}
     \\shoot={d}
+    \\ability={d}
+    \\interact={d}
+    \\options={d}
+    \\escape={d}
+    \\chat_up={d}
+    \\chat_down={d}
+    \\chat={d}
+    \\chat_cmd={d}
+    \\respond={d}
+    \\toggle_stats={d}
+    \\inv_0={d}
+    \\inv_1={d}
+    \\inv_2={d}
+    \\inv_3={d}
+    \\inv_4={d}
+    \\inv_5={d}
+    \\inv_6={d}
+    \\inv_7={d}
+;
+
+const data_fmt =
+    \\ 
+    \\[Bools] #true or false only here
+    \\enable_glow={s} 
+    \\enable_lights={s}
+    \\enable_vsync={s}
+    \\always_show_xp_gain={s}
+    \\stats_enabled={s}
+    \\save_email{s}
+    \\[Other] # Values are saved as 100 times higher because of conversion (ex. 30 / 100 = 0.3)
+    \\fps_cap={d} # disabled when its 0
+    \\music_volume={d} # between 0 - 100
+    \\sfx_volume{d} # between 0 - 100
 ;
 
 pub const build_version = "0.5";
@@ -102,6 +141,8 @@ pub const enable_tracy = false;
 pub const unset_key_tex_idx: u16 = 0x68;
 pub var key_tex_map: std.AutoHashMap(Button, u16) = undefined;
 pub var name_key_map: std.StringHashMap(*Button) = undefined;
+pub var name_bool_map: std.StringHashMap(*bool) = undefined;
+pub var name_float_map: std.StringHashMap(*f32) = undefined;
 pub var interact_key_tex: assets.AtlasData = undefined;
 pub var inv_0 = Button{ .key = .one };
 pub var inv_1 = Button{ .key = .two };
@@ -131,8 +172,8 @@ pub var respond = Button{ .key = .F2 };
 pub var toggle_centering = Button{ .key = .x };
 pub var shoot = Button{ .mouse = .left };
 pub var ability = Button{ .mouse = .right };
-pub var sfx_volume: f32 = 0.0; // 0.33;
-pub var music_volume: f32 = 0.0; // 0.1;
+pub var sfx_volume: f32 = 0.3; // 0.33;
+pub var music_volume: f32 = 0.1; // 0.1;
 pub var enable_glow = true;
 pub var enable_lights = true;
 pub var enable_vsync = true;
@@ -144,9 +185,11 @@ pub var aa_type = AaType.msaa4x;
 pub var save_email = true;
 
 pub fn init(allocator: std.mem.Allocator) !void {
-    _ = try createFile(allocator);
+    _ = try createFile();
     key_tex_map = std.AutoHashMap(Button, u16).init(allocator);
     name_key_map = std.StringHashMap(*Button).init(allocator);
+    name_bool_map = std.StringHashMap(*bool).init(allocator);
+    name_float_map = std.StringHashMap(*f32).init(allocator);
 
     try key_tex_map.put(.{ .mouse = .left }, 0x2e);
     try key_tex_map.put(.{ .mouse = .right }, 0x3b);
@@ -253,18 +296,57 @@ pub fn init(allocator: std.mem.Allocator) !void {
     try key_tex_map.put(.{ .key = .left_super }, if (builtin.os.tag == .windows) 0x0b else 0x30);
     try key_tex_map.put(.{ .key = .right_super }, if (builtin.os.tag == .windows) 0x0b else 0x30);
 
-    const tex_list = assets.atlas_data.get("keyIndicators");
-    if (tex_list) |list| {
-        interact_key_tex = list[key_tex_map.get(interact) orelse unset_key_tex_idx];
-    }
-
+    //keys (move_left etc)
     try name_key_map.put("move_up", &move_up);
     try name_key_map.put("move_down", &move_down);
     try name_key_map.put("move_right", &move_right);
     try name_key_map.put("move_left", &move_left);
+    try name_key_map.put("rotate_left", &rotate_left);
+    try name_key_map.put("rotate_right", &rotate_right);
+    try name_key_map.put("interact", &interact);
+    try name_key_map.put("options", &options);
+    try name_key_map.put("escape", &escape);
+    try name_key_map.put("chat_up", &chat_up);
+    try name_key_map.put("chat_down", &chat_down);
+    try name_key_map.put("walk", &walk);
+    try name_key_map.put("reset_camera", &reset_camera);
+    try name_key_map.put("toggle_Stats", &toggle_stats);
+    try name_key_map.put("chat", &chat);
+    try name_key_map.put("chat_cmd", &chat_cmd);
+    try name_key_map.put("respond", &respond);
+    try name_key_map.put("toggle_centering", &toggle_centering);
     try name_key_map.put("shoot", &shoot);
+    try name_key_map.put("ability", &ability);
+    try name_key_map.put("inv_0", &inv_0);
+    try name_key_map.put("inv_1", &inv_1);
+    try name_key_map.put("inv_2", &inv_2);
+    try name_key_map.put("inv_3", &inv_3);
+    try name_key_map.put("inv_4", &inv_4);
+    try name_key_map.put("inv_5", &inv_5);
+    try name_key_map.put("inv_6", &inv_6);
+    try name_key_map.put("inv_7", &inv_7);
+
+    //float values (ex. 10.0)
+    try name_float_map.put("sfx_volume", &sfx_volume);
+    try name_float_map.put("music_volume", &music_volume);
+    try name_float_map.put("fps_cap", &fps_cap);
+
+    //bool values
+    try name_bool_map.put("enable_glow", &enable_glow);
+    try name_bool_map.put("enable_lights", &enable_lights);
+    try name_bool_map.put("enable_vsync", &enable_vsync);
+    try name_bool_map.put("always_show_xp_gain", &always_show_xp_gain);
+    try name_bool_map.put("save_email", &save_email);
 
     _ = try parseSettings(allocator);
+}
+
+//called when assets have finished loading
+pub fn assetsLoaded() void {
+    const tex_list = assets.atlas_data.get("keyIndicators");
+    if (tex_list) |list| {
+        interact_key_tex = list[key_tex_map.get(interact) orelse unset_key_tex_idx];
+    }
 }
 
 pub fn getKeyTexture(button: Button) assets.AtlasData {
@@ -293,30 +375,34 @@ fn parseSettings(allocator: std.mem.Allocator) !void {
             .property => |kv| {
                 //try writer.print("{s} = {s}\n", .{ kv.key, kv.value });
 
-                if (name_key_map.get(kv.key)) |button| {
-                    const value: i32 = try std.fmt.parseInt(
+                if (name_key_map.get(kv.key)) |button| { //Key parsing
+                    const value: i32 = std.fmt.parseInt(
                         i32,
                         kv.value,
                         10,
-                    );
-                    //Mouse value
-                    var key: zglfw.Key = .unknown;
-                    var mouse_button: zglfw.MouseButton = .unknown;
+                    ) catch |err| {
+                        try writer.print("Settings::ParseInt Caught error {any}\n", .{err});
+                        continue;
+                    };
 
                     if (value >= 0 and value < 8) {
-                        mouse_button = @enumFromInt(value);
-                        button.* = .{ .mouse = mouse_button };
-                        //try writer.print("Bound {d} to mouse {s}\n", .{ value, kv.key });
+                        button.* = .{ .mouse = @enumFromInt(value) };
                     } else if (value > -1) {
-                        key = @enumFromInt(value);
-                        button.* = .{ .key = key };
-                        //try writer.print("Bound {d} to key {s}\n", .{ value, kv.key });
+                        button.* = .{ .key = @enumFromInt(value) };
                     } else {
-                        //try writer.print("Value {d} is not valid\n", .{value});
                         continue;
                     }
-                } else {
-                    try writer.print("Settings key {s} doesn't exist in string map\n", .{kv.key});
+                } else if (name_bool_map.get(kv.key)) |bool_var| { //boolean value parsing
+                    if (std.mem.eql(u8, kv.value, "true") or std.mem.eql(u8, kv.value, "false")) {
+                        bool_var.* = std.mem.eql(u8, kv.value, "true");
+                        continue;
+                    }
+                } else if (name_float_map.get(kv.key)) |float_var| { //interger / float parsing
+                    const value: f32 = std.fmt.parseFloat(f32, kv.value) catch |err| {
+                        try writer.print("Settings::ParseFloat Caught error {any}\n", .{err});
+                        continue;
+                    };
+                    float_var.* = value / 100;
                 }
             },
             else => continue,
@@ -326,7 +412,7 @@ fn parseSettings(allocator: std.mem.Allocator) !void {
 
 //Saves default values to file to make sure a file exists
 //Probably not needed?
-fn createFile(allocator: std.mem.Allocator) !void {
+fn createFile() !void {
     var file = std.fs.cwd().createFile("settings.ini", .{ .exclusive = true }) catch |e|
         switch (e) {
         error.PathAlreadyExists => {
@@ -337,24 +423,77 @@ fn createFile(allocator: std.mem.Allocator) !void {
     };
     defer file.close();
 
-    const arr = try allocator.alloc(u8, 1024);
-    _ = try file.write(try formatData(arr));
+    _ = try saveData(file);
 }
 
 //Called when options ui is closed or key mapper values get changed
 //overwrites ini file with latest settings values
-pub fn save(backing_arr: []u8) !void {
+pub fn save() !void {
     var file = try std.fs.cwd().createFile("settings.ini", .{});
     defer file.close();
 
-    _ = try file.write(try formatData(backing_arr));
+    _ = try saveData(file);
 }
 
 //formats data_fmt with settings values
 //Add Button values here
 //The order MATTERS! Same order as data_fmt
-fn formatData(backing_arr: []u8) ![]u8 {
-    return try std.fmt.bufPrint(backing_arr, data_fmt, .{ move_left.getSettingsInt(), move_right.getSettingsInt(), move_down.getSettingsInt(), move_up.getSettingsInt(), shoot.getSettingsInt() });
+//note: formating only supports up to 32 arguments hence why the keys and other data is split
+fn saveData(file: std.fs.File) !void {
+    var key_backing_arr = try main._allocator.alloc(u8, 1024);
+    defer main._allocator.free(key_backing_arr);
+
+    const key_arr = try std.fmt.bufPrint(key_backing_arr, key_fmt, .{
+        move_left.getSettingsInt(),
+        move_right.getSettingsInt(),
+        move_down.getSettingsInt(),
+        move_up.getSettingsInt(),
+        walk.getSettingsInt(),
+        reset_camera.getSettingsInt(),
+        toggle_centering.getSettingsInt(),
+        rotate_left.getSettingsInt(),
+        rotate_right.getSettingsInt(),
+        shoot.getSettingsInt(),
+        ability.getSettingsInt(),
+        interact.getSettingsInt(),
+        options.getSettingsInt(),
+        escape.getSettingsInt(),
+        chat_up.getSettingsInt(),
+        chat_down.getSettingsInt(),
+        chat.getSettingsInt(),
+        chat_cmd.getSettingsInt(),
+        respond.getSettingsInt(),
+        toggle_stats.getSettingsInt(),
+        inv_0.getSettingsInt(),
+        inv_1.getSettingsInt(),
+        inv_2.getSettingsInt(),
+        inv_3.getSettingsInt(),
+        inv_4.getSettingsInt(),
+        inv_5.getSettingsInt(),
+        inv_6.getSettingsInt(),
+        inv_7.getSettingsInt(),
+    });
+
+    var data_backing_arr = try main._allocator.alloc(u8, 512);
+    defer main._allocator.free(data_backing_arr);
+    const data_arr = try std.fmt.bufPrint(data_backing_arr, data_fmt, .{
+        if (enable_glow) "true" else "false",
+        if (enable_lights) "true" else "false",
+        if (enable_vsync) "true" else "false",
+        if (always_show_xp_gain) "true" else "false",
+        if (stats_enabled) "true" else "false",
+        if (save_email) "true" else "false",
+        fps_cap * 100,
+        music_volume * 100,
+        sfx_volume * 100,
+    });
+
+    var combined_fmt = try main._allocator.alloc(u8, key_arr.len + data_arr.len);
+    defer main._allocator.free(combined_fmt);
+    std.mem.copy(u8, combined_fmt[0..], key_arr);
+    std.mem.copy(u8, combined_fmt[key_arr.len..], data_arr);
+
+    _ = try file.write(combined_fmt);
 }
 
 pub fn resetToDefault() void {
