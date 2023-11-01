@@ -125,10 +125,12 @@ const data_fmt =
     \\always_show_xp_gain={s}
     \\stats_enabled={s}
     \\save_email{s}
-    \\[Other] # Values are saved as 100 times higher because of conversion (ex. 30 / 100 = 0.3)
+    \\[Other] # Values are saved as 100 times higher because of conversn (ex. 30 / 100 = 0.3)
     \\fps_cap={d} # disabled when its 0
     \\music_volume={d} # between 0 - 100
-    \\sfx_volume{d} # between 0 - 100
+    \\sfx_volume={d} # between 0 - 100
+    \\aa_type={d} # none = 0, fxaa = 1, // not implemented yet, msaa2x = 2, msaa4x = 3,
+    \\cursor={d} # basic = 0, royal = 1, ranger = 2, aztec = 3, fiery = 4, target_enemy = 5, target_ally = 6,
 ;
 
 pub const build_version = "0.5";
@@ -373,8 +375,6 @@ fn parseSettings(allocator: std.mem.Allocator) !void {
     while (try parser.next()) |record| {
         switch (record) {
             .property => |kv| {
-                //try writer.print("{s} = {s}\n", .{ kv.key, kv.value });
-
                 if (name_key_map.get(kv.key)) |button| { //Key parsing
                     const value: i32 = std.fmt.parseInt(
                         i32,
@@ -403,6 +403,28 @@ fn parseSettings(allocator: std.mem.Allocator) !void {
                         continue;
                     };
                     float_var.* = value / 100;
+                } else if (std.mem.eql(u8, kv.key, "aa_type")) { //probably a better way to do this so I'm not repeating myself
+                    const value: u8 = std.fmt.parseInt(
+                        u8,
+                        kv.value,
+                        10,
+                    ) catch |err| {
+                        try writer.print("Settings::ParseAaInt Caught error {any}\n", .{err});
+                        continue;
+                    };
+
+                    aa_type = @enumFromInt(value);
+                } else if (std.mem.eql(u8, kv.key, "cursor")) {
+                    const value: u8 = std.fmt.parseInt(
+                        u8,
+                        kv.value,
+                        10,
+                    ) catch |err| {
+                        try writer.print("Settings::ParseCursorInt Caught error {any}\n", .{err});
+                        continue;
+                    };
+
+                    selected_cursor = @enumFromInt(value);
                 }
             },
             else => continue,
@@ -474,7 +496,7 @@ fn saveData(file: std.fs.File) !void {
         inv_7.getSettingsInt(),
     });
 
-    var data_backing_arr = try main._allocator.alloc(u8, 512);
+    var data_backing_arr = try main._allocator.alloc(u8, 1024);
     defer main._allocator.free(data_backing_arr);
     const data_arr = try std.fmt.bufPrint(data_backing_arr, data_fmt, .{
         if (enable_glow) "true" else "false",
@@ -486,6 +508,8 @@ fn saveData(file: std.fs.File) !void {
         fps_cap * 100,
         music_volume * 100,
         sfx_volume * 100,
+        @intFromEnum(aa_type),
+        @intFromEnum(selected_cursor),
     });
 
     var combined_fmt = try main._allocator.alloc(u8, key_arr.len + data_arr.len);
