@@ -171,12 +171,7 @@ pub const MarketPanel = struct {
     }
 
     pub fn deinit(self: *MarketPanel) void {
-        while (!sc.ui_lock.tryLock()) {}
-        defer sc.ui_lock.unlock();
-
         self.cont.destroy();
-
-        self._allocator.destroy(self);
     }
 
     fn closeCallback() void {

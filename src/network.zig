@@ -218,6 +218,7 @@ pub fn init(ip: []const u8, port: u16, allocator: *std.mem.Allocator) void {
 }
 
 pub fn deinit(allocator: *std.mem.Allocator) void {
+    while (queue.pop()) |_| {}
     queue.deinit(allocator);
     stream.close();
     connected = false;
@@ -225,7 +226,9 @@ pub fn deinit(allocator: *std.mem.Allocator) void {
 
 pub fn onError(e: anytype) void {
     std.log.err("Error while handling server packets: {any}", .{e});
-    main.disconnect();
+    //Only disconnect if we are still connected
+    if (connected)
+        main.disconnect();
 }
 
 pub fn accept(allocator: std.mem.Allocator) void {

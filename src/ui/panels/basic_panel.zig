@@ -83,12 +83,7 @@ pub const BasicPanel = struct {
     }
 
     pub fn deinit(self: *BasicPanel) void {
-        while (!sc.ui_lock.tryLock()) {}
-        defer sc.ui_lock.unlock();
-
         self.cont.destroy();
-
-        self._allocator.destroy(self);
     }
 
     pub fn resize(self: *BasicPanel, screen_w: f32, screen_h: f32, w: f32, h: f32) void {

@@ -58,16 +58,16 @@ pub const PanelController = struct {
     }
 
     pub fn deinit(self: *PanelController) void {
-        while (!screen_controller.ui_lock.tryLock()) {}
-        defer screen_controller.ui_lock.unlock();
+        //Lock is created in game_screen already.
+        //Also assuming _allocator is the same as game screen and will be deinit there.
+        //while (!screen_controller.ui_lock.tryLock()) {}
+        //defer screen_controller.ui_lock.unlock();
 
         self.basic_panel.deinit();
         self.vault.deinit();
         self.market.deinit();
         self.wiki.deinit();
         self.options.deinit();
-
-        self._allocator.destroy(self);
     }
 
     pub fn hidePanels(self: *PanelController) void {

@@ -209,9 +209,6 @@ pub const VaultPanel = struct {
     }
 
     pub fn deinit(self: *VaultPanel) void {
-        while (!sc.ui_lock.tryLock()) {}
-        defer sc.ui_lock.unlock();
-
         self.cont.destroy();
         self.number_text = undefined;
 
@@ -224,8 +221,6 @@ pub const VaultPanel = struct {
         //  how?
         //
         //}
-
-        self._allocator.destroy(self);
     }
 
     fn closeCallback() void {

@@ -268,17 +268,12 @@ pub const OptionsPanel = struct {
     }
 
     pub fn deinit(self: *OptionsPanel) void {
-        while (!sc.ui_lock.tryLock()) {}
-        defer sc.ui_lock.unlock();
-
         self.main.destroy();
         self.buttons.destroy();
         self.tabs.destroy();
         self.general_tab.destroy();
         self.keys_tab.destroy();
         self.graphics_tab.destroy();
-
-        self._allocator.destroy(self);
     }
 
     fn addKeyMap(target_tab: *ui.DisplayContainer, button: *settings.Button, title: []const u8, desc: []const u8) !void {

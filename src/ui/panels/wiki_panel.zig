@@ -75,12 +75,7 @@ pub const WikiPanel = struct {
     }
 
     pub fn deinit(self: *WikiPanel) void {
-        while (!screen_controller.ui_lock.tryLock()) {}
-        defer screen_controller.ui_lock.unlock();
-
         self.cont.destroy();
-
-        self._allocator.destroy(self);
     }
 
     fn closeCallback() void {

@@ -80,7 +80,6 @@ pub fn switchScreen(screen_type: ScreenType) void {
     switch (current_screen) {
         inline else => |screen| if (screen.inited) screen.deinit(),
     }
-
     // should probably figure out some comptime magic to avoid all this... todo
     switch (screen_type) {
         .empty => current_screen = .{ .empty = EmptyScreen.init(main._allocator) catch unreachable },

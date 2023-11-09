@@ -287,11 +287,9 @@ pub fn disconnect() void {
         selected_server = null;
         sent_hello = false;
     }
-
     clear();
     input.reset();
-
-    screen_controller.switchScreen(.char_select);
+    screen_controller.switchScreen(.char_select)
 }
 
 // This is effectively just raw_c_allocator wrapped in the Tracy stuff
