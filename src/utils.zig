@@ -79,10 +79,10 @@ pub const PacketWriter = struct {
         const buf = self.buffer[self.length_index .. self.length_index + 2];
         const len = self.index - self.length_index;
         switch (builtin.cpu.arch.endian()) {
-            .Little => {
+            .little => {
                 @memcpy(buf, std.mem.asBytes(&len));
             },
-            .Big => {
+            .big => {
                 var len_buf = std.mem.toBytes(len);
                 std.mem.reverse(u8, len_buf[0..2]);
                 @memcpy(buf, len_buf[0..2]);
@@ -119,10 +119,10 @@ pub const PacketWriter = struct {
         self.index += byte_size;
 
         switch (builtin.cpu.arch.endian()) {
-            .Little => {
+            .little => {
                 @memcpy(buf, std.mem.asBytes(&value));
             },
-            .Big => {
+            .big => {
                 var val_buf = std.mem.toBytes(value);
                 std.mem.reverse(u8, val_buf[0..byte_size]);
                 @memcpy(buf, val_buf[0..byte_size]);
@@ -160,8 +160,8 @@ pub const PacketReader = struct {
         self.index += byte_size;
 
         switch (builtin.cpu.arch.endian()) {
-            .Little => return std.mem.bytesToValue(T, buf[0..byte_size]),
-            .Big => {
+            .little => return std.mem.bytesToValue(T, buf[0..byte_size]),
+            .big => {
                 std.mem.reverse(u8, buf[0..byte_size]);
                 return std.mem.bytesToValue(T, buf[0..byte_size]);
             },
