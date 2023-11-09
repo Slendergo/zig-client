@@ -2075,8 +2075,8 @@ pub fn disposeEntity(allocator: std.mem.Allocator, en: *map.Entity) void {
         .player => |player| {
             sc.removeAttachedUi(player.obj_id, allocator);
             //We are de-allocting these twice?
-            //allocator.free(player.name_override);
-            //allocator.free(player.guild);
+            allocator.free(player.name_override);
+            allocator.free(player.guild);
         },
         else => {},
     }

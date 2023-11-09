@@ -289,7 +289,7 @@ pub fn disconnect() void {
     }
     clear();
     input.reset();
-    screen_controller.switchScreen(.char_select)
+    screen_controller.switchScreen(.char_select);
 }
 
 // This is effectively just raw_c_allocator wrapped in the Tracy stuff
