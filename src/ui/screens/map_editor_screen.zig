@@ -1150,6 +1150,7 @@ pub const MapEditorScreen = struct {
         if (button == self.sample_key_settings.getMouse()) {
             // only used for visual naming on the statistics
             self.action = .sample;
+            self.active_brush.update();
 
             const _x: f32 = @floatCast(x);
             const _y: f32 = @floatCast(y);
@@ -1218,6 +1219,7 @@ pub const MapEditorScreen = struct {
             } else {
                 self.active_brush.brush_type = .circle;
             }
+            self.active_brush.update();
         }
 
         if (key == self.cycle_down_setting.getKey()) {
@@ -1261,14 +1263,17 @@ pub const MapEditorScreen = struct {
 
         if (key == self.ground_key_setting.getKey()) {
             self.active_layer = .ground;
+            self.active_brush.update();
         }
 
         if (key == self.object_key_setting.getKey()) {
             self.active_layer = .object;
+            self.active_brush.update();
         }
 
         if (key == self.region_key_setting.getKey()) {
             self.active_layer = .region;
+            //self.active_brush.update();
         }
     }
 

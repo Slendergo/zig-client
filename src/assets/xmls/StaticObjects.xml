@@ -1491,6 +1491,10 @@
     </Texture>
     <Static />
     <Size>60</Size>
+    <ShadowSize>0</ShadowSize>
+    <LightColor>0xe3d61b</LightColor>
+    <LightIntensity>0.25</LightIntensity>
+    <LightRadius>1.7</LightRadius>
   </Object>
   <Object type="0x01cc" id="Character Changer">
     <Class>CharacterChanger</Class>
