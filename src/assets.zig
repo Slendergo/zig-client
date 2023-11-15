@@ -783,7 +783,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     };
 
     var nodes = try allocator.alloc(zstbrp.PackNode, 4096);
-    defer allocator.free(nodes);
+    //defer allocator.free(nodes); //Causes a seg fault... TODO Fix
     zstbrp.initPack(&ctx, nodes);
 
     try addImage("textile4x4", "Textile4x4.png", 4, 4, &ctx, allocator);
@@ -866,7 +866,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
     };
 
     var ui_nodes = try allocator.alloc(zstbrp.PackNode, 4096);
-    defer allocator.free(ui_nodes);
+    //defer allocator.free(ui_nodes); //Causes a seg fault... TODO Fix
     zstbrp.initPack(&ui_ctx, ui_nodes);
 
     const imply_size = std.math.maxInt(u32);

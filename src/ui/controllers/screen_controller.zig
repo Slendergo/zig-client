@@ -75,6 +75,7 @@ pub fn deinit() void {
 
 pub fn switchScreen(screen_type: ScreenType) void {
     menu_background.visible = screen_type != .game; // and screen_type != .editor;
+    input.disable_input = false;
     input.selected_key_mapper = null;
 
     switch (current_screen) {
