@@ -26,17 +26,17 @@ pub const MarketPanel = struct {
         screen.* = .{ ._allocator = allocator };
         screen.* = data;
 
-        var width: f32 = camera.screen_width;
-        var height: f32 = camera.screen_height;
-        var half_width: f32 = width / 2;
-        var half_height: f32 = height / 2;
+        const width: f32 = camera.screen_width;
+        const height: f32 = camera.screen_height;
+        const half_width: f32 = width / 2;
+        const half_height: f32 = height / 2;
 
         var valid_items_count: usize = 0;
 
         var item_iter = game_data.item_type_to_props.iterator();
 
         while (item_iter.next()) |entry| {
-            var props = @as(game_data.ItemProps, entry.value_ptr.*);
+            const props = @as(game_data.ItemProps, entry.value_ptr.*);
 
             if (props.consumable)
                 continue;
@@ -59,8 +59,8 @@ pub const MarketPanel = struct {
         const button_data_hover = assets.getUiData("buttonHover", 0);
         const button_data_press = assets.getUiData("buttonPress", 0);
 
-        var actual_width = container_data.texWRaw() - 10;
-        var actual_height = container_data.texHRaw() - 10;
+        const actual_width = container_data.texWRaw() - 10;
+        const actual_height = container_data.texHRaw() - 10;
 
         _ = try screen.cont.createElement(ui.Button, .{
             .x = half_width,
@@ -109,8 +109,8 @@ pub const MarketPanel = struct {
         });
 
         while (item_iter.next()) |entry| {
-            var item_type = @as(u16, entry.key_ptr.*);
-            var props = @as(game_data.ItemProps, entry.value_ptr.*);
+            const item_type = @as(u16, entry.key_ptr.*);
+            const props = @as(game_data.ItemProps, entry.value_ptr.*);
 
             if (props.consumable)
                 continue;

@@ -2407,8 +2407,8 @@ fn drawElement(idx: u16, elem: ui.UiElement, draw_data: DrawData, cam_x: f32, ca
                 .normal => |image_data| {
                     w = image_data.width();
                     h = image_data.height();
-                    var atlas_data = image_data.atlas_data;
-                    var scale: f32 = 1.0;
+                    const atlas_data = image_data.atlas_data;
+                    const scale: f32 = 1.0;
 
                     const opts = QuadOptions{
                         .alpha_mult = image_data.alpha,

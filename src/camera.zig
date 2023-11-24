@@ -8,9 +8,9 @@ const utils = @import("utils.zig");
 pub const px_per_tile: i16 = 50; //88;
 pub const size_mult: f32 = 5.0; //8.0;
 
-pub var x = std.atomic.Atomic(f32).init(0.0);
-pub var y = std.atomic.Atomic(f32).init(0.0);
-pub var z = std.atomic.Atomic(f32).init(0.0);
+pub var x = std.atomic.Value(f32).init(0.0);
+pub var y = std.atomic.Value(f32).init(0.0);
+pub var z = std.atomic.Value(f32).init(0.0);
 
 pub var minimap_zoom: f32 = 4.0;
 pub var quake = false;

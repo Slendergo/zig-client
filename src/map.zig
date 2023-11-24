@@ -568,7 +568,7 @@ pub const GameObject = struct {
             self.action = assets.stand_action;
         }
 
-        var screen_pos = camera.rotateAroundCamera(self.x, self.y);
+        const screen_pos = camera.rotateAroundCamera(self.x, self.y);
         const size = camera.size_mult * camera.scale * self.size;
 
         const angle = if (std.math.isNan(self.facing))
@@ -909,7 +909,7 @@ pub const Player = struct {
             }
         }
 
-        var position = camera.screenToWorld(screen_x, screen_y);
+        const position = camera.screenToWorld(screen_x, screen_y);
         if (needs_walkable and !isValidPosition(position.x, position.y)) {
             assets.playSfx("Error");
             return;
@@ -2028,8 +2028,8 @@ pub var entities: utils.DynSlice(Entity) = undefined;
 pub var entity_indices_to_remove: utils.DynSlice(usize) = undefined;
 pub var atlas_to_color_data: std.AutoHashMap(AtlasHashHack, []u32) = undefined;
 pub var local_player_id: i32 = -1;
-pub var interactive_id = std.atomic.Atomic(i32).init(-1);
-pub var interactive_type = std.atomic.Atomic(game_data.ClassType).init(.game_object);
+pub var interactive_id = std.atomic.Value(i32).init(-1);
+pub var interactive_type = std.atomic.Value(game_data.ClassType).init(.game_object);
 pub var name: []const u8 = "";
 pub var seed: u32 = 0;
 pub var width: u32 = 0;
@@ -2283,8 +2283,8 @@ pub fn update(time: i64, dt: i64, allocator: std.mem.Allocator) void {
     const ms_time = @divFloor(time, std.time.us_per_ms);
     const ms_dt: f32 = @as(f32, @floatFromInt(dt)) / std.time.us_per_ms;
 
-    var cam_x: f32 = camera.x.load(.Acquire);
-    var cam_y: f32 = camera.y.load(.Acquire);
+    const cam_x: f32 = camera.x.load(.Acquire);
+    const cam_y: f32 = camera.y.load(.Acquire);
 
     var interactive_set = false;
     for (entities.items(), 0..) |*en, i| {

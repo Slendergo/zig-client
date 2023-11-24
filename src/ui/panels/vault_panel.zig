@@ -40,8 +40,8 @@ pub const VaultPanel = struct {
         screen.* = data;
 
         current_page = 1;
-        var cam_width: f32 = camera.screen_width;
-        var cam_height: f32 = camera.screen_height;
+        const cam_width: f32 = camera.screen_width;
+        const cam_height: f32 = camera.screen_height;
 
         const player_inventory = assets.getUiData("playerInventory", 0);
         const item_row = assets.getUiData("itemRow", 0);
@@ -59,7 +59,7 @@ pub const VaultPanel = struct {
         const x = cam_width + pre_width_x;
         const y = cam_height + pre_height_y;
         const total_width = items_width + 10;
-        var actual_half_width: f32 = total_width / 2;
+        const actual_half_width: f32 = total_width / 2;
         screen.cont = try ui.DisplayContainer.create(allocator, .{
             .x = x,
             .y = y,
@@ -96,7 +96,7 @@ pub const VaultPanel = struct {
         const row_x = 5;
         const row_y = 40 + item_row.texHRaw();
         for (0..rows_per_page) |i| {
-            var f: f32 = @floatFromInt(i);
+            const f: f32 = @floatFromInt(i);
 
             //item slots
             //0 - 3
@@ -255,8 +255,8 @@ pub const VaultPanel = struct {
     }
 
     pub fn resize(self: *VaultPanel, w: f32, h: f32) void {
-        var x = w + pre_width_x;
-        var y = h + pre_height_y;
+        const x = w + pre_width_x;
+        const y = h + pre_height_y;
 
         self.cont.x = x;
         self.cont.y = y;

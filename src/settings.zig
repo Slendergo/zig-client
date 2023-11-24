@@ -462,7 +462,7 @@ pub fn save() !void {
 //The order MATTERS! Same order as data_fmt
 //note: formating only supports up to 32 arguments hence why the keys and other data is split
 fn saveData(file: std.fs.File) !void {
-    var key_backing_arr = try main._allocator.alloc(u8, 1024);
+    const key_backing_arr = try main._allocator.alloc(u8, 1024);
     defer main._allocator.free(key_backing_arr);
 
     const key_arr = try std.fmt.bufPrint(key_backing_arr, key_fmt, .{
@@ -496,7 +496,7 @@ fn saveData(file: std.fs.File) !void {
         inv_7.getSettingsInt(),
     });
 
-    var data_backing_arr = try main._allocator.alloc(u8, 1024);
+    const data_backing_arr = try main._allocator.alloc(u8, 1024);
     defer main._allocator.free(data_backing_arr);
     const data_arr = try std.fmt.bufPrint(data_backing_arr, data_fmt, .{
         if (enable_glow) "true" else "false",

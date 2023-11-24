@@ -254,7 +254,7 @@ fn addCursors(comptime image_name: []const u8, comptime cut_width: u32, comptime
     defer img.deinit();
 
     const img_size = cut_width * cut_height;
-    var len = @divFloor(img.width * img.height, img_size);
+    const len = @divFloor(img.width * img.height, img_size);
 
     for (0..len) |i| {
         const cur_src_x = (i * cut_width) % img.width;
@@ -271,7 +271,7 @@ fn addCursors(comptime image_name: []const u8, comptime cut_width: u32, comptime
             @memcpy(temp[target_idx .. target_idx + 4], img.data[src_idx .. src_idx + 4]);
         }
 
-        var cursor = try zglfw.Cursor.create(
+        const cursor = try zglfw.Cursor.create(
             &zglfw.Image{ .w = cut_width, .h = cut_height, .pixels = @ptrCast(temp) },
             cut_width / 2,
             cut_height / 2,
@@ -301,7 +301,7 @@ fn addImage(comptime sheet_name: []const u8, comptime image_name: []const u8, co
     defer img.deinit();
 
     const img_size = cut_width * cut_height;
-    var len = @divFloor(img.width * img.height, img_size);
+    const len = @divFloor(img.width * img.height, img_size);
     var current_rects = try allocator.alloc(zstbrp.PackRect, len);
     defer allocator.free(current_rects);
     var data = try allocator.alloc(AtlasData, len);
@@ -388,7 +388,7 @@ fn addUiImage(comptime sheet_name: []const u8, comptime image_name: []const u8, 
     const cut_height = if (cut_height_base == imply_size) img.height else cut_height_base;
 
     const img_size = cut_width * cut_height;
-    var len = @divFloor(img.width * img.height, img_size);
+    const len = @divFloor(img.width * img.height, img_size);
     var current_rects = try allocator.alloc(zstbrp.PackRect, len);
     defer allocator.free(current_rects);
     var data = try allocator.alloc(AtlasData, len);
@@ -439,9 +439,9 @@ fn addUiImage(comptime sheet_name: []const u8, comptime image_name: []const u8, 
 fn addAnimEnemy(comptime sheet_name: []const u8, comptime image_name: []const u8, comptime cut_width: u32, comptime cut_height: u32, comptime full_cut_width: u32, comptime full_cut_height: u32, ctx: *zstbrp.PackContext, allocator: std.mem.Allocator) !void {
     var img = try zstbi.Image.loadFromFile(asset_dir ++ "sheets/" ++ image_name, 4);
     defer img.deinit();
-
+    //
     const img_size = cut_width * cut_height;
-    var len = @divFloor(img.width, full_cut_width) * @divFloor(img.height, full_cut_height) * 5;
+    const len = @divFloor(img.width, full_cut_width) * @divFloor(img.height, full_cut_height) * 5;
 
     var current_rects = try allocator.alloc(zstbrp.PackRect, len * 2);
     defer allocator.free(current_rects);
@@ -515,7 +515,7 @@ fn addAnimPlayer(comptime sheet_name: []const u8, comptime image_name: []const u
     var len = @divFloor(img.width, full_cut_width) * @divFloor(img.height, full_cut_height) * 5;
     len += @divFloor(len, 3);
 
-    var current_rects = try allocator.alloc(zstbrp.PackRect, len);
+    const current_rects = try allocator.alloc(zstbrp.PackRect, len);
     defer allocator.free(current_rects);
 
     const player_data = try allocator.alloc(AnimPlayerData, @divFloor(len, 5 * 4));
@@ -782,7 +782,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .extra = [2]zstbrp.PackNode{ zstbrp.PackNode{ .x = 0, .y = 0, .next = null }, zstbrp.PackNode{ .x = 0, .y = 0, .next = null } },
     };
 
-    var nodes = try allocator.alloc(zstbrp.PackNode, 4096);
+    const nodes = try allocator.alloc(zstbrp.PackNode, 4096);
     //defer allocator.free(nodes); //Causes a seg fault... TODO Fix
     zstbrp.initPack(&ctx, nodes);
 
@@ -865,7 +865,7 @@ pub fn init(allocator: std.mem.Allocator) !void {
         .extra = [2]zstbrp.PackNode{ zstbrp.PackNode{ .x = 0, .y = 0, .next = null }, zstbrp.PackNode{ .x = 0, .y = 0, .next = null } },
     };
 
-    var ui_nodes = try allocator.alloc(zstbrp.PackNode, 4096);
+    const ui_nodes = try allocator.alloc(zstbrp.PackNode, 4096);
     //defer allocator.free(ui_nodes); //Causes a seg fault... TODO Fix
     zstbrp.initPack(&ui_ctx, ui_nodes);
 
