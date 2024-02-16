@@ -1,5 +1,6 @@
-# Zig Realm Client
+# Community Project
 
+# Zig Realm Client
 
 This project is a modern and efficient Private Server Client built using Zig, a robust, optimal, and clear programming language. It is designed specifically to interface with the provided server source, tracking the latest master builds of Zig.
 
